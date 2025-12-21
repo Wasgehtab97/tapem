@@ -178,59 +178,31 @@ class _CalendarPopupState extends State<CalendarPopup> {
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 0.4,
                           ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(2),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$_activeYear',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: Colors.white.withOpacity(0.78),
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            shadows: [
+                              Shadow(
+                                color: Colors.white.withOpacity(0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 0),
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Absolviert',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: Colors.white70),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 16),
-                        Row(
-                          children: [
-                            Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(2),
-                                border: Border.all(
-                                  color: Colors.white70,
-                                  width: 1,
-                                ),
+                              Shadow(
+                                color: Colors.white.withOpacity(0.18),
+                                blurRadius: 24,
+                                offset: const Offset(0, 0),
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Geplanter Plan',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: Colors.white70),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
                     ),
+                    const SizedBox(height: 6),
                     const SizedBox(height: AppSpacing.md),
                     SizedBox(
                       height: 300, // Fixed height for the calendar area

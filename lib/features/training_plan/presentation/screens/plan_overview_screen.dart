@@ -6,6 +6,7 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/app_error_card.dart';
 import 'package:tapem/core/widgets/app_loading_indicator.dart';
+import 'package:tapem/core/widgets/brand_gradient_icon.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/features/training_plan/presentation/widgets/plan_color_palette.dart';
 import 'package:tapem/features/training_plan/application/plan_builder_provider.dart';
@@ -24,73 +25,172 @@ class PlanOverviewScreen extends ConsumerWidget {
     final authState = ref.watch(authViewStateProvider);
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
         title: Text(
           'Trainingspläne',
-          style: TextStyle(color: brandColor),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
         ),
         foregroundColor: brandColor,
       ),
-      body: plansAsync.when(
-        data: (plans) {
-          if (plans.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.assignment_outlined, size: 64, color: brandColor.withOpacity(0.5)),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Keine Trainingspläne vorhanden',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: brandColor.withOpacity(0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () => _createNewPlan(context, ref),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Ersten Plan erstellen'),
-                  ),
-                ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.scaffoldBackgroundColor,
+              Color.alphaBlend(
+                brandColor.withOpacity(0.07),
+                theme.scaffoldBackgroundColor,
               ),
-            );
-          }
-          return ListView.builder(
-            itemCount: plans.length,
-            padding: const EdgeInsets.all(AppSpacing.md),
-            itemBuilder: (context, index) {
-              final plan = plans[index];
-              final isCoachPlan =
-                  plan.coachId != null && plan.coachId != authState.userId;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: _PlanCard(
-                  name: plan.name,
-                  exerciseCount: plan.exercises.length,
-                  isCoachPlan: isCoachPlan,
-                  colorIndex: plan.colorIndex,
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRouter.trainingPlanDetail,
-                      arguments: plan,
-                    );
-                  },
+            ],
+          ),
+        ),
+        child: plansAsync.when(
+          data: (plans) {
+            if (plans.isEmpty) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 80, 20, 24),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            brandColor.withOpacity(0.18),
+                            Colors.black.withOpacity(0.6),
+                          ],
+                        ),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.08),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.35),
+                            blurRadius: 24,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  brandColor.withOpacity(0.6),
+                                  brandColor.withOpacity(0.08),
+                                ],
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.assignment_rounded,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Dein erster Plan wartet',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Erstelle einen Trainingsplan und bring Struktur in dein Workout.',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          FilledButton.icon(
+                            onPressed: () => _createNewPlan(context, ref),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Ersten Plan erstellen'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: brandColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              textStyle: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Pläne helfen dir dabei, konsistent Fortschritte zu tracken.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        letterSpacing: 0.4,
+                        color: Colors.white.withOpacity(0.4),
+                      ),
+                    ),
+                  ],
                 ),
               );
-            },
-          );
-        },
-        loading: () => const AppLoadingIndicator(),
-        error: (err, stack) => AppErrorCard(
-          message: 'Fehler beim Laden der Pläne:\n$err',
-          onRetry: () => ref.invalidate(trainingPlansProvider),
+            }
+            return ListView.builder(
+              itemCount: plans.length,
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+              itemBuilder: (context, index) {
+                final plan = plans[index];
+                final isCoachPlan =
+                    plan.coachId != null && plan.coachId != authState.userId;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: _PlanCard(
+                    name: plan.name,
+                    exerciseCount: plan.exercises.length,
+                    isCoachPlan: isCoachPlan,
+                    colorIndex: plan.colorIndex,
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        AppRouter.trainingPlanDetail,
+                        arguments: plan,
+                      );
+                    },
+                  ),
+                );
+              },
+            );
+          },
+          loading: () => const AppLoadingIndicator(),
+          error: (err, stack) => AppErrorCard(
+            message: 'Fehler beim Laden der Pläne:\n$err',
+            onRetry: () => ref.invalidate(trainingPlansProvider),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _createNewPlan(context, ref),
-        child: const Icon(Icons.add),
+        backgroundColor: brandColor,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -154,96 +254,89 @@ class _PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final brandTheme = theme.extension<AppBrandTheme>();
-    final radius =
-        (brandTheme?.radius ?? BorderRadius.circular(AppRadius.card)) as BorderRadius;
     final onSurface = theme.colorScheme.onSurface;
     final brandColor =
         PlanColorPalette.colorForIndex(colorIndex, theme);
+    final cardRadius = BorderRadius.circular(24);
 
     return BrandInteractiveCard(
       onTap: onTap,
-      borderRadius: radius,
+      borderRadius: cardRadius,
+      backgroundColor: Colors.transparent,
+      restingBorderColor: Colors.transparent,
+      activeBorderColor: Colors.transparent,
+      showShadow: false,
       padding: EdgeInsets.zero,
       child: Container(
+        height: 72,
         decoration: BoxDecoration(
           gradient: LinearGradient(
+            colors: [
+              brandColor.withOpacity(0.10),
+              brandColor.withOpacity(0.03),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              brandColor.withOpacity(0.08),
-              brandColor.withOpacity(0.02),
-            ],
+          ),
+          borderRadius: cardRadius,
+          border: Border.all(
+            color: Colors.white.withOpacity(0.05),
+            width: 1,
           ),
         ),
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(
-                  color: theme.colorScheme.onSurface.withOpacity(0.05),
-                ),
+                color: brandColor.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const BrandGradientIcon(
                 Icons.view_list_rounded,
-                color: brandColor,
-                size: 26,
+                size: 22,
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     name,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: onSurface,
                       fontWeight: FontWeight.bold,
+                      color: onSurface,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Text(
                         '$exerciseCount ${exerciseCount == 1 ? 'Übung' : 'Übungen'}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: onSurface.withOpacity(0.6),
-                          letterSpacing: 0.2,
+                          color: onSurface.withOpacity(0.5),
                         ),
                       ),
                       if (isCoachPlan) ...[
-                        const SizedBox(width: AppSpacing.sm),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: brandColor.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(999),
+                            color: Colors.white.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             'Coach-Plan',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: brandColor.withOpacity(0.9),
                               fontWeight: FontWeight.w600,
-                              letterSpacing: 0.2,
+                              color: onSurface.withOpacity(0.7),
                             ),
                           ),
                         ),

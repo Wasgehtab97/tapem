@@ -9,10 +9,12 @@ import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/models/session_set_vm.dart';
 import 'package:tapem/features/device/presentation/widgets/machine_leaderboard_sheet.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
+import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:intl/intl.dart';
@@ -20,6 +22,11 @@ import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart'
     show showFeedbackDialog;
 import 'package:tapem/app_router.dart';
+
+enum _SessionOptionAction {
+  remove,
+  replace,
+}
 
 /// Builder function used by [WorkoutDayScreen.sessionBuilder] to render
 /// sessions with the new table-style UI that mirrors the marketing website.
@@ -119,6 +126,117 @@ class _WorkoutDayTableCardState
     }
     _provider.removeListener(_handleProviderChanged);
     super.dispose();
+  }
+
+  Future<void> _showSessionOptions() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    ref.read(overlayNumericKeypadControllerProvider).close();
+
+    if (!mounted) return;
+    final action = await showModalBottomSheet<_SessionOptionAction>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(24),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.35),
+                blurRadius: 24,
+                offset: const Offset(0, -8),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: const Icon(Icons.swap_horiz_rounded),
+                  title: const Text('Übung austauschen'),
+                  onTap: () => Navigator.of(context)
+                      .pop(_SessionOptionAction.replace),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded),
+                  title: const Text('Übung entfernen'),
+                  onTap: () =>
+                      Navigator.of(context).pop(_SessionOptionAction.remove),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || action == null) return;
+    switch (action) {
+      case _SessionOptionAction.remove:
+        _removeSession();
+        break;
+      case _SessionOptionAction.replace:
+        await _replaceSession();
+        break;
+    }
+  }
+
+  void _removeSession() {
+    final controller = ref.read(workoutDayControllerProvider);
+    final closed = controller.closeSession(widget.session.key);
+    if (!closed) return;
+    final auth = ref.read(authControllerProvider);
+    final userId = auth.userId;
+    if (userId == null) return;
+    final activeGymId = auth.gymCode ?? widget.session.gymId;
+    final remaining = controller.sessionsFor(
+      userId: userId,
+      gymId: activeGymId,
+    );
+    if (remaining.isEmpty && mounted) {
+      Navigator.of(context).maybePop();
+    }
+  }
+
+  Future<void> _replaceSession() async {
+    final selection =
+        await Navigator.of(context).push<WorkoutDeviceSelection>(
+      MaterialPageRoute(
+        builder: (ctx) => GymScreen(
+          onSelect: (result) => Navigator.of(ctx).pop(result),
+        ),
+      ),
+    );
+    if (!mounted || selection == null) return;
+    final auth = ref.read(authControllerProvider);
+    final userId = auth.userId;
+    if (userId == null) return;
+    final controller = ref.read(workoutDayControllerProvider);
+    controller.replaceSession(
+      oldKey: widget.session.key,
+      gymId: selection.gymId,
+      deviceId: selection.deviceId,
+      exerciseId: selection.exerciseId,
+      exerciseName: selection.exerciseName ?? selection.exerciseId,
+      userId: userId,
+    );
   }
 
   void _handleProviderChanged() {
@@ -758,7 +876,20 @@ class _WorkoutDayTableCardState
                   ],
                 ),
               ),
-              // Close-Button wird vom WorkoutDayScreen gehandhabt.
+              SizedBox(
+                height: 32,
+                width: 32,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  splashRadius: 18,
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: Colors.white.withOpacity(0.65),
+                  ),
+                  onPressed: _showSessionOptions,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 18),
@@ -1143,12 +1274,33 @@ class _TableInputCellState extends State<_TableInputCell> {
     final controller = widget.controller;
     final display =
         controller.text.trim().isEmpty ? widget.placeholder : controller.text.trim();
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.primary;
+    final borderColor = widget.isFocused
+        ? brandColor.withOpacity(0.7)
+        : Colors.white.withOpacity(0.08);
+    final fillColor = widget.isFocused
+        ? brandColor.withOpacity(0.08)
+        : Colors.white.withOpacity(0.02);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: widget.onTap,
-      child: SizedBox(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
         height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          color: fillColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border(
+            bottom: BorderSide(
+              color: borderColor,
+              width: widget.isFocused ? 1.4 : 1.0,
+            ),
+          ),
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -1167,7 +1319,7 @@ class _TableInputCellState extends State<_TableInputCell> {
                   width: 2.0,
                   height: (widget.textStyle.fontSize ?? 13) * 1.25,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
+                    color: brandColor,
                     borderRadius: BorderRadius.circular(1),
                   ),
                 ),
@@ -1572,14 +1724,21 @@ class _WorkoutSwipeableSessionContent extends StatefulWidget {
 }
 
 class _WorkoutSwipeableSessionContentState
-    extends State<_WorkoutSwipeableSessionContent> {
-  final PageController _pageController = PageController();
+    extends State<_WorkoutSwipeableSessionContent>
+    with SingleTickerProviderStateMixin {
   int _currentPage = 0;
+  double _dragAccum = 0;
 
   @override
   void dispose() {
-    _pageController.dispose();
     super.dispose();
+  }
+
+  void _goToPage(int target) {
+    if (target == _currentPage) return;
+    setState(() {
+      _currentPage = target;
+    });
   }
 
   @override
@@ -1599,37 +1758,77 @@ class _WorkoutSwipeableSessionContentState
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _WorkoutPageIndicator(
-                isActive: _currentPage == 0,
-                color: brandColor,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _goToPage(_currentPage == 0 ? 1 : 0),
+            onHorizontalDragStart: (_) => _dragAccum = 0,
+            onHorizontalDragUpdate: (details) {
+              _dragAccum += details.delta.dx;
+              const threshold = 28.0;
+              if (_dragAccum.abs() >= threshold) {
+                _goToPage(_dragAccum < 0 ? 1 : 0);
+                _dragAccum = 0;
+              }
+            },
+            onHorizontalDragEnd: (_) => _dragAccum = 0,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 28, minWidth: 96),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _WorkoutPageIndicator(
+                    isActive: _currentPage == 0,
+                    color: brandColor,
+                  ),
+                  const SizedBox(width: 8),
+                  _WorkoutPageIndicator(
+                    isActive: _currentPage == 1,
+                    color: brandColor,
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              _WorkoutPageIndicator(
-                isActive: _currentPage == 1,
-                color: brandColor,
-              ),
-            ],
+            ),
           ),
         ),
-        SizedBox(
-          height: _currentPage == 0 ? setsHeight : 240,
-          child: PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
-            children: [
-              widget.setsPage,
-              SingleChildScrollView(
-                physics: const ClampingScrollPhysics(),
-                child: widget.actionsPage,
-              ),
-            ],
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            height: _currentPage == 0 ? setsHeight : 240,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeOutCubic,
+              transitionBuilder: (child, animation) {
+                final offsetTween = Tween<Offset>(
+                  begin: Offset(_currentPage == 0 ? -0.06 : 0.06, 0),
+                  end: Offset.zero,
+                );
+                return SlideTransition(
+                  position: offsetTween.animate(animation),
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
+                );
+              },
+              child: _currentPage == 0
+                  ? KeyedSubtree(
+                      key: const ValueKey('sets'),
+                      child: SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: widget.setsPage,
+                      ),
+                    )
+                  : KeyedSubtree(
+                      key: const ValueKey('actions'),
+                      child: SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        child: widget.actionsPage,
+                      ),
+                    ),
+            ),
           ),
         ),
       ],

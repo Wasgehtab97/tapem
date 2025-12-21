@@ -20,6 +20,7 @@ import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart' show workoutSessionDurationServiceProvider;
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
+import 'package:tapem/core/widgets/brand_gradient_icon.dart';
 
 class PlanDetailScreen extends ConsumerStatefulWidget {
   const PlanDetailScreen({super.key, this.plan});
@@ -344,9 +345,18 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     final paletteColors = PlanColorPalette.colors(theme);
     final selectedColor =
         PlanColorPalette.colorForIndex(draft.colorIndex, theme);
+    final titleStyle = theme.textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: Colors.white,
+    );
+    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+      color: Colors.white.withOpacity(0.65),
+    );
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: GestureDetector(
           onTap: () async {
              // Edit Name Dialog
@@ -374,7 +384,12 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(draft.name.isEmpty ? 'Neuer Plan' : draft.name),
+              Text(
+                draft.name.isEmpty ? 'Neuer Plan' : draft.name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(width: 8),
               const Icon(Icons.edit, size: 16),
             ],
@@ -429,8 +444,11 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              selectedColor.withOpacity(0.18),
-              Colors.black.withOpacity(0.85),
+              Color.alphaBlend(
+                selectedColor.withOpacity(0.25),
+                theme.scaffoldBackgroundColor,
+              ),
+              Colors.black.withOpacity(0.9),
             ],
           ),
         ),
@@ -441,12 +459,26 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.35),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      selectedColor.withOpacity(0.2),
+                      Colors.black.withOpacity(0.65),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: selectedColor.withOpacity(0.5),
-                    width: 1.2,
+                    color: Colors.white.withOpacity(0.1),
+                    width: 1,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.35),
+                      blurRadius: 18,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -459,8 +491,8 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
                               colors: [
-                                selectedColor,
-                                selectedColor.withOpacity(0.7),
+                                selectedColor.withOpacity(0.95),
+                                selectedColor.withOpacity(0.5),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -476,9 +508,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                         Expanded(
                           child: Text(
                             draft.name.isEmpty ? 'Neuer Trainingsplan' : draft.name,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: titleStyle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -488,16 +518,14 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                     const SizedBox(height: 12),
                     Text(
                       '${draft.exercises.length} Übung${draft.exercises.length == 1 ? '' : 'en'}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
-                      ),
+                      style: subtitleStyle,
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Plan-Farbe',
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      style: theme.textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface.withOpacity(0.8),
+                        color: Colors.white.withOpacity(0.8),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -525,6 +553,16 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                                     width: i == draft.colorIndex ? 2 : 1,
                                   ),
                                   color: paletteColors[i],
+                                  boxShadow: i == draft.colorIndex
+                                      ? [
+                                          BoxShadow(
+                                            color: paletteColors[i]
+                                                .withOpacity(0.6),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ]
+                                      : null,
                                 ),
                               ),
                             ),
@@ -589,18 +627,17 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                                 '${item.deviceId}_${item.exerciseId}_$index',
                               ),
                               elevation: 0,
-                              color: theme.cardColor.withOpacity(0.6),
+                              color: Colors.black.withOpacity(0.35),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                                 side: BorderSide(
-                                  color:
-                                      theme.dividerColor.withOpacity(0.4),
+                                  color: Colors.white.withOpacity(0.08),
                                 ),
                               ),
                               child: ListTile(
                                 leading: CircleAvatar(
                                   backgroundColor:
-                                      selectedColor.withOpacity(0.12),
+                                      selectedColor.withOpacity(0.2),
                                   child: Text(
                                     '${index + 1}',
                                     style: TextStyle(
@@ -611,8 +648,9 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                                 ),
                                 title: Text(
                                   title,
-                                  style: const TextStyle(
+                                  style: theme.textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.w600,
+                                    color: Colors.white,
                                   ),
                                 ),
                                 subtitle: (exerciseName != null &&
@@ -696,77 +734,129 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                       ),
               ),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        child: Row(
-          children: [
             if (planId != null && ownerUserId != null)
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    final statsFuture = ref.read(
-                      trainingPlanStatsForOwnerProvider(
-                        PlanStatsOwnerKey(
-                          userId: ownerUserId,
-                          planId: planId,
-                        ),
-                      ).future,
-                    );
-                    statsFuture.then((value) {
-                      if (!mounted) return;
-                      _openStats(
-                        context,
-                        value,
-                        draft,
-                        deviceMap,
-                        ownerUserId,
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  child: GestureDetector(
+                    onTap: () {
+                      final statsFuture = ref.read(
+                        trainingPlanStatsForOwnerProvider(
+                          PlanStatsOwnerKey(
+                            userId: ownerUserId,
+                            planId: planId,
+                          ),
+                        ).future,
                       );
-                    });
-                  },
-                  icon: const Icon(Icons.bar_chart_rounded),
-                  label: Text(
-                    statsCount != null ? 'Stats ($statsCount)' : 'Stats',
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: brandColor,
-                    side: BorderSide(color: brandColor),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                      statsFuture.then((value) {
+                        if (!mounted) return;
+                        _openStats(
+                          context,
+                          value,
+                          draft,
+                          deviceMap,
+                          ownerUserId,
+                        );
+                      });
+                    },
+                    child: Container(
+                      height: 72,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            brandColor.withOpacity(0.10),
+                            brandColor.withOpacity(0.03),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.05),
+                          width: 1,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: brandColor.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const BrandGradientIcon(
+                              Icons.bar_chart_rounded,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  statsCount != null
+                                      ? 'Stats ($statsCount)'
+                                      : 'Stats',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onSurface,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                Text(
+                                  'Insights & Fortschritt',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.5),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  brandColor.withOpacity(0.22),
+                                  brandColor.withOpacity(0.02),
+                                ],
+                                center: Alignment.topLeft,
+                                radius: 1.0,
+                              ),
+                              border: Border.all(
+                                color: brandColor.withOpacity(0.4),
+                                width: 1.1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.35),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.arrow_outward_rounded,
+                              color: brandColor,
+                              size: 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-            if (planId != null) const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: FilledButton.icon(
-                onPressed: draft.exercises.isEmpty
-                    ? null
-                    : () async {
-                        final authState = ref.read(authViewStateProvider);
-                        final userId = authState.userId;
-                        final gymId = authState.gymCode ?? '';
-                        if (userId == null || gymId.isEmpty) return;
-                        // Trainingsstart/-stopp erfolgt ausschließlich über den
-                        // „Training starten“-Button auf der Profilseite.
-                        // Diese Schaltfläche dient hier nur der Navigation
-                        // zum Profil / zur Planübersicht.
-                        Navigator.pop(context);
-                      },
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Zurück zum Profil'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: brandColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),

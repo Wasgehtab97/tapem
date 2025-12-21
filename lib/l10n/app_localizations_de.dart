@@ -1469,7 +1469,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get homeTabAffiliate => 'Affiliate';
 
   @override
-  String get homeTabPlans => 'Pläne';
+  String get homeTabPlans => 'Plan';
 
   @override
   String get reportTitle => 'Report';

@@ -1354,6 +1354,8 @@ class DeviceProvider extends ChangeNotifier {
       }
       final ts = Timestamp.now();
       final endDate = ts.toDate();
+      final timerStart = _sessionDurationService?.startTime;
+      final sessionTimestamp = timerStart ?? endDate;
       double? averageRestMs;
       if (completionTimes.isNotEmpty) {
         final startMs = completionTimes.first;
@@ -1385,7 +1387,7 @@ class DeviceProvider extends ChangeNotifier {
         exerciseId: _currentExerciseId,
         exerciseName: _device!.isMulti ? null : _device!.name, // For non-multi devices
         isMulti: _device!.isMulti,
-        timestamp: endDate,
+        timestamp: sessionTimestamp,
         note: _note,
         sets: savedSets.map((s) => SessionSet(
           weight: parseWeightValue(s['weight']) ?? 0.0,
@@ -1395,9 +1397,10 @@ class DeviceProvider extends ChangeNotifier {
           dropReps: parseRepsValue(s['dropReps']),
           isBodyweight: isBodyweightValue(s['isBodyweight']),
         )).toList(),
-        startTime: completionTimes.isNotEmpty
-            ? DateTime.fromMillisecondsSinceEpoch(completionTimes.first)
-            : null,
+        startTime: timerStart ??
+            (completionTimes.isNotEmpty
+                ? DateTime.fromMillisecondsSinceEpoch(completionTimes.first)
+                : null),
         endTime: endDate,
         durationMs: durationMs,
       );

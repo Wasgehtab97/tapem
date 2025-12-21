@@ -382,6 +382,109 @@ class WorkoutDayController extends ChangeNotifier
     return true;
   }
 
+  WorkoutDaySession? replaceSession({
+    required String oldKey,
+    required String gymId,
+    required String deviceId,
+    required String exerciseId,
+    required String exerciseName,
+    required String userId,
+    bool autoFinalizeEnabled = false,
+  }) {
+    final oldEntry = _sessions[oldKey];
+    if (oldEntry == null) return null;
+
+    final newKey = contextKey(
+      gymId: gymId,
+      deviceId: deviceId,
+      exerciseId: exerciseId,
+      userId: userId,
+    );
+
+    if (newKey == oldKey) {
+      if (exerciseName.isNotEmpty &&
+          oldEntry.updateExerciseName(exerciseName)) {
+        notifyListeners();
+      }
+      _focusedSessionKey = newKey;
+      return oldEntry.snapshot;
+    }
+
+    final filtered = _sessionOrder.where((key) {
+      final entry = _sessions[key];
+      return entry != null &&
+          entry.userId == userId &&
+          entry.gymId == gymId;
+    }).toList();
+
+    final oldIndex = filtered.indexOf(oldKey);
+    if (oldIndex == -1) return null;
+
+    filtered.remove(oldKey);
+    filtered.remove(newKey);
+
+    _sessions.remove(oldKey);
+    _sessionOrder.remove(oldKey);
+    oldEntry.dispose();
+
+    var entry = _sessions[newKey];
+    if (entry == null) {
+      final provider = DeviceProvider(
+        firestore: _firestore,
+        deviceRepository: _deviceRepository,
+        sessionRepository: _sessionRepository,
+        getDevicesForGym: _getDevicesForGym,
+        draftRepo: _createDraftRepository(),
+        membership: _membership,
+        communityStatsWriter: _communityStatsWriter,
+        autoFinalizeEnabled: autoFinalizeEnabled,
+      );
+      entry = _SessionEntry(
+        key: newKey,
+        gymId: gymId,
+        deviceId: deviceId,
+        exerciseId: exerciseId,
+        exerciseName: exerciseName,
+        userId: userId,
+        provider: provider,
+      );
+      _attachServicesToProvider(provider);
+      entry.attachListener(_onEntryChanged);
+      _sessions[newKey] = entry;
+    } else if (exerciseName.isNotEmpty) {
+      entry.updateExerciseName(exerciseName);
+    }
+
+    final insertIndex = oldIndex.clamp(0, filtered.length);
+    filtered.insert(insertIndex, newKey);
+
+    final original = List<String>.from(_sessionOrder);
+    _sessionOrder.clear();
+    var filteredIdx = 0;
+    for (final key in original) {
+      final existing = _sessions[key];
+      final matches = existing != null &&
+          existing.userId == userId &&
+          existing.gymId == gymId;
+      if (matches) {
+        if (filteredIdx < filtered.length) {
+          _sessionOrder.add(filtered[filteredIdx]);
+          filteredIdx += 1;
+        }
+      } else {
+        _sessionOrder.add(key);
+      }
+    }
+    while (filteredIdx < filtered.length) {
+      _sessionOrder.add(filtered[filteredIdx]);
+      filteredIdx += 1;
+    }
+
+    _focusedSessionKey = newKey;
+    notifyListeners();
+    return _sessions[newKey]?.snapshot;
+  }
+
   bool reorderSessions({
     required String userId,
     required String gymId,
@@ -521,7 +624,7 @@ class WorkoutDayController extends ChangeNotifier
     if (durationService != null && result.attempted > 0) {
       try {
         if (result.saved > 0) {
-          await durationService.save();
+          await durationService.save(endTime: DateTime.now());
         } else {
           await durationService.discard();
         }

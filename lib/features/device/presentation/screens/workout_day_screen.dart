@@ -107,6 +107,22 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
     });
   }
 
+  void _syncSessionKey(List<WorkoutDaySession> sessions) {
+    final currentKey = _sessionKey;
+    if (currentKey == null) return;
+    final exists = sessions.any((session) => session.key == currentKey);
+    if (exists) return;
+    final nextKey = sessions.isNotEmpty ? sessions.last.key : null;
+    if (nextKey == currentKey) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _sessionKey = nextKey;
+        _ownsSession = false;
+      });
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -208,6 +224,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
     final sessions = (userId == null)
         ? const <WorkoutDaySession>[]
         : controller.sessionsFor(userId: userId, gymId: activeGymId);
+    _syncSessionKey(sessions);
 
 
     final loc = AppLocalizations.of(context)!;

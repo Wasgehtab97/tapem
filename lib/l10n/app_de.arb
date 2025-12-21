@@ -1367,7 +1367,7 @@
   ,"@homeTabRank": {"description": "Label des Ranking-Tabs"}
   ,"homeTabAffiliate": "Affiliate"
   ,"@homeTabAffiliate": {"description": "Label des Affiliate-Tabs"}
-  ,"homeTabPlans": "Pläne"
+  ,"homeTabPlans": "Plan"
   ,"@homeTabPlans": {"description": "Label des Pläne-Tabs"}
   ,"reportTitle": "Report"
   ,"@reportTitle": {"description": "AppBar-Titel des Report-Screens"}

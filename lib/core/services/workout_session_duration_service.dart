@@ -103,6 +103,12 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     return Duration(milliseconds: diff);
   }
 
+  DateTime? get startTime {
+    final startMs = _startEpochMs;
+    if (startMs == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(startMs);
+  }
+
   Future<void> _init() async {
     _prefs = await SharedPreferences.getInstance();
     await _migrateLegacyKeys();
@@ -114,6 +120,18 @@ class WorkoutSessionDurationService extends ChangeNotifier {
     final prefs = _prefs!;
     final newKey =
         (uid != null && gymId != null) ? _prefsKeyFor(uid, gymId) : null;
+
+    if (uid != null && (gymId == null || gymId.isEmpty)) {
+      return;
+    }
+
+    if (_isRunning &&
+        _startEpochMs != null &&
+        _uid == uid &&
+        _gymId != null &&
+        (gymId == null || gymId.isEmpty || gymId != _gymId)) {
+      return;
+    }
 
     if (_activePrefsKey == newKey && _uid == uid && _gymId == gymId) {
       return;
@@ -609,4 +627,3 @@ final workoutSessionDurationServiceProvider =
   ref.onDispose(service.dispose);
   return service;
 });
-
