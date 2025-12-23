@@ -256,8 +256,12 @@ Ziel: Eine hochwertige, moderne Website zur Vermarktung und eine klare Web-Adres
 ### 8. Markenauftritt & Domains
 
 - [ ] Marken-Story und Tonalität definieren (Ansprache: du/ihr/Sie, Stil).
+- [ ] 1–2 Sätze „Elevator Pitch“ finalisieren (für Studios und für Mitglieder).
+- [ ] Claim/Tagline finalisieren (kurz, merkfähig, nutzenorientiert).
+- [ ] Brand-Kit erstellen (Logo-Varianten, Farben, Typo, Button-/Icon-Stil, Bildsprache).
 - [ ] Domain für Marketing-Website sichern (z.B. `tapem.app` oder ähnliche Hauptdomain).
 - [ ] Separate Domain oder Subdomain für Admin-/Studio-Login sichern (z.B. `studio.tapem.app` oder eigenständige Zweitdomain).
+- [ ] E-Mail-Domain aufsetzen (z.B. `hello@…`, `sales@…`, `support@…`), inkl. SPF/DKIM/DMARC.
 - [ ] Favicon, Logos und Basis-Branding-Assets finalisieren (Farben, Typografie).
 
 ### 9. Marketing-Website (Landing Page)
@@ -265,22 +269,54 @@ Ziel: Eine hochwertige, moderne Website zur Vermarktung und eine klare Web-Adres
 - [ ] Informationsarchitektur definieren (Abschnitte: Problem, Lösung, Features, Vorteile, Referenzen, FAQ, Kontakt).
 - [ ] Copywriting:
   - [ ] Hero-Section mit starkem Claim („App für dein Fitnessstudio“).
+  - [ ] Subheadline: für wen + welches Ergebnis + wie (1 Satz).
   - [ ] 3–5 Nutzenpunkte für Studios (Bindung, Differenzierung, Daten, Feedback, Zusatzerlöse).
   - [ ] 3–4 Nutzenpunkte für Mitglieder (Fortschritt, Community, Coaches, Studio-Brand).
+  - [ ] „So funktioniert’s“ (3 Schritte: Tap → Loggen → Insights/Community).
+  - [ ] Einwandbehandlung (z.B. Aufwand im Studio, Datenschutz, Technik/NFC, Kosten).
+  - [ ] CTA-Texte ausformulieren (Demo, Rückruf, Pilotstudio).
 - [ ] Design:
   - [ ] Layout in Figma oder vergleichbarem Tool skizzieren.
   - [ ] Mobile-first und responsive Desktop-Ansicht.
+  - [ ] Komponenten-Set definieren (Buttons, Cards, Sections, Badges, Testimonials, FAQ).
+  - [ ] Bildsprache festlegen (Studio/Workout, Screenshots, NFC „Tap“-Moment).
 - [ ] Umsetzung:
   - [x] Tech-Stack wählen (zunächst statische HTML/CSS-Seite unter `website/marketing` mit optionalem leichtem JS).
   - [x] Erste Landing Page implementieren (inkl. Hero, Nutzenargumentation, NFC-Highlight, Studio-/Mitglieder-Benefits und Demo-CTA).
   - [x] Einfachen Call-to-Action für „Demo anfragen“ / „Kontakt“ integrieren (z.B. `mailto:`-Link).
+  - [~] Lead-Conversion verbessern:
+    - [x] Kontaktformular statt nur `mailto:` (mit Spam-Schutz, z.B. Honeypot/Rate-Limit).
+    - [ ] Optional: Kalenderlink für Demo-Termine (z.B. Calendly) + Fallback `mailto:`.
+    - [x] „Pilotstudio“-CTA (klare Voraussetzungen + Erwartung: Feedback/Referenz).
+  - [ ] Trust & Proof:
+    - [ ] „Für wen?“ (Zielstudios) + kurze Use-Cases (Bindung, Geräteauslastung, Community).
+    - [ ] Screenshots/Mockups der App (Member + Admin) mit Captions.
+    - [ ] Optional: 1–2 Mini-Testimonials/Statements (Pilotstudios/Trainer) als Platzhalter.
+  - [x] SEO & Sharing:
+    - [x] Sinnvolle Seitentitel/Meta-Description (DE) + OpenGraph/Twitter Cards.
+    - [x] `robots.txt` und `sitemap.xml` (bei eigener Domain).
+    - [x] Canonical-URL + saubere URL-Struktur.
+    - [x] Strukturierte Daten (Schema.org: Organization/SoftwareApplication/FAQ).
+  - [~] Qualität (Web):
+    - [x] Accessibility-Basics: semantisches HTML, korrekte Überschriften-Hierarchie, Fokus-Stile, Alt-Texte.
+    - [x] Performance: Bilder optimieren (WebP/AVIF), lazy-load, CSS/JS minimal halten.
+    - [ ] Cross-Browser-Check (Safari, Chrome, Mobile Safari).
+    - [x] 404-Seite.
+    - [ ] Saubere Redirects (www ↔ apex).
 - [ ] DSGVO:
-  - [ ] Impressum verlinken (Footer).
-  - [ ] Datenschutzerklärung verlinken (Footer).
+  - [x] Impressum verlinken (Footer).
+  - [x] Datenschutzerklärung verlinken (Footer).
   - [ ] Cookie/Tracking-Banner (falls Analytics oder Marketing-Tools verwendet werden).
+  - [ ] Consent-Mode/Opt-In-Strategie dokumentieren (welche Tools, welche Cookies, welche Rechtsgrundlage).
 - [ ] Deployment & Hosting:
   - [ ] Hosting wählen (z.B. statischer Hoster, Vercel, Netlify, eigener Server).
   - [ ] CI/CD oder einfacher Deployment-Prozess definieren (z.B. Git-Deployment).
+  - [ ] Domain/DNS: SSL erzwingen, HSTS (falls möglich), Weiterleitungen korrekt.
+  - [ ] Monitoring: Uptime-Check (leichtgewichtig), Error-Logs (falls JS/Formular), Kontaktweg bei Ausfall.
+  - [ ] Pre-Launch Review:
+    - [ ] Lighthouse grob prüfen (Performance/Accessibility/Best Practices/SEO).
+    - [ ] Rechtslinks und Kontaktwege testen (Formular, `mailto:`, Kalenderlink).
+    - [ ] Mobile UX final abnehmen (Textlängen, Buttons, Scroll/Sticky-CTA).
 
 #### Lokale Entwicklung & Vorschau (Marketing-Website)
 
@@ -298,10 +334,21 @@ Ziel: Eine hochwertige, moderne Website zur Vermarktung und eine klare Web-Adres
 
 ### 10. Studio-Login / Admin-Zugang (Web)
 
-- [ ] Unterseite oder separate Domain mit Fokus „Login für Studios“ erstellen.
+- [x] Unterseite oder separate Domain mit Fokus „Login für Studios“ erstellen.
 - [ ] Klarer Log-in-Einstieg zur Admin-Web-App (Button „Zum Studio-Login“).
-- [ ] Kurze Erklärung für Studio-Admins (Was können sie hier tun?).
+- [x] Kurze Erklärung für Studio-Admins (Was können sie hier tun?).
 - [ ] Passwort-Reset-Flow / Account-Recovery dokumentieren und verlinken.
+- [ ] Mindest-Sicherheits-UX:
+  - [x] Keine sensiblen Infos im öffentlichen HTML (nur Login/Info).
+  - [x] Link zu Support/Help (z.B. „Zugang verloren?“) + Kontakt.
+
+#### Website Launch-Checklist (kurz & hart)
+
+- [ ] Domain live, SSL aktiv, Redirects korrekt (www/apex).
+- [ ] Impressum/Datenschutz/Cookie-Banner (falls nötig) live und korrekt verlinkt.
+- [ ] Kontaktwege funktionieren (Formular + Zustellung, `mailto:`, ggf. Kalenderlink).
+- [ ] OpenGraph-Preview geprüft (WhatsApp/LinkedIn/X).
+- [ ] Mobile-First final geprüft (iPhone/Android) + Safari geprüft.
 
 ---
 

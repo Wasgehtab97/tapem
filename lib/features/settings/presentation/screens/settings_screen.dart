@@ -14,6 +14,7 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/profile/presentation/widgets/change_username_sheet.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/app_router.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -886,6 +887,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: loc.settingsOptionChangeUsername,
                 subtitle: loc.settingsUsernameCurrent(username),
                 onTap: () => showChangeUsernameSheet(context),
+              ),
+            ],
+          ),
+          _SettingsSection(
+            title: loc.settingsSectionGymAccess,
+            children: [
+              _PremiumSettingsTile(
+                icon: Icons.swap_horiz,
+                title: loc.settingsOptionSwitchGym,
+                subtitle: loc.settingsOptionSwitchGymSubtitle,
+                onTap: () {
+                  Navigator.of(context).pushNamed(AppRouter.gymSwitch);
+                },
               ),
             ],
           ),

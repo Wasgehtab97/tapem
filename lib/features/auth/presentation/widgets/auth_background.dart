@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import '../theme/auth_theme.dart';
 
 class AuthBackground extends StatelessWidget {
@@ -10,6 +11,19 @@ class AuthBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brand = Theme.of(context).extension<AppBrandTheme>();
+    final brandGradient = brand?.gradient ?? AuthTheme.primaryGradient;
+    final orbColors = brandGradient.colors;
+    final overlayGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        orbColors.first.withOpacity(0.25),
+        orbColors.last.withOpacity(0.18),
+        Colors.black.withOpacity(0.5),
+      ],
+    );
+
     return Stack(
       children: [
         // Base Gradient Background
@@ -18,13 +32,18 @@ class AuthBackground extends StatelessWidget {
             gradient: AuthTheme.backgroundGradient,
           ),
         ),
+        Container(
+          decoration: BoxDecoration(
+            gradient: overlayGradient,
+          ),
+        ),
 
         // Floating Orbs (Parallax/Animated)
         Positioned(
           top: -100,
           left: -100,
           child: _buildBlurOrb(
-            const Color(0xFF8B5CF6).withOpacity(0.3), // Purple
+            orbColors.first.withOpacity(0.3),
             300,
           ).animate(onPlay: (controller) => controller.repeat(reverse: true))
            .move(duration: 10.seconds, begin: const Offset(0, 0), end: const Offset(50, 50))
@@ -35,7 +54,7 @@ class AuthBackground extends StatelessWidget {
           bottom: 100,
           right: -50,
           child: _buildBlurOrb(
-            const Color(0xFF3B82F6).withOpacity(0.2), // Blue
+            orbColors.last.withOpacity(0.22),
             250,
           ).animate(onPlay: (controller) => controller.repeat(reverse: true))
            .move(duration: 12.seconds, begin: const Offset(0, 0), end: const Offset(-30, -30))
@@ -46,7 +65,9 @@ class AuthBackground extends StatelessWidget {
           top: 300,
           right: -100,
           child: _buildBlurOrb(
-            const Color(0xFFF472B6).withOpacity(0.15), // Pink
+            orbColors.length > 2
+                ? orbColors[1].withOpacity(0.18)
+                : orbColors.first.withOpacity(0.18),
             200,
           ).animate(onPlay: (controller) => controller.repeat(reverse: true))
            .move(duration: 14.seconds, begin: const Offset(0, 0), end: const Offset(-20, 40)),

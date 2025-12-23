@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tapem/core/constants.dart';
 import 'package:tapem/core/data/user_profile_service.dart';
 import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/core/drafts/session_draft_repository_impl.dart';
@@ -130,6 +131,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   bool _isLoading = false;
   String? _error;
   String? _selectedGymCode;
+  bool _isGuest = false;
 
   AuthProvider._({
     required LoginUseCase loginUseCase,
@@ -214,6 +216,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
 
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _user != null;
+  bool get isGuest => _isGuest;
   String? get userEmail => _user?.email;
   String? get userName => _user?.userName;
   String get avatarKey => _user?.avatarKey ?? 'default';
@@ -279,6 +282,17 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     try {
       final fbUser = _authManager.currentUser;
       if (fbUser != null) {
+        if (fbUser.isAnonymous) {
+          final prefs = await SharedPreferences.getInstance();
+          final demoGymId = prefs.getString(StorageKeys.demoGymId);
+          if (demoGymId != null && demoGymId.isNotEmpty) {
+            _setGuestState(
+              gymId: demoGymId,
+              uid: fbUser.uid,
+            );
+            return;
+          }
+        }
         Map<String, dynamic> claims = {};
         try {
           claims = await _authManager.getIdTokenClaims(fbUser);
@@ -308,6 +322,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
           _user = currentUser.copyWith(
             role: claims['role'] as String? ?? currentUser.role,
           );
+          _isGuest = false;
 
           // Check and generate encryption keys if needed
           try {
@@ -335,6 +350,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
         }
       } else {
         _user = null;
+        _isGuest = false;
       }
     } on fb_auth.FirebaseAuthException catch (e) {
       _error = e.message;
@@ -369,6 +385,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     _setLoading(true);
     _error = null;
     try {
+      await _clearDemoState();
       await _loginUC.execute(email, password);
       await _loadCurrentUser();
       return _resolveAuthResult();
@@ -388,6 +405,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     _setLoading(true);
     _error = null;
     try {
+      await _clearDemoState();
       final registeredUser =
           await _registerUC.execute(email, password, initialGymCode);
       await _loadCurrentUser();
@@ -417,11 +435,47 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       _gymScopedStateController?.resetGymScopedState();
       _user = null;
       _selectedGymCode = null;
+      _isGuest = false;
       final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(StorageKeys.demoGymId);
       await prefs.remove('selectedGymCode');
       await _sessionDraftRepository.deleteAll();
       _setLoading(false);
     }
+  }
+
+  Future<AuthResult> enterDemoMode(String gymId) async {
+    _setLoading(true);
+    _error = null;
+    try {
+      final credential =
+          await fb_auth.FirebaseAuth.instance.signInAnonymously();
+      final fbUser = credential.user;
+      if (fbUser == null) {
+        throw StateError('demo_auth_failed');
+      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(StorageKeys.demoGymId, gymId);
+      await prefs.setString(StorageKeys.lastUsedGymId, gymId);
+      await prefs.setString('selectedGymCode', gymId);
+      _setGuestState(gymId: gymId, uid: fbUser.uid);
+      _gymScopedStateController?.resetGymScopedState();
+      return const AuthResult.success(
+        requiresGymSelection: false,
+        missingMembership: false,
+        gymContextStatus: GymContextStatus.ready,
+      );
+    } catch (e, st) {
+      _error = e is fb_auth.FirebaseAuthException ? e.message : e.toString();
+      _logError(e, st, context: 'enterDemoMode');
+      return AuthResult.failure(error: _error);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> exitDemoMode() async {
+    await logout();
   }
 
   Future<bool> setUsername(String username) async {
@@ -606,6 +660,121 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     }
   }
 
+  Future<GymSwitchResult> addGymMembership(String gymId) async {
+    if (_user == null) {
+      _error = 'missing_user';
+      notifyListeners();
+      return const GymSwitchResult.failure(
+        errorCode: 'missing_user',
+        requiresReauthentication: true,
+      );
+    }
+    final fbUser = _authManager.currentUser;
+    if (fbUser == null) {
+      _error = 'missing_firebase_user';
+      notifyListeners();
+      return const GymSwitchResult.failure(
+        errorCode: 'missing_firebase_user',
+        requiresReauthentication: true,
+      );
+    }
+    if (_user!.gymCodes.contains(gymId)) {
+      return switchGym(gymId);
+    }
+
+    _setLoading(true);
+    _error = null;
+    try {
+      await _firestore.collection('users').doc(_user!.id).update({
+        'gymCodes': FieldValue.arrayUnion([gymId]),
+      });
+      await _membershipService.ensureMembership(gymId, fbUser.uid);
+      await _setActiveGym(gymId);
+      await _authManager.forceRefreshIdToken(fbUser);
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selectedGymCode', gymId);
+      _selectedGymCode = gymId;
+      _user = _user!.copyWith(
+        gymCodes: [..._user!.gymCodes, gymId],
+      );
+      _gymScopedStateController?.resetGymScopedState();
+      return const GymSwitchResult.success();
+    } catch (e, st) {
+      _error = e is fb_auth.FirebaseAuthException ? e.code : e.toString();
+      _logError(e, st, context: 'addGymMembership');
+      return GymSwitchResult.failure(errorCode: _error);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<GymSwitchResult> removeGymMembership(String gymId) async {
+    if (_user == null) {
+      _error = 'missing_user';
+      notifyListeners();
+      return const GymSwitchResult.failure(
+        errorCode: 'missing_user',
+        requiresReauthentication: true,
+      );
+    }
+    final fbUser = _authManager.currentUser;
+    if (fbUser == null) {
+      _error = 'missing_firebase_user';
+      notifyListeners();
+      return const GymSwitchResult.failure(
+        errorCode: 'missing_firebase_user',
+        requiresReauthentication: true,
+      );
+    }
+    if (!_user!.gymCodes.contains(gymId)) {
+      return const GymSwitchResult.success();
+    }
+
+    _setLoading(true);
+    _error = null;
+    try {
+      final updatedGyms =
+          _user!.gymCodes.where((code) => code != gymId).toList();
+      await _firestore.collection('users').doc(_user!.id).update({
+        'gymCodes': updatedGyms,
+      });
+      await _firestore
+          .collection('gyms')
+          .doc(gymId)
+          .collection('users')
+          .doc(_user!.id)
+          .delete();
+
+      final prefs = await SharedPreferences.getInstance();
+      if (_selectedGymCode == gymId) {
+        _selectedGymCode = null;
+        await prefs.remove('selectedGymCode');
+        if (updatedGyms.isNotEmpty) {
+          final nextGym = updatedGyms.first;
+          await _setActiveGym(nextGym);
+          await _authManager.forceRefreshIdToken(fbUser);
+          await prefs.setString('selectedGymCode', nextGym);
+          _selectedGymCode = nextGym;
+        } else {
+          await _firestore.collection('users').doc(_user!.id).update({
+            'activeGymId': FieldValue.delete(),
+          });
+        }
+      }
+
+      _user = _user!.copyWith(gymCodes: updatedGyms);
+      _gymScopedStateController?.resetGymScopedState();
+      return const GymSwitchResult.success();
+    } catch (e, st) {
+      _error = e is fb_auth.FirebaseAuthException ? e.code : e.toString();
+      _logError(e, st, context: 'removeGymMembership');
+      return GymSwitchResult.failure(errorCode: _error);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   @Deprecated('Use switchGym instead')
   Future<GymSwitchResult> selectGym(String code) {
     return switchGym(code);
@@ -614,6 +783,30 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   void _setLoading(bool v) {
     _isLoading = v;
     notifyListeners();
+  }
+
+  void _setGuestState({required String gymId, required String uid}) {
+    _isGuest = true;
+    _selectedGymCode = gymId;
+    _user = UserData(
+      id: uid,
+      email: 'demo@tapem.local',
+      userName: 'Demo',
+      gymCodes: [gymId],
+      showInLeaderboard: false,
+      publicProfile: false,
+      role: 'guest',
+      createdAt: DateTime.now(),
+      avatarKey: 'default',
+      coachEnabled: false,
+    );
+    notifyListeners();
+  }
+
+  Future<void> _clearDemoState() async {
+    _isGuest = false;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(StorageKeys.demoGymId);
   }
 
   Future<void> _syncActiveGymSelection({

@@ -209,7 +209,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = ref.watch(authControllerProvider.select((a) => a.isAdmin));
+    final loc = AppLocalizations.of(context)!;
+    final auth = ref.watch(authControllerProvider);
+    final isAdmin = auth.isAdmin;
+    final isGuest = auth.isGuest;
     final allTabs = _buildTabs(context);
     const restrictedTabIds = {
       _HomeTabId.gym,
@@ -219,11 +222,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _HomeTabId.plan,
       _HomeTabId.coaching,
     };
-    final tabs = (FF.limitTabsForMembers && !isAdmin)
+    final tabs = isGuest
         ? allTabs
-            .where((tab) => restrictedTabIds.contains(tab.id))
+            .where((tab) => tab.id == _HomeTabId.gym)
             .toList(growable: false)
-        : allTabs;
+        : (FF.limitTabsForMembers && !isAdmin)
+            ? allTabs
+                .where((tab) => restrictedTabIds.contains(tab.id))
+                .toList(growable: false)
+            : allTabs;
 
     debugPrint(
       '[Home] build currentIndex=$_currentIndex tabs=${tabs.map((t) => t.id).toList()}',
@@ -254,10 +261,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               leadingWidth: kToolbarHeight + 8,
               leading: const SizedBox(width: kToolbarHeight + 8),
               title: _buildAppBarTitle(context, currentLabel),
-              actions: const [
-                NfcScanButton(),
-                SizedBox(width: 8),
-              ],
+              actions: isGuest
+                  ? [
+                      TextButton(
+                        onPressed: () => _exitDemo(context),
+                        child: Text(
+                          loc.gymDemoExitCta,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ]
+                  : const [
+                      NfcScanButton(),
+                      SizedBox(width: 8),
+                    ],
             ),
       body: currentTab.page,
       bottomNavigationBar: BottomNavigationBar(
@@ -306,6 +324,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             maxLines: 1,
           ),
         );
+    }
+  }
+
+  Future<void> _exitDemo(BuildContext context) async {
+    final auth = ref.read(authControllerProvider);
+    final gymId = auth.gymCode;
+    await auth.exitDemoMode();
+    if (!context.mounted) return;
+    if (gymId != null && gymId.isNotEmpty) {
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRouter.gymAccess,
+        (route) => false,
+        arguments: gymId,
+      );
+    } else {
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRouter.gymEntry,
+        (route) => false,
+      );
     }
   }
 }

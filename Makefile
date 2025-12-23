@@ -1,4 +1,4 @@
-.PHONY: ios android push ios-dev ios-emu ios-emu-prod ios-mobile-dev ios-mobile-prod android-emu ios-emu-both R rules rules-dev ios-wireless admin
+.PHONY: ios android push ios-dev ios-emu ios-emu-prod ios-mobile-dev ios-mobile-prod android-emu ios-emu-both R rules rules-dev rules-prod ios-wireless admin
 
 # Gerätedefinitionen
 iOS_DEV_ID   := 00008030-001E59420191802E
@@ -8,6 +8,7 @@ ANDROID_EMU_ID := emulator-5554  # Emulator-Name laut `flutter devices`
 ANDROID_EMU_NAME := sdk_gphone64_x86_64  # AVD-Name zum Starten (kann angepasst werden)
 TMUX_SESSION := flutter
 FIREBASE_CONFIG ?= firebase.json
+FIREBASE_PROJECT_DEV ?= tap-em-dev
 
 # iOS auf echtem Gerät
 ios:
@@ -250,11 +251,13 @@ ios-wireless:
 	fvm flutter run --release -d $(iOS_DEV_ID) --device-timeout=30
 
 # Firestore-Regeln deployen
-rules:
-	npx firebase deploy --only firestore:rules -c $(FIREBASE_CONFIG)
+rules: rules-prod
+
+rules-prod:
+	npx firebase deploy --only firestore:rules -c firebase.json
 
 rules-dev:
-	$(MAKE) rules FIREBASE_CONFIG=firebase.dev.json
+	npx firebase deploy --only firestore:rules -c firebase.dev.json --project $(FIREBASE_PROJECT_DEV)
 
 # 
 alter-stand:

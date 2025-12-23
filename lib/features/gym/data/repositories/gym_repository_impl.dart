@@ -17,4 +17,9 @@ class GymRepositoryImpl implements GymRepository {
   Future<GymConfig?> getGymById(String id) {
     return _source.getGymById(id);
   }
+
+  @override
+  Future<List<GymConfig>> listGyms() {
+    return _source.listGyms();
+  }
 }

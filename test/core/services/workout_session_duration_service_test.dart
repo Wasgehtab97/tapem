@@ -35,6 +35,7 @@ AuthViewState _authState({String? gymId, String? userId}) {
   return AuthViewState(
     isLoading: false,
     isLoggedIn: gymId != null && userId != null,
+    isGuest: false,
     isAdmin: false,
     isCoach: false,
     gymContextStatus:

@@ -44,6 +44,9 @@ class _FakeAuthProvider extends ChangeNotifier implements auth.AuthProvider {
   bool get isLoading => false;
 
   @override
+  bool get isGuest => false;
+
+  @override
   bool get isLoggedIn => _gymCode != null;
 
   @override
@@ -123,6 +126,21 @@ class _FakeAuthProvider extends ChangeNotifier implements auth.AuthProvider {
   }
 
   @override
+  Future<auth.AuthResult> enterDemoMode(String gymId) async {
+    _gymCode = gymId;
+    return const auth.AuthResult.success(
+      requiresGymSelection: false,
+      missingMembership: false,
+      gymContextStatus: auth.GymContextStatus.ready,
+    );
+  }
+
+  @override
+  Future<void> exitDemoMode() async {
+    _gymCode = null;
+  }
+
+  @override
   Future<void> reloadCurrentUser() async {}
 
   @override
@@ -154,6 +172,20 @@ class _FakeAuthProvider extends ChangeNotifier implements auth.AuthProvider {
 
   @override
   Future<auth.GymSwitchResult> selectGym(String code) => switchGym(code);
+
+  @override
+  Future<auth.GymSwitchResult> addGymMembership(String gymId) async {
+    _gymCode = gymId;
+    return const auth.GymSwitchResult.success();
+  }
+
+  @override
+  Future<auth.GymSwitchResult> removeGymMembership(String gymId) async {
+    if (_gymCode == gymId) {
+      _gymCode = null;
+    }
+    return const auth.GymSwitchResult.success();
+  }
 
   @override
   Future<void> setCoachEnabled(bool value) async {

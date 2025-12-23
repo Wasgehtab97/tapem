@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/core/analytics/analytics_service.dart';
+import 'package:tapem/core/constants.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/shared_preferences_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 class SelectGymScreen extends ConsumerStatefulWidget {
@@ -37,9 +40,12 @@ class _SelectGymScreenState extends ConsumerState<SelectGymScreen> {
     });
     final AuthProvider auth =
         ref.read(authControllerProvider);
+    AnalyticsService.logGymSelected(gymId: code, source: 'switch');
     final result = await auth.switchGym(code);
     if (!mounted) return;
     if (result.success) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setString(StorageKeys.lastUsedGymId, code);
       Navigator.of(context)
           .pushReplacementNamed(AppRouter.home, arguments: 1);
     } else {

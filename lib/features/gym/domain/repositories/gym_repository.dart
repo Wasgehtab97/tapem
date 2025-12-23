@@ -7,4 +7,7 @@ abstract class GymRepository {
 
   /// Gibt das GymConfig-Objekt zur Dokument-ID oder null zurück.
   Future<GymConfig?> getGymById(String id);
+
+  /// Gibt eine Liste aller Gyms zurück (für öffentliche Auswahl).
+  Future<List<GymConfig>> listGyms();
 }

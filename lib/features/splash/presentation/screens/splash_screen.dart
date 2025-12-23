@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app_router.dart';
 import '../../../../bootstrap/providers.dart';
+import '../../../../core/constants.dart';
 import '../../application/splash_flow.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -78,14 +79,27 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void _navigate(SplashDestination destination) {
     if (_didNavigate || !mounted) return;
     _didNavigate = true;
-    final routeName = switch (destination) {
-      SplashDestination.auth => AppRouter.auth,
-      SplashDestination.selectGym => AppRouter.selectGym,
-      SplashDestination.home => AppRouter.home,
-    };
+    String routeName;
+    Object? arguments;
+    if (destination == SplashDestination.auth) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final gymId = prefs.getString(StorageKeys.preAuthGymId);
+      if (gymId != null && gymId.isNotEmpty) {
+        routeName = AppRouter.gymAccess;
+        arguments = gymId;
+      } else {
+        routeName = AppRouter.gymEntry;
+      }
+    } else {
+      routeName = switch (destination) {
+        SplashDestination.selectGym => AppRouter.selectGym,
+        SplashDestination.home => AppRouter.home,
+        SplashDestination.auth => AppRouter.auth,
+      };
+    }
     Navigator.of(context).pushReplacementNamed(
       routeName,
-      arguments: destination == SplashDestination.home ? 1 : null,
+      arguments: destination == SplashDestination.home ? 1 : arguments,
     );
   }
 

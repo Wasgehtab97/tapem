@@ -23,6 +23,165 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authTitle => 'Anmelden / Registrieren';
 
   @override
+  String get gymEntryTitle => 'Gym auswählen';
+
+  @override
+  String get gymEntrySubtitle => 'Wähle das Studio, das du nutzen möchtest.';
+
+  @override
+  String get gymDropdownLabel => 'Gyms';
+
+  @override
+  String get gymLastUsedBadge => 'Zuletzt';
+
+  @override
+  String get gymSearchHint => 'Studio suchen';
+
+  @override
+  String get gymSearchMinChars => 'Bitte mindestens 3 Buchstaben eingeben.';
+
+  @override
+  String get gymSearchEmpty => 'Keine Studios gefunden.';
+
+  @override
+  String gymAccessTitle(Object gymName) {
+    return 'Willkommen bei $gymName';
+  }
+
+  @override
+  String get gymAccessSubtitle => 'Melde dich an oder registriere dich, um fortzufahren.';
+
+  @override
+  String get gymDemoCta => 'Demo starten';
+
+  @override
+  String get gymDemoExitCta => 'Anmelden';
+
+  @override
+  String get gymDemoRestrictedMessage => 'Demo-Modus ist nur zum Anschauen. Bitte anmelden, um zu trainieren.';
+
+  @override
+  String get gymChangeSelection => 'Gym wechseln';
+
+  @override
+  String get gymRegisterMethodTitle => 'Wie möchtest du dich registrieren?';
+
+  @override
+  String gymRegisterMethodSubtitle(Object gymName) {
+    return 'Wähle die Registrierungsmethode für $gymName.';
+  }
+
+  @override
+  String get gymRegisterWithNfc => 'Per NFC registrieren';
+
+  @override
+  String get gymRegisterWithCode => 'Mit Gymcode registrieren';
+
+  @override
+  String gymLoginTitle(Object gymName) {
+    return 'Login bei $gymName';
+  }
+
+  @override
+  String gymRegisterTitle(Object gymName) {
+    return 'Registrierung bei $gymName';
+  }
+
+  @override
+  String get gymNfcHint => 'NFC-Scan folgt im nächsten Schritt. Du kannst den Gymcode vorerst manuell eingeben.';
+
+  @override
+  String gymJoinTitle(Object gymName) {
+    return '$gymName hinzufügen';
+  }
+
+  @override
+  String get gymJoinSubtitle => 'Gib den Gymcode ein, um die Mitgliedschaft hinzuzufügen.';
+
+  @override
+  String get gymJoinCta => 'Mitgliedschaft hinzufügen';
+
+  @override
+  String get gymAddMembershipTitle => 'Studio hinzufügen';
+
+  @override
+  String get gymAddMembershipSubtitle => 'Wähle das Studio, das du hinzufügen möchtest.';
+
+  @override
+  String get gymMembershipAlreadyAdded => 'Bereits hinzugefügt';
+
+  @override
+  String get gymSwitchTitle => 'Studio wechseln';
+
+  @override
+  String get gymSwitchSubtitle => 'Wähle das Studio, das du jetzt nutzen möchtest.';
+
+  @override
+  String get gymSwitchActiveLabel => 'Aktiv';
+
+  @override
+  String get gymAddMembershipCta => 'Weiteres Studio hinzufügen';
+
+  @override
+  String get nfcScanTitle => 'NFC scannen';
+
+  @override
+  String get nfcScanSubtitle => 'Halte dein Handy an den NFC-Tag im Studio.';
+
+  @override
+  String get nfcScanWaiting => 'Warten auf Scan...';
+
+  @override
+  String get nfcScanRetry => 'Erneut scannen';
+
+  @override
+  String get nfcScanManual => 'Stattdessen Gymcode eingeben';
+
+  @override
+  String get nfcUnavailable => 'NFC ist auf diesem Gerät nicht verfügbar.';
+
+  @override
+  String get nfcInvalidCode => 'Kein gültiger NFC-Code erkannt.';
+
+  @override
+  String get nfcTokenInactive => 'Dieser NFC-Tag ist nicht mehr aktiv.';
+
+  @override
+  String get nfcScanFailed => 'NFC-Scan fehlgeschlagen. Bitte erneut versuchen.';
+
+  @override
+  String get loadingLabel => 'Laden...';
+
+  @override
+  String get loadingErrorLabel => 'Daten konnten nicht geladen werden.';
+
+  @override
+  String get settingsSectionGymAccess => 'Studio-Zugang';
+
+  @override
+  String get settingsOptionSwitchGym => 'Studio wechseln';
+
+  @override
+  String get settingsOptionSwitchGymSubtitle => 'Aktives Studio ändern oder weitere Mitgliedschaft hinzufügen.';
+
+  @override
+  String gymRemoveTitle(Object gymName) {
+    return '$gymName entfernen?';
+  }
+
+  @override
+  String get gymRemoveMessage => 'Diese Mitgliedschaft und der Zugriff werden entfernt.';
+
+  @override
+  String get gymRemoveActiveMessage => 'Das ist dein aktives Studio. Danach wirst du auf ein anderes Studio umgeschaltet.';
+
+  @override
+  String get gymRemoveCta => 'Entfernen';
+
+  @override
+  String get gymRemoveLastBlocked => 'Mindestens eine Mitgliedschaft muss bleiben.';
+
+  @override
   String get cancelButton => 'Abbrechen';
 
   @override

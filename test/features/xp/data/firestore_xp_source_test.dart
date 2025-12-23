@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
@@ -120,6 +121,69 @@ void main() {
           .get();
       expect(leaderboardSnap.exists, isTrue);
       expect(leaderboardSnap.data()!['xp'], LevelService.xpPerSession * 2);
+    });
+
+    test('season XP aggregates events per calendar year (2025/2026)', () async {
+      final firstAward = await source.addSessionXp(
+        gymId: gymId,
+        userId: userId,
+        deviceId: deviceId,
+        sessionId: 'session-2025',
+        showInLeaderboard: true,
+        isMulti: false,
+        exerciseId: 'exercise-1',
+        traceId: '$traceId-2025',
+        sessionDate: DateTime(2025, 12, 31, 9, 0),
+        timeZone: timeZone,
+        primaryMuscleGroupIds: const [],
+        secondaryMuscleGroupIds: const [],
+      );
+
+      final secondAward = await source.addSessionXp(
+        gymId: gymId,
+        userId: userId,
+        deviceId: deviceId,
+        sessionId: 'session-2026',
+        showInLeaderboard: true,
+        isMulti: false,
+        exerciseId: 'exercise-2',
+        traceId: '$traceId-2026',
+        sessionDate: DateTime(2026, 1, 1, 9, 0),
+        timeZone: timeZone,
+        primaryMuscleGroupIds: const [],
+        secondaryMuscleGroupIds: const [],
+      );
+
+      expect(firstAward.totalXp, greaterThan(0));
+      expect(secondAward.totalXp, greaterThan(0));
+
+      final trainingDaysSnap = await firestore
+          .collection('users')
+          .doc(userId)
+          .collection('trainingDayXP')
+          .get();
+      final penaltiesSnap = await firestore
+          .collection('users')
+          .doc(userId)
+          .collection('xpPenalties')
+          .get();
+
+      int sumForYear(Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> docs, String prefix) {
+        return docs
+            .where((doc) => doc.id.startsWith(prefix))
+            .fold<int>(0, (sum, doc) => sum + ((doc.data()['xp'] as num?)?.toInt() ?? 0));
+      }
+
+      final season25Expected =
+          sumForYear(trainingDaysSnap.docs, '2025-') + sumForYear(penaltiesSnap.docs, '2025-');
+      final season26Expected =
+          sumForYear(trainingDaysSnap.docs, '2026-') + sumForYear(penaltiesSnap.docs, '2026-');
+
+      final stats = await fetchStats();
+      final seasonXp = (stats['seasonXP'] as Map<String, dynamic>? ?? {});
+
+      expect(seasonXp['2025'], season25Expected);
+      expect(seasonXp['2026'], season26Expected);
     });
   });
 }

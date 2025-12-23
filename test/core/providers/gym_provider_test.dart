@@ -79,6 +79,9 @@ class _FakeGymRepository implements GymRepository {
 
   @override
   Future<GymConfig?> getGymById(String id) async => null;
+
+  @override
+  Future<List<GymConfig>> listGyms() async => const [];
 }
 
 class _FakeGetDevicesForGym extends GetDevicesForGym {

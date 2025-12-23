@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/theme/brand_on_colors.dart';
 import '../theme/auth_theme.dart';
 
 class PremiumButton extends StatefulWidget {
@@ -46,6 +48,13 @@ class _PremiumButtonState extends State<PremiumButton> {
   @override
   Widget build(BuildContext context) {
     final isDisabled = widget.onPressed == null;
+    final brand = Theme.of(context).extension<AppBrandTheme>();
+    final onColors = Theme.of(context).extension<BrandOnColors>();
+    final gradient = brand?.gradient ?? AuthTheme.primaryGradient;
+    final focus = brand?.focusRing ?? const Color(0xFF8B5CF6);
+    final textColor = onColors?.onCta ?? Colors.white;
+    final outlineColor =
+        brand?.outline.withOpacity(0.65) ?? Colors.white.withOpacity(0.5);
     
     return GestureDetector(
       onTapDown: _handleTapDown,
@@ -59,18 +68,18 @@ class _PremiumButtonState extends State<PremiumButton> {
           borderRadius: BorderRadius.circular(AuthTheme.glassBorderRadius),
           gradient: widget.isOutlined || isDisabled
               ? null
-              : AuthTheme.primaryGradient,
+              : gradient,
           color: isDisabled 
             ? AuthTheme.glassColor 
             : (widget.isOutlined ? Colors.transparent : null),
           border: widget.isOutlined
-              ? Border.all(color: Colors.white.withOpacity(0.5), width: 2)
+              ? Border.all(color: outlineColor, width: 2)
               : null,
           boxShadow: isDisabled || widget.isOutlined
               ? []
               : [
                   BoxShadow(
-                    color: const Color(0xFF8B5CF6).withOpacity(_isPressed ? 0.6 : 0.4),
+                    color: focus.withOpacity(_isPressed ? 0.6 : 0.4),
                     blurRadius: _isPressed ? 10 : 20,
                     offset: Offset(0, _isPressed ? 2 : 8),
                   )
@@ -96,7 +105,9 @@ class _PremiumButtonState extends State<PremiumButton> {
                     Text(
                       widget.text,
                       style: AuthTheme.buttonTextStyle.copyWith(
-                        color: isDisabled ? Colors.white.withOpacity(0.5) : Colors.white,
+                        color: isDisabled
+                            ? Colors.white.withOpacity(0.5)
+                            : textColor,
                       ),
                     ),
                   ],

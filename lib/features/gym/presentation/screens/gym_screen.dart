@@ -215,12 +215,21 @@ class _GymScreenState extends ConsumerState<GymScreen>
                                         40, // 16px Inhalt + ~24px Scrollbar
                                         8,
                                       ),
-                                      child: DeviceCard(
-                                        device: d,
-                                        onTap: () async {
-                                          final nav = Navigator.of(context);
-                                          final idStr = d.uid;
-                                          if (widget.onSelect != null) {
+                                    child: DeviceCard(
+                                      device: d,
+                                      onTap: () async {
+                                        if (auth.isGuest) {
+                                          if (!mounted) return;
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(loc.gymDemoRestrictedMessage),
+                                            ),
+                                          );
+                                          return;
+                                        }
+                                        final nav = Navigator.of(context);
+                                        final idStr = d.uid;
+                                        if (widget.onSelect != null) {
                                             if (d.isMulti) {
                                               final selection = await nav
                                                   .push<WorkoutDeviceSelection>(

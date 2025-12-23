@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/core/analytics/analytics_service.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/gym/domain/usecases/validate_gym_code.dart';
@@ -13,8 +14,17 @@ import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 
 class RegistrationForm extends ConsumerStatefulWidget {
   final ValidateGymCode? gymValidator;
+  final String? initialGymCode;
+  final bool gymCodeReadOnly;
+  final String? expectedGymId;
 
-  const RegistrationForm({Key? key, this.gymValidator}) : super(key: key);
+  const RegistrationForm({
+    Key? key,
+    this.gymValidator,
+    this.initialGymCode,
+    this.gymCodeReadOnly = false,
+    this.expectedGymId,
+  }) : super(key: key);
 
   @override
   ConsumerState<RegistrationForm> createState() => _RegistrationFormState();
@@ -23,6 +33,8 @@ class RegistrationForm extends ConsumerStatefulWidget {
 class _RegistrationFormState extends ConsumerState<RegistrationForm> {
   final _formKey = GlobalKey<FormState>();
   final _gymController = TextEditingController();
+  final _gymFocusNodes = List.generate(6, (_) => FocusNode());
+  final _gymDigitControllers = List.generate(6, (_) => TextEditingController());
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   
@@ -39,11 +51,30 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
   void initState() {
     super.initState();
     _validateGymCode = widget.gymValidator ?? ValidateGymCode();
+    final initialCode = widget.initialGymCode;
+    if (initialCode != null && initialCode.isNotEmpty) {
+      final upper = initialCode.toUpperCase();
+      _gymController.text = upper;
+      for (var i = 0; i < _gymDigitControllers.length; i++) {
+        _gymDigitControllers[i].text = i < upper.length ? upper[i] : '';
+      }
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || widget.gymCodeReadOnly) return;
+        _gymFocusNodes.first.requestFocus();
+      });
+    }
   }
 
   @override
   void dispose() {
     _gymController.dispose();
+    for (final node in _gymFocusNodes) {
+      node.dispose();
+    }
+    for (final controller in _gymDigitControllers) {
+      controller.dispose();
+    }
     _emailController.dispose();
     _passwordController.dispose();
     _lockTimer?.cancel();
@@ -66,7 +97,34 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
 
       // Validate gym code (now returns GymCodeValidationResult)
       final validation = await _validateGymCode.execute(gymCode);
-      
+
+      final expectedGymId = widget.expectedGymId;
+      if (expectedGymId != null && expectedGymId.isNotEmpty) {
+        if (validation.gymId != expectedGymId) {
+          AnalyticsService.logGymCodeValidation(
+            gymId: expectedGymId,
+            status: 'error',
+            reason: 'wrong_gym',
+          );
+          setState(() {
+            _gymError = AppLocalizations.of(context)!.gymCodeInvalid;
+          });
+          return;
+        }
+      }
+
+      AnalyticsService.logGymCodeValidation(
+        gymId: validation.gymId,
+        status: 'success',
+      );
+
+      AnalyticsService.logEvent(
+        'gym_register_attempt',
+        parameters: {
+          'gym_id': validation.gymId,
+        },
+      );
+
       // Show warning if code is expiring soon
       if (validation.isExpiringSoon && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -89,6 +147,13 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
       if (!mounted) return;
 
       if (!result.success || authProv.error != null) {
+        AnalyticsService.logEvent(
+          'gym_register_failed',
+          parameters: {
+            'gym_id': validation.gymId,
+            if (authProv.error != null) 'reason': authProv.error!,
+          },
+        );
         final message = authProv.error ?? '${loc.errorPrefix}: unknown';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -99,6 +164,13 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
         );
         return;
       }
+
+      AnalyticsService.logEvent(
+        'gym_register_success',
+        parameters: {
+          'gym_id': validation.gymId,
+        },
+      );
 
       if (result.missingMembership) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -116,6 +188,11 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
       }
 
     } on GymCodeExpiredException {
+      AnalyticsService.logGymCodeValidation(
+        gymId: widget.expectedGymId ?? 'unknown',
+        status: 'error',
+        reason: 'expired',
+      );
       if (!mounted) return;
       setState(() {
         _attempts++;
@@ -123,6 +200,11 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
       });
       _handleFailedAttempt();
     } on GymCodeNotFoundException {
+      AnalyticsService.logGymCodeValidation(
+        gymId: widget.expectedGymId ?? 'unknown',
+        status: 'error',
+        reason: 'not_found',
+      );
       if (!mounted) return;
       setState(() {
         _attempts++;
@@ -130,6 +212,11 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
       });
       _handleFailedAttempt();
     } on GymCodeInactiveException {
+      AnalyticsService.logGymCodeValidation(
+        gymId: widget.expectedGymId ?? 'unknown',
+        status: 'error',
+        reason: 'inactive',
+      );
       if (!mounted) return;
       setState(() {
         _attempts++;
@@ -137,17 +224,36 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
       });
       _handleFailedAttempt();
     } on InvalidCodeFormatException {
+      AnalyticsService.logGymCodeValidation(
+        gymId: widget.expectedGymId ?? 'unknown',
+        status: 'error',
+        reason: 'invalid_format',
+      );
       if (!mounted) return;
       setState(() {
         _gymError = 'Invalid code format. Code must be 6 characters.';
       });
     } catch (e) {
+      AnalyticsService.logGymCodeValidation(
+        gymId: widget.expectedGymId ?? 'unknown',
+        status: 'error',
+        reason: 'unknown',
+      );
       if (!mounted) return;
       setState(() {
         _gymError = 'Error validating code: ${e.toString()}';
       });
     } finally {
       if (mounted) setState(() => _isValidating = false);
+    }
+  }
+
+  void _handleGymCodeChange(String value) {
+    setState(() {
+      _gymController.text = value;
+    });
+    if (value.length == 6 && !_isValidating) {
+      _submit();
     }
   }
 
@@ -180,7 +286,6 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
   Widget build(BuildContext context) {
     final authProv = ref.watch(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
-
     return Form(
       key: _formKey,
       autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -208,26 +313,15 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
           ),
           const SizedBox(height: AuthTheme.spacingM),
           
-          PremiumTextField(
+          _GymCodeOtpInput(
             label: loc.gymCodeFieldLabel,
-            controller: _gymController,
-            prefixIcon: Icons.fitness_center_outlined,
-            textInputAction: TextInputAction.done,
-            // Convert to uppercase automatically
-            onChanged: (val) {
-              final upper = val.toUpperCase();
-              if (val != upper) {
-                _gymController.value = _gymController.value.copyWith(
-                  text: upper,
-                  selection: TextSelection.collapsed(offset: upper.length),
-                );
-              }
-            },
-            validator: (v) {
-              if (_isLocked) return AppLocalizations.of(context)!.gymCodeLockedMessage;
-              if (v == null || v.length != 6) return loc.gymCodeInvalid;
-              return _gymError; // Show specific gym error if set
-            },
+            focusNodes: _gymFocusNodes,
+            controllers: _gymDigitControllers,
+            readOnly: widget.gymCodeReadOnly,
+            errorText: _isLocked
+                ? AppLocalizations.of(context)!.gymCodeLockedMessage
+                : _gymError,
+            onChanged: (value) => _handleGymCodeChange(value),
           ),
           if (_gymError != null && !_isLocked)
             Padding(
@@ -251,6 +345,134 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _GymCodeOtpInput extends StatelessWidget {
+  const _GymCodeOtpInput({
+    required this.label,
+    required this.focusNodes,
+    required this.controllers,
+    required this.readOnly,
+    required this.errorText,
+    required this.onChanged,
+  });
+
+  final String label;
+  final List<FocusNode> focusNodes;
+  final List<TextEditingController> controllers;
+  final bool readOnly;
+  final String? errorText;
+  final ValueChanged<String> onChanged;
+  static const _allowed = 'ABCDEFGHJKLMNPQRTUVWXY3468';
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AuthTheme.labelStyle),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(6, (index) {
+            return SizedBox(
+              width: 44,
+              child: TextField(
+                focusNode: focusNodes[index],
+                controller: controllers[index],
+                readOnly: readOnly,
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.text,
+                textInputAction: index == 5
+                    ? TextInputAction.done
+                    : TextInputAction.next,
+                maxLength: 1,
+                style: AuthTheme.bodyStyle.copyWith(color: Colors.white),
+                decoration: InputDecoration(
+                  counterText: '',
+                  filled: true,
+                  fillColor: AuthTheme.glassColor,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Colors.white.withOpacity(0.2),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF8B5CF6),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+                onChanged: (value) {
+                  var upper = value.toUpperCase();
+                  if (upper.length > 1) {
+                    final filtered = upper
+                        .split('')
+                        .where((ch) => _allowed.contains(ch))
+                        .toList();
+                    for (var i = 0; i < controllers.length; i++) {
+                      controllers[i].value = TextEditingValue(
+                        text: i < filtered.length ? filtered[i] : '',
+                        selection: const TextSelection.collapsed(offset: 1),
+                      );
+                    }
+                    onChanged(filtered.join());
+                    if (filtered.length >= controllers.length) {
+                      focusNodes.last.unfocus();
+                    } else {
+                      focusNodes[filtered.length].requestFocus();
+                    }
+                    return;
+                  }
+                  if (!_allowed.contains(upper) && upper.isNotEmpty) {
+                    upper = '';
+                  }
+                  if (controllers[index].text != upper) {
+                    controllers[index].value = TextEditingValue(
+                      text: upper,
+                      selection: const TextSelection.collapsed(offset: 1),
+                    );
+                  }
+                  final joined = controllers.map((c) => c.text).join();
+                  onChanged(joined);
+                  if (upper.isNotEmpty && index < 5) {
+                    focusNodes[index + 1].requestFocus();
+                  } else if (upper.isEmpty && index > 0) {
+                    focusNodes[index - 1].requestFocus();
+                  }
+                },
+                onSubmitted: (_) {
+                  if (index < 5) {
+                    focusNodes[index + 1].requestFocus();
+                  }
+                },
+              ),
+            );
+          }),
+        ),
+        if (errorText != null && errorText!.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            errorText!,
+            style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 12),
+          ),
+        ] else ...[
+          const SizedBox(height: 6),
+          Text(
+            loc.gymCodeInvalid,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.4),
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_devices_screen.dart';
 import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
-import 'package:tapem/features/auth/presentation/screens/auth_screen.dart';
+import 'package:tapem/features/auth/presentation/screens/gym_access_screen.dart';
+import 'package:tapem/features/auth/presentation/screens/gym_login_screen.dart';
+import 'package:tapem/features/auth/presentation/screens/gym_register_method_screen.dart';
+import 'package:tapem/features/auth/presentation/screens/gym_register_screen.dart';
 import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
 import 'package:tapem/features/device/presentation/widgets/workout_day_table_card.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
@@ -15,6 +18,10 @@ import 'package:tapem/features/admin/presentation/screens/branding_screen.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/splash/presentation/screens/splash_screen.dart';
 import 'package:tapem/features/gym/presentation/screens/select_gym_screen.dart';
+import 'package:tapem/features/gym/presentation/screens/gym_entry_screen.dart';
+import 'package:tapem/features/gym/presentation/screens/gym_add_membership_screen.dart';
+import 'package:tapem/features/gym/presentation/screens/gym_join_screen.dart';
+import 'package:tapem/features/gym/presentation/screens/gym_switch_screen.dart';
 import 'package:tapem/features/training_details/presentation/screens/training_details_screen.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/rank/presentation/screens/powerlifting_leaderboard_screen.dart';
@@ -52,6 +59,14 @@ import 'package:tapem/features/training_plan/presentation/screens/plan_exercise_
 class AppRouter {
   static const splash = '/';
   static const auth = '/auth';
+  static const gymEntry = '/gym_entry';
+  static const gymAccess = '/gym_access';
+  static const gymLogin = '/gym_login';
+  static const gymRegisterMethod = '/gym_register_method';
+  static const gymRegister = '/gym_register';
+  static const gymJoin = '/gym_join';
+  static const gymAddMembership = '/gym_add_membership';
+  static const gymSwitch = '/gym_switch';
   static const home = '/home';
   static const workoutDay = '/workout_day';
   static const device = '/device';
@@ -101,6 +116,10 @@ class AppRouter {
   };
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+    final deepLink = _routeFromGymPath(settings);
+    if (deepLink != null) {
+      return deepLink;
+    }
     final authState = _readAuthState();
     final isRestricted = FF.limitTabsForMembers &&
         !(authState?.isAdmin ?? false) &&
@@ -114,7 +133,63 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const SplashScreen());
 
       case auth:
-        return MaterialPageRoute(builder: (_) => const AuthScreen());
+        return MaterialPageRoute(builder: (_) => const GymEntryScreen());
+
+      case gymEntry:
+        return MaterialPageRoute(builder: (_) => const GymEntryScreen());
+
+      case gymAccess:
+        final gymId = settings.arguments as String?;
+        if (gymId == null || gymId.isEmpty) {
+          return MaterialPageRoute(builder: (_) => const GymEntryScreen());
+        }
+        return MaterialPageRoute(
+          builder: (_) => GymAccessScreen(gymId: gymId),
+        );
+
+      case gymLogin:
+        final gymId = settings.arguments as String?;
+        if (gymId == null || gymId.isEmpty) {
+          return MaterialPageRoute(builder: (_) => const GymEntryScreen());
+        }
+        return MaterialPageRoute(
+          builder: (_) => GymLoginScreen(gymId: gymId),
+        );
+
+      case gymRegisterMethod:
+        final gymId = settings.arguments as String?;
+        if (gymId == null || gymId.isEmpty) {
+          return MaterialPageRoute(builder: (_) => const GymEntryScreen());
+        }
+        return MaterialPageRoute(
+          builder: (_) => GymRegisterMethodScreen(gymId: gymId),
+        );
+
+      case gymRegister:
+        final args = settings.arguments;
+        if (args is! GymRegisterArgs) {
+          return MaterialPageRoute(builder: (_) => const GymEntryScreen());
+        }
+        return MaterialPageRoute(
+          builder: (_) => GymRegisterScreen(args: args),
+        );
+
+      case gymJoin:
+        final gymId = settings.arguments as String?;
+        if (gymId == null || gymId.isEmpty) {
+          return MaterialPageRoute(builder: (_) => const GymEntryScreen());
+        }
+        return MaterialPageRoute(
+          builder: (_) => GymJoinScreen(gymId: gymId),
+        );
+
+      case gymAddMembership:
+        return MaterialPageRoute(
+          builder: (_) => const GymAddMembershipScreen(),
+        );
+
+      case gymSwitch:
+        return MaterialPageRoute(builder: (_) => const GymSwitchScreen());
 
       case home:
         final initialIndex = settings.arguments as int? ?? 0;
@@ -380,7 +455,61 @@ class AppRouter {
       default:
         // Wenn Route nicht gefunden → zur Login-Maske redirecten
         // Das verhindert "Seite nicht gefunden" bei ungültigen/cached Routes
-        return MaterialPageRoute(builder: (_) => const AuthScreen());
+        return MaterialPageRoute(builder: (_) => const GymEntryScreen());
+    }
+  }
+
+  static Route<dynamic>? _routeFromGymPath(RouteSettings settings) {
+    final name = settings.name;
+    if (name == null || !name.startsWith('/gym/')) {
+      return null;
+    }
+    final parts = name.split('/')..removeWhere((segment) => segment.isEmpty);
+    if (parts.length < 2) {
+      return null;
+    }
+    final gymId = parts[1];
+    if (gymId.isEmpty) {
+      return null;
+    }
+    if (parts.length == 2) {
+      return MaterialPageRoute(builder: (_) => GymAccessScreen(gymId: gymId));
+    }
+    final action = parts[2];
+    switch (action) {
+      case 'login':
+        return MaterialPageRoute(builder: (_) => GymLoginScreen(gymId: gymId));
+      case 'register':
+        if (parts.length >= 4) {
+          final method = parts[3];
+          if (method == 'nfc') {
+            return MaterialPageRoute(
+              builder: (_) => GymRegisterScreen(
+                args: GymRegisterArgs(
+                  gymId: gymId,
+                  method: GymRegisterMethod.nfc,
+                ),
+              ),
+            );
+          }
+          if (method == 'code') {
+            return MaterialPageRoute(
+              builder: (_) => GymRegisterScreen(
+                args: GymRegisterArgs(
+                  gymId: gymId,
+                  method: GymRegisterMethod.gymCode,
+                ),
+              ),
+            );
+          }
+        }
+        return MaterialPageRoute(
+          builder: (_) => GymRegisterMethodScreen(gymId: gymId),
+        );
+      case 'join':
+        return MaterialPageRoute(builder: (_) => GymJoinScreen(gymId: gymId));
+      default:
+        return MaterialPageRoute(builder: (_) => GymAccessScreen(gymId: gymId));
     }
   }
 

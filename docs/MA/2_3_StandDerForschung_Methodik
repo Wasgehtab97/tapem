@@ -1,0 +1,225 @@
+2. Stand der Forschung
+
+2.1 KI-gestützte Softwareentwicklung (Überblick): Moderne Large Language Models (LLMs) haben in kurzer Zeit Einzug in zahlreiche Bereiche des Software Engineering gehalten
+arxiv.org
+researchgate.net
+. Eine breite Übersicht von Zhang et al. identifiziert über 100 Anwendungsfälle – von automatischer Codeerzeugung über Testgenerierung bis zur Dokumentation
+arxiv.org
+researchgate.net
+. LLM-basierte Tools wie GitHub Copilot oder OpenAI’s ChatGPT fungieren als “AI Pair Programmer”, die in natürlichen Sprachdialogen Codevorschläge machen. Diese Tools versprechen Produktivitätssteigerungen und Entlastung bei Routineaufgaben
+researchgate.net
+sarahnadi.org
+. Gleichzeitig stehen sie im Fokus intensiver Forschung: Mehrere empirische Studien untersuchen, wie korrekt und effizient der von KI generierte Code ist
+2022.esec-fse.org
+sarahnadi.org
+, und ob Entwickler damit wirklich schneller fertig werden
+arxiv.org
+. Erste Ergebnisse zeigen ein gemischtes Bild: Während kontrollierte Experimente deutliche Zeiteinsparungen nachweisen
+arxiv.org
+, finden Feldstudien in der Praxis teils keine signifikanten Unterschiede in Output-Metriken nach KI-Einführung
+arxiv.org
+. Offenbar ändern sich durch KI-Assistenz auch die Arbeitsweisen der Entwickler – klassische Produktivitätsmaße (wie #Commits) greifen eventuell zu kurz
+arxiv.org
+arxiv.org
+. Insgesamt zeichnet die Literatur das Bild, dass KI-Assistenten durchaus wertvolles Werkzeug sind, jedoch noch mit Einschränkungen in Qualität und verlässlicher Einsetzbarkeit. Forschungslücken bestehen insbesondere darin, Langzeiteffekte in realen Teams zu verstehen und methodische Leitlinien für den optimalen Einsatz von LLMs abzuleiten
+arxiv.org
+andrewships.substack.com
+.
+
+Belege: 
+arxiv.org
+researchgate.net
+arxiv.org
+arxiv.org
+arxiv.org
+
+2.2 Prompt-Driven Development (PDD) – Definition und Konzepte: Prompt-Driven Development – umgangssprachlich auch “Vibe Coding” genannt – bezeichnet einen Entwicklungsstil, bei dem die Implementierung weitgehend durch KI-Codegeneratoren erfolgt und der Entwickler stattdessen die richtigen Prompts entwirft sowie die KI-Ausgaben validiert
+capgemini.github.io
+andrewships.substack.com
+. Nach Miller (2025) verschiebt sich der Fokus des Entwicklers dadurch von der syntaktischen Umsetzung zur architektonischen Steuerung: Der Mensch definiert High-Level-Strukturen und Qualitätsrichtlinien, die KI erledigt den Routine-Code
+andrewships.substack.com
+andrewships.substack.com
+. Praktisch läuft PDD iterativ ab: (1) Anforderungen in natürliche Sprache formulieren → (2) Aufteilen in einzelne Prompt-Aufgaben → (3) KI generiert Code → (4) Entwickler prüft/editiert den Code → (5) Einbau ins Projekt und ggf. Feedback an KI durch neue Prompts
+andrewships.substack.com
+andrewships.substack.com
+. Wichtig sind dabei Systemprompts bzw. Projektprompts, welche globale Vorgaben machen (z.B. Architekturmuster, Coding Guidelines) – wie Vaccalluzzo berichtet, kann ein gut formulierter Projekt-Prompt (“für alle folgenden Codes: halte Dich an Clean Architecture, nutze TypeScript strikt, verwende Lib X für State Management etc.”) die Konsistenz der KI-Ergebnisse verbessern
+capgemini.github.io
+capgemini.github.io
+. PDD hat einige erkennbare Vorteile: Barriereabsenkung – Personen mit weniger Coding-Praxis, aber domänenklug, können Lösungen bauen
+andrewships.substack.com
+andrewships.substack.com
+; Speed – schneller Prototyping, da KI vieles generiert und der Mensch nur feinjustiert
+capgemini.github.io
+. Allerdings stehen dem auch neue Herausforderungen gegenüber (siehe Abschnitt 2.5 zu Risiken). PDD steckt derzeit noch in den Anfängen – es gibt weder standardisierte Prozesse noch umfassende Werkzeugketten dafür. Viele Entwickler experimentieren aber bereits damit, und Konferenzen/Communities beginnen Best Practices zu teilen (z.B. Prompt-Pattern-Kataloge
+arxiv.org
+). Diese Arbeit positioniert sich genau an dieser Schnittstelle zwischen Theorie und Praxis: Es soll untersucht werden, wie PDD in einem konkreten Fall (der Tapem-App) umgesetzt wurde und mit welchen Effekten.
+
+Belege: 
+capgemini.github.io
+capgemini.github.io
+andrewships.substack.com
+andrewships.substack.com
+arxiv.org
+
+2.3 Produktivitätseffekte von KI-Codegeneratoren: Eine Kernfrage ist, ob Tools wie Copilot & Co. Entwickler wirklich schneller machen. Hier liefern kontrollierte Studien zunächst eindrucksvolle Zahlen: In einem Experiment von Peng et al. (2023) löste die Copilot-Gruppe eine Programmieraufgabe 55% schneller als die Kontrollgruppe
+arxiv.org
+. Auch interne Befragungen z.B. von GitHub/Microsoft melden positive Effekte: Viele Nutzer berichten subjektiv von Zeitersparnis und weniger mentaler Ermüdung bei Routinecode
+github.blog
+arxiv.org
+. Allerdings relativieren neuere unabhängige Untersuchungen diese Euphorie. Stray et al. (2025) analysierten Commit-Statistiken über 2 Jahre in einem großen Projekt und fanden keine signifikante Steigerung der Code-Produktivität durch Copilot-Einführung
+arxiv.org
+arxiv.org
+. Mögliche Erklärung: Entwickler verbringen mit KI zwar weniger Zeit beim Tippen, aber mehr Zeit beim Verstehen, Korrigieren und Anpassen der KI-Vorschläge
+tianyi-zhang.github.io
+tianyi-zhang.github.io
+. Vaithilingam et al. beobachteten in ihrer Nutzerstudie, dass Copilot in einfachen Fällen zwar “Tastaturarbeit” spart, bei schwierigeren Problemen aber die Debugging-Schleifen verlängerte, da Entwickler erst den KI-Code durchdringen mussten
+tianyi-zhang.github.io
+tianyi-zhang.github.io
+. Wichtig ist also, welche Metrik man betrachtet: Wenn man reine “Time-to-First-Working-Solution” misst (wie in Peng et al.’s Laborsetting), zeigen sich Vorteile. Betrachtet man jedoch reale Ende-zu-Ende-Zyklen, inkl. Fehlersuche, Dokumentation etc., könnten sich Effekte ausmitteln
+tianyi-zhang.github.io
+arxiv.org
+. Einig sind sich die Studien darin, dass KI-Assistenten vor allem bei Routineaufgaben und Boilerplate Zeit sparen – Entwickler können sich auf den schwierigeren Teil konzentrieren
+researchgate.net
+tianyi-zhang.github.io
+. Allerdings muss man dazu diszipliniert vorgehen: Barke et al. stellten fest, dass erfahrene Devs Copilot gezielt im “Acceleration”-Modus einsetzen, um bekannte Schritte schneller zu durchlaufen, während unerfahrene es eher zum “Explorieren” nutzen und dabei auch Zeit verlieren können
+cseweb.ucsd.edu
+. Für die Praxis bedeutet dies, dass Produktivitätseffekte sehr individuell sind: Erfahrung, Aufgabentyp und Nutzungsstrategie entscheiden, ob KI zum Turbo oder zum Klotz am Bein wird. Diese Masterarbeit wird an realen Entwicklungsdaten (Commits, Durchlaufzeiten in der Fallstudie) prüfen, ob im Prompt-Driven Projekt Tapem messbare Produktivitätsgewinne aufgetreten sind, oder ob sich die Entwicklungsdauer eher verlängert hat durch zusätzliche Schleifen.
+
+Belege: 
+arxiv.org
+arxiv.org
+tianyi-zhang.github.io
+tianyi-zhang.github.io
+cseweb.ucsd.edu
+
+2.4 Code-Qualität und Wartbarkeit des KI-generierten Codes: Neben Geschwindigkeit ist die Qualität des Ergebnisses entscheidend – nützt es wenig, wenn KI zwar schnell Code schreibt, dieser aber buggy, unsicher oder unwartbar ist. Frühere Studien haben hier sowohl Stärken als auch Schwächen aufgedeckt. Korrektheit: Copilot & Co. liefern sehr häufig syntaktisch korrekten Code (über 90% compile-ready)
+2022.esec-fse.org
+, aber inhaltlich ist nur rund 30–40% der Lösungen direkt voll funktional
+2022.esec-fse.org
+. Das heißt, der generierte Code läuft meist, aber deckt oft nicht alle Anforderungen ab – Entwickler müssen ihn ergänzen oder Testfälle anpassen. Code Smells/Wartbarkeit: Interessanterweise erzeugen LLMs eher “einfachen” Code. Nguyen & Nadi stellten fest, dass Copilot-Lösungen im Schnitt weniger zyklomatisch komplex sind und keine übertrieben cleveren Tricks nutzen
+sarahnadi.org
+sarahnadi.org
+. Das könnte ein Vorteil für die Wartbarkeit sein – simplerer Code ist tendenziell leichter zu verstehen. Andererseits berichten Entwickler, dass es schwer sein kann, KI-Code zu debuggen, gerade weil man ihn nicht selbst geschrieben hat und daher weniger mental “modelliert” hat
+tianyi-zhang.github.io
+tianyi-zhang.github.io
+. Hier hilft es, wenn KI-Code gut kommentiert oder in logische Abschnitte gegliedert ist – es gibt Ansätze, LLMs dazu zu bringen, ihren Output zu erklären, was künftig die Verständlichkeit erhöhen könnte
+tianyi-zhang.github.io
+. Sicherheit: Ein besonders kritischer Qualitätsaspekt. Mehrere Arbeiten (Pearce 2022, Perry 2023) zeigen, dass LLMs leider oft unsicheren Code vorschlagen – von SQL-Injections bis Pufferüberläufen
+arxiv.org
+arxiv.org
+. Das Risiko ist zweigeteilt: Zum einen kann die KI unsichere Muster aus Trainingsdaten übernehmen (z.B. veraltete Kryptografie), zum anderen neigen Entwickler dazu, den KI-Code zu vertrauen, selbst wenn er Lücken hat
+cset.georgetown.edu
+cset.georgetown.edu
+. Perry et al. fanden, dass Teilnehmer mit KI-Hilfe signifikant mehr Sicherheitsbugs bauten und gleichzeitig fälschlich glaubten, alles sei sicher
+cset.georgetown.edu
+cset.georgetown.edu
+. Dieses Phänomen der Automation Bias muss bei PDD unbedingt adressiert werden – z.B. durch automatische Security-Scans der KI-Ausgaben oder Training der Nutzer in Sicherheitsbewusstsein. Refactoring und techn. Schuld: Aktuell gibt es wenige quantitative Daten, ob LLM-Code mehr Technical Debt verursacht. Anektdotisch berichten Developer, dass KI-Code manchmal “gerade so” funktioniert, aber z.B. Hardcodings oder unkonventionelle Strukturen enthält (siehe Vaccalluzzo: “just because it works doesn’t make it right”
+capgemini.github.io
+). Ein Teil der Forschung widmet sich auch dem umgekehrten Einsatz: LLMs beim Aufspüren von Code Smells oder beim automatischen Refactoring einzusetzen
+arxiv.org
+. Erste Erfolge gibt es z.B. mit Patterns, die ChatGPT anweisen, Abhängigkeiten zu reduzieren oder Code zu kommentieren, aber diese Methoden sind noch in Entwicklung. Zusammenfassend ist die Codequalität eine Achillesferse der KI-Programmierung: Sie ist okay, aber nicht exzellent out-of-the-box. Entwickler müssen bereit sein, viel Review und Test zu investieren – was PDD dann wieder relativiert, denn die Zeitersparnis beim Schreiben könnte beim Testen draufgehen. In unserer Fallstudie sollen daher Metriken wie Defektrate, Linting-Warnungen oder Komplexitätsmaße vor und nach KI-Einsatz verglichen werden, um objektiv zu prüfen, ob PDD-Code schlechter, gleichwertig oder vielleicht sogar strukturierter ist als menschlich geschriebener Code.
+
+Belege: 
+2022.esec-fse.org
+sarahnadi.org
+tianyi-zhang.github.io
+arxiv.org
+cset.georgetown.edu
+
+2.5 Risiken und Herausforderungen (Halluzinationen, Rechtliches, Abhängigkeit): Prompt-Driven Development bringt neue spezifische Risiken mit sich, die in der Literatur und Praxis identifiziert wurden. Halluzinationen & Fehler: LLMs können plausibel klingende, aber falsche Inhalte “halluzinieren”. In Kodierungs-Kontext bedeutet das z.B. die Erfindung nicht-existenter Funktionen oder Bibliotheken – sogenannte “Package Hallucinations”. Spracklen et al. (2024) zeigten, dass LLMs oft Bibliotheksnamen generieren, die es gar nicht gibt (in 5–20% der Fälle)
+arxiv.org
+arxiv.org
+. Dies ist nicht nur ein Bug, sondern birgt ein Supply-Chain-Risiko: Angreifer könnten diese Phantom-Pakete registrieren und mit Malware füllen, sodass Entwickler unwissentlich Schadcode einbinden
+arxiv.org
+arxiv.org
+. Auf diese Gefahr wird in Sicherheitskreisen (OWASP, etc.) bereits hingewiesen, und es bedarf Gegenmaßnahmen (z.B. dass die IDE warnt, wenn ein importiertes Paket unbekannt ist). Security-Vulnerabilities: Wie oben erwähnt, sind unsichere Vorschläge ein großes Risiko – hier muss PDD durch ergänzende Tools (Static Code Analysis, Security Linters) flankiert werden, um die KI-Ausgaben zu prüfen. In Tony et al.‘s Arbeit zeigt sich aber auch eine Chance: Durch geeignet formulierte Prompts (z.B. iterative Self-Critique mittels RCI oder explizites Anfordern sicherer Patterns) kann die Anzahl der Sicherheitslücken reduziert werden
+researchgate.net
+. Das erfordert allerdings mehr Kompetenz vom Entwickler in Prompting. Lizenz- und Urheberrechtsfragen: Copilot und ähnliche generative Modelle wurden auf riesigen Open-Source-Korpora trainiert. Es ist möglich, dass sie ganze Ausschnitte nahezu wörtlich reproduzieren, was rechtlich problematisch wäre. Tatsächlich läuft dazu derzeit eine Sammelklage (siehe Abschnitt 2.5: Copilot lawsuit), die klären soll, ob Training auf GitHub-Code und unveränderter Output ohne Lizenzangaben gegen Lizenzen verstößt
+finnegan.com
+finnegan.com
+. Bisheriges Indiz: Copilot kann z.B. aus Kommentar-Prompts manchmal berühmte Code-Snippets (wie das Quicksort aus Cormen) 1:1 ausgeben, inkl. ursprünglicher Variablennamen – das wäre klar eine Urheberrechtsverletzung, wenn das Snippet geschützt war. Das Gericht hat einige Anklagepunkte zugelassen (u.a. Verletzung von Open-Source-Lizenzbedingungen und DMCA 1202 bezüglich Entfernen von Urheberinfo)
+finnegan.com
+finnegan.com
+. Für Unternehmen heißt das, PDD birgt ein Compliance-Risiko: Man muss ggf. nachhalten, welche KI-generierten Codestücke welchem Ursprung ähneln, und Lizenzen beachten
+finnegan.com
+finnegan.com
+. Tools dafür stehen allerdings noch aus (Ansätze mit Wasserzeichen oder AI-Output-Scannern sind in Forschung). Bias und ethische Aspekte: LLMs können vorhandene Biases in Trainingsdaten verstärken – z.B. Code-Beispiele, die nur “alice/bob” nutzen, könnten stereotype Variablenamen generieren oder unbewusst bestimmte Programmierstile (etwa weniger energieeffiziente Patterns aus häufi geren Daten). Auch kann KI unbeabsichtigt diskriminierende oder unsensible Inhalte in Doku-Kommentaren erzeugen. Das wurde für normalen Text ausgiebig diskutiert; im Code-Bereich ist es weniger offensichtlich, aber durchaus relevant (z.B. bei KI-generierten In-App-Texten). Überabhängigkeit & “Deskilling”: Ein oft geäußerter Punkt: Wenn sich Entwickler zu sehr auf die KI verlassen, könnten Kernkompetenzen leiden. Einfaches Beispiel: Mit Autocomplete tippen viele weniger bewusst – übertragen auf Copilot könnte es bedeuten, dass man seltener auswendig weiß, wie man eine bestimmte API aufruft, weil man es der KI überlässt. Langfristig könnte das zu einer Erosion von Programmiergrundlagen führen (ähnlich wie ständige Navi-Nutzung Orientierungsfähigkeit mindert). Andererseits argumentieren Befürworter, dass diese Fähigkeiten dann eben nicht mehr so wichtig sind, solange man “höherwertige” Skills (Architekturdenken, Problemzerlegung – siehe Miller) hat
+andrewships.substack.com
+andrewships.substack.com
+. Empirisch gibt es hier noch kaum Daten; einige Bildungskontexte berichten jedoch, dass Schüler durch Copilot teils Lösungen abliefern, die sie nicht verstehen – was Lerneffekte hemmt. Summa summarum: PDD erfordert einen bewussten Umgang mit diesen Risiken. In Kapitel 5 (Diskussion) werden wir, basierend auf unserer Fallstudie und der Literatur, Empfehlungen geben, wie man diese Herausforderungen adressieren kann – z.B. Kombination von KI mit QA-Maßnahmen, Guidelines für Prompt-Inhalte (Sicherheitsregeln mitgeben, Lizenzen prüfen) und Schulung der Entwickler im “kritischen Partner”-Mindset statt blindem Vertrauen
+cset.georgetown.edu
+arxiv.org
+.
+
+Belege: 
+arxiv.org
+arxiv.org
+researchgate.net
+finnegan.com
+cset.georgetown.edu
+
+3. Methodik (Fallstudie & Evaluation)
+
+3.1 Studiendesign und Fallstudienkontext: Die Fallstudie betrachtet die Entwicklung der Flutter-App “Tapem”, die über mehrere Monate hinweg nahezu ausschließlich mittels Prompt-Driven Development vorangetrieben wurde (der Autor agierte als Prompt-Ingenieur, die eigentliche Code-Erstellung erfolgte via KI). Es handelt sich um eine explanatory single-case study: Ziel ist es, den Entwicklungsprozess und die resultierende Codebasis von Tapem zu analysieren, um Erkenntnisse über PDD in der Praxis zu gewinnen. Konkret gliedert sich die Methodik in zwei Teile: (1) Retrograde Prozess-Analyse: Wir werten die Projekthistorie (Commits, Branching, Timing) aus, ergänzt durch ein Entwickler-Logbuch (sofern vorhanden), um Ablauf, Iterationen und eventuelle Engpässe zu rekonstruieren. (2) Outcome-Analyse: Wir untersuchen die Qualität des resultierenden Produkts (Code und App) anhand objektiver Metriken und Vergleiche. Diese Zweiteilung ermöglicht es, sowohl das “Wie” (Vorgehen, Interaktionen, Aufwandsprofil) als auch das “Was” (Ergebnisqualität) von PDD zu beleuchten.
+
+3.2 Datenerhebung: Projektartefakte und Metriken: Für die Analyse ziehen wir verschiedene Datenquellen heran, die allesamt im Git-Repository (Branch antigravity_dev) oder begleitenden Tools zu finden sind:
+
+Commit-Historie & Repository-Metriken: Jeder Git-Commit trägt Zeitstempel und Kommentar. Durch Parsen der Commits lässt sich die Zeitliche Verteilung der Entwicklungsarbeit ermitteln – z.B. Durchlaufzeiten für Features oder Bugfixes: Wir identifizieren “Feature X implemented” Commits und messen, wie lange vom Task-Beginn (erkennbar an Issue oder Commit-Nachricht Start) bis zum Abschluss verging. Bei PDD erwartet man evtl. schnellere Durchläufe für Prototypen, aber möglicherweise mehr Zwischenschritte (viele kleine Commits). Auch Commit-Frequenz (Commits pro Tag) wird verglichen mit üblichen Projekten des Autors (falls Vergleichsdaten verfügbar) oder mit Phasen vor/nach KI-Einsatz. Zudem schauen wir auf Commit-Größe (Änderungsumfang in LOC): PDD könnte zu größeren, selteneren Commits führen, wenn viel Code in einem Rutsch generiert wird, oder umgekehrt zu vielen kleinen Commits je prompt. Diese quantitativen Indikatoren geben Hinweise auf Produktivitäts- und Arbeitsstiländerungen
+arxiv.org
+arxiv.org
+.
+
+Prompt-Logs / Entwicklungstagebuch: Idealerweise liegen Aufzeichnungen der verwendeten Prompts und KI-Antworten vor (z.B. ChatGPT-Verlauf, oder vom Autor notierte exemplarische Prompts). Falls vorhanden, werden diese qualitativ ausgewertet: Welche Prompt-Typen kamen zum Einsatz? (z.B. “Implementiere Klasse X, soll Y können”). Gab es Schleifen – d.h. mehrere Versuche, bis der Code akzeptabel war? Dies kann man z.B. erkennen, wenn der Entwickler denselben Prompt mehrfach leicht variiert hat
+tianyi-zhang.github.io
+. Solche Logs erlauben, die Interaktionsmuster aus Kap.2 (Acceleration vs. Exploration
+cseweb.ucsd.edu
+, Coping-Strategien bei Fehlern
+tianyi-zhang.github.io
+) am konkreten Case zu verifizieren. Zudem können wir exemplarische Fälle extrahieren: z.B. Halluzination erkannt: KI lieferte falschen API-Call, was tat der Entwickler dann? – Dies lässt sich aus Folgeprompts oder Code-Änderungen ersehen.
+
+Issue-Tracker & Dokumentation: Falls Tapem ein Issue-Board oder TODO-Liste hat (vielleicht im Repo oder extern), werden wir prüfen, wie Aufgaben beschrieben und abgearbeitet wurden. Insbesondere interessant: Wurden Aufgaben in natürlicher Sprache formuliert? (was PDD nahelegt). Und wie lange blieben sie offen? Das Issue-Tracking kann Aufschluss geben, ob manche Problemklassen (z.B. UI-Feintuning, State-Management-Probleme) besonders aufwendig waren – möglicherweise weil KI dafür schlechtere Antworten lieferte, was dann längere Nacharbeit erforderte.
+
+Code-Metriken der Finalversion: Um die Code-Qualität und Wartbarkeit einzuschätzen, ziehen wir statische Code-Metriken heran. Etwa: Maintainability Index, Cyclomatic Complexity pro Funktion, Anzahl Code Smells/Lint Warnings. Tools wie dart analyze (Flutter’s Linter) und ggf. metrics analyzer werden auf den finalen Stand angewendet. Ergebnisse werden mit typischen Schwellen verglichen oder – falls verfügbar – mit einem ähnlichen konventionell entwickelten Projekt. So sehen wir, ob PDD-Code signifikant mehr “Geruch” (z.B. lange Methoden, viele magic numbers) hat oder im Rahmen liegt
+sarahnadi.org
+. Auch Testabdeckung (Code Coverage) wird erhoben, sofern Tests existieren – ein niedriger Wert könnte darauf deuten, dass während PDD wenige Tests geschrieben wurden (vielleicht weil Fokus auf Implementation per KI lag). Falls Tests vorhanden: die Verteilung von “Wer hat den Test geschrieben, KI oder Mensch?” wäre interessant, aber schwer nachträglich zu trennen – eher qualitativ via Commit-Kommentar.
+
+Defekt-Analyse: Um die Robustheit zu beurteilen, identifizieren wir Bugfix-Commits (Commit-Nachrichten mit “fix bug” etc. oder Issues als Bug markiert). Die Rate der Bugs pro Feature sowie die Art der Bugs (z.B. trivialer Syntaxfehler vs. konzeptioneller Fehler) wird kategorisiert. Dadurch erkennen wir, ob PDD bestimmte Fehler häuft: etwa Flüchtigkeitsfehler, die man auf KI-Halluzinationen zurückführen kann (z.B. “NoSuchMethodError” wegen falscher API – ein typischer KI-Lapsus). Oder Designfehler (z.B. Performanceproblem, weil KI ineffiziente Lösung wählte). Auch ob Sicherheitslücken entstanden, prüfen wir: z.B. Suche nach unsicheren Patterns (Hardcoded credentials, fehlende Input-Validierung) im Code. Obwohl kein externes Security-Audit möglich ist, kann ein Blick auf gängige CWE-Muster in Flutter-Code (z.B. unsicherer HTTP-Client ohne Zertifikatprüfung) sinnvoll sein – gerade weil KI generierten Code diese Aspekte oft vernachlässigen
+arxiv.org
+.
+
+App-Performance & Nutzungsfeedback: Falls Telemetriedaten oder Nutzer-Feedback existieren (z.B. Crash-Reports, App Store Reviews), werden auch diese berücksichtigt. Viele Crashes könnten auf qualitativen Codemangel hindeuten. Performance (Startzeit, Memory) falls messbar könnte zeigen, ob KI Code produziert hat, der suboptimal ist (z.B. zu viele unnötige Rebuilds im Flutter UI). Solche Daten sind aber nur verfügbar, wenn entsprechende Monitoring eingebaut wurde.
+
+Durch die Kombination dieser Artefakte entsteht ein detailliertes Bild des Projekts: Was wurde gemacht (Commits, Code), wie wurde es gemacht (Prompts, Iterationen) und was kam heraus (Codequalität, Fehler).
+
+3.3 Operationalisierung der Forschungsfragen: Aus den RQs leiten wir konkrete Analysefragen und Metriken ab:
+
+Für RQ1 (Produktivität): Metriken: Durchschnittliche Entwicklungszeit pro Feature (z.B. definieren wir “Feature” anhand von Issue oder einer Commit-Serie) – wir vergleichen diese mit Schätzungen oder typischen Werten aus Literatur/projektvorherigen Phasen. Anteil automatisch generierten Codes: evtl. abschätzbar, indem man KI-typische Marker (Kommentare, Format) erkennt oder via GPT-Fingerprinting (experimentell). Auch Entwickler-Aufwandstagebuch (so vorhanden: “X Std auf Problem Y verwendet”) fließt ein. Hauptsächlich aber qualitativ: Flow-Zustände (z.B. an Projektmeilensteinen erkennbar: war lange Stagnation da oder kontinuierlich Output?).
+
+Für RQ2 (Qualität): Metriken: Number of Bugs per 1000 LOC, Lint rule violations, Complexity metrics und Test success rate. Zudem werden wir Code-Beispiele qualitativ bewerten (Code Review durch z.B. 3 unabhängige Kollegen mit Bewertungsschema für Lesbarkeit, Stil, Eleganz). Wenn PDD-Code signifikant unstrukturierter ist, sollte das spürbar sein in mehr Linter-Warnungen oder Reviewer-Einschätzungen (“would not pass strict code review”). Ein spezifischer Fokus liegt auf KI-typischen Patzern (z.B. duplicate code von KI vorgeschlagen statt Wiederverwendung – Indiz: mehrere sehr ähnliche Codeblöcke, wie oft Code dupliziert?).
+
+Für RQ3 (Wartbarkeit): Einige Kennzahlen überschneiden sich mit Qualität (Komplexität, Code Smells). Zusätzlich betrachten wir Konsistenz: Wurden Architektur- und Namenskonventionen eingehalten? PDD könnte hier Probleme haben, falls Prompts uneinheitlich waren – z.B. Models mal auf Deutsch benannt, mal auf Englisch je nach Prompt. Wir können per Skript prüfen, ob stark heterogene Benennungen vorliegen oder Schichten vermischt wurden. Evolvierbarkeit: Wir schauen, ob nachträgliche Änderungen (Refactorings) schwer waren – Indikator: Wurden größere Refactoring-Commits nötig, um KI-Ausgaben aufzuräumen? (Commit-Historie-Etiketten). Und wir führen evtl. ein mini-Experiment: Ein neues Mini-Feature wird dem bestehenden Code entweder manuell hinzugefügt oder per KI – wie leicht ist es, sich im KI-Code zurechtzufinden? (zeitlich qualitativ vom Autor bewertet). Das ist informell, aber gibt Eindruck, ob man eigenen KI-Code versteht.
+
+Für RQ4 (Risiken): Hier erfolgt teilweise schon während obiger Analysen das Aufspüren: Halluzinationen enttarnt man, indem man nach “FIXME” oder ähnlichen Markern sucht (Autor könnte KI-Ausgabe markiert haben). Oder commit messages “replaced wrong API usage” etc. Lizenzrisiko: man kann quelloffene Bibliotheken checken, ob Code aus ihnen in Projekt auftaucht. Evtl. nutzen wir ein Tool wie GitHub Copilot Detective (falls verfügbar), das Matches zu Training-Set findet. Bias/Ethik: such nach z.B. anstößigen Begriffen, aber in Flutter-App unwahrscheinlich relevant. Entwickler-Abhängigkeit: Ist schwer zu messen; wir können aber im Interview mit dem Autor (falls Selbstreflexion) erfragen, wie sich das Arbeiten anfühlte – hat man das Gefühl etwas verlernt/ nicht mehr manuell hinzubekommen? Das würde qualitativ berichtet.
+
+3.4 Auswertung und Validitätsbetrachtungen: Die Auswertung erfolgt quantitativ-deskriptiv für die genannten Metriken (Tabellen, Zeitreihengrafiken) und qualitativ für die Log- und Code-Analysen. Es wird versucht, Triangulation einzusetzen: z.B. ein Befund “hohe Bugrate in Phase X” wird durch commit-inspection (was waren das für Bugs?) und eventuelle Notizen trianguliert, um Ursache zu verstehen (war es wegen KI-Vorschlag? oder einfach schwieriges Feature?). Für die qualitativen Prompt-Analysen wird eine Kodierung vorgenommen angelehnt an existierende Kategorienschemata (etwa das von Barke et al. für Nutzungsmodi
+cseweb.ucsd.edu
+ oder Vaithilingams Coping-Strategien
+tianyi-zhang.github.io
+). Wir prüfen also, ob in unseren Logs Beispiele für “Acceleration vs Exploration” auftauchen und markieren diese entsprechend.
+
+Besondere Sorgfalt gilt den Threats to Validity:
+
+Interne Validität: Da es sich um eine Fallstudie ohne Experimentalkontrolle handelt, müssen wir auf Konfundierungen achten: Etwa könnte ein beobachteter Produktivitätsgewinn nicht (nur) durch PDD entstanden sein, sondern weil der Entwickler über Zeit Routine im Projekt bekam. Wir versuchen dem zu begegnen, indem wir Phasen vergleichen: z.B. falls vor PDD-Ansatz ein paar Features traditionell gebaut wurden, können wir vergleichen. Oder wir betrachten die Lernkurve über die Monate – wenn Effekte abrupt mit KI-Einsatz kamen, spricht das eher dafür. Notfalls wird offen eingeräumt, dass Korrelation ≠ Kausalität hier gilt.
+
+Externe Validität: Ein einzelnes Projekt, zudem von einem Nicht-Softwareentwickler durchgeführt, ist speziell – Ergebnisse mögen für ähnliche Solo-Projekte valide sein, aber nicht 1:1 für große Teams mit Senior Devs. Wir werden die Besonderheiten von Tapem beschreiben (Domain, Größe ~X LOC, Flutter as tech), sodass Leser einschätzen können, wie übertragbar das ist.
+
+Konstruktvalidität: Die gewählten Metriken müssen wirklich das treffen, was wir behaupten. Z.B. Productivity = “Time per Feature” – definieren wir sauber, was ein “Feature” ist, und wie wir Start/Ende bestimmen (evtl. in Zweifel mittels Issue oder commit tag). Codequalität-Metriken (Complexity, Lint) sind Standard, aber sie decken nicht alles (z.B. Designqualität schwer in Zahlen zu fassen). Daher kombinieren wir mit manuellem Review.
+
+Reliabilität: Die quantitative Auswertung ist scriptbar und damit reproduzierbar. Die qualitative Log-Analyse enthält subjektive Interpretation – wir dokumentieren deshalb das Vorgehen (Kategorien vorher aus Literatur abgeleitet, dann logs zwei Mal durchgegangen etc.). Da nur ein Forscher (Autor) codiert, besteht Bias-Gefahr; als mildernde Maßnahme könnten exemplarische Prompt-Dialoge an einen unabhängigen Kollegen gegeben werden zur Einschätzung (Peer Debriefing).
+
+Durch dieses methodische Vorgehen – Mixed Methods, Triangulation, Validitätsreflexion – soll sichergestellt werden, dass die Fallstudien-Ergebnisse nachvollziehbar und vertrauenswürdig sind. Die Messungen orientieren sich an etablierten Benchmarks (z.B. Linters für Codequalität) und innovieren dort, wo nötig (Prompt-Log-Analyse mittels qualitativem Framework). Wichtig ist: diese Fallstudie ist explorativ, soll also primär Hypothesen generieren und Tendenzen aufzeigen, nicht letzte Gewissheit über PDD liefern.
+
+Belege: 
+arxiv.org
+tianyi-zhang.github.io
+cseweb.ucsd.edu

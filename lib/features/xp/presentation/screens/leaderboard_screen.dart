@@ -13,15 +13,50 @@ import '../../../../core/providers/auth_providers.dart';
 
 class LeaderboardEntry {
   final PublicProfile profile;
-  final int xp;
+  final _XpTotals totals;
 
   const LeaderboardEntry({
     required this.profile,
-    required this.xp,
+    required this.totals,
   });
+
+  int xpForScope(LeaderboardScope scope) => totals.forScope(scope);
+}
+
+class _XpTotals {
+  const _XpTotals({
+    required this.overall,
+    required this.seasonXp,
+  });
+
+  final int overall;
+  final Map<String, int> seasonXp;
+
+  int forScope(LeaderboardScope scope) {
+    switch (scope) {
+      case LeaderboardScope.overall:
+        return overall;
+      case LeaderboardScope.season2025:
+        return seasonXp['2025'] ?? 0;
+      case LeaderboardScope.season2026:
+        return seasonXp['2026'] ?? 0;
+    }
+  }
+
+  _XpTotals operator +(_XpTotals other) {
+    return _XpTotals(
+      overall: overall + other.overall,
+      seasonXp: {
+        '2025': (seasonXp['2025'] ?? 0) + (other.seasonXp['2025'] ?? 0),
+        '2026': (seasonXp['2026'] ?? 0) + (other.seasonXp['2026'] ?? 0),
+      },
+    );
+  }
 }
 
 enum _LeaderboardMode { gym, friends }
+
+enum LeaderboardScope { overall, season2025, season2026 }
 
 class LeaderboardScreen extends riverpod.ConsumerStatefulWidget {
   const LeaderboardScreen({super.key, required this.title});
@@ -35,15 +70,18 @@ class LeaderboardScreen extends riverpod.ConsumerStatefulWidget {
 
 class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> {
   _LeaderboardMode _mode = _LeaderboardMode.gym;
+  LeaderboardScope _scope = LeaderboardScope.overall;
   List<LeaderboardEntry>? _gymEntries;
   List<LeaderboardEntry>? _friendEntries;
   bool _loadingGym = false;
   bool _loadingFriends = false;
   int _selectedLevel = 1;
+  static const _XpTotals _zeroTotals =
+      _XpTotals(overall: 0, seasonXp: {'2025': 0, '2026': 0});
 
-  Future<int> _loadDailyXpAcrossGyms(String uid, Set<String> gymIds) async {
+  Future<_XpTotals> _loadXpTotalsAcrossGyms(String uid, Set<String> gymIds) async {
     if (gymIds.isEmpty) {
-      return 0;
+      return _zeroTotals;
     }
     final fs = FirebaseFirestore.instance;
     final xpValues = await Future.wait(gymIds.map((gymId) async {
@@ -56,22 +94,38 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
             .collection('rank')
             .doc('stats')
             .get();
-        return statsDoc.data()?['dailyXP'] as int? ?? 0;
+        return _parseXpTotals(statsDoc.data());
       } on FirebaseException catch (error, stack) {
         debugPrint(
           'Failed to load rank stats for user=$uid gym=$gymId: ${error.message}',
         );
         debugPrint('$stack');
-        return 0;
+        return _zeroTotals;
       } catch (error, stack) {
         debugPrint(
           'Unexpected error loading rank stats for user=$uid gym=$gymId: $error',
         );
         debugPrint('$stack');
-        return 0;
+        return _zeroTotals;
       }
     }));
-    return xpValues.fold<int>(0, (total, value) => total + value);
+    return xpValues.fold<_XpTotals>(
+      _zeroTotals,
+      (total, value) => total + value,
+    );
+  }
+
+  _XpTotals _parseXpTotals(Map<String, dynamic>? data) {
+    final overall = (data?['dailyXP'] as num?)?.toInt() ?? 0;
+    final seasonRaw = data?['seasonXP'] as Map<String, dynamic>? ?? const {};
+
+    return _XpTotals(
+      overall: overall,
+      seasonXp: {
+        '2025': (seasonRaw['2025'] as num?)?.toInt() ?? overall,
+        '2026': (seasonRaw['2026'] as num?)?.toInt() ?? 0,
+      },
+    );
   }
 
   @override
@@ -134,13 +188,17 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
             .collection('rank')
             .doc('stats')
             .get();
-        final xp = statsDoc.data()?['dailyXP'] as int? ?? 0;
-        return LeaderboardEntry(profile: profile, xp: xp);
+        final totals = _parseXpTotals(statsDoc.data());
+        return LeaderboardEntry(profile: profile, totals: totals);
       });
       final entries = (await Future.wait(futures))
           .whereType<LeaderboardEntry>()
           .toList()
-        ..sort((a, b) => b.xp.compareTo(a.xp));
+        ..sort(
+          (a, b) => b
+              .xpForScope(LeaderboardScope.overall)
+              .compareTo(a.xpForScope(LeaderboardScope.overall)),
+        );
       if (!mounted) return;
       setState(() => _gymEntries = entries);
     } catch (error, stack) {
@@ -198,13 +256,17 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
             candidateGyms.add(fallbackGym);
           }
         }
-        final xp = await _loadDailyXpAcrossGyms(uid, candidateGyms);
-        return LeaderboardEntry(profile: profile, xp: xp);
+        final totals = await _loadXpTotalsAcrossGyms(uid, candidateGyms);
+        return LeaderboardEntry(profile: profile, totals: totals);
       });
       final entries = (await Future.wait(futures))
           .whereType<LeaderboardEntry>()
           .toList()
-        ..sort((a, b) => b.xp.compareTo(a.xp));
+        ..sort(
+          (a, b) => b
+              .xpForScope(LeaderboardScope.overall)
+              .compareTo(a.xpForScope(LeaderboardScope.overall)),
+        );
       if (!mounted) return;
       setState(() => _friendEntries = entries);
     } catch (error, stack) {
@@ -217,6 +279,22 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
         setState(() => _loadingFriends = false);
       }
     }
+  }
+
+  List<LeaderboardEntry> _sortedEntriesForScope(
+    List<LeaderboardEntry> entries,
+    LeaderboardScope scope,
+  ) {
+    final sorted = [...entries];
+    sorted.sort((a, b) {
+      final xpA = a.xpForScope(scope);
+      final xpB = b.xpForScope(scope);
+      if (xpA == xpB) {
+        return a.profile.safeLower.compareTo(b.profile.safeLower);
+      }
+      return xpB.compareTo(xpA);
+    });
+    return sorted;
   }
 
   @override
@@ -245,8 +323,19 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
     final progressColor =
         brandTheme?.gradient.colors.first ?? theme.colorScheme.primary;
     final isGym = _mode == _LeaderboardMode.gym;
-    final entries = isGym ? _gymEntries : _friendEntries;
+    final sourceEntries = isGym ? _gymEntries : _friendEntries;
     final isLoading = isGym ? _loadingGym : _loadingFriends;
+
+    String scopeLabel(LeaderboardScope scope) {
+      switch (scope) {
+        case LeaderboardScope.overall:
+          return 'Overall';
+        case LeaderboardScope.season2025:
+          return 'Season 25';
+        case LeaderboardScope.season2026:
+          return 'Season 26';
+      }
+    }
 
     Widget buildContent() {
       if (isLoading) {
@@ -255,7 +344,7 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
           child: Center(child: CircularProgressIndicator()),
         );
       }
-      if (entries == null || entries.isEmpty) {
+      if (sourceEntries == null || sourceEntries.isEmpty) {
         final emptyText = isGym
             ? loc.leaderboardEmptyGym
             : loc.leaderboardEmptyFriends;
@@ -272,10 +361,12 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
           ),
         );
       }
+      final entries = _sortedEntriesForScope(sourceEntries, _scope);
       final currentUserId =
           ref.watch(authViewStateProvider).userId;
       return _LevelLeaderboardList(
         entries: entries,
+        scope: _scope,
         progressColor: progressColor,
         title: isGym ? loc.leaderboardGymCardTitle : loc.leaderboardFriendsCardTitle,
         selectedLevel: _selectedLevel,
@@ -323,6 +414,33 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: AppSpacing.xs.toDouble(),
+              runSpacing: AppSpacing.xs.toDouble(),
+              children: LeaderboardScope.values.map((scope) {
+                final selected = _scope == scope;
+                return ChoiceChip(
+                  label: Text(scopeLabel(scope)),
+                  selected: selected,
+                  onSelected: (_) => setState(() => _scope = scope),
+                  selectedColor: progressColor,
+                  labelStyle: theme.textTheme.bodySmall?.copyWith(
+                    color: selected
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.onSurface,
+                    fontWeight:
+                        selected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                  backgroundColor:
+                      theme.colorScheme.onSurface.withOpacity(0.04),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.chip - 4),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: AppSpacing.md),
             buildContent(),
           ],
         ),
@@ -335,6 +453,7 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
 class _LevelLeaderboardList extends StatelessWidget {
   const _LevelLeaderboardList({
     required this.entries,
+    required this.scope,
     required this.progressColor,
     required this.title,
     required this.selectedLevel,
@@ -343,6 +462,7 @@ class _LevelLeaderboardList extends StatelessWidget {
   });
 
   final List<LeaderboardEntry> entries;
+  final LeaderboardScope scope;
   final Color progressColor;
   final String title;
   final int selectedLevel;
@@ -359,7 +479,7 @@ class _LevelLeaderboardList extends StatelessWidget {
 
     final levelEntries = <int, List<_LevelledEntry>>{};
     for (final entry in entries) {
-      final progress = _resolveLevelProgress(entry.xp);
+      final progress = _resolveLevelProgress(entry.xpForScope(scope));
       final level = progress.level;
       final xpInLevel = progress.xpInLevel;
       final bucket = levelEntries.putIfAbsent(level, () => []);

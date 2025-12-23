@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/core/analytics/analytics_service.dart';
+import 'package:tapem/core/constants.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/shared_preferences_provider.dart';
 import 'package:tapem/features/auth/presentation/widgets/password_reset_dialog.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_text_field.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_button.dart';
@@ -38,10 +41,28 @@ class _LoginFormState extends ConsumerState<LoginForm> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
+    final prefs = ref.read(sharedPreferencesProvider);
+    final preAuthGymId = prefs.getString(StorageKeys.preAuthGymId);
+    AnalyticsService.logEvent(
+      'gym_login_attempt',
+      parameters: {
+        if (preAuthGymId != null && preAuthGymId.isNotEmpty)
+          'gym_id': preAuthGymId,
+      },
+    );
+
     final result = await authProv.login(email, password);
     if (!mounted) return;
 
     if (!result.success || authProv.error != null) {
+      AnalyticsService.logEvent(
+        'gym_login_failed',
+        parameters: {
+          if (preAuthGymId != null && preAuthGymId.isNotEmpty)
+            'gym_id': preAuthGymId,
+          if (authProv.error != null) 'reason': authProv.error!,
+        },
+      );
       final message = authProv.error ?? '${loc.errorPrefix}: unknown';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -57,6 +78,23 @@ class _LoginFormState extends ConsumerState<LoginForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(loc.missingMembershipError)),
       );
+    }
+
+    AnalyticsService.logEvent(
+      'gym_login_success',
+      parameters: {
+        if (preAuthGymId != null && preAuthGymId.isNotEmpty)
+          'gym_id': preAuthGymId,
+      },
+    );
+    if (preAuthGymId != null &&
+        preAuthGymId.isNotEmpty &&
+        !(authProv.gymCodes ?? []).contains(preAuthGymId)) {
+      Navigator.of(context).pushReplacementNamed(
+        AppRouter.gymJoin,
+        arguments: preAuthGymId,
+      );
+      return;
     }
 
     final requiresGymSelection = result.requiresGymSelection ||

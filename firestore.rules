@@ -373,7 +373,7 @@ service cloud.firestore {
       allow create: if isOwner(uid);
       allow read: if isAuthed();
       allow update: if isOwner(uid) &&
-        request.resource.data.keys().hasOnly([
+        request.resource.data.diff(resource.data).changedKeys().hasOnly([
           'username',
           'usernameLower',
           'showInLeaderboard',
@@ -384,8 +384,16 @@ service cloud.firestore {
           'avatarUpdatedAt',
           'equippedAvatarRef',
           'activeGymId',
-          'coachEnabled'
-        ]);
+          'coachEnabled',
+          'gymCodes'
+        ]) &&
+        (
+          !('gymCodes' in request.resource.data) ||
+          (
+            request.resource.data.gymCodes is list &&
+            request.resource.data.gymCodes.size() <= 50
+          )
+        );
       allow update: if isGymAdminFor(uid, request.auth.token.gymId) &&
         request.resource.data.keys().hasOnly(['avatarKey']) &&
         request.resource.data.avatarKey is string;
@@ -908,11 +916,20 @@ service cloud.firestore {
 
       // Users subcollection under gym
       match /users/{userId} {
-        allow read: if inGym(gymId);
+        allow read: if inGym(gymId) || (isAuthed() && request.auth.uid == userId);
         allow create: if isAuthed() &&
                        request.auth.uid == userId &&
                        request.resource.data.role == 'member';
-        allow update, delete: if isAdmin(gymId);
+        allow update: if isAdmin(gymId);
+        allow delete: if isAdmin(gymId) ||
+          (isAuthed() && request.auth.uid == userId);
+      }
+
+      // NFC tokens for gym registration
+      match /nfc_tokens/{tokenId} {
+        allow read: if isAuthed();
+        allow create, update: if isAdmin(gymId);
+        allow delete: if false;
       }
 
       match /users/{userId}/rank/{document=**} {

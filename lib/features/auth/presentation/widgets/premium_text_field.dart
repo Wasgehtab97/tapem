@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import '../theme/auth_theme.dart';
 
 class PremiumTextField extends StatefulWidget {
@@ -13,6 +14,7 @@ class PremiumTextField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final IconData? prefixIcon;
   final Widget? suffixIcon;
+  final bool readOnly;
 
   const PremiumTextField({
     Key? key,
@@ -27,6 +29,7 @@ class PremiumTextField extends StatefulWidget {
     this.textInputAction,
     this.prefixIcon,
     this.suffixIcon,
+    this.readOnly = false,
   }) : super(key: key);
 
   @override
@@ -53,6 +56,8 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final brand = Theme.of(context).extension<AppBrandTheme>();
+    final focus = brand?.focusRing ?? const Color(0xFF8B5CF6);
     return AnimatedContainer(
       duration: AuthTheme.animationDurationFast,
       decoration: BoxDecoration(
@@ -62,11 +67,19 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _isFocused 
-              ? const Color(0xFF8B5CF6).withOpacity(0.5) 
+              ? focus.withOpacity(0.5) 
               : AuthTheme.glassBorderColor,
           width: 1.5,
         ),
-        boxShadow: _isFocused ? [AuthTheme.glowShadow] : [],
+        boxShadow: _isFocused
+            ? [
+                BoxShadow(
+                  color: focus.withOpacity(0.4),
+                  blurRadius: 15,
+                  spreadRadius: 1,
+                ),
+              ]
+            : [],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: TextFormField(
@@ -78,6 +91,7 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
         style: AuthTheme.bodyStyle.copyWith(color: Colors.white),
         cursorColor: Colors.white,
         textInputAction: widget.textInputAction,
+        readOnly: widget.readOnly,
         decoration: InputDecoration(
           labelText: widget.label,
           labelStyle: AuthTheme.labelStyle,

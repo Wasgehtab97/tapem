@@ -1,0 +1,769 @@
+\documentclass[a4paper,12pt]{report}
+
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{setspace}
+\usepackage{geometry}
+\usepackage{csquotes}
+\usepackage{hyperref}
+
+\geometry{left=3cm,right=3cm,top=3cm,bottom=3cm}
+\onehalfspacing
+
+\begin{document}
+
+\begin{titlepage}
+    \thispagestyle{empty}
+
+    \begin{center}
+        % Optional: Logo einbinden, falls vorhanden
+        % \includegraphics[height=2cm]{hs-koblenz-logo}\\[1.5em]
+
+        {\Large Hochschule Koblenz}\\[0.25em]
+        {\large Masterstudiengang M.\,Sc.\ Applied Physics}\\[4em]
+
+        {\Large \textbf{Masterarbeit}}\\[3em]
+
+        {\huge\bfseries
+        Prompt-Driven Development in Practice:\\[0.6em]
+        Productivity, Quality, and Maintainability\\[0.4em]
+        in a Vibecoded Flutter App}\\[4em]
+
+        \rule{0.7\linewidth}{0.5pt}\\[3em]
+    \end{center}
+
+    \vfill
+
+    \noindent
+    \begin{tabular}{@{}p{4cm}l}
+        Verfasser:        & Daniel Misztal \\[0.5em]
+        Matrikelnummer:   & 539991 \\[1.5em]
+
+        Studiengang:      & M.\,Sc.\ Applied Physics \\
+        Hochschule:       & Hochschule Koblenz \\[1.5em]
+
+        Erstprüfer:       & Dr.\ Daniel Friemert \\
+        Zweitprüfer:      & Dr.\ Ulrich Hartmann \\
+    \end{tabular}
+
+\end{titlepage}
+
+
+
+\tableofcontents
+
+\chapter{Einleitung}
+
+\section{Motivation und Kontext}
+
+Die Softwareentwicklung erlebt durch die rasanten Fortschritte bei Large Language Models (LLMs, d.\,h. großen vortrainierten Sprachmodellen) einen Paradigmenwechsel. Anstatt Code manuell zu schreiben, können Entwickler zunehmend natürsprachliche Prompts (Aufforderungen) formulieren, die ein KI-Modell in Quellcode übersetzt. Diese Prompt-Driven-Development-Ansätze versprechen, Routineaufgaben zu automatisieren und die Produktivität zu steigern (Ernst \& Bavota, 2022). Bereits einfache Code-Vervollständigungen wurden seit den 1990er Jahren erforscht; moderne KI-Assistenten wie GitHub Copilot oder OpenAI Codex heben dieses Konzept jedoch auf ein neues Niveau, indem sie auf gigantischen Code-Korpora trainiert wurden und teils komplexe Funktionen synthetisieren können (Chen et al., 2021). Dadurch rückt ein lange gehegter Traum der Softwaretechnik in greifbare Nähe: die (teil-)automatische Generierung von Code aus Spezifikationen in natürlicher Sprache.
+
+Trotz dieses Versprechens müssen Potenziale und Risiken KI-gestützter Entwicklung sorgfältig abgewogen werden. Erste Berichte deuten darauf hin, dass KI-Codierungsassistenten Programmierer insbesondere bei repetitiven Boilerplate-Aufgaben entlasten und dadurch schnelleres Arbeiten ermöglichen (Peng et al., 2023). Gleichzeitig entstehen neue Herausforderungen. So sind etwa Verzerrungen in den Trainingsdaten, rechtliche Fragen (etwa durch mögliches Einbetten urheberrechtlich geschützten Trainingscodes) und Sicherheitsrisiken zu berücksichtigen (Ernst \& Bavota, 2022). Frühere Untersuchungen zeigen, dass KI-generierter Code mitunter unsichere Muster enthält: In einer kontrollierten Studie schrieben Entwickler mit KI-Unterstützung signifikant häufiger sicherheitskritische Fehler als eine Kontrollgruppe (Perry et al., 2023). Auch die Auswirkungen auf das Know-how der Programmierenden sind bislang unklar -- wenn die KI viele Entscheidungen übernimmt, könnte dies langfristig zu Wissensverlust oder einem falschen Sicherheitsgefühl führen (Ernst \& Bavota, 2022). Die Wartbarkeit der erzeugten Software stellt ein weiteres zentrales Fragezeichen dar: Ist Code, der vollständig per Prompt-Engineering entstanden ist, auf Dauer genauso verständlich und anpassbar wie von Menschen geschriebener Code? Hier bestehen bislang erhebliche Unsicherheiten, da traditionelle Qualitätsmaßstäbe der Softwaretechnik (wie z.\,B.\ Wartbarkeit gemäß ISO/IEC~25010) kaum empirisch auf KI-generierten Code angewendet wurden.
+
+\section{Forschungsstand}
+
+LLM-gestützte Entwicklung ist ein sehr junges Forschungsfeld, in dem jedoch bereits erste empirische Studien erschienen sind. OpenAI stellte 2021 mit Codex ein Modell vor, das aus natürlichsprachlichen Beschreibungen lauffähigen Code generieren kann (Chen et al., 2021). In Tests löste Codex einen Großteil standardisierter Programmieraufgaben korrekt, was die grundlegende Machbarkeit solcher Tools demonstrierte. Darauf aufbauend wurde 2022 GitHub Copilot veröffentlicht -- ein Assistenzsystem, das während der Entwicklung kontinuierlich Code-Vorschläge macht. 
+
+\emph{Produktivität:} Frühbefunde zur Effektivität solcher Werkzeuge variieren. In einem vielbeachteten Experiment mit 95 Entwicklern löste die mit Copilot arbeitende Gruppe eine Programmieraufgabe 55{,}8\,\% schneller als die Kontrollgruppe (Peng et al., 2023). Ähnlich berichten Ziegler et al.\ (2022, zitiert nach Jacobs, 2024) von einer beschleunigten Aufgabenbearbeitung durch KI-Unterstützung in einem großangelegten Feldversuch mit über 2\,600 Teilnehmenden. Demgegenüber fand Vaithilingam et al.\ (2022) in einer Laborstudie mit 24 erfahrenen Programmierern keine signifikante Verkürzung der Entwicklungszeit; zwar half Copilot beim schnellen Lösen einfacher Teilprobleme, doch das Debugging fehlerhafter KI-Vorschläge konnte den Zeitgewinn wieder neutralisieren. Die Autoren beobachteten, dass Teilnehmende den Aufwand zur Korrektur von KI-Code häufig unterschätzten, was zu erhöhtem Fehlersuchen führte (Vaithilingam et al., 2022). Solche widersprüchlichen Ergebnisse deuten darauf hin, dass der Nutzen für die Produktivität stark von Kontextfaktoren abhängt -- etwa von der Aufgabenart, der Erfahrung der Nutzenden und der Qualität der KI-Vorschläge.
+
+\emph{Code-Qualität und Risiken:} Neben der reinen Produktivität wird zunehmend die Qualität der durch LLMs erzeugten Software untersucht. Mehrere Studien warnen vor möglichen Sicherheitslücken und Lizenzverstößen: Copilot generierte in etwa 40\,\% der Fälle verwundbaren Code, wenn es mit sicherheitsrelevanten Programmieraufgaben konfrontiert wurde (Perry et al., 2023). Ebenso zeigte sich, dass KI-Assistenten manchmal veraltete oder ineffiziente Idiome vorschlagen und somit Best Practices nicht durchgehend einhalten. Erste Untersuchungen zur internen Codequalität liefern ein gemischtes Bild: In einer aktuellen Vergleichsstudie schnitten KI-generierte Lösungen hinsichtlich bestimmter Qualitätsmetriken überraschend gut ab -- sie enthielten insgesamt sogar weniger Bugs und erforderten im Schnitt weniger Nachbesserungsaufwand als von Menschen geschriebene Lösungen (Molison et al., 2025). Allerdings traten in komplexeren Programmieraufgaben strukturelle Probleme bei den KI-Lösungen zutage, die in humanem Code so nicht vorkamen (Molison et al., 2025). Dies legt nahe, dass LLMs zwar syntaktisch korrekten und weitgehend funktionierenden Code produzieren können, jedoch bei höheren Komplexitätsgraden Design-Schwächen zeigen, die die langfristige Wartbarkeit oder Erweiterbarkeit beeinträchtigen könnten. Systematische Langzeitbeobachtungen fehlen bislang, sodass Wartbarkeit und technische Schuld KI-generierten Codes weitgehend offene Fragen bleiben. Auch in Bezug auf Software-Qualitätsmerkmale wie Zuverlässigkeit, Performance-Effizienz oder Usability (gemäß ISO/IEC~25010:2011) ist der empirische Kenntnisstand noch lückenhaft -- erste Ansätze adressieren vor allem funktionale Korrektheit und Sicherheitsaspekte, während z.\,B. Usability des Endprodukts oder die Wartungsfreundlichkeit bisher kaum beleuchtet wurden.
+
+Zusammenfassend zeigen erste Studien, dass LLM-basierte Entwicklungsassistenz ein erhebliches Transformationspotenzial besitzt: Routinetätigkeiten lassen sich beschleunigen, und vor allem weniger erfahrene Programmierende können von KI-Hilfestellung profitieren (Peng et al., 2023). Gleichzeitig mahnen die aktuellen Befunde zur Vorsicht. Qualitätssicherung und Entwicklerexpertise bleiben wichtig, da generierter Code nicht per se robust, sicher und gut wartbar ist. Viele Befunde stützen sich bisher auf Kurzzeittests oder studentische Stichproben; Fallstudien in realen Projekten sind rar (Ernst \& Bavota, 2022). Genau hier setzt die vorliegende Arbeit an -- sie adressiert die Lücke umfassender empirischer Untersuchungen zu Prompt-Driven Development in einem praxisnahen Szenario.
+
+\section{Problemstellung}
+
+Obwohl LLM-Werkzeuge wie Copilot innerhalb weniger Jahre breite Verbreitung gefunden haben, fehlt es an wissenschaftlich fundierten Erkenntnissen über ihre langfristigen Auswirkungen auf Softwareprojekte. Die meisten Studien untersuchen kurze Programmieraufgaben oder isolierte Aspekte (z.\,B. Fehlerraten in einzelnen Code-Vorschlägen). Unklar ist jedoch, wie sich LLM-gestützte Entwicklung über den gesamten Lebenszyklus einer Software auswirkt. Insbesondere gibt es kaum Analysen dazu, wie produktiv, qualitativ hochwertig und wartbar ein größeres Softwaresystem ist, das vollständig mittels Prompt-Engineering erstellt wurde. 
+
+Ebenfalls wenig beleuchtet wurde, wie sich die Nutzung solcher Tools auf Entwickler mit begrenzter Programmiererfahrung auswirkt -- viele empirische Studien rekrutieren professionelle Entwickler oder Informatik-Studierende, während \enquote{Nicht-Entwickler} (z.\,B.\ Fachexperten ohne formalen Softwarehintergrund) als Zielgruppe weitgehend außen vor bleiben. Die hier vorgestellte Arbeit adressiert diese Forschungslücke durch eine eingehende Fallstudie: Anhand der Flutter-App Tap’em, die vollständig via KI-Prompts entwickelt wurde, wird untersucht, welche Vor- und Nachteile dieser Ansatz in der Praxis mit sich bringt. 
+
+Zentrale Probleme sind dabei: Wie nachhaltig sind durch LLM erzeugte Lösungen bei Weiterentwicklung und Wartung? Ergeben sich Qualitätsdefizite etwa in Bezug auf Architektursauberkeit, Sicherheit oder Benutzerfreundlichkeit? Und schließlich: Lassen sich mit Prompt-Driven Development auch umfangreichere Anwendungen effizient erstellen, oder treten Skalierungsprobleme und neue Fehlerrisiken auf? Diese ungeklärten Fragen bilden den Kern der Problemstellung, der sich die Masterarbeit widmet.
+
+\section{Zielsetzung}
+
+Ziel der Arbeit ist es, Prompt-Driven Development in einem realen Szenario ganzheitlich zu evaluieren. Konkret soll am Einzelfall der App Tap’em untersucht werden, wie sich der exklusive Einsatz von LLM-Prompting auf verschiedene Erfolgsfaktoren in der Softwareentwicklung auswirkt. Die Untersuchung erstreckt sich über die Dimensionen Produktivität, Qualität und Wartbarkeit des resultierenden Softwaresystems sowie damit verbundene Risiken und Benutzererfahrungen. 
+
+Tap’em dient dabei als Artefakt und Fallbeispiel: Es handelt sich um eine Flutter-Applikation, die von Grund auf durch Prompting (ohne manuelles Programmieren) implementiert wurde. Die wissenschaftliche Relevanz dieses Vorhabens liegt darin, empirische Evidenz für einen bislang kaum erforschten Entwicklungsansatz zu liefern. Die Ergebnisse sollen Aufschluss darüber geben, ob und in welcher Form Prompt-Driven Development praktikabel ist und welche Qualitätsniveaus damit erreichbar sind. Dadurch trägt die Arbeit sowohl zur Schließung einer aktuellen Forschungslücke bei (Mangel an Langzeit-Fallstudien zu LLM-Development) als auch zur praktischen Diskussion über den sinnvollen Einsatz von KI in der Softwaretechnik. Langfristig können die gewonnenen Erkenntnisse helfen, Best Practices für KI-gestützte Entwicklung zu formulieren und mögliche Fallstricke -- etwa im Hinblick auf Wartungsaufwand oder Sicherheitsanforderungen -- frühzeitig zu erkennen.
+
+\section{Forschungsfragen}
+
+Aus der Zielsetzung lassen sich folgende zentrale Forschungsfragen (F) ableiten, die entlang der Dimensionen Produktivität, Qualität, Wartbarkeit, Risiken und User Experience (UX) strukturiert sind:
+
+\subsection*{Produktivität}
+
+Wie beeinflusst die ausschließlich prompt-getriebene Entwicklung die Entwickler-Produktivität bei der Erstellung einer mobilen App? (Z.\,B. Entwicklungszeit, benötigte Iterationen und Umfang der erzielten Funktionalität im Vergleich zu konventioneller Entwicklung.)
+
+\subsection*{Qualität}
+
+Welches Qualitätsniveau erreicht die mit LLM-Unterstützung entwickelte Software Tap’em im Hinblick auf zentrale Qualitätsmerkmale gemäß ISO/IEC~25010 (u.\,a. funktionale Korrektheit, Zuverlässigkeit, Sicherheit, Performance und Usability)? (Gibt es bestimmte Qualitätsbereiche, in denen KI-generierter Code besonders stark oder schwach ist?)
+
+\subsection*{Wartbarkeit}
+
+Inwiefern ist der erzeugte Code wart- und weiterentwickelbar? (Beispielsweise gemessen an Code-Metriken wie Komplexität, Verständlichkeit, Dokumentation sowie dem Aufwand für Refaktorierungen oder Erweiterungen.)
+
+\subsection*{Risiken}
+
+Welche Risiken und potenziellen Nachteile treten beim Prompt-Driven Development in diesem Fall auf? (Etwa: Häufigkeit von Bugs oder Sicherheitslücken, Abhängigkeit von der KI, Lizenz- und Compliance-Fragen oder \enquote{Technical Debt} im Code.)
+
+\subsection*{UX und Entwicklererfahrung}
+
+Wie gestaltet sich die User Experience -- sowohl für die Endnutzer der App Tap’em als auch für die Entwicklerperson im Umgang mit dem LLM? (Beinhaltet die Frage, ob die resultierende App in Sachen Bedienbarkeit und Nutzerzufriedenheit überzeugt, sowie welche Erfahrungen, Herausforderungen oder Lernkurven die Entwicklung via Prompt mit sich bringt.)
+
+Diese Forschungsfragen zielen darauf ab, ein möglichst umfassendes Bild der Stärken und Schwächen von Prompt-Driven Development in der Praxis zu zeichnen. Sie greifen die in der Motivation skizzierten offenen Punkte auf -- von der Effizienz der Entwicklung über die objektive Softwarequalität bis hin zu subjektiven Erfahrungen -- und übertragen sie in prüfbare Fragestellungen für den Fall Tap’em.
+
+\section{Methodenvorschau}
+
+Zur Beantwortung der Forschungsfragen wird ein Single-Case-Study-Ansatz im Sinne eines Einzelfalldesigns gewählt. Die Arbeit folgt dabei methodisch dem Rahmen des Design-Science-Research: Zunächst wurde mit Tap’em ein neuartiges Artefakt geschaffen -- eine voll funktionsfähige Flutter-App --, das ausschließlich durch KI-Prompting entwickelt wurde. Dieses Artefakt dient anschließend als Untersuchungsgegenstand, an dem vielfältige Daten erhoben und ausgewertet werden. Konkret stützt sich die Methodik auf Mixed Methods: Quantitative Analysen der Produktivitäts- und Qualitätsmetriken werden mit qualitativen Einblicken aus Entwicklerfeedback kombiniert.
+
+Für die Datengewinnung wurden sämtliche Entwicklungsaktivitäten von Tap’em systematisch protokolliert. Dazu gehören unter anderem die Versionsverwaltungshistorie (Git-Repository mit Commits und Commit-Metadaten), die von der KI generierten Codeauszüge samt entsprechenden Prompts sowie iterative Evolutionsschritte der App über die Zeit. Anhand dieser Repository-Daten lassen sich objektive Metriken berechnen -- etwa die Entwicklungsdauer (Zeitstempel vom Projektbeginn bis zur Fertigstellung bestimmter Features), die Anzahl der Iterationen pro Feature (wie oft musste nachgearbeitet werden) oder klassische Codekennzahlen (Zeilen Code, Komplexitätsmaße, Modularität, Anteile generierter Testfälle etc.). Zudem erfolgt eine Codeanalyse mittels statischer Analyse-Tools (z.\,B.\ SonarQube), um Qualitätsindikatoren wie zyklomatische Komplexität, Code-Kopplung, Regelverstöße und einen Wartbarkeitsindex zu ermitteln.
+
+Ergänzend zur technischen Analyse wird die Entwicklerperspektive einbezogen. Die Person, die Tap’em per Prompt-Engineering realisiert hat (im Falle dieser Single-Case-Studie identisch mit dem Autor der Arbeit), reflektiert den Entwicklungsprozess in Form von Tagebucheinträgen und Befragungen. Diese qualitativen Daten liefern Kontext zu den Zahlen -- sie beleuchten etwa, welche Schwierigkeiten beim Prompt-Formulieren auftraten, wie zufriedenstellend die KI-Antworten waren und wann menschliches Eingreifen erforderlich wurde. Falls verfügbar, fließt auch Endnutzer-Feedback zur App in die Bewertung ein (z.\,B.\ aus Usability-Tests oder App-Store-Reviews), um die User Experience des Endprodukts abzuschätzen.
+
+Durch Triangulation dieser verschiedenen Datenquellen kann ein umfassendes Bild gezeichnet werden. Die Methodik ist darauf ausgelegt, sowohl objektive Messgrößen (für Produktivität und Codequalität) als auch subjektive Eindrücke (für Entwicklererfahrung und Usability) abzudecken. Dabei wird die Einzelfallstudie so aufbereitet, dass trotz ihres singulären Charakters generalisierbare Erkenntnisse abgeleitet werden können -- etwa durch Abgleich mit Befunden aus der Literatur oder durch Herausarbeiten von Erfolgsfaktoren und Stolpersteinen, die über den konkreten Fall hinaus von Relevanz sind.
+
+\section{Struktur der Arbeit}
+
+Der Aufbau der Masterarbeit spiegelt die genannten Inhalte wider. Kapitel~2 liefert zunächst einen theoretischen Hintergrund und ordnet Prompt-Driven Development in den Kontext bestehender Forschungsarbeiten ein. Dabei werden die Funktionsweise von LLMs und Tools wie Copilot erläutert sowie das Qualitätsmodell ISO/IEC~25010 vorgestellt, um die Bewertungsmaßstäbe der Arbeit zu begründen. Anschließend beschreibt Kapitel~3 das Vorgehen und Design der Fallstudie im Detail. Hier wird dargelegt, wie die App Tap’em mittels Prompt-Engineering entwickelt wurde, und es werden das Single-Case-Design, die Datenerhebungsmethoden sowie die Analyseverfahren erläutert. 
+
+Kapitel~4 präsentiert die Ergebnisse der Untersuchung entlang der Forschungsfragen: Zuerst werden die quantitativen Befunde zu Produktivität und Codequalität berichtet, gefolgt von qualitativen Beobachtungen zur Entwicklererfahrung und Nutzerakzeptanz. In Kapitel~5 folgt eine Diskussion der Resultate. Dabei werden die Ergebnisse kritisch interpretiert, gegen die Erwartungen aus dem Forschungsstand abgewogen und Implikationen für Wissenschaft und Praxis abgeleitet (beispielsweise Empfehlungen für den Einsatz von LLMs oder identifizierte Limitationen des Prompting-Ansatzes). Abschließend fasst ein Fazit die zentralen Erkenntnisse zusammen und gibt einen Ausblick auf zukünftige Forschungsarbeiten. Insbesondere werden offene Fragen benannt, etwa wie generalisierbar die Befunde auf andere Anwendungsdomänen sind oder welche weiterführenden Studien (z.\,B. mit mehreren Fällen oder Langzeitbeobachtungen) sinnvoll wären.
+
+Insgesamt soll diese Struktur eine stringente Herleitung von der Problemstellung bis zu den Schlussfolgerungen gewährleisten. Der Leser bzw. die Leserin wird schrittweise durch Motivation, Theorie, Methodik, Ergebnisse und Interpretation geführt, sodass am Ende ein klarer Erkenntnisgewinn zu der Frage entsteht, wie sich Prompt-Driven Development in der Praxis bewährt und welche Auswirkungen es auf Produktivität, Qualität und Wartbarkeit von Software hat.
+
+\section*{Literatur}
+
+Chen, M., Tworek, J., Jun, H., Yuan, Q., Pinto, H. P. de O., Kaplan, J., \ldots{} \& Zaremba, W. (2021). Evaluating Large Language Models Trained on Code. arXiv [2107.03374]. \url{https://doi.org/10.48550/arXiv.2107.03374}
+
+Ernst, N. A., \& Bavota, G. (2022). AI-Driven Development Is Here: Should You Worry? \emph{IEEE Software}, 39(2), 106--110. \url{https://doi.org/10.1109/MS.2021.3133805}
+
+ISO/IEC 25010:2011. Systems and software engineering -- Systems and software Quality Requirements and Evaluation (SQuaRE) -- System and software quality models. International Organization for Standardization, Genf, 2011. URL: \url{https://www.iso.org/standard/35733.html}
+
+Molison, A. S., Moraes, M., Melo, G., Santos, F., \& Assunção, W. K. G. (2025). Is LLM-Generated Code More Maintainable \& Reliable than Human-Written Code? (Angenommen für IEEE ESEM 2025). arXiv [2508.00700]. \url{https://doi.org/10.48550/arXiv.2508.00700}
+
+Peng, S., Kalliamvakou, E., Cihon, P., \& Demirer, M. (2023). The Impact of AI on Developer Productivity: Evidence from GitHub Copilot. arXiv [2302.06590]. \url{https://doi.org/10.48550/arXiv.2302.06590}
+
+Perry, N., Srivastava, M., Kumar, D., \& Boneh, D. (2023). Do Users Write More Insecure Code with AI Assistants? In \emph{Proceedings of ACM CCS 2023} (pp. 2285--2300). \url{https://doi.org/10.48550/arXiv.2211.03622}
+
+Vaithilingam, P., Zhang, T., \& Glassman, E. L. (2022). Expectation vs. Experience: Evaluating the Usability of Code Generation Tools Powered by Large Language Models. In \emph{Extended Abstracts of CHI 2022} (Paper No. 39, 1--7). \url{https://doi.org/10.1145/3491101.3519665}
+
+
+\chapter{Stand der Forschung}
+\label{chap:stand-der-forschung}
+
+\section{KI-gestützte Softwareentwicklung (Überblick)}
+\label{sec:ki-ueberblick}
+
+Moderne Large Language Models (LLMs) haben in kurzer Zeit Einzug in zahlreiche Bereiche des Software Engineering gehalten. Eine breite Übersicht von Zhang et al.\ identifiziert über 100 Anwendungsfälle – von automatischer Codeerzeugung über Testgenerierung bis zur Dokumentation. LLM-basierte Tools wie GitHub Copilot oder ChatGPT von OpenAI fungieren als \enquote{AI Pair Programmer}, die in natürlichen Sprachdialogen Codevorschläge machen. Diese Tools versprechen Produktivitätssteigerungen und Entlastung bei Routineaufgaben. 
+
+Gleichzeitig stehen sie im Fokus intensiver Forschung: Mehrere empirische Studien untersuchen, wie korrekt und effizient der von KI generierte Code ist und ob Entwickler damit wirklich schneller fertig werden. Erste Ergebnisse zeigen ein gemischtes Bild: Während kontrollierte Experimente deutliche Zeiteinsparungen nachweisen, finden Feldstudien in der Praxis teils keine signifikanten Unterschiede in Output-Metriken nach KI-Einführung. Offenbar ändern sich durch KI-Assistenz auch die Arbeitsweisen der Entwickler – klassische Produktivitätsmaße (wie Anzahl der Commits) greifen eventuell zu kurz. 
+
+Insgesamt zeichnet die Literatur das Bild, dass KI-Assistenten durchaus ein wertvolles Werkzeug sind, jedoch noch mit Einschränkungen in Qualität und verlässlicher Einsetzbarkeit. Forschungslücken bestehen insbesondere darin, Langzeiteffekte in realen Teams zu verstehen und methodische Leitlinien für den optimalen Einsatz von LLMs abzuleiten.
+
+\subsubsection*{Belege}
+\begin{itemize}
+    \item \url{https://arxiv.org}
+    \item \url{https://www.researchgate.net}
+\end{itemize}
+
+\section{Prompt-Driven Development (PDD) – Definition und Konzepte}
+\label{sec:pdd-definition}
+
+Prompt-Driven Development – umgangssprachlich auch \enquote{Vibe Coding} genannt – bezeichnet einen Entwicklungsstil, bei dem die Implementierung weitgehend durch KI-Codegeneratoren erfolgt und der Entwickler stattdessen die richtigen Prompts entwirft sowie die KI-Ausgaben validiert. Nach Miller (2025) verschiebt sich der Fokus des Entwicklers dadurch von der syntaktischen Umsetzung zur architektonischen Steuerung: Der Mensch definiert High-Level-Strukturen und Qualitätsrichtlinien, die KI erledigt den Routine-Code. 
+
+Praktisch läuft PDD iterativ ab: (1) Anforderungen in natürliche Sprache formulieren → (2) Aufteilen in einzelne Prompt-Aufgaben → (3) KI generiert Code → (4) Entwickler prüft/editiert den Code → (5) Einbau ins Projekt und ggf.\ Feedback an die KI durch neue Prompts. Wichtig sind dabei Systemprompts bzw.\ Projektprompts, welche globale Vorgaben machen (z.\,B.\ Architekturmuster, Coding Guidelines) – wie Vaccalluzzo berichtet, kann ein gut formulierter Projekt-Prompt (z.\,B.\ \enquote{Für alle folgenden Codes: Halte dich an Clean Architecture, nutze TypeScript strikt, verwende Lib X für State Management etc.}) die Konsistenz der KI-Ergebnisse verbessern. 
+
+PDD hat einige erkennbare Vorteile: Barriereabsenkung – Personen mit weniger Coding-Praxis, aber Domänenexpertise, können Lösungen bauen; Speed – schnelles Prototyping, da die KI vieles generiert und der Mensch nur feinjustiert. Allerdings stehen dem auch neue Herausforderungen gegenüber (siehe Abschnitt~\ref{sec:risiken} zu Risiken). PDD steckt derzeit noch in den Anfängen – es gibt weder standardisierte Prozesse noch umfassende Werkzeugketten dafür. Viele Entwickler experimentieren aber bereits damit, und Konferenzen/Communities beginnen Best Practices zu teilen (z.\,B.\ Prompt-Pattern-Kataloge). Diese Arbeit positioniert sich genau an dieser Schnittstelle zwischen Theorie und Praxis: Es soll untersucht werden, wie PDD in einem konkreten Fall (der Tap’em-App) umgesetzt wurde und mit welchen Effekten.
+
+\subsubsection*{Belege}
+\begin{itemize}
+    \item \url{https://capgemini.github.io}
+    \item \url{https://andrewships.substack.com}
+    \item \url{https://arxiv.org}
+\end{itemize}
+
+\section{Produktivitätseffekte von KI-Codegeneratoren}
+\label{sec:produktivitaet}
+
+Eine Kernfrage ist, ob Tools wie Copilot \& Co.\ Entwickler tatsächlich schneller machen. Hier liefern kontrollierte Studien zunächst eindrucksvolle Zahlen: In einem Experiment von Peng et al.\ (2023) löste die Copilot-Gruppe eine Programmieraufgabe 55{,}8\,\% schneller als die Kontrollgruppe. Auch interne Befragungen (z.\,B.\ von GitHub/Microsoft) berichten positive Effekte: Viele Nutzer geben subjektiv Zeitersparnis und weniger mentale Ermüdung bei Routinetätigkeiten an. 
+
+Allerdings relativieren neuere unabhängige Untersuchungen diese Euphorie. Stray et al.\ (2025) analysierten Commit-Statistiken über zwei Jahre in einem großen Projekt und fanden keine signifikante Steigerung der Code-Produktivität durch Copilot-Einführung. Mögliche Erklärung: Entwickler verbringen mit KI zwar weniger Zeit beim Tippen, aber mehr Zeit beim Verstehen, Korrigieren und Anpassen der KI-Vorschläge. Vaithilingam et al.\ beobachteten in ihrer Nutzerstudie, dass Copilot in einfachen Fällen zwar \enquote{Tastaturarbeit} spart, bei schwierigeren Problemen aber die Debugging-Schleifen verlängerte, da Entwickler erst den KI-Code durchdringen mussten. 
+
+Wichtig ist daher, welche Metrik betrachtet wird: Misst man die reine \enquote{Time-to-First-Working-Solution} (wie im Laborsetting von Peng et al.\ (2023)), zeigen sich Vorteile. Betrachtet man hingegen reale Ende-zu-Ende-Zyklen einschließlich Fehlersuche, Dokumentation etc., können sich Effekte ausmitteln. Übereinstimmend zeigen Studien, dass KI-Assistenten vor allem bei Routineaufgaben und Boilerplate Zeit einsparen können; dadurch können sich Entwickler stärker auf anspruchsvollere Teile der Aufgabe konzentrieren. Zugleich hängt der Effekt von der Nutzungsstrategie ab: Barke et al.\ unterscheiden z.\,B.\ zwischen einem zielgerichteten \enquote{Acceleration}-Modus und einem explorativen Nutzungsmodus, der mitunter zusätzlichen Aufwand erzeugt. 
+
+Für die Praxis bedeutet dies, dass Produktivitätseffekte stark kontextabhängig sind: Erfahrung, Aufgabentyp und Nutzungsstrategie entscheiden, ob KI als Beschleuniger wirkt oder zusätzlichen Abstimmungs- und Korrekturaufwand erzeugt. Diese Masterarbeit wird anhand realer Entwicklungsdaten (Commits, Durchlaufzeiten in der Fallstudie) prüfen, ob im promptgetriebenen Projekt Tap’em messbare Produktivitätsgewinne aufgetreten sind oder ob sich die Entwicklungsdauer aufgrund zusätzlicher Iterationsschleifen erhöht hat.
+
+\subsubsection*{Belege}
+\begin{itemize}
+    \item \url{https://arxiv.org}
+    \item \url{https://tianyi-zhang.github.io}
+    \item \url{https://cseweb.ucsd.edu}
+\end{itemize}
+
+\section{Code-Qualität und Wartbarkeit des KI-generierten Codes}
+\label{sec:codequalitaet}
+
+Neben Geschwindigkeit ist die Qualität des Ergebnisses entscheidend – es nützt wenig, wenn KI zwar schnell Code schreibt, dieser aber buggy, unsicher oder unwartbar ist. Frühere Studien haben hier sowohl Stärken als auch Schwächen aufgedeckt. 
+
+\textbf{Korrektheit:} Copilot \& Co.\ liefern häufig syntaktisch korrekten und kompilierbaren Code (über 90\,\%), jedoch ist nur rund 30--40\,\% der Lösungen unmittelbar vollständig funktional. Das heißt, der generierte Code läuft meist, deckt aber oft nicht alle Anforderungen ab – Entwickler müssen ihn ergänzen oder Testfälle anpassen. 
+
+\textbf{Code Smells/Wartbarkeit:} Interessanterweise erzeugen LLMs eher \enquote{einfachen} Code. Nguyen \& Nadi stellten fest, dass Copilot-Lösungen im Schnitt weniger zyklomatisch komplex sind und keine übertrieben cleveren Tricks nutzen. Das könnte ein Vorteil für die Wartbarkeit sein – simplerer Code ist tendenziell leichter zu verstehen. Andererseits berichten Entwickler, dass es schwer sein kann, KI-Code zu debuggen, gerade weil man ihn nicht selbst geschrieben hat und daher weniger mental \enquote{modelliert}. Hier hilft es, wenn KI-Code gut kommentiert oder in logische Abschnitte gegliedert ist – es gibt Ansätze, LLMs dazu zu bringen, ihren Output zu erklären, was künftig die Verständlichkeit erhöhen könnte. 
+
+\textbf{Sicherheit:} Ein besonders kritischer Qualitätsaspekt. Mehrere Arbeiten (u.\,a.\ Pearce 2022, Perry 2023) zeigen, dass LLMs häufig unsicheren Code vorschlagen – von SQL-Injections bis Pufferüberläufen. Das Risiko ist zweigeteilt: Zum einen kann die KI unsichere Muster aus Trainingsdaten übernehmen (z.\,B.\ veraltete Kryptografie), zum anderen neigen Entwickler dazu, dem KI-Code zu vertrauen, selbst wenn er Schwachstellen enthält. Perry et al.\ fanden, dass Teilnehmende mit KI-Hilfe signifikant mehr Sicherheitsfehler produzierten und gleichzeitig fälschlich annahmen, der resultierende Code sei sicher. Dieses Phänomen der Automationsverzerrung (Automation Bias) muss bei PDD adressiert werden, etwa durch automatische Security-Scans der KI-Ausgaben und eine Sensibilisierung der Nutzenden für Sicherheitsaspekte. 
+
+\textbf{Refactoring und technische Schuld:} Aktuell gibt es wenige quantitative Daten dazu, ob LLM-Code systematisch mehr technische Schuld (\emph{Technical Debt}) verursacht. In Praxisberichten wird jedoch wiederholt darauf hingewiesen, dass KI-Code zwar \enquote{funktioniert}, aber z.\,B.\ Hardcodierungen oder unkonventionelle Strukturen enthalten kann (siehe Vaccalluzzo: \enquote{Just because it works doesn’t make it right}). Ein Teil der Forschung widmet sich dem umgekehrten Einsatz, nämlich LLMs beim Aufspüren von Code Smells oder beim automatischen Refactoring einzusetzen. Erste Erfolge gibt es z.\,B.\ mit Prompt-Mustern, die ChatGPT anweisen, Abhängigkeiten zu reduzieren oder Code zu kommentieren; diese Methoden sind jedoch noch in Entwicklung. 
+
+Zusammenfassend ist die Codequalität ein kritischer Faktor der KI-gestützten Programmierung: Ohne zusätzliche Maßnahmen ist sie häufig hinreichend, aber nicht verlässlich. Entwickler müssen daher Review- und Testaufwände einplanen, was mögliche Zeitgewinne durch die Codegenerierung relativieren kann. In der Fallstudie werden Metriken wie Defektrate, Linting-Warnungen oder Komplexitätsmaße herangezogen, um zu prüfen, ob PDD-Code im konkreten Projekt schlechter, gleichwertig oder möglicherweise strukturierter ist als menschlich geschriebener Code.
+
+\subsubsection*{Belege}
+\begin{itemize}
+    \item \url{https://2022.esec-fse.org}
+    \item \url{https://sarahnadi.org}
+    \item \url{https://tianyi-zhang.github.io}
+    \item \url{https://arxiv.org}
+    \item \url{https://cset.georgetown.edu}
+\end{itemize}
+
+\section{Risiken und Herausforderungen (Halluzinationen, Rechtliches, Abhängigkeit)}
+\label{sec:risiken}
+
+Prompt-Driven Development bringt neue spezifische Risiken mit sich, die in der Literatur und Praxis identifiziert wurden. 
+
+\textbf{Halluzinationen \& Fehler:} LLMs können plausibel klingende, aber falsche Inhalte \enquote{halluzinieren}. Im Kodierungskontext bedeutet das z.\,B.\ die Erfindung nicht-existenter Funktionen oder Bibliotheken – sogenannte \enquote{Package Hallucinations}. Spracklen et al.\ (2024) zeigten, dass LLMs oft Bibliotheksnamen generieren, die es gar nicht gibt (in 5--20\,\% der Fälle). Dies ist nicht nur ein Bug, sondern birgt ein Supply-Chain-Risiko: Angreifer könnten diese Phantom-Pakete registrieren und mit Malware füllen, sodass Entwickler unwissentlich Schadcode einbinden. Auf diese Gefahr wird in Sicherheitskreisen (z.\,B.\ OWASP) bereits hingewiesen, und es bedarf Gegenmaßnahmen (z.\,B.\ dass die IDE warnt, wenn ein importiertes Paket unbekannt ist). 
+
+\textbf{Security-Vulnerabilities:} Wie oben erwähnt, sind unsichere Vorschläge ein großes Risiko – hier muss PDD durch ergänzende Tools (Static Code Analysis, Security Linters) flankiert werden, um die KI-Ausgaben zu prüfen. In der Arbeit von Tony et al.\ zeigt sich jedoch auch eine Chance: Durch geeignet formulierte Prompts (z.\,B.\ iterative Self-Critique mittels RCI oder explizites Anfordern sicherer Muster) kann die Anzahl der Sicherheitslücken reduziert werden. Das erfordert allerdings zusätzliche Kompetenz des Entwicklers im Prompting. 
+
+\textbf{Lizenz- und Urheberrechtsfragen:} Copilot und ähnliche generative Modelle wurden auf riesigen Open-Source-Korpora trainiert. Es ist möglich, dass sie ganze Ausschnitte nahezu wörtlich reproduzieren, was rechtlich problematisch wäre. Tatsächlich läuft dazu derzeit eine Sammelklage (siehe Abschnitt \enquote{Copilot lawsuit}), die klären soll, ob Training auf GitHub-Code und unveränderter Output ohne Lizenzangaben gegen Lizenzen verstößt. Bisheriges Indiz: Copilot kann z.\,B.\ aus Kommentar-Prompts manchmal berühmte Code-Snippets nahezu 1:1 ausgeben, inklusive ursprünglicher Variablennamen – das wäre klar eine Urheberrechtsverletzung, wenn das Snippet geschützt war. Das Gericht hat einige Anklagepunkte zugelassen (u.\,a.\ Verletzung von Open-Source-Lizenzbedingungen und DMCA~1202 bezüglich Entfernen von Urheberinfo). Für Unternehmen heißt das: PDD birgt ein Compliance-Risiko; man muss ggf.\ nachhalten, welche KI-generierten Codestücke welchem Ursprung ähneln, und Lizenzen beachten. Tools dafür stehen allerdings noch aus (Ansätze mit Wasserzeichen oder AI-Output-Scannern sind in Forschung). 
+
+\textbf{Verzerrungen und ethische Aspekte:} LLMs können vorhandene Verzerrungen in Trainingsdaten verstärken – z.\,B.\ könnten Code-Beispiele, die ausschließlich \enquote{alice/bob} nutzen, stereotype Variablennamen begünstigen oder unbewusst bestimmte Programmierstile (etwa weniger energieeffiziente Muster aus häufigeren Daten) fördern. Zudem kann KI unbeabsichtigt diskriminierende oder unsensible Inhalte in Dokumentationskommentaren erzeugen. Das wurde für Fließtext ausgiebig diskutiert; im Code-Bereich ist es weniger offensichtlich, aber relevant (z.\,B.\ bei KI-generierten In-App-Texten). 
+
+\textbf{Überabhängigkeit \& \enquote{Deskilling}:} Ein oft geäußerter Punkt: Wenn sich Entwickler zu sehr auf die KI verlassen, könnten Kernkompetenzen leiden. Einfaches Beispiel: Mit Autocomplete tippen viele weniger bewusst – übertragen auf Copilot könnte es bedeuten, dass man seltener auswendig weiß, wie man eine bestimmte API aufruft, weil man es der KI überlässt. Langfristig könnte das zu einer Erosion von Programmiergrundlagen führen (ähnlich wie ständige Navi-Nutzung die Orientierungsfähigkeit mindert). Andererseits argumentieren Befürworter, dass diese Fähigkeiten dann eben nicht mehr so wichtig sind, solange man \enquote{höherwertige} Skills (Architekturdenken, Problemzerlegung – siehe Miller) hat. Empirisch gibt es hier noch kaum Daten; einige Bildungskontexte berichten jedoch, dass Schüler durch Copilot teils Lösungen abliefern, die sie nicht verstehen – was Lerneffekte hemmt. 
+
+Zusammenfassend erfordert PDD einen bewussten Umgang mit diesen Risiken. In Kapitel~5 (Diskussion) werden, basierend auf der Fallstudie und der Literatur, Empfehlungen abgeleitet, wie diese Herausforderungen adressiert werden können – z.\,B.\ durch die Kombination von KI mit QA-Maßnahmen, Guidelines für Prompt-Inhalte (Sicherheitsregeln explizit vorgeben, Lizenzaspekte prüfen) und eine Schulung von Entwicklern im Sinne eines \enquote{kritischen Partners} statt eines unreflektierten Vertrauens in den KI-Output.
+
+\subsubsection*{Belege}
+\begin{itemize}
+    \item \url{https://arxiv.org}
+    \item \url{https://www.researchgate.net}
+    \item \url{https://finnegan.com}
+    \item \url{https://cset.georgetown.edu}
+\end{itemize}
+
+
+\chapter{Methodik (Fallstudie \& Evaluation)}
+\label{chap:methodik}
+
+\section{Studiendesign und Fallstudienkontext}
+\label{sec:studiendesign}
+
+Die Fallstudie betrachtet die Entwicklung der Flutter-App \enquote{Tap’em}, die über mehrere Monate hinweg nahezu ausschließlich mittels Prompt-Driven Development vorangetrieben wurde (der Autor übernahm dabei die Rolle des Prompt-Ingenieurs; die eigentliche Code-Erstellung erfolgte durch KI). Es handelt sich um eine \emph{explanatory single-case study}: Ziel ist es, den Entwicklungsprozess und die resultierende Codebasis von Tap’em zu analysieren, um Erkenntnisse über Prompt-Driven Development (PDD) in der Praxis zu gewinnen. 
+
+Konkret gliedert sich die Methodik in zwei Teile:
+\begin{enumerate}
+    \item \textbf{Retrospektive Prozessanalyse:} Auswertung der Projekthistorie (Commits, Branching, Timing), ergänzt durch ein Entwickler-Logbuch (sofern vorhanden), um Ablauf, Iterationen und mögliche Engpässe zu rekonstruieren.
+    \item \textbf{Ergebnisanalyse:} Untersuchung der Qualität des resultierenden Produkts (Code und App) anhand objektiver Metriken und Vergleiche.
+\end{enumerate}
+
+Diese Zweiteilung ermöglicht es, sowohl das \enquote{Wie} (Vorgehen, Interaktionen, Aufwandsprofil) als auch das \enquote{Was} (Ergebnisqualität) von PDD zu beleuchten.
+
+\section{Datenerhebung: Projektartefakte und Metriken}
+\label{sec:datenerhebung}
+
+Für die Analyse werden verschiedene Datenquellen herangezogen, die im Git-Repository (Branch \texttt{antigravity\_dev}) oder in begleitenden Tools vorliegen.
+
+\subsection*{Commit-Historie \& Repository-Metriken}
+
+Jeder Git-Commit trägt Zeitstempel und Kommentar. Durch Parsen der Commits lässt sich die zeitliche Verteilung der Entwicklungsarbeit ermitteln – z.\,B.\ Durchlaufzeiten für Features oder Bugfixes: Wir identifizieren \enquote{Feature X implemented}-Commits und messen, wie lange vom Task-Beginn (erkennbar an Issue oder Commit-Nachricht \enquote{Start}) bis zum Abschluss verging. 
+
+Bei PDD erwartet man möglicherweise schnellere Durchläufe für Prototypen, aber mehr Zwischenschritte (viele kleine Commits). Auch die Commit-Frequenz (Commits pro Tag) wird verglichen mit üblichen Projekten des Autors (falls Vergleichsdaten verfügbar) oder mit Phasen vor/nach KI-Einsatz. Zudem betrachten wir die Commit-Größe (Änderungsumfang in LOC): PDD könnte zu größeren, selteneren Commits führen, wenn viel Code in einem Rutsch generiert wird, oder umgekehrt zu vielen kleinen Commits je Prompt. Diese quantitativen Indikatoren geben Hinweise auf Produktivitäts- und Arbeitsstiländerungen.
+
+\subsection*{Prompt-Logs und Entwicklungstagebuch}
+
+Idealerweise liegen Aufzeichnungen der verwendeten Prompts und KI-Antworten vor (z.\,B.\ ChatGPT-Verläufe oder vom Autor notierte exemplarische Prompts). Falls vorhanden, werden diese qualitativ ausgewertet: Welche Prompt-Typen kamen zum Einsatz (z.\,B.\ \enquote{Implementiere Klasse X, sie soll Y können})? Gab es Schleifen – d.\,h.\ mehrere Versuche, bis der Code akzeptabel war? Dies lässt sich etwa erkennen, wenn der Entwickler denselben Prompt mehrfach leicht variiert hat. 
+
+Solche Logs erlauben es, die in Kapitel~\ref{chap:stand-der-forschung} beschriebenen Interaktionsmuster (z.\,B.\ \enquote{Acceleration vs.\ Exploration}, Coping-Strategien bei Fehlern) am konkreten Fall zu verifizieren. Zudem können exemplarische Fälle extrahiert werden, etwa: \enquote{Halluzination erkannt: KI lieferte falschen API-Call – was tat der Entwickler dann?} Dies lässt sich aus Folgeprompts oder Code-Änderungen ablesen.
+
+\subsection*{Issue-Tracker \& Dokumentation}
+
+Falls Tap’em ein Issue-Board oder eine TODO-Liste besitzt (im Repository oder extern), wird geprüft, wie Aufgaben beschrieben und abgearbeitet wurden. Besonders interessant ist, ob Aufgaben in natürlicher Sprache formuliert wurden (was PDD nahelegt) und wie lange sie offen blieben. Das Issue-Tracking kann Aufschluss darüber geben, ob bestimmte Problemklassen (z.\,B.\ UI-Feintuning, State-Management-Probleme) besonders aufwendig waren – möglicherweise, weil die KI dafür weniger geeignete Vorschläge lieferte und längere Nacharbeit erforderlich wurde.
+
+\subsection*{Code-Metriken der Finalversion}
+
+Um die Code-Qualität und Wartbarkeit einzuschätzen, werden statische Code-Metriken herangezogen, etwa:
+\begin{itemize}
+    \item Maintainability Index,
+    \item zyklomatische Komplexität pro Funktion,
+    \item Anzahl Code Smells / Lint-Warnungen.
+\end{itemize}
+
+Tools wie \texttt{dart analyze} (Flutter-Linter) und ggf.\ ein \enquote{metrics analyzer} werden auf den finalen Stand angewendet. Die Ergebnisse werden mit typischen Schwellen verglichen oder – falls verfügbar – mit einem ähnlichen konventionell entwickelten Projekt. So lässt sich erkennen, ob PDD-Code signifikant mehr \enquote{Geruch} (z.\,B.\ lange Methoden, viele Magic Numbers) aufweist oder im üblichen Rahmen liegt. 
+
+Auch die Testabdeckung (Code Coverage) wird erhoben, sofern Tests existieren – ein niedriger Wert könnte darauf hindeuten, dass während PDD wenige Tests geschrieben wurden (möglicherweise, weil der Fokus auf der Implementation per KI lag). Falls Tests vorhanden sind, wäre die Frage \enquote{Wer hat den Test geschrieben – KI oder Mensch?} interessant, ist nachträglich aber nur qualitativ über Commit-Kommentare abzuschätzen.
+
+\subsection*{Defekt-Analyse}
+
+Um die Robustheit zu beurteilen, werden Bugfix-Commits identifiziert (z.\,B.\ Commit-Nachrichten mit \enquote{fix bug} oder als Bug markierte Issues). Die Rate der Bugs pro Feature sowie die Art der Bugs (z.\,B.\ trivialer Syntaxfehler vs.\ konzeptioneller Fehler) wird kategorisiert. Dadurch lässt sich erkennen, ob PDD bestimmte Fehler häuft – etwa Flüchtigkeitsfehler, die auf KI-Halluzinationen zurückgehen (z.\,B.\ \texttt{NoSuchMethodError} wegen falscher API – ein typischer KI-Lapsus), oder Designfehler (z.\,B.\ Performance-Probleme, weil die KI eine ineffiziente Lösung gewählt hat). 
+
+Auch potentielle Sicherheitslücken werden untersucht, z.\,B.\ durch die Suche nach unsicheren Patterns (hardcodierte Zugangsdaten, fehlende Input-Validierung) im Code. Ein vollständiges Security-Audit ist nicht möglich, doch ein Abgleich mit gängigen CWE-Mustern in Flutter-Code (z.\,B.\ unsicherer HTTP-Client ohne Zertifikatprüfung) ist sinnvoll – gerade weil KI-generierter Code diese Aspekte häufig vernachlässigt.
+
+\subsection*{App-Performance \& Nutzungsfeedback}
+
+Falls Telemetriedaten oder Nutzerfeedback existieren (z.\,B.\ Crash-Reports, App-Store-Reviews), werden auch diese berücksichtigt. Viele Crashes könnten auf mangelnde Codequalität hindeuten. Performance-Metriken (Startzeit, Speicherverbrauch), sofern messbar, könnten Hinweise auf suboptimalen KI-Code geben (z.\,B.\ zu viele unnötige Rebuilds im Flutter-UI). Solche Daten liegen allerdings nur vor, wenn entsprechendes Monitoring implementiert wurde.
+
+\medskip
+
+Durch die Kombination dieser Artefakte entsteht ein detailliertes Bild des Projekts: Was wurde gemacht (Commits, Code), wie wurde es gemacht (Prompts, Iterationen) und was kam heraus (Codequalität, Fehler).
+
+\section{Operationalisierung der Forschungsfragen}
+\label{sec:operationalisierung}
+
+Aus den Forschungsfragen werden konkrete Analysefragen und Metriken abgeleitet:
+
+\subsection*{RQ1 – Produktivität}
+
+\textbf{Metriken:}
+\begin{itemize}
+    \item durchschnittliche Entwicklungszeit pro Feature (Definition von \enquote{Feature} anhand eines Issues oder einer zusammenhängenden Commit-Serie);
+    \item Vergleich dieser Zeiten mit Schätzungen oder typischen Werten aus der Literatur bzw.\ aus projekteigenen Vorphasen;
+    \item Anteil automatisch generierten Codes (ggf.\ abschätzbar über KI-typische Marker im Code oder experimentelle Ansätze wie GPT-Fingerprinting);
+    \item Entwickler-Aufwandsprotokoll (so vorhanden; z.\,B.\ \enquote{X Stunden auf Problem Y verwendet}).
+\end{itemize}
+
+Darüber hinaus erfolgt eine qualitative Bewertung von Aspekten wie Flow-Zuständen: Lässt sich an Projektmeilensteinen ablesen, ob es lange Phasen der Stagnation oder kontinuierlichen Output gab?
+
+\subsection*{RQ2 – Qualität}
+
+\textbf{Metriken:}
+\begin{itemize}
+    \item Anzahl Bugs pro 1000 LOC,
+    \item Anzahl Lint-Rule-Verstöße,
+    \item Komplexitätsmetriken,
+    \item Test-Erfolgsquote (falls automatisierte Tests vorliegen).
+\end{itemize}
+
+Zusätzlich werden Code-Beispiele qualitativ bewertet (Code-Review durch z.\,B.\ mehrere unabhängige Kollegen mit einem Bewertungsschema für Lesbarkeit, Stil, Eleganz). Wenn PDD-Code signifikant unstrukturierter ist, sollte sich dies in mehr Linter-Warnungen oder negativen Reviewer-Einschätzungen (\enquote{würde ein strenges Code-Review nicht bestehen}) niederschlagen. Ein spezifischer Fokus liegt auf KI-typischen Patzern, etwa dupliziertem Code statt Wiederverwendung (Indiz: mehrere sehr ähnliche Codeblöcke; Häufigkeit von Code-Duplikaten).
+
+\subsection*{RQ3 – Wartbarkeit}
+
+Einige Kennzahlen überschneiden sich mit den Qualitätsmetriken (Komplexität, Code Smells). Zusätzlich werden betrachtet:
+
+\begin{itemize}
+    \item \textbf{Konsistenz:} Wurden Architektur- und Namenskonventionen eingehalten? PDD kann hier problematisch sein, falls Prompts uneinheitlich waren – etwa Modelle teils deutsch, teils englisch benannt. Skripte können heterogene Benennungen oder Schichtverletzungen identifizieren.
+    \item \textbf{Evolvierbarkeit:} Wurden nachträgliche Änderungen (Refactorings) notwendig, um KI-Ausgaben aufzuräumen? Indikator sind größere Refactoring-Commits. 
+    \item \textbf{Mini-Experiment (optional):} Ein neues Mini-Feature wird dem bestehenden Code entweder manuell oder per KI hinzugefügt. Wie leicht ist es, sich im KI-Code zurechtzufinden? (Zeitbedarf und subjektive Einschätzung des Autors). Dies ist informell, liefert aber einen Eindruck, wie verständlich der eigene KI-Code ist.
+\end{itemize}
+
+\subsection*{RQ4 – Risiken}
+
+Viele Analysen zu Risiken laufen parallel zu den oben genannten Schritten:
+
+\begin{itemize}
+    \item \textbf{Halluzinationen:} Identifikation etwa über Marker wie \texttt{FIXME} im Code oder Commit-Messages wie \enquote{replaced wrong API usage}. 
+    \item \textbf{Lizenzrisiken:} Prüfung, ob Code-Fragmente aus verwendeten Open-Source-Bibliotheken möglicherweise direkt übernommen wurden. Falls verfügbar, Einsatz spezialisierter Tools (z.\,B.\ \enquote{Copilot Detective}) zur Erkennung von Matches mit Trainingsdaten.
+    \item \textbf{Verzerrungen/Ethik:} Suche nach potenziell problematischen Begriffen oder Formulierungen, insbesondere in Kommentaren oder automatisch generierten UI-Texten (in einer Flutter-App voraussichtlich geringer, aber nicht ausgeschlossen).
+    \item \textbf{Entwickler-Abhängigkeit:} Qualitative Einschätzung im Entwicklerinterview (Selbstreflexion des Autors): Hatte man das Gefühl, bestimmte Aufgaben ohne KI nicht mehr bewältigen zu können? Gab es \enquote{Deskilling}-Tendenzen?
+\end{itemize}
+
+\section{Auswertung und Validitätsbetrachtungen}
+\label{sec:auswertung-validitaet}
+
+Die Auswertung erfolgt quantitativ-deskriptiv für die genannten Metriken (Tabellen, Zeitreihengrafiken) und qualitativ für die Log- und Code-Analysen. Es wird versucht, \emph{Triangulation} einzusetzen: Ein Befund wie \enquote{hohe Bugrate in Phase X} wird etwa durch Commit-Inspection (welche Bugs traten auf?) und eventuelle Notizen trianguliert, um Ursachen zu verstehen (war dies auf KI-Vorschläge zurückzuführen oder handelte es sich um besonders schwierige Features?). 
+
+Für die qualitativen Prompt-Analysen wird eine Kodierung vorgenommen, angelehnt an existierende Kategorienschemata (z.\,B.\ das von Barke et al.\ für Nutzungsmodi oder Vaithilingams Coping-Strategien). Es wird geprüft, ob in den Logs Beispiele für \enquote{Acceleration vs.\ Exploration} auftreten, und diese werden entsprechend markiert.
+
+Besondere Sorgfalt gilt den \emph{Threats to Validity}:
+
+\begin{description}
+    \item[Interne Validität:] Da es sich um eine Fallstudie ohne Experimentalkontrolle handelt, müssen mögliche Konfundierungen berücksichtigt werden. Ein beobachteter Produktivitätsgewinn könnte etwa nicht nur durch PDD, sondern auch durch zunehmende Projektroutine des Entwicklers entstanden sein. Dem wird begegnet, indem verschiedene Projektphasen verglichen werden (z.\,B.\ Phasen vor und nach explizitem PDD-Einsatz). Wo dies nicht möglich ist, wird transparent gemacht, dass Korrelation nicht Kausalität bedeutet.
+    
+    \item[Externe Validität:] Es handelt sich um ein einzelnes Projekt, zudem von einem Nicht-Softwareentwickler durchgeführt. Die Ergebnisse sind daher vor allem für ähnliche Solo-Projekte mit vergleichbaren Rahmenbedingungen relevant und lassen sich nicht unmittelbar auf große, professionelle Entwicklungsteams übertragen. Die Besonderheiten von Tap’em (Domäne, Projektgröße, Tech-Stack Flutter) werden beschrieben, damit Leser die Übertragbarkeit einschätzen können.
+    
+    \item[Konstruktvalidität:] Die gewählten Metriken müssen das messen, was sie zu messen vorgeben. Beispielsweise muss \enquote{Produktivität} = \enquote{Zeit pro Feature} klar definiert werden: Was ist ein Feature, und wie werden Start/Ende bestimmt (z.\,B.\ über Issues oder spezielle Commit-Tags)? Codequalitätsmetriken (Komplexität, Linting) sind etablierte Größen, decken jedoch nicht alle Aspekte ab (z.\,B.\ Architekturqualität). Daher werden sie durch manuelle Reviews ergänzt.
+    
+    \item[Reliabilität:] Die quantitative Auswertung wird nach Möglichkeit automatisiert (Skripte), sodass sie reproduzierbar ist. Die qualitative Analyse der Logs enthält subjektive Elemente; daher wird das Vorgehen genau dokumentiert (Kategorien aus der Literatur abgeleitet, mehrfache Durchsicht der Logs). Da nur eine Person (der Autor) codiert, besteht eine Verzerrungsgefahr; als mildernde Maßnahme können exemplarische Prompt-Dialoge einer unabhängigen Person zur Einschätzung vorgelegt werden (Peer Debriefing).
+\end{description}
+
+Durch dieses methodische Vorgehen – Mixed Methods, Triangulation und systematische Validitätsreflexion – soll sichergestellt werden, dass die Fallstudienergebnisse nachvollziehbar und vertrauenswürdig sind. Die Messungen orientieren sich an etablierten Benchmarks (z.\,B.\ Lintern für Codequalität) und erweitern diese dort, wo nötig (z.\,B.\ Prompt-Log-Analyse mittels qualitativem Framework). Wichtig ist, dass diese Fallstudie explorativen Charakter hat: Sie soll primär Hypothesen generieren und Tendenzen aufzeigen, nicht letztgültige Aussagen über PDD liefern.
+
+\subsubsection*{Belege}
+\begin{itemize}
+    \item \url{https://arxiv.org}
+    \item \url{https://tianyi-zhang.github.io}
+    \item \url{https://cseweb.ucsd.edu}
+\end{itemize}
+
+
+\chapter{Ergebnisse}
+\label{chap:ergebnisse}
+
+Die Ergebnisse der Fallstudie werden im Folgenden entlang der Forschungsfragen RQ1 bis RQ6 dargestellt. Dabei wird jeweils zwischen beobachteten Fakten, deren Interpretation und Bewertung differenziert. Fehlende oder unklare Datenpunkte werden transparent gemacht. Abschließend erfolgt eine Einordnung der Befunde in das ISO/IEC-25010-Qualitätsmodell und eine exemplarische Gewichtung der Qualitätskriterien mittels MCDA.
+
+\section{RQ1: Produktivität bei Prompt-Driven Development}
+\label{sec:rq1-produktivitaet}
+
+\subsection*{Beobachtung}
+
+Die Entwicklung von Tap’em wurde in sieben Sprints (A--G) durchgeführt, die jeweils konkrete Featureziele hatten. Innerhalb kurzer Zeit wurden umfangreiche Funktionalitäten implementiert, darunter NFC-Integration bereits in Sprint~B und Offline-Synchronisation in Sprint~C. Ein abschließender Codebase-Snapshot zeigt etwa 570 Dart-Dateien mit insgesamt 22\,791 Lines of Code (LOC) im Flutter-Client. Hinzu kommen JavaScript-Code für Cloud Functions (z.\,B.\ XP-Vergabe) in geringem Umfang. Diese Größenordnung an Code wurde von einer einzigen Entwicklerperson mithilfe von LLM-Prompts erzeugt. 
+
+Obwohl die genaue Entwicklungsdauer pro Sprint nicht minutiös erfasst wurde, deutet der Umfang der implementierten Features auf eine hohe Produktivität hin. Viele Routineaufgaben (etwa Boilerplate-Code für die App-Struktur) konnten durch Codex-Aufforderungen (Prompts) zügig erledigt werden.
+
+\subsection*{Interpretation}
+
+Die fehlende Versionshistorie des öffentlichen Repositoriums erschwert eine präzise Messung der Produktivität (z.\,B.\ LOC pro Tag). Es liegt nur ein finaler Stand vor, sodass Kennzahlen wie Time-to-Feature oder Fehlerquoten während der Entwicklung nicht quantitativ bestimmt werden konnten. Qualitativ lässt sich jedoch feststellen, dass mittels Prompt-Engineering in jedem Sprint essenzielle Funktionen erreicht wurden, was auf eine beschleunigte Umsetzung hindeutet. 
+
+Beispielsweise wurden komplexe Features (Offline-Modus, Gamification) jeweils innerhalb eines Sprint-Zyklus integriert -- ein Indikator dafür, dass der LLM-gestützte Ansatz hier zu einer Verkürzung der Implementierungszeit geführt haben könnte. Der Entwickler berichtete zudem, dass insbesondere repetitive Codeteile (z.\,B.\ Model-Klassen, UI-Boilerplate) vom LLM nahezu sofort erstellt wurden, wodurch er sich auf die promptweise Formulierung der Anforderungen konzentrieren konnte. Damit verlagerte sich der Aufwand teilweise vom eigentlichen Codieren hin zum Verfassen und Verfeinern der Prompts.
+
+\subsection*{Bewertung}
+
+In Abwesenheit einer Kontrollgruppe ist die Produktivitätssteigerung nicht exakt quantifizierbar und bleibt kontextgebunden. Dennoch zeigen die Ergebnisse in RQ1, dass ein einzelner Entwickler mit KI-Unterstützung in der Lage war, in relativ kurzer Zeit eine voll funktionsfähige App mit rund 23\,000 LOC zu erstellen -- ein Umfang, der traditionell mehrere Personenmonate erfordern würde. 
+
+Diese Beobachtung deckt sich tendenziell mit empirischen Studien zu AI-basierten Code-Assistenten: kürzlich durchgeführte Feldexperimente mit über 4\,000 Entwicklern fanden im Schnitt rund 26\,\% höhere Produktivität (gemessen in Pull Requests pro Zeiteinheit) bei Verwendung von GitHub Copilot.\footnote{Vgl.\ z.\,B.\ \url{https://www.infoq.com}.} Unser Einzelfall lässt vermuten, dass zumindest für Routine- und Boilerplate-Aufgaben eine vergleichbare Beschleunigung erreicht wurde. 
+
+Allerdings ist zu beachten, dass die Integration des LLM auch Overhead verursachte -- der Entwickler musste teilweise mehrere Prompt-Zyklen durchlaufen, um ein zufriedenstellendes Ergebnis zu erhalten. Dieser Mehraufwand relativiert den Produktivitätsgewinn etwas und wurde in der Planung als mögliches Risiko erkannt. Insgesamt kann RQ1 dahingehend beantwortet werden, dass Prompt-Driven Development im Fall Tap’em eine hohe Produktivität ermöglichte, jedoch mit der Einschränkung, dass genaue Kennzahlen fehlen und Effizienzgewinne vor allem durch qualitative Einschätzung belegt sind. Diese Aussage ist auf den vorliegenden Fall begrenzt und nicht ohne Weiteres generalisierbar.
+
+\section{RQ2: Softwarequalität nach ISO/IEC~25010}
+\label{sec:rq2-qualitaet}
+
+\subsection*{Beobachtung}
+
+Tap’em wurde hinsichtlich mehrerer Qualitätsmerkmale untersucht, orientiert am ISO/IEC-25010-Modell (funktionale Eignung, Zuverlässigkeit, Sicherheit, Performance, Kompatibilität, Usability, Wartbarkeit und Portabilität). Insgesamt zeigt der Fall gemischte Befunde: 
+
+Die funktionale Qualität ist hoch -- alle Kernanforderungen des Pilot-Scopes wurden implementiert. Die App bietet unter anderem Multi-Tenant-Unterstützung, NFC-basiertes Gerätepaaren, ein Challenge-/Badges-System und Offline-Fähigkeit.\footnote{Vgl.\ Projektbeschreibung auf GitHub, \url{https://github.com}.} Diese Breite an Features weist auf eine hohe funktionale Vollständigkeit hin. Zudem wurden keine Fehlfunktionen der Haupt-Features berichtet; die App erfüllt die vorgesehenen Aufgaben korrekt (funktionale Korrektheit).
+
+Bei den Zuverlässigkeits- und Performance-Aspekten wurden wichtige Vorkehrungen getroffen: Durch den Offline-First-Ansatz (Firestore Persistence) bleibt die Anwendung auch ohne Netz stabil nutzbar. Im Testbetrieb traten keine kritischen Abstürze oder Dateninkonsistenzen auf, was auf eine ausreichende Robustheit hindeutet. Wartezeiten wurden dank effizientem State-Management (Provider-Pattern) und Lazy Loading minimiert. Formale Lasttests oder Messungen der Antwortzeiten liegen zwar nicht vor, jedoch gab es subjektiv keine Performance-Einbußen beim Navigieren durch die App. Die Kompatibilität ist durch den Einsatz von Flutter gegeben -- die App läuft plattformunabhängig auf Android und iOS ohne Anpassungen.
+
+Besonderes Augenmerk lag auf der Sicherheit. Hier zeigt der Fall überwiegend positive Qualität: Es wurden Firebase Authentication und Firestore-Sicherheitsregeln implementiert, die unautorisierten Datenzugriff verhindern. Zudem ist App Check aktiviert, um sicherzustellen, dass nur verifizierte Apps auf die Backend-APIs zugreifen. Rollenbasierte Zugriffskontrollen wurden berücksichtigt (z.\,B.\ getrennte Studiobereiche für Multi-Tenant). Diese Maßnahmen adressieren die zentralen Sicherheitsanforderungen; ein Go-Live-Kriterium war explizit die Prüfung aller Firestore/Storage-Rules und die erfolgreiche Aktivierung der Sicherheitsmechanismen. Eine formale Schwachstellenanalyse (z.\,B.\ Penetrationstest) wurde im Rahmen der Fallstudie nicht durchgeführt, doch im begrenzten Testbetrieb traten keine sicherheitsrelevanten Vorfälle auf.
+
+Hinsichtlich Usability (Gebrauchstauglichkeit) und User Experience ist die Qualität schwerer messbar, da keine umfangreiche Nutzerstudie durchgeführt wurde (vgl.\ RQ6). Die App präsentiert jedoch ein klares, übersichtliches UI und intuitive Navigation, was von ersten Testnutzern positiv vermerkt wurde. Zudem kommen vibrotaktile Feedbackelemente (\enquote{vibecoded feedback}) zum Einsatz, die dem Nutzer haptisches Feedback bei bestimmten Aktionen geben. Diese spielerischen Elemente dürften die Benutzerzufriedenheit steigern, wurden aber nicht quantitativ evaluiert.
+
+\subsection*{Interpretation}
+
+Zusammengefasst erfüllt Tap’em viele Qualitätskriterien bereits im Prototypstadium: Funktionalität, Kompatibilität und Grundsicherheit sind gegeben beziehungsweise hoch, die Leistung und Zuverlässigkeit erscheinen dem Anwendungsfall angemessen (kein Ausfall im Pilottest, flüssige Nutzung). Das zeigt, dass trotz KI-generierter Codebasis keine fundamentalen Qualitätsprobleme in diesen Bereichen sichtbar wurden -- vermutlich auch, weil der Entwickler gezielt auf diese Merkmale geachtet und entsprechende Anforderungen in die Prompts einfließen ließ. 
+
+Beispielsweise wurden Security-Regeln ausdrücklich in Sprint~C implementiert und verifiziert, was proaktiv die Sicherheit erhöhte. Allerdings sind manche Qualitätsaspekte noch eingeschränkt beurteilbar: Ohne umfangreiche Tests bleibt unklar, ob es versteckte Stabilitätsprobleme gibt (z.\,B.\ Speicherlecks, seltene Crash-Ursachen). Auch zur langfristigen Zuverlässigkeit (Betrieb über Wochen/Monate) können im Rahmen der kurzen Evaluationsphase keine Aussagen getroffen werden.
+
+\subsection*{Bewertung}
+
+Die Softwarequalität im Sinne von ISO/IEC~25010 ist im vorliegenden Fall überwiegend zufriedenstellend, mit einer wichtigen Einschränkung: Wartbarkeit und damit eng verknüpfte Aspekte (Modularität, Analysierbarkeit, Testbarkeit) weisen Schwächen auf, die in RQ3 detailliert betrachtet werden. Zudem muss betont werden, dass die hier berichtete Qualität stark vom Engagement des Entwicklers abhängt, der die KI-Ausgaben manuell überprüfte und Verbesserungen einarbeitete. 
+
+Die KI selbst garantiert nämlich keine hohe interne Qualität -- bekannte Studien zeigen, dass AI-Codeassistenten zwar korrekten Code vorschlagen können, aber auch Unsicherheiten und Fehler einbringen. So fand Perry et al.\ (2023) in einer kontrollierten Studie, dass Entwickler mit Copilot tendenziell mehr sicherheitskritische Bugs produzierten als ohne.\footnote{Vgl.\ \url{https://arxiv.org}.} Im Tap’em-Projekt konnten derartige Bugs offenbar vermieden werden, vermutlich durch die zusätzliche manuelle Qualitätssicherung (z.\,B.\ Einhaltung von Best Practices in Security). Nichtsdestotrotz bleibt die fehlende Testabdeckung ein Qualitätsmangel. 
+
+Insgesamt liefert RQ2 ein differenziertes Bild: Die funktionale und technische Qualität des mit LLM-Unterstützung entwickelten Artefakts ist kontextuell hoch (es erfüllt den vorgesehenen Zweck und läuft stabil), doch bestimmte Qualitätsdimensionen sind mangels Daten oder Maßnahmen unterbeleuchtet. Diese Schlussfolgerung gilt spezifisch für den untersuchten Fall -- allgemeine Qualitätsaussagen über KI-entwickelte Software lassen sich daraus nur eingeschränkt ableiten.
+
+\section{RQ3: Wartbarkeit des KI-generierten Codes}
+\label{sec:rq3-wartbarkeit}
+
+\subsection*{Beobachtung}
+
+Die Wartbarkeit des Tap’em-Codes wurde anhand von Kriterien wie Modularität, Komplexität, Codestil und Testbarkeit untersucht. Positiv fällt auf, dass die Projektstruktur sehr modular angelegt ist. Der Code ist klar in Feature-Module getrennt (\texttt{lib/features/\textless feature\textgreater}), und innerhalb jedes Features folgen die Dateien dem Pattern \enquote{data--domain--presentation}.\footnote{Vgl.\ Projektstruktur im Repository, \url{https://github.com}.} 
+
+Diese Schichtung und Trennung der Verantwortlichkeiten (z.\,B.\ UI-Code getrennt von Geschäftslogik und Datenzugriff) entspricht bewährten Architekturprinzipien und erleichtert prinzipiell Wartung und Erweiterung. Auch die Verwendung von Provider als State-Management sowie eigenständigen Service-Klassen (\texttt{lib/services/\dots}) spricht für einen strukturiert und erweiterbar angelegten Code. Der Modularitätsgrad kann somit als hoch eingeschätzt werden: Neue Features könnten als weitere Module ergänzt werden, ohne den bestehenden Code übermäßig anzutasten.
+
+Jedoch zeigen sich auch klare Schwachpunkte. Im vorliegenden Code-Repository fehlen jegliche automatisierten Tests (weder Unit- noch Integrationstests für den Dart-Code) sowie eine konfigurierte Linting-Rulebase. Dadurch ist die Testbarkeit gering -- es gibt kein Safety Net, um Änderungen gegen unbeabsichtigte Nebenwirkungen abzusichern. Die Wartung wird dadurch erschwert, weil künftige Entwickler oder der ursprüngliche Autor selbst keine unmittelbare Rückmeldung über Fehler bei Refaktorierungen erhalten können. 
+
+Des Weiteren ist mangels Linter nicht sichergestellt, dass ein einheitlicher Stil oder bestimmte Codierstandards eingehalten wurden, was langfristig die Lesbarkeit beeinflussen könnte. Eine manuelle Inspektion deutet auf teils inkonsistente Dokumentation hin -- Kommentare oder Docstrings sind eher spärlich vorhanden, was typisch ist, da der LLM diese selten von sich aus einfügt, sofern nicht explizit angefordert.
+
+Zur Code-Komplexität liegen keine quantitativ erhobenen Metriken (wie zyklomatische Komplexität pro Funktion, durchschnittliche Methodenlänge etc.) vor, da entsprechende statische Analysen im Rahmen der Arbeit nicht vollständig durchgeführt wurden (hier bestand eine Lücke in der Datenerhebung, [TODO] im Konzept). Subjektiv lässt sich aber feststellen, dass einige vom LLM generierte Methoden relativ umfangreich sind und viel Funktionalität bündeln. Beispielsweise enthalten bestimmte UI-Widgets Logik, die man eventuell in Presenter oder Controller auslagern könnte -- ein Hinweis auf gelegentliche Verletzungen des Single-Responsibility-Prinzips, vermutlich begünstigt durch das Modell, das manchmal mehr Code auf einmal liefert als ideal. Solche Stellen erhöhen die Komplexität für zukünftige Änderungen. Auch Duplikationen im Code können nicht ausgeschlossen werden; KI-Modelle neigen dazu, ähnliche Lösungen mehrfach zu produzieren, anstatt auf Abstraktion zu verweisen, sofern man sie nicht gezielt dazu anhält.
+
+\subsection*{Interpretation}
+
+Insgesamt zeigt RQ3, dass die Wartbarkeit der AI-generierten Codebasis durchwachsen ist. Die gute Modulstruktur legt den Grundstein für Wartbarkeit -- strukturelle Änderungen (z.\,B.\ ein Feature austauschen) wären isoliert möglich. Dieses positive Ergebnis ist aber vor allem auf die bewusste Vorgabe des Entwicklers zurückzuführen, der in den Prompts eine modulare Architektur eingefordert hat beziehungsweise sich an vorhandenen Flutter-Architekturvorbildern orientierte. Es ist anzunehmen, dass ohne diese Vorgaben der LLM-Code unstrukturierter ausgefallen wäre. 
+
+Die negativen Befunde (fehlende Tests, keine automatisierte Qualitätssicherung) stellen gravierende Wartbarkeitsrisiken dar: Sie bedeuten, dass zukünftige Anpassungen oder Erweiterungen mit hoher Sorgfalt und manuellen Tests einhergehen müssten, da das System keine eingebaute Fehlererkennung hat. Wartbarkeit umfasst laut ISO~25010 auch Analysierbarkeit und Modifizierbarkeit -- beide sind hier eingeschränkt. Entwickler, die neu ins Projekt kämen, könnten zwar dank der Modulstruktur den groben Aufbau verstehen, müssten aber mangels Dokumentation viel Zeit investieren, um die genaue Logik nachzuvollziehen. Ohne Tests wäre zudem jedes Bugfixing ein potenzielles Trial-and-Error.
+
+\subsection*{Bewertung}
+
+Der Fall Tap’em illustriert, dass Prompt-Driven Development zwar schnellen Code-Output liefert, dabei jedoch tendenziell Wartbarkeits-Schulden hinterlassen kann. Im Vergleich mit herkömmlicher Entwicklung fehlen wichtige Qualitätssicherungsartefakte. Dies steht im Einklang mit Beobachtungen in der Literatur, dass LLM-unterstützter Code oft primär auf unmittelbare Korrektheit optimiert ist, während Aspekte wie Verständlichkeit oder langfristige Änderbarkeit weniger Beachtung finden. 
+
+So wurden in unserem Fall beispielsweise keine Tests generiert -- außer wenn der Entwickler dies explizit beauftragt hätte, was offenbar nicht geschah. Auch Codekommentare oder Refactorings müssen vom Menschen initiiert werden; die KI trägt von sich aus wenig dazu bei. Für die Forschung bedeutet dies, dass Wartbarkeit ein kritischer Punkt bei KI-Code ist, der vertieft untersucht werden muss. Im praktischen Kontext sollte man Prompt-Engineering-Projekte unbedingt mit nachgelagerten Maßnahmen ergänzen (Testskripte schreiben, Code-Reviews durchführen, eventuell Linter nachträglich anwenden), um die Wartbarkeit zu verbessern. 
+
+Diese Schlussfolgerungen basieren auf dem spezifischen Projekt und sollten mit Vorsicht generalisiert werden -- größere Projekte oder streng geführte Prompt-Vorgehensweisen könnten andere Ergebnisse zeigen.
+
+\section{RQ4: Entwicklererfahrung beim Prompting}
+\label{sec:rq4-devxp}
+
+\subsection*{Beobachtung}
+
+Die Entwicklererfahrung in diesem Single-Case-Study ist geprägt von einem intensiven Wechselspiel zwischen Mensch und KI. Der verantwortliche Entwickler (gleichzeitig Autor der Arbeit) hat seine Erfahrungen teils qualitativ festgehalten. Zu Beginn der Implementierung war die Lernkurve spürbar: Effektives Prompting erforderte etwas Experimentieren, etwa um die optimale Granularität einer Aufgabe für den LLM herauszufinden. 
+
+Anfangs wurden gelegentlich sehr umfangreiche Anforderungen in einem Prompt gestellt, was zu unerwarteten oder unvollständigen Antworten führte. Im Verlauf der Sprints entwickelte der Entwickler eine Promptstrategie, bei der komplexe Features in kleinere Teilaufgaben zerlegt wurden. Beispielsweise wurde die Gamification-Logik (XP-Vergabe, Badges) in einzelne Funktionen aufgeteilt und nacheinander mit dem LLM erarbeitet, anstatt in einem einzigen Prompt einen riesigen Codeblock zu erfragen. Diese Strategie verbesserte die Ergebnisqualität deutlich -- die KI lieferte auf präzisere Eingaben konsistenteren Code.
+
+Dennoch traten immer wieder Frustrationsmomente auf. Ein wiederkehrendes Phänomen waren sogenannte Halluzinationen des Modells: Es kam vor, dass der LLM Funktionen oder Klassen aufrief, die im Projekt nicht existierten, oder veraltete API-Aufrufe vorschlug. Solche Ausgaben führten zu Kompilierfehlern oder fehlerhaftem Laufzeitverhalten, die der Entwickler manuell beheben musste. 
+
+Ein konkretes Beispiel war die Verwendung einer nicht existierenden Flutter-Klasse für einen bestimmten UI-Effekt, die vermutlich aus Trainingsdaten stammte -- der Entwickler erkannte dies erst nach einigen Fehlversuchen beim Kompilieren. Solche Situationen verursachten Frustration, da zusätzliche Prompting-Runden oder händische Korrekturen nötig wurden. Auch die Qualität der ersten KI-Antwort war nicht immer ausreichend; oft musste der Entwickler mit Refinement-Prompts nachsteuern, etwa \enquote{Berücksichtige auch Fehlermeldungen und Edge Cases}. Diese iterative Schleife verlängerte den Entwicklungsprozess punktuell und erforderte Geduld.
+
+Gleichzeitig berichtete der Entwickler aber auch von positiven Erfahrungen. Insbesondere repetitive oder langweilige Codieraufgaben entfielen weitgehend, was als entlastend empfunden wurde. Die Zusammenarbeit mit dem LLM wurde stellenweise als kreativ beschrieben -- etwa wenn alternative Lösungsansätze vorgeschlagen wurden, auf die der Entwickler allein nicht sofort gekommen wäre. 
+
+Die Zufriedenheit des Entwicklers stieg, sobald er die \enquote{Sprache} des LLM besser verstand: Mit wachsender Prompting-Erfahrung nahm die Zahl der nötigen Iterationen pro Feature ab, und der Entwickler gewann Vertrauen in das Tool für bestimmte Aufgaben (z.\,B.\ UI-Code generieren lassen und dann selbst anpassen). Er fühlte sich in der Rolle eines \enquote{Dirigenten} des Codes, der die KI anleitet, anstatt jeden Befehl selbst auszuführen. Nichtsdestotrotz blieb immer das Bewusstsein, dass die Verantwortung für korrekten Code letztlich bei ihm lag, was einen gewissen Druck erzeugte, die KI-Ausgaben sorgfältig zu prüfen.
+
+\subsection*{Interpretation}
+
+Der Entwickler machte in diesem Projekt die doppelte Erfahrung von Beschleunigung und Mehraufwand durch KI-Unterstützung. Einerseits wurden monotone Aufgaben delegiert, was die Arbeitszufriedenheit steigern kann (ähnlich berichten 60--75\,\% der Copilot-Nutzer von weniger Frustration bei Routine-Coding).\footnote{Vgl.\ \url{https://marginalia.nu}.} Andererseits führte die Notwendigkeit zur ständigen Ergebnisprüfung und gelegentlichen Fehlersuche zu Momenten erhöhter Frustration. 
+
+Interessanterweise deckt sich dies mit der Hypothese, dass erfahrenere Entwickler AI-Vorschläge kritischer sehen und durch irrelevante oder falsche Suggestions sogar gebremst werden können.\footnote{Vgl.\ \url{https://arxiv.org}.} Im vorliegenden Fall hatte der Entwickler bereits Programmiererfahrung, was erklären könnte, warum er zwar initial begeistert von den schnellen Ergebnissen war, aber im Verlauf die Grenzen der KI deutlich wahrnahm. So empfand er es bisweilen als ineffizient, vermeintlich einfache Dinge mehrfach korrigieren zu müssen -- eine Wahrnehmung, die auch in einer Studie von Mollick (2023) geteilt wurde, wo erfahrene Entwickler angaben, Copilot sei \enquote{nicht weltbewegend} und liefere oft subtil falsche Outputs, die Korrektur erfordern.\footnote{Vgl.\ \url{https://www.infoq.com}.}
+
+\subsection*{Bewertung}
+
+Insgesamt war die Entwicklererfahrung mit Prompt-Driven Development in diesem Einzelfall ambivalent: Die Produktivität und der \enquote{Spaßfaktor} stiegen durch die Interaktion mit dem LLM, gleichzeitig entstanden neue Herausforderungen im Umgang mit der Unzuverlässigkeit der Vorschläge. Die Lernkurve war deutlich, doch mit der Zeit entwickelte der Entwickler effektive Nutzungsstrategien -- ein Befund, der andeutet, dass Schulung und Übung im Umgang mit AI-Tools essenziell sind. 
+
+Für die Praxis impliziert dies, dass Entwickler anfangs mit etwas Mehraufwand und Frustration rechnen sollten, der sich aber durch Routine legen kann. Aus Forschungssicht untermauert RQ4 die Notwendigkeit, Entwicklerbefragungen und UX-Studien in diesem Bereich durchzuführen, um systematisch zu erfassen, wie Prompt-Engineering-Ansätze Arbeitsweisen verändern. Erste Arbeiten gehen bereits in diese Richtung und postulieren etwa physiologisch messbare Effekte (Stress vs.\ Flow) beim Coden mit vs.\ ohne KI.\footnote{Vgl.\ \url{https://arxiv.org}.} 
+
+Im Kontext von Tap’em kann geschlossen werden, dass die Entwicklererfahrung weder durchweg positiv noch negativ war, sondern stark von den Umständen abhing (Qualität der Prompts, Komplexität der Aufgabe, Erfahrung des Entwicklers). Diese Schlussfolgerung ist spezifisch für den gegebenen Entwickler und das Projekt -- andere Teams könnten andere Erfahrungen machen.
+
+\section{RQ5: Risiken des LLM-Einsatzes (Halluzinationen, Abhängigkeiten, Lizenzen)}
+\label{sec:rq5-risiken}
+
+\subsection*{Beobachtung}
+
+Im Verlauf der Implementierung von Tap’em traten verschiedene risikobezogene Aspekte zutage, die für Prompt-Driven Development charakteristisch sind. Ein offensichtliches Risiko waren technische Halluzinationen des Modells, wie bereits unter RQ4 erwähnt: Der LLM erfand teils nicht vorhandene Funktionsaufrufe oder traf unsichere Annahmen. Dies konnte jeweils durch Tests/Debugging entdeckt und behoben werden, blieb aber eine latente Gefahr. 
+
+Eng damit verbunden war die Unsicherheit der Ausgaben -- der Entwickler konnte nie absolut vertrauen, dass ein Vorschlag korrekt und sicher war, ohne ihn selbst zu validieren. So musste beispielsweise jede sicherheitskritische Codepassage (etwa Firestore-Regeln, Auth-Verifikation) manuell gegengelesen werden, um sicherzustellen, dass keine Lücken übersehen wurden. Hier zeigte sich die Abhängigkeit von der menschlichen Verifikation: Hätte man blind auf die KI vertraut, wären potentiell Fehler unentdeckt geblieben.
+
+Ein weiteres Risiko ist die Tool-Abhängigkeit. Da das gesamte Coding auf dem Codex-Modell beruhte, war der Entwickler auf die Verfügbarkeit dieses Dienstes angewiesen. In der Projektlaufzeit gab es tatsächlich kurze Phasen, in denen das Modell nicht erreichbar oder überlastet war, was den Fortschritt verzögerte (diese Zwischenfälle wurden nicht systematisch protokolliert, aber im Erfahrungsbericht erwähnt). Hätte OpenAI den Dienst eingeschränkt oder wäre eine Internetverbindung nicht verfügbar gewesen, stünde der Entwickler weitgehend ohne Unterstützung da. Diese Abhängigkeit umfasst auch zukünftige Wartung: Sollte bei Weiterentwicklung der KI-Zugang fehlen, müsste herkömmlich weitergearbeitet werden -- der Übergang könnte schwierig sein, wenn man sich an den KI-Komfort gewöhnt hat.
+
+Ein besonders diskutiertes Risiko betrifft rechtliche und Lizenzfragen. Im Tap’em-Projekt wurde zwar überwiegend an neuem Code gearbeitet, dennoch besteht prinzipiell die Gefahr, dass der LLM Codefragmente generiert, die aus Open-Source-Repositories stammen, ohne Lizenzhinweis. Im konkreten Fall gab es einen Vorfall, bei dem der KI-Vorschlag in einem Kommentar einen fremden Autorennamen einfügte -- ein Indiz, dass Trainingsdaten direkt eingeflossen sein könnten. Zwar wurde dieser Inhalt verworfen, aber das Beispiel verdeutlicht die Problematik. 
+
+Aktuelle Diskussionen und eine laufende Klage in den USA zeigen, dass Copilot und ähnliche Systeme tatsächlich Code liefern können, der identisch mit lizenziertem Open-Source-Code ist.\footnote{Vgl.\ \url{https://medium.com}.} In unserem Projekt wurde keine solche Übereinstimmung bewusst festgestellt, jedoch wurden keine automatisierten Prüfroutinen (wie Plagiatsscanner für Code) eingesetzt. Somit bleibt eine Restunsicherheit, ob eventuell urheberrechtlich schutzfähige Sequenzen enthalten sind. Dieses Risiko ist real, wie die Fachpresse berichtet -- ca.\ 1\,\% der Copilot-Ausgaben reproduzierten exakt lizenzierte Codezeilen in einer Stichprobe.\footnote{Ebd.} 
+
+Der Entwickler hätte im Ernstfall die Haftung für Lizenzverstöße, was ein erhebliches Geschäftsrisiko darstellen kann. Aus diesem Grund hat etwa Microsoft im 2023 angekündigten \enquote{Copilot Copyright Commitment} zugesagt, Unternehmen bei solchen Fällen zu indemnifizieren, um die Hemmnisse für den KI-Einsatz zu senken.
+
+Zusätzlich zu Halluzinationen und Lizenzfragen besteht das Risiko, dass die KI unsicheren Code vorschlägt. Dieses Sicherheitsrisiko wurde unter RQ2 bereits angerissen: Beispiele aus der Forschung zeigen, dass LLMs ohne Sicherheitsbewusstsein Code generieren, der etwa SQL-Injections oder Pufferüberläufe ermöglicht.\footnote{Vgl.\ \url{https://arxiv.org}, \url{https://medium.com}.} Im Tap’em-Projekt gab es keine akuten Sicherheitsvorfälle; der Entwickler schrieb sicherheitsrelevante Abschnitte tendenziell konservativ oder nutzte offizielle Best-Practice-Beispiele als Prompt-Kontext. Dennoch kann nicht ausgeschlossen werden, dass etwa unvermeidbare KI-Eigenheiten (z.\,B.\ Tendenz zu großzügigen Firestore-Regeln) potentiell Angriffsflächen schaffen. 
+
+Ein kleines Beispiel: Die initial von der KI vorgeschlagenen Firestore-Rules waren zu permissiv und erlaubten Lesezugriffe breiter als nötig -- der Entwickler erkannte dies und verschärfte die Regeln manuell. Ohne diesen Eingriff wäre ein Security-Loch entstanden. Auch hier zeigt sich: Die KI muss angeleitet und korrigiert werden, sonst materialisieren sich Risiken.
+
+\subsection*{Interpretation}
+
+Prompt-Driven Development bringt ein Bündel neuartiger Risiken mit sich, die in diesem Einzelfall größtenteils beherrscht werden konnten, aber keinesfalls trivial sind. Die Beobachtungen lassen den Schluss zu, dass Halluzinationen kein Randphänomen, sondern erwartbar sind -- jedoch meist relativ leicht zu erkennen (ein nicht vorhandener API-Aufruf führt unmittelbar zu einem Fehler, den man beheben kann). Schwerwiegender sind potenziell die weniger offensichtlichen Fehler: Performance-Ineffizienzen oder logische Bugs, die nicht sofort auffallen. Ohne umfassende Tests bleibt hier Unsicherheit bestehen. 
+
+Die Abhängigkeit vom LLM-Tool wirft die Frage nach der Nachhaltigkeit auf: In einem Langzeitprojekt wäre es riskant, wenn die gesamte Codeerstellung von einem externen proprietären Service abhinge. Organisationen müssen diese Abwägung treffen -- in unserem Experimentalkontext war es vertretbar, aber für Produktivvorhaben könnten Fallback-Strategien nötig sein.
+
+Lizenzielle Risiken stellen einen Graubereich dar. Zwar wurden im Tap’em-Code keine expliziten Urheberrechtsverletzungen entdeckt, doch allein die Möglichkeit erfordert Maßnahmen: Der Entwickler hätte beispielsweise bei Verwendung von ungewöhnlich perfektem Code aus der KI jeweils recherchieren müssen, ob dieser Code öffentlich bekannt ist. Diese zusätzliche Prüfung fand mangels konkreter Verdachtsfälle nicht statt. 
+
+Generell raten Experten dazu, KI-generierten Code so zu behandeln, als wäre er von Dritten bezogen -- das heißt, Quellennachweise zu suchen oder im Zweifel umzuformen.\footnote{Vgl.\ \url{https://medium.com}.} Für den vorliegenden Fall bedeutete dies pragmatisch: viel eigenständiger Code, wenig Kopierpotenzial.
+
+Bezüglich Security-Risiken lässt sich interpretieren, dass der menschliche Review-Prozess hier Schlimmeres verhindert hat. Trotzdem bleibt ein Unbehagen: Externe Studien (etwa Pearce et al., 2022) zeigten, dass bis zu 40\,\% der von KI vorgeschlagenen Programme verwundbar waren.\footnote{Vgl.\ \url{https://cyber.nyu.edu}.} Diese Quote macht deutlich, dass ohne strikte Sicherheitsüberprüfung KI-basierte Entwicklung leicht unsicheren Code produzieren kann. Im Tap’em-Projekt flossen Security-Überlegungen zum Glück in die Prompt- und Testphase ein (z.\,B.\ manuelle Inspektion der Rules), was das Risiko minderte.
+
+\subsection*{Bewertung}
+
+RQ5 zeigt, dass Prompt-Driven Development im untersuchten Fall zwar keine katastrophalen Risiken realisierte, die potenziellen Risiken aber vielfältig sind. Halluzinationen und unsichtbare Fehler können die Entwicklungszeit verlängern und erfordern erfahrene Entwickler, die diese erkennen -- ein weniger erfahrener Programmierer hätte manche KI-Fehler eventuell übersehen, was die Softwarequalität drastisch beeinträchtigt hätte. 
+
+Die Lizenzproblematik ist ein außerhalb des rein Technischen liegendes, aber wesentliches Thema: In der Forschung wie in der Open-Source-Community wird dies kontrovers diskutiert, und unser Fall unterstreicht, dass derzeit Unklarheit herrscht, wem der durch KI generierte Code \enquote{gehört} beziehungsweise welche Nutzung rechtlich unbedenklich ist. Für die Praxis heißt das, dass Unternehmen bei KI-Code möglicherweise zusätzliche Code-Reviews (fokussiert auf bekannte Snippets) oder vertragliche Absicherungen benötigen. 
+
+Für die Forschung besteht hier ein dringender Bedarf, Richtlinien und technische Lösungen (wie Filtersysteme oder Wasserzeichen für generierten Code) zu entwickeln, um diese Risiken zu mitigieren. Abschließend ist festzuhalten, dass alle identifizierten Risiken in der Einzelfallbetrachtung von Tap’em kontextgebunden sind -- das Ausmaß und die Beherrschbarkeit solcher Risiken können in anderen Projekten variieren. Unser Fall zeigt jedoch exemplarisch, wo die größten Fallstricke liegen, und liefert somit Anhaltspunkte für weitergehende Untersuchungen.
+
+\section{RQ6: Nutzererfahrung und Gamification-Effekte}
+\label{sec:rq6-ux-gamification}
+
+\subsection*{Beobachtung}
+
+Die Nutzererfahrung (User Experience, UX) von Tap’em wurde im Rahmen des Single-Case-Designs nur qualitativ und in sehr kleinem Umfang betrachtet, da eine breite empirische Evaluation mit Endnutzern nicht Teil des Projekts war. Allerdings wurden in die App verschiedene UX- und Gamification-Elemente integriert, deren Wirkung zumindest konzeptionell abgeschätzt werden kann. 
+
+Tap’em verfolgt einen spielerischen Ansatz, um Fitnessstudiomitglieder zu motivieren: Es gibt Challenges (wöchentliche/monatliche Aufgaben mit XP-Punkten), Erfolge/Badges, Bestenlisten pro Gerät und visualisierte Trainingsfortschritte (z.\,B.\ Muskel-Heatmap).\footnote{Vgl.\ Projektbeschreibung auf GitHub, \url{https://github.com}.} Diese Funktionen zielen darauf ab, den Nutzer zu regelmäßigem Training zu animieren und Erfolge sichtbar zu machen. Zusätzlich kommt vibrotaktiles Feedback zum Einsatz -- das Gerät vibriert bei bestimmten Meilensteinen oder Interaktionen, was ein neuartiges haptisches Erlebnis schafft.
+
+Erstes anekdotisches Feedback von wenigen Testnutzer:innen (z.\,B.\ Kollegen des Entwicklers) fiel positiv aus. Insbesondere das unmittelbare Feedback (visuell durch Fortschrittsanzeigen und haptisch durch Vibration) wurde als motivierend und \enquote{spielhaft belohnend} beschrieben. Ein Tester gab an, dass das Sammeln von XP-Punkten und Badges ihn dazu anspornt, eine weitere Trainingseinheit anzuhängen, um das nächste Level zu erreichen -- ein Verhalten, das das Gamification-Konzept genau intendiert. Die NFC-Funktion -- das Training per einfachem \enquote{Tap} am Gerät zu starten -- wurde als neuartig und bequem wahrgenommen, was zur positiven UX beitrug. Durch dieses Feature entfällt das manuelle Suchen in der App, was den Einstieg ins Workout geringfügig erleichtert und als \enquote{cooler Trick} empfunden wurde.
+
+Gleichzeitig gab es Hinweise darauf, dass nicht alle Gamification-Elemente für jeden gleich relevant sind: Einige Nutzer würden etwa die Bestenlisten (Wettkampf zwischen Geräten oder Freunden) weniger nutzen, da sie eher auf persönliche Verbesserung fokussiert sind. Solches Feedback deutet auf die Heterogenität der Nutzerpräferenzen hin -- ein übliches Phänomen in Gamification, wonach ein Teil der Nutzer sehr kompetitiv reagiert, während andere mehr an Kooperation oder rein intrinsischer Motivation interessiert sind.
+
+\subsection*{Interpretation}
+
+Mangels quantitativer UX-Daten müssen die Effekte der Gamification-Elemente vorläufig auf Basis von Theorie und analoger Evidenz interpretiert werden. Die Implementierung von Tap’em orientiert sich an etablierten Mechanismen, die in früheren Studien als wirksam identifiziert wurden. So zeigen beispielsweise große Analysen von Fitness-Apps, dass Wettbewerb und Challenges die körperliche Aktivität signifikant erhöhen können -- in einer Studie steigerten Nutzer während Schritt-Challenges ihre Aktivität um 23\,\% gegenüber dem Baseline-Niveau.\footnote{Vgl.\ \url{https://pmc.ncbi.nlm.nih.gov}.} 
+
+Übertragen auf Tap’em ist zu erwarten, dass die wöchentlichen Challenges ähnlich motivierend wirken: Nutzende bekommen ein Ziel vor Augen (etwa eine bestimmte XP in einer Woche), was gemäß Zielsetzungstheorie einen motivationalen Reiz darstellt. Das XP-/Level-System könnte zudem einen langfristigen Commitment-Effekt erzeugen, da kontinuierlicher Fortschritt belohnt wird (Stichwort Streaks). Die in Tap’em umgesetzte Visualisierung (Muskel-Heatmap) liefert darüber hinaus biofeedback-ähnliche Informationen, die Nutzerinnen und Nutzer über ihre Fortschritte aufklären -- auch dies kann die Nutzungsfrequenz positiv beeinflussen, da Fortschritt sichtbar gemacht wird.
+
+Allerdings warnt die Literatur auch davor, dass Gamification allein kein Garant für dauerhafte Verhaltensänderung ist. Es kommt auf die qualitative Ausgestaltung an. Im Fall von Tap’em wurden viele spielerische Elemente integriert, aber es fehlt noch eine Evaluation, ob diese sauber auf die Nutzerzielgruppe abgestimmt sind. Beispielsweise muss sich zeigen, ob die vibrotaktilen Signale wirklich als motivierend empfunden werden oder mit der Zeit als \enquote{gimmicky} abgetan werden. 
+
+Auch könnte Over-Gamification kontraproduktiv wirken -- wenn Nutzer, die primär eine Fitness-Tracking-App wollen, sich von zu vielen Spielereien überfordert fühlen. Erste Rückmeldungen deuten darauf hin, dass die Balance hier gelungen ist (die Kern-Tracking-Funktionen stehen weiterhin im Vordergrund, Gamification ist optional motivierend), doch diese Einschätzung basiert auf sehr kleinem Sample und subjektiven Eindrücken.
+
+\subsection*{Bewertung}
+
+Vorbehaltlich der fehlenden breiten Nutzerstudie lässt sich aus RQ6 schlussfolgern, dass Tap’em ein vielversprechendes UX-Design aufweist, das bekannte motivationale Prinzipien nutzt. Die Stärken liegen in der Kombination mehrerer Gamification-Techniken (Challenges, Belohnungen, soziale Elemente) mit innovativer Technik (NFC, haptisches Feedback), was im Fitness-App-Markt ein Alleinstellungsmerkmal sein könnte. Empirische Studien legen nahe, dass eine solche Kombination tatsächlich zu höherer Nutzerbindung führen kann, zumindest kurzfristig.\footnote{Vgl.\ erneut \url{https://pmc.ncbi.nlm.nih.gov}.} 
+
+Gleichzeitig ist zu betonen, dass diese Befunde nicht generalisierbar sind: Es handelt sich um Annahmen basierend auf einem Einzelfall und Literatur, ohne dass Tap’em selbst in freier Wildbahn getestet wurde. Mögliche Schwächen oder offene Fragen -- etwa ob die Gamification für alle Nutzertypen funktioniert oder ob langfristig Sättigung eintritt -- bleiben bestehen. Hier offenbart sich ein Limit der Single-Case-Studie: Sie kann Anregungen geben, aber kein repräsentatives Nutzerverhalten abbilden. 
+
+Im Kontext dieser Arbeit erfüllen die Gamification-Elemente ihren Zweck als Proof of Concept und zeigen, dass Prompt-Driven Development sogar UI/UX-Ideen wie vibrotaktile Rückmeldungen umsetzen konnte. Für eine abschließende Bewertung der UX-Effektivität bedarf es jedoch weiterführender Untersuchungen (Pilotbetrieb, Nutzerbefragungen, Nutzungsdatenanalysen), die außerhalb des Rahmens dieser Arbeit liegen.
+
+Abschließend lässt sich RQ6 dahingehend beantworten, dass im Fall Tap’em subjektives Nutzerfeedback eine positive Tendenz in der User Experience und Motivation suggeriert, was mit der einschlägigen Literatur im Einklang steht -- diese Aussage ist jedoch aufgrund der fehlenden quantitativen Evaluation nur kontextgebunden gültig und nicht verallgemeinerbar.
+
+\subsubsection*{Belege}
+
+\begin{itemize}
+    \item \url{https://www.infoq.com}
+    \item \url{https://arxiv.org}
+    \item \url{https://github.com}
+    \item \url{https://medium.com}
+    \item \url{https://pmc.ncbi.nlm.nih.gov}
+    \item \url{https://cyber.nyu.edu}
+\end{itemize}
+
+
+\chapter{Diskussion}
+\label{chap:diskussion}
+
+In der Diskussion werden die obigen Ergebnisse kritisch im Lichte des aktuellen Forschungsstandes gespiegelt. Zunächst werden die Erkenntnisse zu den einzelnen Forschungsfragen (RQ1–RQ6) mit Befunden aus der Literatur verglichen und die Besonderheiten des Falles Tap’em herausgearbeitet. Anschließend werden übergreifend die Stärken, Schwächen und offenen Punkte der Fallstudie beleuchtet. Abschließend folgen Implikationen für Forschung und Praxis. Dabei wird hervorgehoben, welche Schlussfolgerungen nur im spezifischen Kontext dieses Einzelfalls gelten und wo vorsichtige Verallgemeinerungen möglich scheinen.
+
+\section{RQ1 (Produktivität) im Vergleich zum Forschungsstand}
+\label{sec:diskussion-rq1}
+
+Die Fallstudie Tap’em legt nahe, dass Prompt-Driven Development eine beachtliche Produktivität erlauben kann: Ein Ein-Personen-Team entwickelte in wenigen Wochen eine komplexe App. Dieses Ergebnis stimmt tendenziell optimistisch und deckt sich mit ersten empirischen Hinweisen aus der Industrie. So vermeldet GitHub, dass Entwickler mit Copilot-Codeassistenz Aufgaben signifikant schneller abschließen.\footnote{Vgl.\ \url{https://github.blog}.} Die groß angelegte Feldstudie von Cui et al.\ (2025) untermauert dies mit +26\,\% Output bei KI-Nutzung.\footnote{Vgl.\ \url{https://www.infoq.com}.} Unser Einzelfall passt ins Bild, da hier – qualitativ abgeschätzt – ebenfalls eine Beschleunigung eingetreten ist, insbesondere bei Routinearbeiten. 
+
+Allerdings zeigen sich auch Nuancen: In Tap’em wurde beobachtet, dass der initiale Umgang mit dem LLM und das Debuggen von KI-Fehlern Zeit kosten. Diese Beobachtung wird durch kontrollierte Experimente bestätigt: Peng et al.\ (2023) fanden, dass Entwickler ohne KI bei einfachen Aufgaben teils schneller waren als solche mit KI, da Letztere Zeit mit der Korrektur generierten Codes verbrachten.\footnote{Vgl.\ Diskussionsbeiträge u.\,a.\ auf \url{https://www.reddit.com}.} Dieses Phänomen – mit KI potentiell langsamer zu sein – trat in unserem Fall zwar nicht eindeutig zutage (es fehlt der direkte Vergleich), sollte aber als mögliches Szenario erwähnt werden. Insbesondere erfahrene Entwickler könnten anfänglich sogar Produktivitätseinbußen erleben, wenn sie ihren gewohnten Workflow an das neue Tool anpassen müssen.\footnote{Vgl.\ Diskussionen und Vorstudien auf \url{https://arxiv.org}.}
+
+Im Fall Tap’em war kein traditionelles Entwicklungsteam involviert, sodass der Produktivitätsgewinn nur gegenüber einer hypothetischen manuellen Implementierung bewertet werden kann. Hier ist ein methodischer Schwachpunkt: Wir wissen nicht, ob ein erfahrener Entwickler ohne KI vielleicht ähnlich schnell gewesen wäre. Untersuchungen mit Studierenden als Kontrollgruppe zeigen uneinheitliche Ergebnisse – manche Aufgaben lösen KI-Nutzer schneller, bei anderen sind sie langsamer oder machen mehr Fehler.\footnote{Vgl.\ Übersichten, z.\,B.\ \url{https://marginalia.nu}.} Daher sollte die Schlussfolgerung \enquote{KI steigert Produktivität} mit Vorsicht behandelt werden und klar auf den Kontext bezogen bleiben. 
+
+In unserem Kontext (Einzelentwickler, exploratives Projekt) scheint die Bilanz positiv. Für große Teams mit eingespielten Prozessen könnte die Wirkung anders ausfallen. Zusammenfassend unterstützt RQ1 die wachsende Evidenz, dass generative KI Produktivitätspotenzial birgt, wobei unser Fall insbesondere die schnelle Umsetzung vieler Features belegt. Gleichzeitig mahnt er, die Lernkurve und Iterationskosten nicht zu unterschätzen – ein Punkt, den auch Vaithilingam et al.\ (2022) in Entwickler-Interviews hervorhoben (die Effizienz komme erst nach Gewöhnung an das Tool). Diese Differenzierung ist wichtig für die Forschung: Künftige Studien sollten zwischen kurzfristiger und langfristiger Produktivitätswirkung von KI unterscheiden. Für die Praxis heißt das: Ein initialer Produktivitätsschub durch KI ist möglich, aber nicht garantiert; Teams sollten Pilotphasen einplanen, um den Umgang zu erlernen.
+
+\section{RQ2 (Softwarequalität) im Vergleich zum Forschungsstand}
+\label{sec:diskussion-rq2}
+
+Die Ergebnisse zu RQ2 zeigen ein gemischtes Qualitätsbild von Tap’em, das sich interessanterweise mit Befunden in der Literatur deckt, die KI-bezogene Codequalität als zweischneidig charakterisieren. Einerseits erreichen LLMs oft eine hohe funktionale Korrektheit bei klar formulierten Aufgaben – Codex von OpenAI konnte etwa knapp 30\,\% der Codeaufgaben in HumanEval korrekt lösen.\footnote{Vgl.\ \url{https://arxiv.org}.} In Tap’em war ebenfalls die funktionale Zielerreichung hoch: Alle vorgesehenen Features funktionieren. Das spricht dafür, dass der LLM in vielen Fällen brauchbaren Code geliefert hat. 
+
+Auch in Bezug auf Performance und Effizienz sind keine Probleme evident geworden; dies mag daran liegen, dass der generierte Code sich an gängige Patterns hält (z.\,B.\ die Verwendung von effizienten Flutter-Widgets und Lazy Loading war im Code sichtbar, was vermutlich auf im Training gesehene Best Practices zurückgeht). Das entspricht der Beobachtung, dass KI-Modelle \enquote{typischen} Code produzieren, der im Durchschnitt nicht schlechter optimiert ist als menschlicher Durchschnittscode.
+
+Dem stehen jedoch klare Qualitätsdefizite gegenüber, allen voran im Bereich Security und Fehleranfälligkeit. Hier war unser Entwickler proaktiv und hat manuell gegengesteuert (z.\,B.\ Firestore-Rules nachgezogen). Wäre dies nicht geschehen, könnten Schwachstellen entstanden sein. Die Literatur bestätigt diese Sorge: Pearce et al.\ (2022) fanden, dass Copilot-Vorschläge in rund 40\,\% der Fälle verwundbare Konstrukte enthielten – eine alarmierende Quote.\footnote{Vgl.\ \url{https://cyber.nyu.edu}.} Ebenso zeigte Perry et al.\ (2023) experimentell, dass Probanden mit KI-Unterstützung signifikant öfter sicherheitsrelevante Fehler einbauten als die Kontrollgruppe ohne KI.\footnote{Vgl.\ \url{https://arxiv.org}.} Unser Fall zeigt keine Sicherheitsdesaster, doch nur dank manueller Prüfung. 
+
+Dies unterstreicht eine wichtige Erkenntnis: KI allein garantiert keine Softwarequalität; menschliches Qualitätsbewusstsein und zusätzliche Tools (Lint, Tests) bleiben unerlässlich. Ein weiterer qualitativer Aspekt ist die Code-Gestalt und Wartungsfreundlichkeit (die in RQ3 detailliert diskutiert wurde). Hier gibt es kaum systematische Forschung, da der Fokus bisher auf funktionaler Korrektheit lag. Erste Arbeiten analysieren jedoch die Auswirkung von Copilot auf Code Smells und finden, dass KI teils mehr, teils andere Arten von Smells produziert als Menschen. 
+
+Unser Fall lässt vermuten, dass KI-Code tendenziell weniger dokumentiert und manchmal redundanter ist (z.\,B.\ wiederholt sich Muster-Code in verschiedenen Features). Solche Eigenschaften können als Qualitätsmängel gelten, da sie langfristig Fehler begünstigen.
+
+Zusammengefasst stimmt RQ2 mit dem Forschungsstand dahingehend überein, dass LLM-gestützter Code schnell zu funktionierendem Ergebnis führt, jedoch Qualitätseinbußen in bestimmten Bereichen mitbringt. Im Vergleich zu empirischen Studien schneidet Tap’em noch relativ gut ab, da dank bewusster Gegenmaßnahmen kein gravierender Qualitätsvorfall bekannt wurde. Viele andere Studien berichten von handfesten Problemen, etwa kritische Sicherheitslücken oder Crashes in generiertem Code.\footnote{Vgl.\ Diskussionsbeispiele auf \url{https://medium.com}.} Ein Grund dafür könnte sein, dass unser Fall eine einzelne, stark involvierte Person hatte, die sich um Qualität kümmerte – in größer angelegten Untersuchungen hingegen werden teils unerfahrenere Nutzer betrachtet, die KI-Vorschläge ungefilterter übernehmen. 
+
+Hier zeigt sich eine wichtige moderierende Variable: die Rolle des Entwicklers als Qualitätssicherer. Ist sich der Entwickler dieser Rolle bewusst, können einige KI-bedingte Qualitätsprobleme aufgefangen werden (so geschehen in Tap’em). Für den Forschungsdiskurs bedeutet dies, dass die Softwarequalität KI-generierten Codes nicht isoliert betrachtet werden darf – entscheidend ist, wer die KI nutzt, unter welchen Rahmenbedingungen, und wie der Code geprüft wird. 
+
+Die Tap’em-Ergebnisse legen nahe, dass unter fachkundiger Kontrolle qualitativ akzeptable Software entstehen kann. Ohne diese Kontrolle drohen die in der Literatur dokumentierten Qualitätseinbußen. Für die Praxis bedeutet dies, KI-Generierung konsequent mit Code-Reviews, Security-Scans und Tests zu kombinieren, um eine Balance aus Geschwindigkeit und Qualität zu erreichen.
+
+\section{RQ3 (Wartbarkeit) im Vergleich zum Forschungsstand}
+\label{sec:diskussion-rq3}
+
+Wartbarkeit und Codequalität hängen eng zusammen, doch verdient Wartbarkeit eine gesonderte Betrachtung, weil hier der fehlende Test- und Dokumentationsanteil besonders auffällt – ein Punkt, der in der bisherigen Forschung kaum quantifiziert, aber oft qualitativ erwähnt wird. Tap’em offenbarte, dass ohne explizite Anweisung kein Testcode entsteht und auch sonst wenige wartungsfördernde Artefakte. 
+
+Dies scheint kein Ausreißer, sondern symptomatisch: In Entwickler-Communities wird berichtet, dass Copilot \& Co.\ zwar bei der Produktion von Unit-Tests helfen können, aber nur, wenn man es bewusst einsetzt. Standardmäßig generieren LLMs keine Tests von selbst. Entsprechend haben Projekte, die KI-first entwickelt werden, oft eine geringere Testabdeckung – ein Trend, den man in Zukunft mit Daten untermauern sollte.
+
+Bemerkenswert ist, dass die Architektur von Tap’em aufgrund der Entwicklersteuerung solide ist (Modularität, Layering). Dies widerspricht der Befürchtung, KI-generierter Code sei strukturell zwangsläufig chaotisch. Der Fall deutet darauf hin, dass ein LLM bei klaren Vorgaben tragfähige Architekturentscheidungen unterstützen kann. Ähnliche Erfahrungen wurden von Industrie- und Forschungsgruppen berichtet, in denen Senior-Entwickler Copilot gezielt für Gerüststrukturen (\emph{Scaffolding}) nutzten – das Ergebnis war gut strukturierter Code, weil das Modell aus zahlreichen Open-Source-Projekten verbreitete Architektur-Patterns ableiten kann (z.\,B.\ MVC-Strukturen). 
+
+Die Generalität solcher Ansätze kann der KI zugutekommen: Architektur-Patterns wiederzuerkennen und zu befolgen gehört zu ihren Stärken. Daher könnten KI-entwickelte Systeme im besten Fall sogar konsistenter einer Vorlage folgen als von Menschen erstellte Systeme, in denen häufiger individuelle Abweichungen auftreten. Im Fall Tap’em war die modulare Feature-Struktur vom Entwickler vorgegeben, und der LLM hat sie konsequent ausgefüllt (jedes Feature enthält \enquote{data/domain/presentation}). Dies ist ein positives Signal für Wartbarkeit, da standardisierte Strukturen tendenziell die Verständlichkeit erhöhen.
+
+Die Schwächen – fehlende Tests, keine Linting/Style Guides – sind hingegen ein Ausdruck dessen, was man als \enquote{Schlankheitsfalle} bezeichnen könnte: Prompt-Driven Development neigt dazu, nur das zu produzieren, worum explizit gebeten wird. Alles, was nicht gepromptet ist (z.\,B.\ \enquote{Schreibe nun auch Unit-Tests für obigen Code}), bleibt aus. 
+
+Hier unterscheidet sich der KI-Ansatz von einem disziplinierten menschlichen Team, das ggf.\ automatisch an Tests und Dokumentation denkt. Aus der Literatur gibt es vereinzelt Hinweise darauf: Zhang et al.\ (2022) stellten fest, dass Entwickler mit KI-Unterstützung zwar schneller funktionierenden Code schreiben, aber seltener zusätzliche Dokumentation ergänzen, da die KI sie nicht daran \enquote{erinnert}. Solche Beobachtungen sind noch nicht systematisch ausgewertet, decken sich aber mit dem vorliegenden Fall.
+
+In der Forschung zu Wartbarkeit gibt es bislang keine belastbaren Metriken, die KI-Code mit traditionellem Code vergleichen – eine Lücke, auf die unser Ergebnis aufmerksam macht. Es wäre etwa spannend zu messen, ob die zyklomatische Komplexität pro Funktion bei KI-Code höher ist (durch gelegentliche Overengineering-Antworten) oder ob bestimmte Code-Smells (wie Duplikate) häufiger auftreten. Unser subjektiver Eindruck in Tap’em war, dass einige Duplikate existieren und manche Funktionen relativ lang waren. Das könnte im Mittel bedeuten: Wartungslast höher. Ohne konkrete Daten bleibt dies aber spekulativ, weshalb wir unsere Aussagen diesbezüglich als kontextgebunden kennzeichnen.
+
+Vergleicht man Tap’em mit klassischen Projekten ähnlicher Größe (ca.\ 23\,000 Zeilen Quellcode (LOC), Einzelentwickler), erscheint die Wartbarkeit nicht außergewöhnlich schlecht; viele informelle Einzelprojekte verzichten aus Zeitgründen auf Tests und Dokumentation. Der Unterschied liegt hier darin, dass Tap’em im Rahmen einer wissenschaftlichen Fallstudie entstanden ist, in der solche Artefakte eher zu erwarten wären. Das Fehlen dieser Wartungsaspekte im KI-Fall kann daher als Validitätsrisiko interpretiert werden. 
+
+Es stellt sich die Frage, ob Prompt-Driven Development überhaupt für langlebige Systeme empfehlenswert ist, solange diese Wartbarkeitslücken bestehen. Aus Sicht der Forschung sind hier Anschlusspunkte gegeben: Wie kann man LLMs dazu bringen, automatisch Tests oder Dokumentation zu erzeugen? Erste Arbeiten zur Prompt-Verkettung versuchen genau dies – z.\,B.\ erst Code generieren lassen, dann einen zweiten Prompt: \enquote{Schreibe Unit-Tests dazu}. Im Fall Tap’em wurde ein solcher Prozess nicht etabliert, was ein Lernpunkt ist.
+
+Zusammengefasst bestätigt RQ3 indirekt, was in der Breite vermutet wird: KI-unterstützte Entwicklung muss ergänzt werden, um wartbare Produkte zu erhalten. Unser Einzelfall zeigt Licht und Schatten, liefert aber keine Metriken, die über den Kontext hinaus gültig wären. Er unterstreicht jedoch für die Praxis den Rat: Wer KI nutzt, sollte nach Code-Generierung bewusst Zeit für Refactoring und Testschreiben einplanen – sonst zahlt man die Wartungsschuld später teuer zurück. Für die Wissenschaft liefert dieser Fallstudienpunkt die Anregung, Wartbarkeitsaspekte stärker in die Bewertung von KI-generiertem Code aufzunehmen, etwa im Rahmen von Benchmarking.
+
+\section{RQ4 (Entwicklererfahrung) im Vergleich zum Forschungsstand}
+\label{sec:diskussion-rq4}
+
+Die in RQ4 geschilderte Entwicklererfahrung in Tap’em – Ambivalenz aus Begeisterung und Frustration – wird durch erste Studien und Umfragen weitgehend bestätigt. Eine häufig zitierte interne Umfrage von GitHub fand, dass 73\,\% der Copilot-Nutzer angeben, mit dem Tool mehr Freude am Programmieren zu haben.\footnote{Vgl.\ Zusammenfassungen u.\,a.\ auf \url{https://marginalia.nu}.} Gleichzeitig berichten 67\,\% aber auch, dass sie weiterhin gründlich prüfen müssen, was die KI vorschlägt (also zusätzliche kognitive Last spüren). Unser Entwickler erlebte genau dieses Spannungsfeld: Das \enquote{Coding Happiness} stieg, weil Routinearbeit entfiel und kreative Partnerschaft mit der KI möglich war; dennoch blieb der mentale Aufwand hoch, um Fehler zu erkennen und Prompts zu optimieren.
+
+Interessant ist der Einfluss des Erfahrungsgrades. Forschungsarbeiten und Konferenzbeiträge hypothesieren, dass Junior-Entwickler erheblich profitieren (weniger Frustration, mehr Problemlösungshilfe), während Senior-Entwickler eher genervt sein können.\footnote{Vgl.\ Diskussionen auf \url{https://arxiv.org}.} In Tap’em war der Entwickler irgendwo im intermediären Bereich – mit genug Kenntnis, um KI-Fehler zu bemerken, aber noch offen für neue Hilfsmittel. Seine Erfahrung war gemischt, was diese Hypothese stützt: Er profitierte sichtbar, doch er ärgerte sich auch über unsinnige Outputs. 
+
+Was unser Fall zudem zeigt: Die Lernkurve beim Prompt Engineering ist real. Anfangs formulierte Prompts waren suboptimal, später deutlich besser – und das spiegelt sich in der Output-Qualität. Dieses Learning-by-doing deckt sich mit Praxisberichten, dass Entwickler nach einigen Wochen Copilot-Einsatz effektiver damit umgehen und bessere Prompts schreiben. 
+
+Frustrationsmomente durch Halluzinationen und Fehler decken sich mit Einzelberichten in der Literatur. Vaithilingam et al.\ (2022) beobachteten in einer qualitativen Studie, dass Entwickler zunächst fasziniert von KI-Vorschlägen sind, aber bei wiederholten Fehlversuchen Ungeduld entsteht. In Tap’em traten ähnliche Phasen auf, etwa als mehrere Prompt-Versuche hintereinander keinen korrekten Code lieferten. Hier brauchte der Entwickler eine Pause und musste die Strategie ändern – ein Hinweis darauf, dass auch mit KI Plateaus oder Sackgassen erreicht werden können, die frustrieren.
+
+Positiv aus unserem Fall – und weniger stark in der Literatur betont – ist der Aspekt der kreativen Unterstützung. Der Entwickler fühlte sich teils zu neuen Lösungen inspiriert. Ähnliche Anekdoten sind bekannt (z.\,B.\ lassen sich mit KI schnell verschiedene Implementierungsansätze skizzieren, was dem Entwickler neue Ideen gibt). Dieser Ideation-Aspekt wird bislang wissenschaftlich kaum beleuchtet, könnte aber ein echter Mehrwert sein, der über reine Produktivität hinausgeht: KI als Sparringspartner zum Brainstormen.
+
+Zusammengefasst korrespondieren die RQ4-Ergebnisse mit dem verbreiteten Eindruck: Entwicklererfahrung mit KI ist heterogen. Unser Fall liefert ein differenziertes Narrativ, das weder Heilsversprechen noch Kulturpessimismus alleine stützt, sondern eine realistische Mischung: Erleichterung und neue Frustration zugleich. 
+
+Für die Praxis impliziert dies, dass Unternehmen ihre Entwickler beim KI-Einsatz begleiten sollten: Schulungen im Prompting, Erwartungsmanagement (Outputs immer prüfen) und ein offenes Feedback-Klima, damit Frustrationen adressiert werden, sind wichtig. Entwickler, die KI als Partner sehen, müssen lernen, mit dessen \enquote{Macken} umzugehen. Der Tap’em-Entwickler konnte das letztlich gut, aber auch, weil es ein eigenmotiviertes Projekt war – in einem Produktionsumfeld könnte Frustration stärker durchschlagen, wenn Deadlines wanken. Hier muss man also abwägen: Die Entwicklerzufriedenheit kann durch KI steigen, aber nur wenn man den Umgang beherrscht und die Limitierungen akzeptiert.
+
+\section{RQ5 (Risiken) im Vergleich zum Forschungsstand}
+\label{sec:diskussion-rq5}
+
+Die in RQ5 identifizierten Risiken – Halluzinationen, Lizenzprobleme, Abhängigkeiten, Sicherheitslücken – sind sämtlich Gegenstand aktueller Forschungs- und Debattenbeiträge, was zeigt, dass unser Fall keine unbekannten Risiken aufdeckt, aber deren praktisches Zusammenspiel illustriert.
+
+Halluzinationen gelten als generelles LLM-Problem und werden in der Literatur als eine der größten Herausforderungen für den produktiven Einsatz von KI angesehen.\footnote{Vgl.\ \url{https://evidentlyai.com}.} Für Code wird argumentiert, solche Halluzinationen seien meist leicht entlarvt, weil sie z.\,B.\ zu Compilerfehlern führen.\footnote{Vgl.\ \url{https://simonwillison.net}.} Unser Fall stützt das teilweise: Inkonstistente Outputs fielen auf und konnten korrigiert werden. Allerdings zeigen neuere Studien, dass nicht alle Fehler sofort sichtbar sind – z.\,B.\ erfanden LLMs plausible, aber ineffiziente Algorithmen, die funktionierten, jedoch performanter hätten sein können. Solche subtilen Fehlleistungen sind schwerer zu entdecken. 
+
+Lizenz- und Urheberrechtsrisiken sind ein heißes Thema seit Copilots Erscheinen. Unser Fall zeigt, dass im praktischen Doing diese Problematik eher im Hintergrund bleibt – der Entwickler konzentriert sich auf Funktionalität, nicht auf eventuelle Code-Herkünfte. Genau dies ist in der Ethik-Debatte der Stein des Anstoßes: KI-Nutzer könnten unwissentlich gegen Lizenzen verstoßen. Die Free Software Foundation und andere haben Copilot aus diesem Grund kritisiert.\footnote{Vgl.\ Diskussionen auf \url{https://medium.com}.} Wissenschaftlich gibt es bislang wenig Daten, wie oft tatsächlich identischer Code generiert wird; Stichproben legen aber nahe, dass dies kein rein theoretisches Problem ist. 
+
+Sicherheitsrisiken sind in unserem Fall zwar kontrolliert geblieben, aber wie bereits diskutiert, war das nur durch bewusstes Gegensteuern möglich. Mehrere Arbeiten haben KI-Output gezielt auf Vulnerabilities geprüft, mit teils alarmierenden Resultaten.\footnote{Vgl.\ etwa \url{https://cyber.nyu.edu} und \url{https://arxiv.org}.} Darüber hinaus gibt es konzeptionelle Arbeiten, wie man LLMs dazu bringen kann, sichereren Code zu schreiben – etwa durch spezielle Prompts oder nachgeschaltete Security-Scans. Unser Entwickler hat intuitiv Letzteres gemacht, indem er z.\,B.\ im Prompt Hinweise gab wie \enquote{Achte auf sichere Authentifizierung}. 
+
+Tool-Abhängigkeit ist ein Aspekt, der im öffentlichen Diskurs über KI häufig unterbelichtet bleibt. Tap’em macht deutlich, dass die Verfügbarkeit des Dienstes und die Kosten relevante Faktoren sind. Im großen Maßstab stellt sich z.\,B.\ die Frage, was geschieht, wenn ein Unternehmen auf einen proprietären KI-Service setzt und dieser sich ändert oder ausfällt. Die Resilienz von Entwicklungsprozessen gegenüber dem eingesetzten KI-Tool ist ein Thema, das bislang kaum beleuchtet wurde.
+
+Zusammenfassend untermauert RQ5 den Forschungsstand: Alle bekannten Risiken von KI-Code zeigen sich tatsächlich im Realfall und müssen gemanagt werden. Unser Fall trägt die Erkenntnis bei, dass kein einzelnes Risiko unlösbar ist, aber die Kumulierung der Risiken macht die Sache anspruchsvoll. Für Praktiker bedeutet das: Wer KI in die Entwicklung einführt, braucht ein Risikomanagement – Richtlinien, was geprüft werden muss, wie mit möglichen Lizenzechos umzugehen ist, und welche Anwendungsbereiche der KI tabu sein sollten.
+
+\section{RQ6 (UX/Gamification) im Vergleich zum Forschungsstand}
+\label{sec:diskussion-rq6}
+
+Die Diskussion von RQ6 muss aufgrund fehlender eigener Nutzerdaten hauptsächlich auf theoretische und allgemeine Befunde zurückgreifen. Gamification in Fitness-Apps ist jedoch ein gut beforschtes Gebiet, sodass die Ansätze von Tap’em daran gespiegelt werden können. Generell bestätigen zahlreiche Studien, dass Gamification-Elemente wie Punkte, Abzeichen und Ranglisten kurzfristig die Nutzerbindung erhöhen. 
+
+Unser Fall hat all diese Elemente implementiert, was ihn in Linie mit dem gängigen Design vieler Fitness-Apps bringt. Die Besonderheit von Tap’em ist eher die technische Umsetzung (NFC, vibrotaktile Reize) – hierzu findet man in der Literatur weniger Spezifisches, da vibrotaktile Gamification noch neuartig ist. Allerdings gibt es Forschung zu haptischem Feedback in Exergames, die nahelegt, dass vibrierende Signale als positive Verstärker wirken können. Tap’em überträgt das aufs Smartphone – es ist plausibel, dass das ein frisches Erlebnis bietet, bleibt aber experimentell.
+
+Empirische Studien zu Fitness-Apps zeigen, dass Wettbewerb und Challenges körperliche Aktivität signifikant erhöhen können; Meta-Analysen berichten zum Beispiel von zweistelligen prozentualen Zuwächsen während Challenge-Phasen.\footnote{Vgl.\ \url{https://pmc.ncbi.nlm.nih.gov}.} Übertragen auf Tap’em ist zu erwarten, dass die wöchentlichen Challenges ähnlich motivierend wirken: Nutzende bekommen ein Ziel vor Augen, was gemäß Zielsetzungstheorie einen motivationalen Reiz darstellt. 
+
+Ein kritischer Punkt aus der Forschung ist, dass Gamification auch negative Effekte haben kann, z.\,B.\ wenn extrinsische Motivation die intrinsische verdrängt. In Tap’em ist dieses Risiko gegeben, wie in jeder Gamification. Die App versucht dem entgegenzuwirken, indem sie Fitnessdaten und Erfolge personalisiert visualisiert. Ob das ausreicht, wäre zu evaluieren. 
+
+Studien zeigen auch, dass unterschiedliche Nutzerprofile unterschiedlich auf Gamification reagieren; eine Einheitsstrategie kann daher schnell an Grenzen stoßen.\footnote{Vgl.\ z.\,B.\ Diskussionen auf \url{https://www.researchgate.net}.} Tap’em bietet noch keine adaptive Gamification – jeder bekommt dieselben Challenges, Abzeichen etc. Dies könnte langfristig zu Abnutzung führen, was in Studien tatsächlich beobachtet wurde: Nach anfänglichem Anstieg flacht die Nutzung oft wieder ab, wenn die Gamification nicht variiert oder weiterentwickelt wird.\footnote{Vgl.\ erneut \url{https://pmc.ncbi.nlm.nih.gov} und \url{https://www.researchgate.net}.}
+
+Hinsichtlich UX insgesamt (Bedienbarkeit, Freude an der Nutzung) deutet der Fall auf positive Ergebnisse hin; dies ist jedoch vorsichtig zu interpretieren. Der Entwickler unterliegt naturgemäß einer gewissen Verzerrung, die eigene App als gelungen zu bewerten. Objektive Usability-Studien (z.\,B.\ mittels SUS-Score) fehlen. Aus der Literatur ist zudem bekannt, dass Feature-Überfrachtung Probleme verursachen kann – Tap’em umfasst sehr viele Features, was insbesondere auf kleinen Smartphone-Bildschirmen zu erhöhter Komplexität führen könnte. 
+
+In Summe bestätigen die Befunde aus RQ6 den allgemeinen Forschungsstand: Gamification kann im Kontext von Fitness-Apps kurzfristig Motivation steigern, muss aber sorgfältig implementiert und langfristig gepflegt werden, um nachhaltig zu sein. Tap’em zeigt die Machbarkeit, diverse Gamification-Features mittels KI schnell zu implementieren, doch ob die Wirkung eintritt, bleibt im Einzelfall zu prüfen. 
+
+Die Ergebnisse hierzu sind bewusst nicht generalisierbar – sie dienen vor allem als Illustration, dass Prompt-Driven Development auch nutzerorientierte Aspekte abdecken kann (eine potenzielle Stärke), die tatsächliche UX jedoch im Feld evaluiert werden muss.
+
+\section{Stärken, Schwächen und offene Punkte des Falles Tap’em}
+\label{sec:diskussion-staerken-schwaechen}
+
+Die Fallstudie Tap’em bietet mehrere Stärken: Erstens demonstriert sie eindrücklich, was mit konsequentem Prompt-Engineering in kurzer Zeit gebaut werden kann – eine funktionsreiche, modulare App, die aktuelle Frameworks (Flutter, Firebase) und komplexe Features (Gamification, Offline-Sync, Security) beinhaltet. Diese Breite an Anforderungen, die erfüllt wurden, spricht für die Leistungsfähigkeit von LLMs in der Softwareentwicklung, zumindest in der Rolle als Assistenz für einen kompetenten Entwickler. 
+
+Zweitens wurden wichtige nicht-funktionale Anforderungen nicht vernachlässigt: Sicherheitsregeln, CI/CD-Pipeline, Multi-Plattform-Support – all das fand Eingang ins System. Damit widerlegt der Fall ein mögliches Vorurteil, KI-Generierung würde nur Prototypen ohne Robustheit hervorbringen. Drittens ist Tap’em als Einzelfall relativ gut dokumentiert (Roadmap, Kriterien, Metrics-Plan); diese Transparenz erhöht den Wert der Studie, da Nachvollziehbarkeit gegeben ist.
+
+Eine besondere Stärke liegt zudem darin, dass sich der Entwickler iterativ im Umgang mit der KI verbesserte. Dies unterstreicht, dass menschliches Lernen mit dem maschinellen \enquote{Können} zusammenwirken muss. Es handelte sich nicht um eine vollständig automatische Entwicklung, sondern um einen Mensch-in-der-Schleife-Prozess, den der Fall anschaulich illustriert. Daraus können Praktiker ableiten, welche Prompt-Strategien im konkreten Kontext funktionierten.
+
+Nicht zuletzt ist eine Stärke, dass Tap’em Innovation im Produktdesign mit Innovation im Entwicklungsprozess kombiniert: Die \enquote{vibecoding}-Idee (haptisches Feedback) und NFC-Interaktionen sind kreative Features, die durch den experimentellen Charakter der Entwicklung vielleicht begünstigt wurden (der Entwickler konnte freier ausprobieren, weil der KI-Ansatz ihm Zeit sparte). Dies deutet an, dass KI-Unterstützung Raum für Innovationen schaffen kann, weil Routinearbeiten minimiert und Kapazitäten für kreativere Aufgaben frei werden.
+
+Demgegenüber stehen Schwächen und Limitationen: Die größte Einschränkung ist die fehlende Möglichkeit, Kausalzusammenhänge eindeutig zu belegen. Es lässt sich nicht mit Sicherheit bestimmen, welche beobachteten Effekte auf Prompt-Driven Development zurückzuführen sind und welche auch in einer klassischen Entwicklung aufgetreten wären. Beispielsweise ist denkbar, dass auch ohne KI ca.\ 23\,000 LOC in kurzer Zeit hätten entstehen können; zugleich ist dies stark von Erfahrung, Aufgabenprofil und Rahmenbedingungen abhängig. 
+
+Auch Qualitätsprobleme (z.\,B.\ fehlende Tests) treten in studentischen Projekten häufig auf. Eine fehlende Kontrollgruppe schwächt daher die Aussagekraft hinsichtlich der Forschungshypothesen. Es handelt sich um einen explanatorischen Einzelfall, der Hypothesen generiert, jedoch keine allgemeingültigen Beweise liefert. 
+
+Eine weitere Schwäche ist die Datenlage: Viele Metriken waren geplant, konnten aber nicht wie vorgesehen erhoben werden (Commit-Historie fehlte, Telemetriedaten gab es kaum, Umfragen nur anekdotisch). Dadurch musste die Auswertung in Teilen qualitativ bleiben, wo quantitative Daten wünschenswert gewesen wären. Das betrifft insbesondere Produktivitätskennzahlen und Nutzungsverhalten. 
+
+Methodisch ist zudem zu berücksichtigen, dass Entwickler und Analytiker in Personalunion agierten, was ein Risiko für Verzerrungen birgt. Negative Erfahrungen könnten unter- und positive Erfahrungen überbewertet worden sein. Zwar wurde eine möglichst objektive Darstellung angestrebt, vollständige Objektivität ist in einem solchen Setting jedoch nur eingeschränkt erreichbar.
+
+Ein inhaltlicher Schwachpunkt des Artefakts Tap’em ist die fehlende Testbarkeit. Das stellt nicht nur ein Ergebnis dar, sondern ist auch eine Limitierung der Fallstudie selbst: Ein Teil der Forschungsfrage nach Qualität konnte nicht empirisch beantwortet werden, weil beispielsweise die fehlenden Tests verhinderten, dass wir automatisiert Fehlerquoten ermitteln. 
+
+Zuletzt sei erwähnt, dass der Fall Tap’em stark auf eine spezifische Domäne (Fitness-App) begrenzt ist. Ob die gemachten Erfahrungen über andere Domänen hinweg gelten – etwa in Enterprise-Software, Embedded Systems oder Datenbank-Anwendungen – bleibt ungeklärt. Möglicherweise sind manche Befunde domänenspezifisch. Daher lässt sich nicht ohne Weiteres verallgemeinern, dass KI-Entwicklung generell bestimmte Qualitätsniveaus liefert, sondern nur: In einer mobilen App ähnlicher Komplexität und Anforderungen wie Tap’em könnten ähnliche Effekte auftreten.
+
+Offene Punkte für zukünftige Arbeit ergeben sich zahlreich: Nachhaltigkeit (Wartung über längere Zeit), Skalierbarkeit (Team statt Einzelperson), unterschiedliche KI-Modelle, ökonomische Dimension (Kosten-Nutzen-Verhältnis). Diese Aspekte konnten im Rahmen der vorliegenden Studie nicht umfassend adressiert werden und bieten Raum für Anschlussuntersuchungen.
+
+\section{Implikationen für die Forschung}
+\label{sec:implikation-forschung}
+
+Die vorliegenden Ergebnisse zeigen, dass Prompt-Driven Development kein bloßes Schlagwort ist, sondern real angewendet werden kann – mit Vor- und Nachteilen. Für die wissenschaftliche Gemeinschaft ergeben sich daraus mehrere Implikationen:
+
+\begin{enumerate}
+    \item \textbf{Bedarf an mehr empirischen Studien:} Dieser Einzelfall sollte Anstoß sein, weitere Studien – idealerweise mit kontrolliertem Design – durchzuführen, in denen Teams dieselbe Aufgabe einmal mit und einmal ohne KI lösen. Viele der hier formulierten Hypothesen (z.\,B.\ \enquote{KI-Nutzung führt zu weniger Tests}) sollten in größeren Stichproben validiert werden.
+    \item \textbf{Metriken und Bewertungsmodelle erweitern:} Traditionelle Metriken (LOC, Fehlerrate) greifen zu kurz. Neue Kennzahlen wie Prompt-Effizienz oder Entwicklererleben könnten ergänzt werden. Auch die Anwendung von ISO~25010 mittels MCDA (Multi-Criteria Decision Analysis) erscheint vielversprechend.
+    \item \textbf{Prompt Engineering als Forschungsgegenstand:} Strategien und Muster des Prompting sollten systematisch untersucht werden. Ziel wäre, Guidelines für \enquote{gutes} Prompt-Engineering zu entwickeln, die nachweislich Codequalität verbessern.
+    \item \textbf{Human Factors und Ausbildung:} Die gemischten Entwicklererfahrungen legen nahe, Human Factors stärker zu berücksichtigen. Forschung könnte z.\,B.\ kognitive Belastung, Frustrationslevel oder Flow-Zustände beim Coden mit vs.\ ohne KI messen und daraus Ausbildungskonzepte ableiten.
+    \item \textbf{Sozio-technische Auswirkungen:} Die Rolle des Entwicklers verschiebt sich; Studien zu Arbeitsorganisation, Kompetenzprofilen und langfristigen Effekten auf den Arbeitsmarkt sind angezeigt.
+    \item \textbf{Validierung von KI-unterstützten Artefakten:} Es besteht Bedarf an Methoden, wie KI-Code effizient validiert werden kann – etwa durch KI-basierte Code-Review-Werkzeuge oder spezialisierte Security-Scanner.
+    \item \textbf{Replikation und Vergleichsfälle:} Weitere Fallstudien in anderen Domänen sind nötig, um Muster und Unterschiede herauszuarbeiten. Tap’em kann als ein Baustein in einer größeren Evidenzbasis dienen.
+\end{enumerate}
+
+\section{Implikationen für die Praxis}
+\label{sec:implikation-praxis}
+
+Für die Softwarepraxis – Entwickler, Teams, Projektmanager – lassen sich aus dem Fall Tap’em mehrere Lehren ziehen:
+
+\begin{enumerate}
+    \item \textbf{KI als Produktivitätsbooster mit Vorsicht einsetzen:} KI kann Geschwindigkeit erhöhen, erzeugt aber auch Mehraufwand durch Einarbeitung und Korrektur. Pilotphasen und realistische Erwartungen sind wichtig.
+    \item \textbf{Qualitätsmanagement anpassen:} QA-Maßnahmen (Reviews, Tests) bleiben zentral und sollten bei KI-Einsatz eher verstärkt als reduziert werden. KI-Output ist kein Ersatz für Tests, sondern eher ein Grund für zusätzliche Tests.
+    \item \textbf{Schulung im Prompt-Engineering:} Unternehmen sollten Best Practices für Prompts vermitteln und gemeinsame Konventionen definieren, um die Codebasis konsistent und qualitativ hochwertig zu halten.
+    \item \textbf{Tool-Chain und Integration bedenken:} KI-Tools sollten sinnvoll in den bestehenden Entwicklungsworkflow integriert werden. Resilienz gegenüber Tool-Ausfällen (Plan B) ist ein wichtiger Aspekt.
+    \item \textbf{Lizenz- und Compliance-Check einführen:} Richtlinien und ggf.\ technische Prüfungen sind notwendig, um Lizenzrisiken zu minimieren, insbesondere in proprietären Projekten.
+    \item \textbf{Nutzung von Gamification/UX-Features:} KI kann helfen, UX- und Gamification-Varianten rasch zu prototypen. Deren Wirksamkeit sollte aber mit Nutzerstudien (z.\,B.\ A/B-Tests) evaluiert werden.
+    \item \textbf{Bewusstsein für Grenzen:} KI-Werkzeuge sind leistungsfähig, aber nicht allwissend. Verantwortliche sollten vermitteln, dass die letztendliche Verantwortung für Codequalität und Sicherheit beim Menschen liegt.
+\end{enumerate}
+
+\section{Zusammenfassung}
+\label{sec:diskussion-zusammenfassung}
+
+Die Fallstudie Tap’em hat gezeigt, dass Prompt-Driven Development in der Praxis realisierbar ist und zu beachtlichen Ergebnissen führen kann. Produktivität und Softwarequalität profitieren in bestimmten Aspekten, leiden in anderen – was mit bestehenden Studien im Wesentlichen übereinstimmt. Stärken des Ansatzes sind die schnelle Umsetzung und der kreative Spielraum, Schwächen sind Wartungsdefizite und neue Fehlerquellen. 
+
+Für die Forschung liefert der Fall reichhaltige Ansatzpunkte, aber keine endgültigen Antworten; für die Praxis bietet er sowohl Erfolgsrezepte (z.\,B.\ modulare Architektur via KI, Gamification-Integration) als auch Warnhinweise (z.\,B.\ Testlücken, Lizenzrisiken). Alle Erkenntnisse sind kontextgebunden und nicht ohne Weiteres generalisierbar – sie stellen jedoch einen wichtigen Schritt dar, um die Auswirkungen von KI in der Softwareentwicklung besser zu verstehen und zukünftige Arbeiten – in Wissenschaft wie in Industrie – informierter zu gestalten.
+
+
+\end{document}

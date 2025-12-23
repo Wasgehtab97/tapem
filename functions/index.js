@@ -8,6 +8,7 @@ const activity = require('./activity');
 const gymCodes = require('./gymCodes');
 const powerlifting = require('./powerlifting');
 const push = require('./push');
+const marketingLeads = require("./marketingLeads");
 
 exports.adminGrantAvatar = avatars.adminGrantAvatar;
 exports.adminRevokeAvatar = avatars.adminRevokeAvatar;
@@ -26,6 +27,8 @@ exports.manuallyRotateGymCode = gymCodes.manuallyRotateGymCode;
 exports.registerPushToken = push.registerPushToken;
 exports.onFriendRequestCreated = push.onFriendRequestCreated;
 exports.onFriendChatMessageCreated = push.onFriendChatMessageCreated;
+
+exports.submitMarketingLead = marketingLeads.submitMarketingLead;
 
 exports.evaluateChallenges = functions.pubsub
   .schedule('every 24 hours')

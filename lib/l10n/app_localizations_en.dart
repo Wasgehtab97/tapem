@@ -23,6 +23,165 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authTitle => 'Sign In / Register';
 
   @override
+  String get gymEntryTitle => 'Choose your gym';
+
+  @override
+  String get gymEntrySubtitle => 'Select the studio you want to access.';
+
+  @override
+  String get gymDropdownLabel => 'Gyms';
+
+  @override
+  String get gymLastUsedBadge => 'Last used';
+
+  @override
+  String get gymSearchHint => 'Search gym';
+
+  @override
+  String get gymSearchMinChars => 'Enter at least 3 letters to see results.';
+
+  @override
+  String get gymSearchEmpty => 'No gyms found for your search.';
+
+  @override
+  String gymAccessTitle(Object gymName) {
+    return 'Welcome to $gymName';
+  }
+
+  @override
+  String get gymAccessSubtitle => 'Login or register to continue.';
+
+  @override
+  String get gymDemoCta => 'Start demo';
+
+  @override
+  String get gymDemoExitCta => 'Sign in';
+
+  @override
+  String get gymDemoRestrictedMessage => 'Demo mode is read-only. Sign in to start workouts.';
+
+  @override
+  String get gymChangeSelection => 'Change gym';
+
+  @override
+  String get gymRegisterMethodTitle => 'How do you want to register?';
+
+  @override
+  String gymRegisterMethodSubtitle(Object gymName) {
+    return 'Choose how to register for $gymName.';
+  }
+
+  @override
+  String get gymRegisterWithNfc => 'Register via NFC';
+
+  @override
+  String get gymRegisterWithCode => 'Register with gym code';
+
+  @override
+  String gymLoginTitle(Object gymName) {
+    return 'Login to $gymName';
+  }
+
+  @override
+  String gymRegisterTitle(Object gymName) {
+    return 'Register at $gymName';
+  }
+
+  @override
+  String get gymNfcHint => 'NFC scan will follow in a later step. You can enter the gym code manually for now.';
+
+  @override
+  String gymJoinTitle(Object gymName) {
+    return 'Add $gymName';
+  }
+
+  @override
+  String get gymJoinSubtitle => 'Enter the gym code to add this membership to your account.';
+
+  @override
+  String get gymJoinCta => 'Add membership';
+
+  @override
+  String get gymAddMembershipTitle => 'Add a gym';
+
+  @override
+  String get gymAddMembershipSubtitle => 'Choose the studio you want to add.';
+
+  @override
+  String get gymMembershipAlreadyAdded => 'Already added';
+
+  @override
+  String get gymSwitchTitle => 'Switch gym';
+
+  @override
+  String get gymSwitchSubtitle => 'Select the gym you want to use right now.';
+
+  @override
+  String get gymSwitchActiveLabel => 'Active';
+
+  @override
+  String get gymAddMembershipCta => 'Add another gym';
+
+  @override
+  String get nfcScanTitle => 'Scan NFC';
+
+  @override
+  String get nfcScanSubtitle => 'Hold your phone to the NFC tag in the gym.';
+
+  @override
+  String get nfcScanWaiting => 'Waiting for scan...';
+
+  @override
+  String get nfcScanRetry => 'Scan again';
+
+  @override
+  String get nfcScanManual => 'Enter gym code instead';
+
+  @override
+  String get nfcUnavailable => 'NFC is not available on this device.';
+
+  @override
+  String get nfcInvalidCode => 'No valid NFC code detected.';
+
+  @override
+  String get nfcTokenInactive => 'This NFC token is no longer active.';
+
+  @override
+  String get nfcScanFailed => 'NFC scan failed. Please try again.';
+
+  @override
+  String get loadingLabel => 'Loading...';
+
+  @override
+  String get loadingErrorLabel => 'Could not load data.';
+
+  @override
+  String get settingsSectionGymAccess => 'Gym access';
+
+  @override
+  String get settingsOptionSwitchGym => 'Switch gym';
+
+  @override
+  String get settingsOptionSwitchGymSubtitle => 'Change your active studio or add another membership.';
+
+  @override
+  String gymRemoveTitle(Object gymName) {
+    return 'Remove $gymName?';
+  }
+
+  @override
+  String get gymRemoveMessage => 'This will remove your membership and access to this gym.';
+
+  @override
+  String get gymRemoveActiveMessage => 'This is your active gym. You\'ll be switched to another gym after removal.';
+
+  @override
+  String get gymRemoveCta => 'Remove';
+
+  @override
+  String get gymRemoveLastBlocked => 'You must keep at least one gym membership.';
+
+  @override
   String get cancelButton => 'Cancel';
 
   @override

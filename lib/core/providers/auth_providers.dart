@@ -27,6 +27,7 @@ class AuthViewState implements GymContextState {
   const AuthViewState({
     required this.isLoading,
     required this.isLoggedIn,
+    required this.isGuest,
     required this.isAdmin,
     required this.isCoach,
     required this.gymContextStatus,
@@ -37,6 +38,7 @@ class AuthViewState implements GymContextState {
 
   final bool isLoading;
   final bool isLoggedIn;
+  final bool isGuest;
   final bool isAdmin;
   final bool isCoach;
   @override
@@ -52,6 +54,7 @@ class AuthViewState implements GymContextState {
     return AuthViewState(
       isLoading: auth.isLoading,
       isLoggedIn: auth.isLoggedIn,
+      isGuest: auth.isGuest,
       isAdmin: auth.isAdmin,
       isCoach: auth.isCoach,
       gymContextStatus: auth.gymContextStatus,

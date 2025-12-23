@@ -88,4 +88,75 @@ class AnalyticsService {
       },
     );
   }
+
+  static Future<void> logGymSelected({
+    required String gymId,
+    String? source,
+  }) {
+    return logEvent(
+      'gym_selected',
+      parameters: {
+        'gym_id': gymId,
+        if (source != null && source.isNotEmpty) 'source': source,
+      },
+    );
+  }
+
+  static Future<void> logGymAuthChoice({
+    required String gymId,
+    required String action,
+  }) {
+    return logEvent(
+      'gym_auth_choice',
+      parameters: {
+        'gym_id': gymId,
+        'action': action,
+      },
+    );
+  }
+
+  static Future<void> logGymRegisterMethod({
+    required String gymId,
+    required String method,
+  }) {
+    return logEvent(
+      'gym_register_method',
+      parameters: {
+        'gym_id': gymId,
+        'method': method,
+      },
+    );
+  }
+
+  static Future<void> logGymNfcScan({
+    required String gymId,
+    required String flow,
+    required String status,
+    String? reason,
+  }) {
+    return logEvent(
+      'gym_nfc_scan',
+      parameters: {
+        'gym_id': gymId,
+        'flow': flow,
+        'status': status,
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      },
+    );
+  }
+
+  static Future<void> logGymCodeValidation({
+    required String gymId,
+    required String status,
+    String? reason,
+  }) {
+    return logEvent(
+      'gym_code_validation',
+      parameters: {
+        'gym_id': gymId,
+        'status': status,
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      },
+    );
+  }
 }

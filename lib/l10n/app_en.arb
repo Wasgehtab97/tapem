@@ -22,6 +22,209 @@
     "description": "Title on the auth screen"
   },
 
+  "gymEntryTitle": "Choose your gym",
+  "@gymEntryTitle": {
+    "description": "Title on the gym selection entry screen"
+  },
+  "gymEntrySubtitle": "Select the studio you want to access.",
+  "@gymEntrySubtitle": {
+    "description": "Subtitle on the gym selection entry screen"
+  },
+  "gymDropdownLabel": "Gyms",
+  "@gymDropdownLabel": {
+    "description": "Label for the gym dropdown"
+  },
+  "gymLastUsedBadge": "Last used",
+  "@gymLastUsedBadge": {
+    "description": "Badge label for the last used gym in selection list"
+  },
+  "gymSearchHint": "Search gym",
+  "@gymSearchHint": {
+    "description": "Search field hint on the gym selection screen"
+  },
+  "gymSearchMinChars": "Enter at least 3 letters to see results.",
+  "@gymSearchMinChars": {
+    "description": "Hint shown before the minimum search length is reached"
+  },
+  "gymSearchEmpty": "No gyms found for your search.",
+  "@gymSearchEmpty": {
+    "description": "Shown when no gyms match the search"
+  },
+  "gymAccessTitle": "Welcome to {gymName}",
+  "@gymAccessTitle": {
+    "description": "Title on the gym access screen",
+    "placeholders": {"gymName": {}}
+  },
+  "gymAccessSubtitle": "Login or register to continue.",
+  "@gymAccessSubtitle": {
+    "description": "Subtitle on the gym access screen"
+  },
+  "gymDemoCta": "Start demo",
+  "@gymDemoCta": {
+    "description": "CTA to start demo mode for a gym"
+  },
+  "gymDemoExitCta": "Sign in",
+  "@gymDemoExitCta": {
+    "description": "CTA to exit demo mode"
+  },
+  "gymDemoRestrictedMessage": "Demo mode is read-only. Sign in to start workouts.",
+  "@gymDemoRestrictedMessage": {
+    "description": "Shown when a demo user tries to start a workout"
+  },
+  "gymChangeSelection": "Change gym",
+  "@gymChangeSelection": {
+    "description": "Button to change the selected gym"
+  },
+  "gymRegisterMethodTitle": "How do you want to register?",
+  "@gymRegisterMethodTitle": {
+    "description": "Title for registration method screen"
+  },
+  "gymRegisterMethodSubtitle": "Choose how to register for {gymName}.",
+  "@gymRegisterMethodSubtitle": {
+    "description": "Subtitle for registration method screen",
+    "placeholders": {"gymName": {}}
+  },
+  "gymRegisterWithNfc": "Register via NFC",
+  "@gymRegisterWithNfc": {
+    "description": "CTA for NFC registration"
+  },
+  "gymRegisterWithCode": "Register with gym code",
+  "@gymRegisterWithCode": {
+    "description": "CTA for gym code registration"
+  },
+  "gymLoginTitle": "Login to {gymName}",
+  "@gymLoginTitle": {
+    "description": "Title on the gym login screen",
+    "placeholders": {"gymName": {}}
+  },
+  "gymRegisterTitle": "Register at {gymName}",
+  "@gymRegisterTitle": {
+    "description": "Title on the gym registration screen",
+    "placeholders": {"gymName": {}}
+  },
+  "gymNfcHint": "NFC scan will follow in a later step. You can enter the gym code manually for now.",
+  "@gymNfcHint": {
+    "description": "Hint shown on registration screen when NFC was selected"
+  },
+  "gymJoinTitle": "Add {gymName}",
+  "@gymJoinTitle": {
+    "description": "Title on the add gym membership screen",
+    "placeholders": {"gymName": {}}
+  },
+  "gymJoinSubtitle": "Enter the gym code to add this membership to your account.",
+  "@gymJoinSubtitle": {
+    "description": "Subtitle on the add gym membership screen"
+  },
+  "gymJoinCta": "Add membership",
+  "@gymJoinCta": {
+    "description": "CTA to add a gym membership"
+  },
+  "gymAddMembershipTitle": "Add a gym",
+  "@gymAddMembershipTitle": {
+    "description": "Title on the add membership gym selection screen"
+  },
+  "gymAddMembershipSubtitle": "Choose the studio you want to add.",
+  "@gymAddMembershipSubtitle": {
+    "description": "Subtitle on the add membership gym selection screen"
+  },
+  "gymMembershipAlreadyAdded": "Already added",
+  "@gymMembershipAlreadyAdded": {
+    "description": "Label for gyms already added to the account"
+  },
+  "gymSwitchTitle": "Switch gym",
+  "@gymSwitchTitle": {
+    "description": "Title on the gym switch screen"
+  },
+  "gymSwitchSubtitle": "Select the gym you want to use right now.",
+  "@gymSwitchSubtitle": {
+    "description": "Subtitle on the gym switch screen"
+  },
+  "gymSwitchActiveLabel": "Active",
+  "@gymSwitchActiveLabel": {
+    "description": "Label for the currently active gym"
+  },
+  "gymAddMembershipCta": "Add another gym",
+  "@gymAddMembershipCta": {
+    "description": "CTA to add another gym membership"
+  },
+  "nfcScanTitle": "Scan NFC",
+  "@nfcScanTitle": {
+    "description": "Title or button label for NFC scan"
+  },
+  "nfcScanSubtitle": "Hold your phone to the NFC tag in the gym.",
+  "@nfcScanSubtitle": {
+    "description": "Subtitle for NFC scanning instructions"
+  },
+  "nfcScanWaiting": "Waiting for scan...",
+  "@nfcScanWaiting": {
+    "description": "Label while waiting for NFC scan"
+  },
+  "nfcScanRetry": "Scan again",
+  "@nfcScanRetry": {
+    "description": "CTA to retry NFC scan"
+  },
+  "nfcScanManual": "Enter gym code instead",
+  "@nfcScanManual": {
+    "description": "CTA to switch from NFC to manual gym code"
+  },
+  "nfcUnavailable": "NFC is not available on this device.",
+  "@nfcUnavailable": {
+    "description": "Shown when NFC is not supported"
+  },
+  "nfcInvalidCode": "No valid NFC code detected.",
+  "@nfcInvalidCode": {
+    "description": "Shown when NFC scan returns an empty/invalid code"
+  },
+  "nfcTokenInactive": "This NFC token is no longer active.",
+  "@nfcTokenInactive": {
+    "description": "Shown when NFC token is inactive"
+  },
+  "nfcScanFailed": "NFC scan failed. Please try again.",
+  "@nfcScanFailed": {
+    "description": "Shown when NFC scan throws an error"
+  },
+  "loadingLabel": "Loading...",
+  "@loadingLabel": {
+    "description": "Generic loading label"
+  },
+  "loadingErrorLabel": "Could not load data.",
+  "@loadingErrorLabel": {
+    "description": "Generic loading error label"
+  },
+  "settingsSectionGymAccess": "Gym access",
+  "@settingsSectionGymAccess": {
+    "description": "Settings section title for gym access"
+  },
+  "settingsOptionSwitchGym": "Switch gym",
+  "@settingsOptionSwitchGym": {
+    "description": "Settings option to switch gym"
+  },
+  "settingsOptionSwitchGymSubtitle": "Change your active studio or add another membership.",
+  "@settingsOptionSwitchGymSubtitle": {
+    "description": "Subtitle for the gym switch settings option"
+  },
+  "gymRemoveTitle": "Remove {gymName}?",
+  "@gymRemoveTitle": {
+    "description": "Title for the remove gym confirmation dialog",
+    "placeholders": {"gymName": {}}
+  },
+  "gymRemoveMessage": "This will remove your membership and access to this gym.",
+  "@gymRemoveMessage": {
+    "description": "Confirmation text when removing a non-active gym"
+  },
+  "gymRemoveActiveMessage": "This is your active gym. You'll be switched to another gym after removal.",
+  "@gymRemoveActiveMessage": {
+    "description": "Confirmation text when removing the active gym"
+  },
+  "gymRemoveCta": "Remove",
+  "@gymRemoveCta": {
+    "description": "CTA label to remove a gym membership"
+  },
+  "gymRemoveLastBlocked": "You must keep at least one gym membership.",
+  "@gymRemoveLastBlocked": {
+    "description": "Shown when user tries to remove the last gym"
+  },
+
   "cancelButton": "Cancel",
   "@cancelButton": {
     "description": "Label for the cancel button"

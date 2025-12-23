@@ -22,6 +22,209 @@
     "description": "Titel auf dem Authentifizierungsbildschirm"
   },
 
+  "gymEntryTitle": "Gym auswählen",
+  "@gymEntryTitle": {
+    "description": "Titel auf dem Gym-Auswahl-Screen"
+  },
+  "gymEntrySubtitle": "Wähle das Studio, das du nutzen möchtest.",
+  "@gymEntrySubtitle": {
+    "description": "Untertitel auf dem Gym-Auswahl-Screen"
+  },
+  "gymDropdownLabel": "Gyms",
+  "@gymDropdownLabel": {
+    "description": "Label für das Gym-Dropdown"
+  },
+  "gymLastUsedBadge": "Zuletzt",
+  "@gymLastUsedBadge": {
+    "description": "Badge-Label für das zuletzt verwendete Gym"
+  },
+  "gymSearchHint": "Studio suchen",
+  "@gymSearchHint": {
+    "description": "Suchfeld-Hinweis auf dem Gym-Auswahl-Screen"
+  },
+  "gymSearchMinChars": "Bitte mindestens 3 Buchstaben eingeben.",
+  "@gymSearchMinChars": {
+    "description": "Hinweis, bevor die Mindestlänge erreicht ist"
+  },
+  "gymSearchEmpty": "Keine Studios gefunden.",
+  "@gymSearchEmpty": {
+    "description": "Hinweis, wenn keine Gyms zur Suche passen"
+  },
+  "gymAccessTitle": "Willkommen bei {gymName}",
+  "@gymAccessTitle": {
+    "description": "Titel auf dem Gym-Access-Screen",
+    "placeholders": {"gymName": {}}
+  },
+  "gymAccessSubtitle": "Melde dich an oder registriere dich, um fortzufahren.",
+  "@gymAccessSubtitle": {
+    "description": "Untertitel auf dem Gym-Access-Screen"
+  },
+  "gymDemoCta": "Demo starten",
+  "@gymDemoCta": {
+    "description": "CTA zum Start des Demo-Modus"
+  },
+  "gymDemoExitCta": "Anmelden",
+  "@gymDemoExitCta": {
+    "description": "CTA zum Beenden des Demo-Modus"
+  },
+  "gymDemoRestrictedMessage": "Demo-Modus ist nur zum Anschauen. Bitte anmelden, um zu trainieren.",
+  "@gymDemoRestrictedMessage": {
+    "description": "Hinweis, wenn Demo-User eine Aktion starten wollen"
+  },
+  "gymChangeSelection": "Gym wechseln",
+  "@gymChangeSelection": {
+    "description": "Button zum Wechseln des Gyms"
+  },
+  "gymRegisterMethodTitle": "Wie möchtest du dich registrieren?",
+  "@gymRegisterMethodTitle": {
+    "description": "Titel für die Registrierungs-Methoden-Auswahl"
+  },
+  "gymRegisterMethodSubtitle": "Wähle die Registrierungsmethode für {gymName}.",
+  "@gymRegisterMethodSubtitle": {
+    "description": "Untertitel für die Registrierungs-Methoden-Auswahl",
+    "placeholders": {"gymName": {}}
+  },
+  "gymRegisterWithNfc": "Per NFC registrieren",
+  "@gymRegisterWithNfc": {
+    "description": "CTA für NFC-Registrierung"
+  },
+  "gymRegisterWithCode": "Mit Gymcode registrieren",
+  "@gymRegisterWithCode": {
+    "description": "CTA für Gymcode-Registrierung"
+  },
+  "gymLoginTitle": "Login bei {gymName}",
+  "@gymLoginTitle": {
+    "description": "Titel auf dem Gym-Login-Screen",
+    "placeholders": {"gymName": {}}
+  },
+  "gymRegisterTitle": "Registrierung bei {gymName}",
+  "@gymRegisterTitle": {
+    "description": "Titel auf dem Gym-Registrierungs-Screen",
+    "placeholders": {"gymName": {}}
+  },
+  "gymNfcHint": "NFC-Scan folgt im nächsten Schritt. Du kannst den Gymcode vorerst manuell eingeben.",
+  "@gymNfcHint": {
+    "description": "Hinweis auf der Registrierung, wenn NFC gewählt wurde"
+  },
+  "gymJoinTitle": "{gymName} hinzufügen",
+  "@gymJoinTitle": {
+    "description": "Titel auf dem Membership-Add-Screen",
+    "placeholders": {"gymName": {}}
+  },
+  "gymJoinSubtitle": "Gib den Gymcode ein, um die Mitgliedschaft hinzuzufügen.",
+  "@gymJoinSubtitle": {
+    "description": "Untertitel auf dem Membership-Add-Screen"
+  },
+  "gymJoinCta": "Mitgliedschaft hinzufügen",
+  "@gymJoinCta": {
+    "description": "CTA zum Hinzufügen einer Mitgliedschaft"
+  },
+  "gymAddMembershipTitle": "Studio hinzufügen",
+  "@gymAddMembershipTitle": {
+    "description": "Titel auf dem Gym-Add-Screen"
+  },
+  "gymAddMembershipSubtitle": "Wähle das Studio, das du hinzufügen möchtest.",
+  "@gymAddMembershipSubtitle": {
+    "description": "Untertitel auf dem Gym-Add-Screen"
+  },
+  "gymMembershipAlreadyAdded": "Bereits hinzugefügt",
+  "@gymMembershipAlreadyAdded": {
+    "description": "Label für bereits hinzugefügte Studios"
+  },
+  "gymSwitchTitle": "Studio wechseln",
+  "@gymSwitchTitle": {
+    "description": "Titel auf dem Studio-Wechsel-Screen"
+  },
+  "gymSwitchSubtitle": "Wähle das Studio, das du jetzt nutzen möchtest.",
+  "@gymSwitchSubtitle": {
+    "description": "Untertitel auf dem Studio-Wechsel-Screen"
+  },
+  "gymSwitchActiveLabel": "Aktiv",
+  "@gymSwitchActiveLabel": {
+    "description": "Label für das aktive Studio"
+  },
+  "gymAddMembershipCta": "Weiteres Studio hinzufügen",
+  "@gymAddMembershipCta": {
+    "description": "CTA zum Hinzufügen einer weiteren Mitgliedschaft"
+  },
+  "nfcScanTitle": "NFC scannen",
+  "@nfcScanTitle": {
+    "description": "Titel oder Button-Label für NFC-Scan"
+  },
+  "nfcScanSubtitle": "Halte dein Handy an den NFC-Tag im Studio.",
+  "@nfcScanSubtitle": {
+    "description": "Untertitel für NFC-Scan-Anleitung"
+  },
+  "nfcScanWaiting": "Warten auf Scan...",
+  "@nfcScanWaiting": {
+    "description": "Label während NFC-Scan läuft"
+  },
+  "nfcScanRetry": "Erneut scannen",
+  "@nfcScanRetry": {
+    "description": "CTA zum erneuten NFC-Scan"
+  },
+  "nfcScanManual": "Stattdessen Gymcode eingeben",
+  "@nfcScanManual": {
+    "description": "CTA um statt NFC den Gymcode einzugeben"
+  },
+  "nfcUnavailable": "NFC ist auf diesem Gerät nicht verfügbar.",
+  "@nfcUnavailable": {
+    "description": "Hinweis wenn NFC nicht verfügbar ist"
+  },
+  "nfcInvalidCode": "Kein gültiger NFC-Code erkannt.",
+  "@nfcInvalidCode": {
+    "description": "Hinweis wenn NFC-Scan leer/ungültig ist"
+  },
+  "nfcTokenInactive": "Dieser NFC-Tag ist nicht mehr aktiv.",
+  "@nfcTokenInactive": {
+    "description": "Hinweis wenn NFC-Tag inaktiv ist"
+  },
+  "nfcScanFailed": "NFC-Scan fehlgeschlagen. Bitte erneut versuchen.",
+  "@nfcScanFailed": {
+    "description": "Hinweis wenn NFC-Scan fehlschlägt"
+  },
+  "loadingLabel": "Laden...",
+  "@loadingLabel": {
+    "description": "Generisches Loading-Label"
+  },
+  "loadingErrorLabel": "Daten konnten nicht geladen werden.",
+  "@loadingErrorLabel": {
+    "description": "Generisches Loading-Error-Label"
+  },
+  "settingsSectionGymAccess": "Studio-Zugang",
+  "@settingsSectionGymAccess": {
+    "description": "Settings-Sektion für Studio-Zugang"
+  },
+  "settingsOptionSwitchGym": "Studio wechseln",
+  "@settingsOptionSwitchGym": {
+    "description": "Settings-Option für Studio-Wechsel"
+  },
+  "settingsOptionSwitchGymSubtitle": "Aktives Studio ändern oder weitere Mitgliedschaft hinzufügen.",
+  "@settingsOptionSwitchGymSubtitle": {
+    "description": "Untertitel der Studio-Wechsel-Option"
+  },
+  "gymRemoveTitle": "{gymName} entfernen?",
+  "@gymRemoveTitle": {
+    "description": "Titel für die Studio-Entfernen-Bestätigung",
+    "placeholders": {"gymName": {}}
+  },
+  "gymRemoveMessage": "Diese Mitgliedschaft und der Zugriff werden entfernt.",
+  "@gymRemoveMessage": {
+    "description": "Bestätigungstext für nicht-aktives Studio"
+  },
+  "gymRemoveActiveMessage": "Das ist dein aktives Studio. Danach wirst du auf ein anderes Studio umgeschaltet.",
+  "@gymRemoveActiveMessage": {
+    "description": "Bestätigungstext für aktives Studio"
+  },
+  "gymRemoveCta": "Entfernen",
+  "@gymRemoveCta": {
+    "description": "CTA zum Entfernen eines Studios"
+  },
+  "gymRemoveLastBlocked": "Mindestens eine Mitgliedschaft muss bleiben.",
+  "@gymRemoveLastBlocked": {
+    "description": "Hinweis beim Entfernen des letzten Studios"
+  },
+
   "cancelButton": "Abbrechen",
   "@cancelButton": {
     "description": "Beschriftung für den Abbrechen-Button"

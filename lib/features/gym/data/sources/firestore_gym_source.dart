@@ -30,6 +30,22 @@ class FirestoreGymSource {
     return GymConfig.fromMap(doc.id, doc.data()!);
   }
 
+  /// Listet alle Gyms für die öffentliche Auswahl.
+  Future<List<GymConfig>> listGyms() async {
+    QuerySnapshot<Map<String, dynamic>> query;
+    try {
+      query = await _firestore.collection('gyms').orderBy('name').get();
+    } catch (_) {
+      query = await _firestore
+          .collection('gyms')
+          .orderBy('name')
+          .get(const GetOptions(source: Source.cache));
+    }
+    return query.docs
+        .map((doc) => GymConfig.fromMap(doc.id, doc.data()))
+        .toList();
+  }
+
   /// Gibt die Branding-Konfiguration des Gyms zurück.
   Future<Branding?> getBranding(String gymId) async {
     final doc =

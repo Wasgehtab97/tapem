@@ -119,6 +119,300 @@ abstract class AppLocalizations {
   /// **'Sign In / Register'**
   String get authTitle;
 
+  /// Title on the gym selection entry screen
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your gym'**
+  String get gymEntryTitle;
+
+  /// Subtitle on the gym selection entry screen
+  ///
+  /// In en, this message translates to:
+  /// **'Select the studio you want to access.'**
+  String get gymEntrySubtitle;
+
+  /// Label for the gym dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Gyms'**
+  String get gymDropdownLabel;
+
+  /// Badge label for the last used gym in selection list
+  ///
+  /// In en, this message translates to:
+  /// **'Last used'**
+  String get gymLastUsedBadge;
+
+  /// Search field hint on the gym selection screen
+  ///
+  /// In en, this message translates to:
+  /// **'Search gym'**
+  String get gymSearchHint;
+
+  /// Hint shown before the minimum search length is reached
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least 3 letters to see results.'**
+  String get gymSearchMinChars;
+
+  /// Shown when no gyms match the search
+  ///
+  /// In en, this message translates to:
+  /// **'No gyms found for your search.'**
+  String get gymSearchEmpty;
+
+  /// Title on the gym access screen
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to {gymName}'**
+  String gymAccessTitle(Object gymName);
+
+  /// Subtitle on the gym access screen
+  ///
+  /// In en, this message translates to:
+  /// **'Login or register to continue.'**
+  String get gymAccessSubtitle;
+
+  /// CTA to start demo mode for a gym
+  ///
+  /// In en, this message translates to:
+  /// **'Start demo'**
+  String get gymDemoCta;
+
+  /// CTA to exit demo mode
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get gymDemoExitCta;
+
+  /// Shown when a demo user tries to start a workout
+  ///
+  /// In en, this message translates to:
+  /// **'Demo mode is read-only. Sign in to start workouts.'**
+  String get gymDemoRestrictedMessage;
+
+  /// Button to change the selected gym
+  ///
+  /// In en, this message translates to:
+  /// **'Change gym'**
+  String get gymChangeSelection;
+
+  /// Title for registration method screen
+  ///
+  /// In en, this message translates to:
+  /// **'How do you want to register?'**
+  String get gymRegisterMethodTitle;
+
+  /// Subtitle for registration method screen
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how to register for {gymName}.'**
+  String gymRegisterMethodSubtitle(Object gymName);
+
+  /// CTA for NFC registration
+  ///
+  /// In en, this message translates to:
+  /// **'Register via NFC'**
+  String get gymRegisterWithNfc;
+
+  /// CTA for gym code registration
+  ///
+  /// In en, this message translates to:
+  /// **'Register with gym code'**
+  String get gymRegisterWithCode;
+
+  /// Title on the gym login screen
+  ///
+  /// In en, this message translates to:
+  /// **'Login to {gymName}'**
+  String gymLoginTitle(Object gymName);
+
+  /// Title on the gym registration screen
+  ///
+  /// In en, this message translates to:
+  /// **'Register at {gymName}'**
+  String gymRegisterTitle(Object gymName);
+
+  /// Hint shown on registration screen when NFC was selected
+  ///
+  /// In en, this message translates to:
+  /// **'NFC scan will follow in a later step. You can enter the gym code manually for now.'**
+  String get gymNfcHint;
+
+  /// Title on the add gym membership screen
+  ///
+  /// In en, this message translates to:
+  /// **'Add {gymName}'**
+  String gymJoinTitle(Object gymName);
+
+  /// Subtitle on the add gym membership screen
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the gym code to add this membership to your account.'**
+  String get gymJoinSubtitle;
+
+  /// CTA to add a gym membership
+  ///
+  /// In en, this message translates to:
+  /// **'Add membership'**
+  String get gymJoinCta;
+
+  /// Title on the add membership gym selection screen
+  ///
+  /// In en, this message translates to:
+  /// **'Add a gym'**
+  String get gymAddMembershipTitle;
+
+  /// Subtitle on the add membership gym selection screen
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the studio you want to add.'**
+  String get gymAddMembershipSubtitle;
+
+  /// Label for gyms already added to the account
+  ///
+  /// In en, this message translates to:
+  /// **'Already added'**
+  String get gymMembershipAlreadyAdded;
+
+  /// Title on the gym switch screen
+  ///
+  /// In en, this message translates to:
+  /// **'Switch gym'**
+  String get gymSwitchTitle;
+
+  /// Subtitle on the gym switch screen
+  ///
+  /// In en, this message translates to:
+  /// **'Select the gym you want to use right now.'**
+  String get gymSwitchSubtitle;
+
+  /// Label for the currently active gym
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get gymSwitchActiveLabel;
+
+  /// CTA to add another gym membership
+  ///
+  /// In en, this message translates to:
+  /// **'Add another gym'**
+  String get gymAddMembershipCta;
+
+  /// Title or button label for NFC scan
+  ///
+  /// In en, this message translates to:
+  /// **'Scan NFC'**
+  String get nfcScanTitle;
+
+  /// Subtitle for NFC scanning instructions
+  ///
+  /// In en, this message translates to:
+  /// **'Hold your phone to the NFC tag in the gym.'**
+  String get nfcScanSubtitle;
+
+  /// Label while waiting for NFC scan
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for scan...'**
+  String get nfcScanWaiting;
+
+  /// CTA to retry NFC scan
+  ///
+  /// In en, this message translates to:
+  /// **'Scan again'**
+  String get nfcScanRetry;
+
+  /// CTA to switch from NFC to manual gym code
+  ///
+  /// In en, this message translates to:
+  /// **'Enter gym code instead'**
+  String get nfcScanManual;
+
+  /// Shown when NFC is not supported
+  ///
+  /// In en, this message translates to:
+  /// **'NFC is not available on this device.'**
+  String get nfcUnavailable;
+
+  /// Shown when NFC scan returns an empty/invalid code
+  ///
+  /// In en, this message translates to:
+  /// **'No valid NFC code detected.'**
+  String get nfcInvalidCode;
+
+  /// Shown when NFC token is inactive
+  ///
+  /// In en, this message translates to:
+  /// **'This NFC token is no longer active.'**
+  String get nfcTokenInactive;
+
+  /// Shown when NFC scan throws an error
+  ///
+  /// In en, this message translates to:
+  /// **'NFC scan failed. Please try again.'**
+  String get nfcScanFailed;
+
+  /// Generic loading label
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get loadingLabel;
+
+  /// Generic loading error label
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load data.'**
+  String get loadingErrorLabel;
+
+  /// Settings section title for gym access
+  ///
+  /// In en, this message translates to:
+  /// **'Gym access'**
+  String get settingsSectionGymAccess;
+
+  /// Settings option to switch gym
+  ///
+  /// In en, this message translates to:
+  /// **'Switch gym'**
+  String get settingsOptionSwitchGym;
+
+  /// Subtitle for the gym switch settings option
+  ///
+  /// In en, this message translates to:
+  /// **'Change your active studio or add another membership.'**
+  String get settingsOptionSwitchGymSubtitle;
+
+  /// Title for the remove gym confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {gymName}?'**
+  String gymRemoveTitle(Object gymName);
+
+  /// Confirmation text when removing a non-active gym
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove your membership and access to this gym.'**
+  String get gymRemoveMessage;
+
+  /// Confirmation text when removing the active gym
+  ///
+  /// In en, this message translates to:
+  /// **'This is your active gym. You\'ll be switched to another gym after removal.'**
+  String get gymRemoveActiveMessage;
+
+  /// CTA label to remove a gym membership
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get gymRemoveCta;
+
+  /// Shown when user tries to remove the last gym
+  ///
+  /// In en, this message translates to:
+  /// **'You must keep at least one gym membership.'**
+  String get gymRemoveLastBlocked;
+
   /// Label for the cancel button
   ///
   /// In en, this message translates to:

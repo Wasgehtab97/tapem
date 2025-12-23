@@ -353,7 +353,7 @@ service cloud.firestore {
       allow create: if isOwner(uid);
       allow read: if isAuthed();
       allow update: if isOwner(uid) &&
-        request.resource.data.keys().hasOnly([
+        request.resource.data.diff(resource.data).changedKeys().hasOnly([
           'username',
           'usernameLower',
           'showInLeaderboard',
@@ -364,8 +364,16 @@ service cloud.firestore {
           'avatarUpdatedAt',
           'equippedAvatarRef',
           'activeGymId',
-          'coachEnabled'
-        ]);
+          'coachEnabled',
+          'gymCodes'
+        ]) &&
+        (
+          !('gymCodes' in request.resource.data) ||
+          (
+            request.resource.data.gymCodes is list &&
+            request.resource.data.gymCodes.size() <= 50
+          )
+        );
       allow update: if isGymAdminFor(uid, request.auth.token.gymId) &&
         request.resource.data.keys().hasOnly(['avatarKey']) &&
         request.resource.data.avatarKey is string;
@@ -878,11 +886,20 @@ service cloud.firestore {
 
       // Users subcollection under gym
       match /users/{userId} {
-        allow read: if inGym(gymId);
+        allow read: if inGym(gymId) || (isAuthed() && request.auth.uid == userId);
         allow create: if isAuthed() &&
                        request.auth.uid == userId &&
                        request.resource.data.role == 'member';
-        allow update, delete: if isAdmin(gymId);
+        allow update: if isAdmin(gymId);
+        allow delete: if isAdmin(gymId) ||
+          (isAuthed() && request.auth.uid == userId);
+      }
+
+      // NFC tokens for gym registration
+      match /nfc_tokens/{tokenId} {
+        allow read: if isAuthed();
+        allow create, update: if isAdmin(gymId);
+        allow delete: if false;
       }
 
       match /users/{userId}/rank/{document=**} {
@@ -942,6 +959,51 @@ service cloud.firestore {
         allow read: if inGym(gymId);
         allow write: if isAdmin(gymId);
       }
+    }
+
+    // ─────────────────────────
+    // Gym Codes (Rotating Registration Codes)
+    // ─────────────────────────
+    match /gym_codes/{gymId}/codes/{codeId} {
+      // Allow anyone to read codes for validation during registration
+      allow read: if true;
+
+      // Only gym admins can create codes
+      allow create: if (isAdmin(gymId) || isGymAdmin(gymId)) &&
+        request.resource.data.keys().hasOnly([
+          'code',
+          'gymId',
+          'createdAt',
+          'expiresAt',
+          'isActive',
+          'createdBy'
+        ]) &&
+        request.resource.data.code is string &&
+        request.resource.data.code.size() == 6 &&
+        request.resource.data.gymId == gymId &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.expiresAt is timestamp &&
+        request.resource.data.isActive is bool &&
+        request.resource.data.createdBy is string;
+
+      // Only allow updating isActive field (for deactivation)
+      allow update: if (isAdmin(gymId) || isGymAdmin(gymId)) &&
+        request.resource.data.keys().hasOnly([
+          'code',
+          'gymId',
+          'createdAt',
+          'expiresAt',
+          'isActive',
+          'createdBy'
+        ]) &&
+        request.resource.data.code == resource.data.code &&
+        request.resource.data.gymId == resource.data.gymId &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.expiresAt == resource.data.expiresAt &&
+        request.resource.data.createdBy == resource.data.createdBy;
+
+      // Codes are immutable - no deletion
+      allow delete: if false;
     }
 
     // ─────────────────────────

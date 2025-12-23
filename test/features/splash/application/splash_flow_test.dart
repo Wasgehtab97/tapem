@@ -16,6 +16,7 @@ AuthViewState _state({
   return AuthViewState(
     isLoading: isLoading,
     isLoggedIn: isLoggedIn,
+    isGuest: false,
     isAdmin: isAdmin,
     isCoach: isCoach,
     gymContextStatus: status,

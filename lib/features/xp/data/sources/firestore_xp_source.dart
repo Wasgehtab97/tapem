@@ -13,6 +13,35 @@ import 'package:tapem/features/xp/domain/muscle_xp_calculator.dart';
 import 'package:tapem/features/xp/domain/session_xp_award.dart';
 import 'package:tapem/features/xp/domain/training_day_xp_engine.dart';
 
+class _SeasonWindow {
+  const _SeasonWindow({
+    required this.id,
+    required this.start,
+    required this.end,
+  });
+
+  final String id;
+  final DateTime start;
+  final DateTime end;
+
+  bool contains(DateTime date) {
+    return !date.isBefore(start) && !date.isAfter(end);
+  }
+}
+
+final List<_SeasonWindow> _seasonWindows = [
+  _SeasonWindow(
+    id: '2025',
+    start: DateTime.utc(2025, 1, 1),
+    end: DateTime.utc(2025, 12, 31, 23, 59, 59, 999),
+  ),
+  _SeasonWindow(
+    id: '2026',
+    start: DateTime.utc(2026, 1, 1),
+    end: DateTime.utc(2026, 12, 31, 23, 59, 59, 999),
+  ),
+];
+
 const bool _logDeviceXpWatchers = false;
 
 class FirestoreXpSource {
@@ -276,6 +305,11 @@ class FirestoreXpSource {
     required int computedTotalXp,
     required String traceId,
   }) async {
+    final seasonTotals = _computeSeasonTotals(
+      trainingEvents: trainingEvents,
+      penaltyEvents: penaltyEvents,
+    );
+
     final operations = <void Function(WriteBatch)>[];
 
     final desiredTrainingIds =
@@ -329,6 +363,7 @@ class FirestoreXpSource {
       'dailyTrainingDays': trainingEvents.length,
       'dailyLedgerComputedAt': FieldValue.serverTimestamp(),
       'dailyLedgerVersion': 2,
+      'seasonXP': seasonTotals,
     };
     if (trainingEvents.isEmpty) {
       statsData['dailyLastTrainingDay'] = FieldValue.delete();
@@ -357,6 +392,26 @@ class FirestoreXpSource {
     });
 
     await _commitBatchOperations(operations);
+  }
+
+  Map<String, int> _computeSeasonTotals({
+    required Iterable<XpLedgerEvent> trainingEvents,
+    required Iterable<XpLedgerEvent> penaltyEvents,
+  }) {
+    final totals = {for (final season in _seasonWindows) season.id: 0};
+    final events = <XpLedgerEvent>[
+      ...trainingEvents,
+      ...penaltyEvents,
+    ];
+
+    for (final event in events) {
+      for (final season in _seasonWindows) {
+        if (season.contains(event.day.canonicalDate)) {
+          totals[season.id] = (totals[season.id] ?? 0) + event.xpDelta;
+        }
+      }
+    }
+    return totals;
   }
 
   Map<String, dynamic> _buildTrainingDayData({
