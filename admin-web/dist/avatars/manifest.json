@@ -1,0 +1,56 @@
+{
+  "global": [
+    "default",
+    "default2"
+  ],
+  "gyms": {
+    "bodypower_weissenthurm": [
+      "manuel"
+    ],
+    "club_aktiv": [
+      "kurzhantel",
+      "max",
+      "max_weihnachten"
+    ],
+    "fitnessfirst_myzeil": [
+      "danfan",
+      "danfan2",
+      "danfan_weihnachten",
+      "kurzhantel"
+    ],
+    "gym_frankfurt": [
+      "dominik",
+      "lauch"
+    ],
+    "lifthouse_koblenz": [
+      "Yi",
+      "Yi_christmas",
+      "daniel",
+      "daniel_weihnachten",
+      "kurzhantel",
+      "neele",
+      "neele_weihnachten1",
+      "neele_weihnachten2"
+    ],
+    "mcfit_baelau": [
+      "kurzhantel",
+      "lucas",
+      "lucas_weihnachten"
+    ],
+    "medifitness_ruesselsheim": [
+      "alex",
+      "alex_weihnachten",
+      "kurzhantel"
+    ],
+    "studentgym_london": [
+      "london"
+    ],
+    "testgym_ml": [
+      "ml"
+    ],
+    "unigym_essen": [
+      "kurzhantel",
+      "luca"
+    ]
+  }
+}

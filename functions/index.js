@@ -9,6 +9,7 @@ const gymCodes = require('./gymCodes');
 const powerlifting = require('./powerlifting');
 const push = require('./push');
 const marketingLeads = require("./marketingLeads");
+const adminWeb = require("./adminWeb");
 
 exports.adminGrantAvatar = avatars.adminGrantAvatar;
 exports.adminRevokeAvatar = avatars.adminRevokeAvatar;
@@ -29,6 +30,10 @@ exports.onFriendRequestCreated = push.onFriendRequestCreated;
 exports.onFriendChatMessageCreated = push.onFriendChatMessageCreated;
 
 exports.submitMarketingLead = marketingLeads.submitMarketingLead;
+
+// Admin Web (callables)
+exports.adminListGyms = adminWeb.adminListGyms;
+exports.adminListUsers = adminWeb.adminListUsers;
 
 exports.evaluateChallenges = functions.pubsub
   .schedule('every 24 hours')

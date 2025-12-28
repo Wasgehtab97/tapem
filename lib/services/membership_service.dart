@@ -38,8 +38,14 @@ class FirestoreMembershipService implements MembershipService {
         final membershipRef = gymRef.collection('users').doc(uid);
 
         final membershipSnap = await tx.get(membershipRef);
-        final updates = <String, dynamic>{'role': 'member'};
+        final updates = <String, dynamic>{};
 
+        final hasRole = membershipSnap.exists &&
+            membershipSnap.data() != null &&
+            (membershipSnap.data() as Map<String, dynamic>).containsKey('role');
+        if (!hasRole) {
+          updates['role'] = 'member';
+        }
         var needsMemberNumber = true;
         if (membershipSnap.exists) {
           final data = membershipSnap.data();

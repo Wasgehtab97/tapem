@@ -30,6 +30,14 @@
   "@gymEntrySubtitle": {
     "description": "Untertitel auf dem Gym-Auswahl-Screen"
   },
+  "gymMyTitleSingle": "Mein Gym",
+  "@gymMyTitleSingle": {
+    "description": "Label für ein einzelnes Gym des Users"
+  },
+  "gymMyTitleMultiple": "Meine Gyms",
+  "@gymMyTitleMultiple": {
+    "description": "Label für mehrere Gyms des Users"
+  },
   "gymDropdownLabel": "Gyms",
   "@gymDropdownLabel": {
     "description": "Label für das Gym-Dropdown"

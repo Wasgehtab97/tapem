@@ -131,6 +131,18 @@ abstract class AppLocalizations {
   /// **'Select the studio you want to access.'**
   String get gymEntrySubtitle;
 
+  /// Label for the user's single gym
+  ///
+  /// In en, this message translates to:
+  /// **'My Gym'**
+  String get gymMyTitleSingle;
+
+  /// Label for multiple gyms
+  ///
+  /// In en, this message translates to:
+  /// **'My Gyms'**
+  String get gymMyTitleMultiple;
+
   /// Label for the gym dropdown
   ///
   /// In en, this message translates to:

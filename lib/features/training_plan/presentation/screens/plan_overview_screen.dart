@@ -29,6 +29,7 @@ class PlanOverviewScreen extends ConsumerWidget {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
+        automaticallyImplyLeading: false,
         title: Text(
           'Trainingspläne',
           style: theme.textTheme.titleLarge?.copyWith(

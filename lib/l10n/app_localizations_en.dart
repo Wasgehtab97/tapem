@@ -29,6 +29,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gymEntrySubtitle => 'Select the studio you want to access.';
 
   @override
+  String get gymMyTitleSingle => 'My Gym';
+
+  @override
+  String get gymMyTitleMultiple => 'My Gyms';
+
+  @override
   String get gymDropdownLabel => 'Gyms';
 
   @override

@@ -234,18 +234,33 @@ Ziel: Das Produkt ist für echte Studios einsatzbereit, inklusive sinnvoller Adm
 
 ### 7. Admin-Web-App (Browser-Verwaltung)
 
-- [ ] Anforderungen an Admin-Weboberfläche definieren:
-  - [ ] Welche Funktionen müssen zwingend auch am Rechner verfügbar sein?
-  - [ ] Welche Funktionen sind mobile-only und können vorerst dort bleiben?
-- [ ] Architekturentscheidung treffen:
-  - [ ] Separate Web-Frontend-Codebasis (z.B. React, Flutter Web) oder Wiederverwendung vorhandener Flutter-Logik?
-- [ ] Authentifizierung & Rollen im Web-Frontend integrieren (mit bestehendem Backend/Firebase).
-- [ ] Kern-Views im Admin-Web umsetzen (MVP):
-  - [ ] Login & Studio-Dashboard.
-  - [ ] Geräteverwaltung.
-  - [ ] Nutzerübersicht & grundlegende Statistiken.
-  - [ ] Umfragen/Feedback-Ansicht.
-- [ ] Sicherheit prüfen (Rollen, Firestore-Regeln/Backend-API, Zugriffsrechte im Browser).
+- [x] Anforderungen an Admin-Weboberfläche definieren:
+  - [x] Welche Funktionen müssen zwingend auch am Rechner verfügbar sein?
+  - [x] Welche Funktionen sind mobile-only und können vorerst dort bleiben?
+- [x] Architekturentscheidung treffen:
+  - [x] Separate Web-Frontend-Codebasis (React + Vite + Firebase SDK).
+- [x] Authentifizierung & Rollen im Web-Frontend integrieren (mit bestehendem Backend/Firebase, Custom Claims).
+- [~] Kern-Views im Admin-Web umsetzen (MVP):
+  - [x] Login & Studio-Dashboard (Read-only, Gym-Filter).
+  - [x] Geräteverwaltung (Read/Toggle/Edit/Neuanlage pro Gym, NFC-Code auto, IDs auto, Muskelgruppen-Chips, Beschreibung sichtbar).
+  - [x] Nutzerübersicht & grundlegende Statistiken (Gym-Filter, Rollen setzen, Passwort-Reset-Link, Avatar-Zuweisung).
+  - [x] Umfragen/Feedback-Ansicht (Erstellen/Schließen/Ergebnisse + zuletzt 50 Feedback).
+  - [ ] Interaktive Gym-Map im Dashboard (DACH): Kartenlayer mit allen Gyms als Marker; Klick auf Marker wählt das Gym wie das Header-Dropdown (inkl. Auswahlzustand).
+- [~] Sicherheit prüfen (Rollen, Firestore-Regeln/Backend-API, Zugriffsrechte im Browser).
+- [~] Tapem-Ops-/Owner-Console (nur intern):
+  - [x] Global-Admin-Login (Custom Claim).
+  - [x] Multi-Tenant-Übersicht (Read-only Gyms/Users, Gym-Scoped Filter).
+  - [~] CRUD für Gyms/Gym-Codes, On-/Offboarding, Branding-Check.
+    - [ ] Gym-Anlage-Flow im Admin-Web (Pflichtfelder + GeoPoint + Member-Counter).
+    - [ ] Initialen Gym-Code in `gym_codes/{gymId}/codes` beim Anlegen erzeugen (30 Tage, aktiv).
+    - [ ] Legacy-Feld `gyms.code` entscheiden: entfernen oder beim Rotieren automatisch syncen.
+    - [ ] Validierung & Konflikte: eindeutige Gym-ID, gültige Koordinaten, Code-Format.
+    - [ ] Kurz-Doku: Ablauf „Neues Gym anlegen“ (inkl. benötigte Felder).
+  - [x] Geräteverwaltung pro Gym (Bearbeiten/Deaktivieren/Anlegen) im Browser.
+  - [~] User-Verwaltung (Rollen setzen, Passwort-Reset-Links; Sperren/Entsperren offen).
+  - [ ] Moderation/Support: Meldungen/Feedback/Umfragen einsehen, manueller Export.
+  - [ ] Monitoring: einfache Health/Fehler-Logs (Functions/Analytics), manuelle Re-Run-Tools (z.B. XP/Leaderboards).
+  - [ ] Privacy-Safety: Write-Aktionen nur mit Bestätigung + Audit-Log.
 
 ---
 

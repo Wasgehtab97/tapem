@@ -17,12 +17,17 @@ service cloud.firestore {
       );
     }
 
-    // Admin if claim says admin OR membership role == admin
+    // Admin if claim says admin (global/gym) oder Membership-Role == admin
     function isAdmin(gymId) {
-      return inGym(gymId) && (
-        request.auth.token.role == 'admin' ||
-        get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role == 'admin'
-      );
+      return isGlobalAdmin() ||
+        isGymAdmin(gymId) ||
+        (
+          inGym(gymId) &&
+          (
+            request.auth.token.role == 'admin' ||
+            get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role == 'admin'
+          )
+        );
     }
 
     // Coach if user has coachEnabled flag
@@ -416,10 +421,10 @@ service cloud.firestore {
       }
 
       match /avatarInventory/{docId} {
-        allow read: if isOwner(uid) || isGymAdminFor(uid,
+        allow read: if isOwner(uid) || isGlobalAdmin() || isGymAdminFor(uid,
           resource.data.gymId != null ? resource.data.gymId : request.auth.token.gymId);
 
-        allow create: if (isOwner(uid) || isGymAdminFor(uid,
+        allow create: if (isOwner(uid) || isGlobalAdmin() || isGymAdminFor(uid,
               request.resource.data.gymId != null ? request.resource.data.gymId : request.auth.token.gymId)) &&
           request.resource.data.keys().hasOnly(['key', 'source', 'gymId', 'createdAt', 'updatedAt']) &&
           request.resource.data.source in ['user/self', 'admin/manual'] &&
@@ -431,7 +436,7 @@ service cloud.firestore {
             (request.resource.data.createdAt is timestamp &&
              request.resource.data.createdAt == request.time));
 
-        allow delete: if isOwner(uid) || isGymAdminFor(uid,
+        allow delete: if isOwner(uid) || isGlobalAdmin() || isGymAdminFor(uid,
           resource.data.gymId != null ? resource.data.gymId : request.auth.token.gymId);
 
         allow update: if false;
@@ -757,7 +762,7 @@ service cloud.firestore {
 
       // Avatar catalog per gym
       match /avatarCatalog/{avatarId} {
-        allow read: if inGym(gymId);
+        allow read: if inGym(gymId) || isAdmin(gymId);
         allow write: if isGymAdmin(gymId);
       }
 
@@ -834,7 +839,7 @@ service cloud.firestore {
 
       // Surveys
       match /surveys/{surveyId} {
-        allow read: if inGym(gymId);
+        allow read: if inGym(gymId) || isAdmin(gymId);
         allow create, update, delete: if isAdmin(gymId);
 
         match /answers/{answerId} {
@@ -904,7 +909,7 @@ service cloud.firestore {
 
       // Muscle groups
       match /muscleGroups/{groupId} {
-        allow read: if inGym(gymId);
+        allow read: if inGym(gymId) || isAdmin(gymId);
         allow write: if isAdmin(gymId);
       }
 

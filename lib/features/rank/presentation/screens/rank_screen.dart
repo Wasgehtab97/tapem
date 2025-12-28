@@ -86,6 +86,7 @@ class _RankScreenState extends ConsumerState<RankScreen>
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
+        automaticallyImplyLeading: false,
         title: Text(
           loc.leaderboardTitle,
           style: theme.textTheme.headlineSmall?.copyWith(

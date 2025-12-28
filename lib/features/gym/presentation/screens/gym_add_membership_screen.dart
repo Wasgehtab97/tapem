@@ -20,18 +20,10 @@ class GymAddMembershipScreen extends ConsumerStatefulWidget {
 class _GymAddMembershipScreenState
     extends ConsumerState<GymAddMembershipScreen> {
   final _searchController = TextEditingController();
-  late final StateController<String> _gymSearchQuery;
-
-  @override
-  void initState() {
-    super.initState();
-    _gymSearchQuery = ref.read(gymSearchQueryProvider.notifier);
-  }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _gymSearchQuery.state = '';
     super.dispose();
   }
 
@@ -78,7 +70,7 @@ class _GymAddMembershipScreenState
               controller: _searchController,
               prefixIcon: Icons.search,
               onChanged: (value) {
-                _gymSearchQuery.state = value;
+                ref.read(gymSearchQueryProvider.notifier).state = value;
               },
             ),
             const SizedBox(height: AuthTheme.spacingL),

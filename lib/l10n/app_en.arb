@@ -30,6 +30,14 @@
   "@gymEntrySubtitle": {
     "description": "Subtitle on the gym selection entry screen"
   },
+  "gymMyTitleSingle": "My Gym",
+  "@gymMyTitleSingle": {
+    "description": "Label for the user's single gym"
+  },
+  "gymMyTitleMultiple": "My Gyms",
+  "@gymMyTitleMultiple": {
+    "description": "Label for multiple gyms"
+  },
   "gymDropdownLabel": "Gyms",
   "@gymDropdownLabel": {
     "description": "Label for the gym dropdown"

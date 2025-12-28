@@ -124,12 +124,11 @@ Ziel: Hochwertige “Studio-eigene” Experience.
 
 ### 11. Gym-Branding & Visuals
 
-- [x] Gym-spezifisches Theme (Farben, Logo, Typo).
-- [x] Mikro-Animationen beim Gym-Wechsel oder bei Auswahl.
-- [x] Leichter Einstieg: “Zuletzt verwendetes Gym” hervorheben.
+- [ ] Gym-spezifisches Theme (Farben, Logo, Typo).
+- [ ] Mikro-Animationen beim Gym-Wechsel oder bei Auswahl.
+- [ ] Leichter Einstieg: “Zuletzt verwendetes Gym” hervorheben.
 
 ### 12. Erweiterungen
 
 - [ ] Suche nach Gym via Stadt/PLZ.
-- [ ] QR-Scan als Alternative zu Gymcode/NFC.
-- [x] Gastzugang / Demo-Modus für Studios.
+- [ ] Gastzugang / Demo-Modus für Studios.

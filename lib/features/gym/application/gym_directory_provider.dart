@@ -20,7 +20,7 @@ final gymByIdProvider =
   return GetGymById(repo).execute(gymId);
 });
 
-final gymSearchQueryProvider = StateProvider<String>((ref) => '');
+final gymSearchQueryProvider = StateProvider.autoDispose<String>((ref) => '');
 
 final filteredGymsProvider = Provider<List<GymConfig>>((ref) {
   final gyms = ref.watch(listGymsProvider).maybeWhen(

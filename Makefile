@@ -1,4 +1,4 @@
-.PHONY: ios android push ios-dev ios-emu ios-emu-prod ios-mobile-dev ios-mobile-prod android-emu ios-emu-both R rules rules-dev rules-prod ios-wireless admin
+.PHONY: ios android push ios-dev ios-emu ios-emu-prod ios-mobile-dev ios-mobile-prod android-emu ios-emu-both R rules rules-dev rules-prod ios-wireless admin admin-web admin-web-dev admin-web-prod admin-web-avatars admin-web-avatars-dev admin-web-avatars-prod logo
 
 # Gerätedefinitionen
 iOS_DEV_ID   := 00008030-001E59420191802E
@@ -277,10 +277,29 @@ apk-release:
 localhost:
 	cd website && rm -rf .next && TAPEM_DEBUG=1 npm run dev
 
+# Admin Web (Dev/Prod)
+admin-web: admin-web-dev
+
+admin-web-dev:
+	cd admin-web && npm run dev -- --mode dev
+
+admin-web-prod:
+	cd admin-web && npm run build -- --mode prod && npm run preview -- --mode prod
+
+admin-web-avatars: admin-web-avatars-dev
+
+admin-web-avatars-dev:
+	rsync -a --delete assets/avatars/ admin-web/public/avatars/
+	node scripts/generate_admin_avatar_manifest.js
+
+admin-web-avatars-prod:
+	rsync -a --delete assets/avatars/ admin-web/public/avatars/
+	node scripts/generate_admin_avatar_manifest.js
+
 
 
 reset:
 	git reset --hard origin/a_gpt5 
 
 logo:
-	flutter pub run flutter_launcher_icons
+	fvm flutter pub run flutter_launcher_icons
