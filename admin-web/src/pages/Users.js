@@ -26,15 +26,30 @@ export function Users() {
         async function load() {
             try {
                 if (activeGym?.id) {
-                    const [gymSnap, globalSnap] = await Promise.all([
+                    const [gymSnap, globalSnap, membershipSnap] = await Promise.all([
                         getDocs(query(collection(db, 'users'), where('gymCodes', 'array-contains', activeGym.id), limit(50))),
                         getDocs(query(collection(db, 'users'), where('role', '==', 'global_admin'), limit(50))),
+                        getDocs(query(collection(db, 'gyms', activeGym.id, 'users'), limit(200))),
                     ]);
+                    const membershipRoles = new Map();
+                    membershipSnap.docs.forEach((doc) => {
+                        const role = doc.data()?.role;
+                        if (typeof role === 'string' && role) {
+                            membershipRoles.set(doc.id, role);
+                        }
+                    });
                     const gymItems = gymSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
                     const globalItems = globalSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
                     const merged = new Map();
-                    gymItems.forEach((u) => merged.set(u.id, u));
-                    globalItems.forEach((u) => merged.set(u.id, u));
+                    gymItems.forEach((u) => merged.set(u.id, { ...u, gymRole: membershipRoles.get(u.id) }));
+                    globalItems.forEach((u) => {
+                        const existing = merged.get(u.id);
+                        if (existing) {
+                            merged.set(u.id, { ...existing, ...u, gymRole: membershipRoles.get(u.id) || existing.gymRole });
+                            return;
+                        }
+                        merged.set(u.id, { ...u, gymRole: membershipRoles.get(u.id) });
+                    });
                     setUsers(Array.from(merged.values()));
                 }
                 else {
@@ -74,17 +89,21 @@ export function Users() {
         const base = users.filter((u) => {
             if (!activeGym?.id)
                 return false;
+            const effectiveRole = u.role === 'global_admin' || u.role === 'gym_admin' ? u.role : u.gymRole || u.role || 'member';
             const matchesGym = (u.gymCodes || []).includes(activeGym.id);
             const matchesTerm = !term ||
                 u.id.toLowerCase().includes(term) ||
                 (u.email || '').toLowerCase().includes(term) ||
                 (u.username || '').toLowerCase().includes(term);
-            const matchesRole = !roleFilter || (u.role || '').toLowerCase() === roleFilter;
+            const matchesRole = !roleFilter || effectiveRole.toLowerCase() === roleFilter;
             return matchesGym && matchesTerm && matchesRole;
         });
         if (extraUser) {
             const matchesGym = !!activeGym?.id && (extraUser.gymCodes || []).includes(activeGym.id);
-            const matchesRole = !roleFilter || (extraUser.role || '').toLowerCase() === roleFilter;
+            const extraEffectiveRole = extraUser.role === 'global_admin' || extraUser.role === 'gym_admin'
+                ? extraUser.role
+                : extraUser.gymRole || extraUser.role || 'member';
+            const matchesRole = !roleFilter || extraEffectiveRole.toLowerCase() === roleFilter;
             if (matchesGym && matchesRole && !base.find((u) => u.id === extraUser.id)) {
                 return [...base, extraUser];
             }
@@ -97,6 +116,8 @@ export function Users() {
         setSaving(uid);
         try {
             await updateDoc(doc(db, 'gyms', activeGym.id, 'users', uid), { role: nextRole });
+            setUsers((prev) => prev.map((u) => (u.id === uid ? { ...u, gymRole: nextRole } : u)));
+            setExtraUser((prev) => (prev && prev.id === uid ? { ...prev, gymRole: nextRole } : prev));
         }
         catch (err) {
             setError(err?.message || 'Konnte Rolle nicht setzen');
@@ -247,7 +268,9 @@ export function Users() {
             return next;
         });
     }
-    return (_jsxs("div", { className: "page", children: [_jsx("h1", { children: "User" }), activeGym?.id && _jsxs("p", { className: "muted", children: ["Gefiltert auf Gym: ", activeGym.name || activeGym.id] }), _jsx("div", { className: "card list-card", style: { display: 'grid', gap: '0.5rem' }, children: _jsxs("div", { style: { display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }, children: [_jsx("input", { className: "input", placeholder: "Suche nach UID, E-Mail, Username", value: search, onChange: (e) => setSearch(e.target.value), style: { minWidth: '260px' } }), _jsxs("select", { className: "input", value: roleFilter, onChange: (e) => setRoleFilter(e.target.value), style: { minWidth: '160px' }, children: [_jsx("option", { value: "", children: "Alle Rollen" }), _jsx("option", { value: "member", children: "member" }), _jsx("option", { value: "coach", children: "coach" }), _jsx("option", { value: "admin", children: "admin" }), _jsx("option", { value: "global_admin", children: "global_admin" }), _jsx("option", { value: "gym_admin", children: "gym_admin" })] }), _jsxs("span", { className: "muted", children: [filtered.length, " User angezeigt"] })] }) }), loading && _jsx("p", { className: "muted", children: "Lade\u2026" }), error && _jsx("p", { className: "error", children: error }), !loading && !error && (_jsx("div", { className: "card list-card", children: _jsxs("table", { className: "table", children: [_jsx("thead", { children: _jsxs("tr", { children: [_jsx("th", { children: "UID" }), _jsx("th", { children: "Email" }), _jsx("th", { children: "Username" }), _jsx("th", { children: "Gyms" }), _jsx("th", { children: "Role" }), _jsx("th", { children: "Aktion" })] }) }), _jsx("tbody", { children: filtered.map((u) => (_jsxs("tr", { children: [_jsx("td", { className: "mono", children: u.id }), _jsx("td", { children: u.email || '–' }), _jsx("td", { children: u.username || '–' }), _jsx("td", { children: u.gymCodes?.join(', ') || (u.role === 'global_admin' ? 'alle' : '–') }), _jsx("td", { children: u.role || '–' }), _jsx("td", { children: _jsxs("div", { style: { display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }, children: [u.role === 'global_admin' || u.role === 'gym_admin' ? (_jsx("span", { className: "badge", children: u.role })) : (_jsxs("select", { className: "input", disabled: !activeGym?.id || !!saving, value: u.role || 'member', onChange: (e) => handleRoleChange(u.id, e.target.value), children: [_jsx("option", { value: "member", children: "member" }), _jsx("option", { value: "coach", children: "coach" }), _jsx("option", { value: "admin", children: "admin" })] })), _jsx("button", { className: "ghost btn-small", disabled: !u.email || resetting === u.email, onClick: () => handlePasswordReset(u.email), children: "Reset-Link" }), _jsx("button", { className: "ghost btn-small", disabled: !activeGym?.id, onClick: () => openAvatarModal(u), children: "Symbole" })] }) })] }, u.id))) })] }) })), avatarUser && (_jsx("div", { className: "modal-backdrop", onClick: () => setAvatarUser(null), children: _jsxs("div", { className: "modal-card", onClick: (e) => e.stopPropagation(), children: [_jsxs("div", { className: "modal-header", children: [_jsxs("h2", { children: ["Symbole f\u00FCr ", avatarUser.email || avatarUser.id] }), _jsx("button", { className: "ghost btn-small", onClick: () => setAvatarUser(null), children: "Schlie\u00DFen" })] }), avatarLoading && _jsx("p", { className: "muted", children: "Lade\u2026" }), avatarError && _jsx("p", { className: "error", children: avatarError }), !avatarLoading && (_jsxs(_Fragment, { children: [_jsxs("div", { className: "modal-section", children: [_jsx("h3", { children: "Verf\u00FCgbare Symbole" }), _jsxs("div", { className: "avatar-grid", children: [avatarCatalog
+    return (_jsxs("div", { className: "page", children: [_jsx("h1", { children: "User" }), activeGym?.id && _jsxs("p", { className: "muted", children: ["Gefiltert auf Gym: ", activeGym.name || activeGym.id] }), _jsx("div", { className: "card list-card", style: { display: 'grid', gap: '0.5rem' }, children: _jsxs("div", { style: { display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }, children: [_jsx("input", { className: "input", placeholder: "Suche nach UID, E-Mail, Username", value: search, onChange: (e) => setSearch(e.target.value), style: { minWidth: '260px' } }), _jsxs("select", { className: "input", value: roleFilter, onChange: (e) => setRoleFilter(e.target.value), style: { minWidth: '160px' }, children: [_jsx("option", { value: "", children: "Alle Rollen" }), _jsx("option", { value: "member", children: "member" }), _jsx("option", { value: "coach", children: "coach" }), _jsx("option", { value: "admin", children: "admin" }), _jsx("option", { value: "global_admin", children: "global_admin" }), _jsx("option", { value: "gym_admin", children: "gym_admin" })] }), _jsxs("span", { className: "muted", children: [filtered.length, " User angezeigt"] })] }) }), loading && _jsx("p", { className: "muted", children: "Lade\u2026" }), error && _jsx("p", { className: "error", children: error }), !loading && !error && (_jsx("div", { className: "card list-card", children: _jsxs("table", { className: "table", children: [_jsx("thead", { children: _jsxs("tr", { children: [_jsx("th", { children: "UID" }), _jsx("th", { children: "Email" }), _jsx("th", { children: "Username" }), _jsx("th", { children: "Gyms" }), _jsx("th", { children: "Role" }), _jsx("th", { children: "Aktion" })] }) }), _jsx("tbody", { children: filtered.map((u) => (_jsxs("tr", { children: [_jsx("td", { className: "mono", children: u.id }), _jsx("td", { children: u.email || '–' }), _jsx("td", { children: u.username || '–' }), _jsx("td", { children: u.gymCodes?.join(', ') || (u.role === 'global_admin' ? 'alle' : '–') }), _jsx("td", { children: u.role === 'global_admin' || u.role === 'gym_admin'
+                                            ? u.role
+                                            : u.gymRole || u.role || 'member' }), _jsx("td", { children: _jsxs("div", { style: { display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }, children: [u.role === 'global_admin' || u.role === 'gym_admin' ? (_jsx("span", { className: "badge", children: u.role })) : (_jsxs("select", { className: "input", disabled: !activeGym?.id || !!saving, value: u.gymRole || u.role || 'member', onChange: (e) => handleRoleChange(u.id, e.target.value), children: [_jsx("option", { value: "member", children: "member" }), _jsx("option", { value: "coach", children: "coach" }), _jsx("option", { value: "admin", children: "admin" })] })), _jsx("button", { className: "ghost btn-small", disabled: !u.email || resetting === u.email, onClick: () => handlePasswordReset(u.email), children: "Reset-Link" }), _jsx("button", { className: "ghost btn-small", disabled: !activeGym?.id, onClick: () => openAvatarModal(u), children: "Symbole" })] }) })] }, u.id))) })] }) })), avatarUser && (_jsx("div", { className: "modal-backdrop", onClick: () => setAvatarUser(null), children: _jsxs("div", { className: "modal-card", onClick: (e) => e.stopPropagation(), children: [_jsxs("div", { className: "modal-header", children: [_jsxs("h2", { children: ["Symbole f\u00FCr ", avatarUser.email || avatarUser.id] }), _jsx("button", { className: "ghost btn-small", onClick: () => setAvatarUser(null), children: "Schlie\u00DFen" })] }), avatarLoading && _jsx("p", { className: "muted", children: "Lade\u2026" }), avatarError && _jsx("p", { className: "error", children: avatarError }), !avatarLoading && (_jsxs(_Fragment, { children: [_jsxs("div", { className: "modal-section", children: [_jsx("h3", { children: "Verf\u00FCgbare Symbole" }), _jsxs("div", { className: "avatar-grid", children: [avatarCatalog
                                                     .filter((a) => !avatarOwned.has(normalizeAvatarKey(a.id, a.scope === 'gym' ? activeGym?.id : null)))
                                                     .map((a) => {
                                                     const normalized = normalizeAvatarKey(a.id, a.scope === 'gym' ? activeGym?.id : null);

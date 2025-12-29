@@ -374,10 +374,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyWorkouts => 'Workouts';
 
   @override
+  String get historyWorkoutsDesc => 'Number of completed workouts for this exercise.';
+
+  @override
   String get historySetsAvg => 'Sets (Ø)';
 
   @override
-  String get historyHeaviest => 'Heaviest';
+  String get historySetsAvgDesc => 'Average number of sets per workout for this exercise.';
+
+  @override
+  String get historyHeaviest => 'Best';
+
+  @override
+  String get historyHeaviestDesc => 'Your best set shown as kg × reps, based on your strongest set.';
 
   @override
   String get historySessionsChartTitle => 'Sessions over time';
@@ -387,6 +396,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get historyAxisE1rm => 'E1RM';
+
+  @override
+  String get historyE1rmDesc => 'Estimated one-rep max, your calculated max for a single rep.';
 
   @override
   String get historyAxisSessions => 'Sessions';
@@ -2134,4 +2146,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get communityFeedTrainingDayHeadline => 'Training day completed';
+
+  @override
+  String get communityCalendarTitle => 'Training days';
+
+  @override
+  String get communityCalendarCountOne => '1 person trained on this day.';
+
+  @override
+  String communityCalendarCountOther(Object count) {
+    return '$count people trained on this day.';
+  }
 }

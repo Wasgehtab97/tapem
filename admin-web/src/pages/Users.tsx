@@ -11,6 +11,7 @@ interface UserRow {
   username?: string;
   gymCodes?: string[];
   role?: string;
+  gymRole?: string;
 }
 
 interface AvatarCatalogItem {
@@ -46,15 +47,30 @@ export function Users() {
     async function load() {
       try {
         if (activeGym?.id) {
-          const [gymSnap, globalSnap] = await Promise.all([
+          const [gymSnap, globalSnap, membershipSnap] = await Promise.all([
             getDocs(query(collection(db, 'users'), where('gymCodes', 'array-contains', activeGym.id), limit(50))),
             getDocs(query(collection(db, 'users'), where('role', '==', 'global_admin'), limit(50))),
+            getDocs(query(collection(db, 'gyms', activeGym.id, 'users'), limit(200))),
           ]);
+          const membershipRoles = new Map<string, string>();
+          membershipSnap.docs.forEach((doc) => {
+            const role = (doc.data() as any)?.role;
+            if (typeof role === 'string' && role) {
+              membershipRoles.set(doc.id, role);
+            }
+          });
           const gymItems = gymSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
           const globalItems = globalSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
           const merged = new Map<string, UserRow>();
-          gymItems.forEach((u) => merged.set(u.id, u));
-          globalItems.forEach((u) => merged.set(u.id, u));
+          gymItems.forEach((u) => merged.set(u.id, { ...u, gymRole: membershipRoles.get(u.id) }));
+          globalItems.forEach((u) => {
+            const existing = merged.get(u.id);
+            if (existing) {
+              merged.set(u.id, { ...existing, ...u, gymRole: membershipRoles.get(u.id) || existing.gymRole });
+              return;
+            }
+            merged.set(u.id, { ...u, gymRole: membershipRoles.get(u.id) });
+          });
           setUsers(Array.from(merged.values()));
         } else {
           const snap = await getDocs(query(collection(db, 'users'), limit(50)));
@@ -91,18 +107,24 @@ export function Users() {
     const term = search.toLowerCase();
     const base = users.filter((u) => {
       if (!activeGym?.id) return false;
+      const effectiveRole =
+        u.role === 'global_admin' || u.role === 'gym_admin' ? u.role : u.gymRole || u.role || 'member';
       const matchesGym = (u.gymCodes || []).includes(activeGym.id);
       const matchesTerm =
         !term ||
         u.id.toLowerCase().includes(term) ||
         (u.email || '').toLowerCase().includes(term) ||
         (u.username || '').toLowerCase().includes(term);
-      const matchesRole = !roleFilter || (u.role || '').toLowerCase() === roleFilter;
+      const matchesRole = !roleFilter || effectiveRole.toLowerCase() === roleFilter;
       return matchesGym && matchesTerm && matchesRole;
     });
     if (extraUser) {
       const matchesGym = !!activeGym?.id && (extraUser.gymCodes || []).includes(activeGym.id);
-      const matchesRole = !roleFilter || (extraUser.role || '').toLowerCase() === roleFilter;
+      const extraEffectiveRole =
+        extraUser.role === 'global_admin' || extraUser.role === 'gym_admin'
+          ? extraUser.role
+          : extraUser.gymRole || extraUser.role || 'member';
+      const matchesRole = !roleFilter || extraEffectiveRole.toLowerCase() === roleFilter;
       if (matchesGym && matchesRole && !base.find((u) => u.id === extraUser.id)) {
         return [...base, extraUser];
       }
@@ -115,6 +137,8 @@ export function Users() {
     setSaving(uid);
     try {
       await updateDoc(doc(db, 'gyms', activeGym.id, 'users', uid), { role: nextRole });
+      setUsers((prev) => prev.map((u) => (u.id === uid ? { ...u, gymRole: nextRole } : u)));
+      setExtraUser((prev) => (prev && prev.id === uid ? { ...prev, gymRole: nextRole } : prev));
     } catch (err: any) {
       setError(err?.message || 'Konnte Rolle nicht setzen');
     } finally {
@@ -320,7 +344,11 @@ export function Users() {
                   <td>{u.email || '–'}</td>
                   <td>{u.username || '–'}</td>
                   <td>{u.gymCodes?.join(', ') || (u.role === 'global_admin' ? 'alle' : '–')}</td>
-                  <td>{u.role || '–'}</td>
+                <td>
+                  {u.role === 'global_admin' || u.role === 'gym_admin'
+                    ? u.role
+                    : u.gymRole || u.role || 'member'}
+                </td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                       {u.role === 'global_admin' || u.role === 'gym_admin' ? (
@@ -329,7 +357,7 @@ export function Users() {
                         <select
                           className="input"
                           disabled={!activeGym?.id || !!saving}
-                          value={u.role || 'member'}
+                          value={u.gymRole || u.role || 'member'}
                           onChange={(e) => handleRoleChange(u.id, e.target.value)}
                         >
                           <option value="member">member</option>

@@ -42,6 +42,7 @@ class WorkoutDayScreen extends riverpod.ConsumerStatefulWidget {
   final Widget Function(
     BuildContext context,
     WorkoutDaySession session,
+    int displayIndex,
   )?
       sessionBuilder;
   final bool closeSessionOnDispose;
@@ -456,6 +457,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
                         child: builder(
                           context,
                           session,
+                          displayIndex,
                         ),
                       );
                     } else {

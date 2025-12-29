@@ -167,7 +167,7 @@ void main() {
         gymId: 'gym-1',
         deviceId: 'device-1',
         exerciseId: 'exercise-1',
-        sessionBuilder: (context, session) {
+        sessionBuilder: (context, session, displayIndex) {
           renderedSessionKeys.add(session.key);
           return Text('session-${session.key}', key: ValueKey(session.key));
         },
@@ -231,7 +231,7 @@ void main() {
               gymId: 'gym-1',
               deviceId: deviceId,
               exerciseId: 'exercise-1',
-              sessionBuilder: (context, session) {
+              sessionBuilder: (context, session, displayIndex) {
                 return Text('session-${session.key}', key: ValueKey(session.key));
               },
             ),

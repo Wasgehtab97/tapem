@@ -761,17 +761,35 @@ abstract class AppLocalizations {
   /// **'Workouts'**
   String get historyWorkouts;
 
+  /// Short explanation for the workouts KPI
+  ///
+  /// In en, this message translates to:
+  /// **'Number of completed workouts for this exercise.'**
+  String get historyWorkoutsDesc;
+
   /// KPI label for average sets per session
   ///
   /// In en, this message translates to:
   /// **'Sets (Ø)'**
   String get historySetsAvg;
 
-  /// KPI label for heaviest weight
+  /// Short explanation for the average sets KPI
   ///
   /// In en, this message translates to:
-  /// **'Heaviest'**
+  /// **'Average number of sets per workout for this exercise.'**
+  String get historySetsAvgDesc;
+
+  /// KPI label for best set
+  ///
+  /// In en, this message translates to:
+  /// **'Best'**
   String get historyHeaviest;
+
+  /// Short explanation for the best set KPI
+  ///
+  /// In en, this message translates to:
+  /// **'Your best set shown as kg × reps, based on your strongest set.'**
+  String get historyHeaviestDesc;
 
   /// Heading for sessions over time chart
   ///
@@ -790,6 +808,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'E1RM'**
   String get historyAxisE1rm;
+
+  /// Short explanation for the E1RM KPI
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated one-rep max, your calculated max for a single rep.'**
+  String get historyE1rmDesc;
 
   /// Axis title for sessions chart
   ///
@@ -4000,6 +4024,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Training day completed'**
   String get communityFeedTrainingDayHeadline;
+
+  /// Label for the community training calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Training days'**
+  String get communityCalendarTitle;
+
+  /// Message for a single active user in the community calendar
+  ///
+  /// In en, this message translates to:
+  /// **'1 person trained on this day.'**
+  String get communityCalendarCountOne;
+
+  /// Message for multiple active users in the community calendar
+  ///
+  /// In en, this message translates to:
+  /// **'{count} people trained on this day.'**
+  String communityCalendarCountOther(Object count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

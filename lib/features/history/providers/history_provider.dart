@@ -33,6 +33,7 @@ class HistoryProvider extends ChangeNotifier
   double _setsPerSessionAvg = 0;
   double _heaviest = 0;
   double _maxE1rm = 0;
+  WorkoutLog? _bestSet;
   List<ChartPoint> _e1rmChart = [];
 
   bool get isLoading => _isLoading;
@@ -42,6 +43,7 @@ class HistoryProvider extends ChangeNotifier
   double get setsPerSessionAvg => _setsPerSessionAvg;
   double get heaviest => _heaviest;
   double get maxE1rm => _maxE1rm;
+  WorkoutLog? get bestSet => _bestSet;
   List<ChartPoint> get e1rmChart => List.unmodifiable(_e1rmChart);
 
   /// Lädt die Historie für [deviceId] und den aktuell eingeloggten User.
@@ -80,6 +82,7 @@ class HistoryProvider extends ChangeNotifier
       _setsPerSessionAvg = 0;
       _heaviest = 0;
       _maxE1rm = 0;
+      _bestSet = null;
       _e1rmChart = [];
       return;
     }
@@ -100,6 +103,17 @@ class HistoryProvider extends ChangeNotifier
     );
     _heaviest =
         logsSorted.map((e) => e.weight).reduce((a, b) => a > b ? a : b);
+    _bestSet = logsSorted.reduce((a, b) {
+      final aScore = a.weight * (1 + a.reps / 30);
+      final bScore = b.weight * (1 + b.reps / 30);
+      if (aScore == bScore) {
+        if (a.weight == b.weight) {
+          return a.reps >= b.reps ? a : b;
+        }
+        return a.weight >= b.weight ? a : b;
+      }
+      return aScore >= bScore ? a : b;
+    });
 
     _e1rmChart = sessionEntries.map((e) {
       final date = e.value.first.timestamp;
@@ -120,6 +134,7 @@ class HistoryProvider extends ChangeNotifier
     _setsPerSessionAvg = 0;
     _heaviest = 0;
     _maxE1rm = 0;
+    _bestSet = null;
     _e1rmChart = [];
     _isLoading = false;
     _error = null;

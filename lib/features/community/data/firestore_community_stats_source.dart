@@ -110,6 +110,33 @@ class FirestoreCommunityStatsSource {
     });
   }
 
+  Future<List<FeedEvent>> loadFeedEventsByDayKeyRange({
+    required String gymId,
+    required String startDayKey,
+    required String endDayKey,
+  }) async {
+    if (gymId.isEmpty) {
+      return const <FeedEvent>[];
+    }
+    final query = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('feed_events')
+        .where('dayKey', isGreaterThanOrEqualTo: startDayKey)
+        .where('dayKey', isLessThanOrEqualTo: endDayKey)
+        .orderBy('dayKey');
+    try {
+      final snapshot = await query.get();
+      return snapshot.docs.map(_mapFeedEvent).toList(growable: false);
+    } on FirebaseException catch (e, st) {
+      debugPrint(
+        '[FirestoreCommunityStatsSource] loadFeedEventsByDayKeyRange error code=${e.code} message=${e.message}',
+      );
+      debugPrintStack(stackTrace: st);
+      rethrow;
+    }
+  }
+
   CommunityStats _mapStats(
     DocumentSnapshot<Map<String, dynamic>> doc, {
     String? fallbackDayKey,

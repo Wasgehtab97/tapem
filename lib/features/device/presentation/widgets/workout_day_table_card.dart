@@ -33,9 +33,11 @@ enum _SessionOptionAction {
 Widget buildWorkoutDayTableSessionCard(
   BuildContext context,
   WorkoutDaySession session,
+  int displayIndex,
 ) {
   return WorkoutDayTableCard(
     session: session,
+    displayIndex: displayIndex,
   );
 }
 
@@ -51,9 +53,11 @@ class WorkoutDayTableCard extends riverpod.ConsumerStatefulWidget {
   const WorkoutDayTableCard({
     super.key,
     required this.session,
+    required this.displayIndex,
   });
 
   final WorkoutDaySession session;
+  final int displayIndex;
 
   @override
   riverpod.ConsumerState<WorkoutDayTableCard> createState() =>
@@ -847,6 +851,38 @@ class _WorkoutDayTableCardState
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      brandColor,
+                      brandColor.withOpacity(0.7),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: brandColor.withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  widget.displayIndex.toString(),
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -68,3 +68,13 @@ final communityFeedProvider = StreamProvider.autoDispose<List<FeedEvent>>((ref) 
   }
   return service.streamFeed(gymId, limit: 20);
 }, dependencies: [currentGymIdProvider, communityStatsServiceProvider]);
+
+final communityActiveUsersByDayProvider =
+    FutureProvider.autoDispose.family<Map<String, int>, int>((ref, year) async {
+  final gymId = ref.watch(currentGymIdProvider);
+  final service = ref.watch(communityStatsServiceProvider);
+  if (gymId.isEmpty) {
+    return const <String, int>{};
+  }
+  return service.loadActiveUsersByDayKeyForYear(gymId: gymId, year: year);
+}, dependencies: [currentGymIdProvider, communityStatsServiceProvider]);

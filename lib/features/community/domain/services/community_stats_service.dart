@@ -56,6 +56,35 @@ class CommunityStatsService {
     );
   }
 
+  Future<Map<String, int>> loadActiveUsersByDayKeyForYear({
+    required String gymId,
+    required int year,
+  }) async {
+    if (gymId.isEmpty) {
+      return const <String, int>{};
+    }
+    final startDayKey = '$year-01-01';
+    final endDayKey = '$year-12-31';
+    try {
+      final events = await _source.loadFeedEventsByDayKeyRange(
+        gymId: gymId,
+        startDayKey: startDayKey,
+        endDayKey: endDayKey,
+      );
+      final counts = <String, int>{};
+      for (final event in events) {
+        if (event.type != FeedEventType.daySummary) {
+          continue;
+        }
+        counts.update(event.dayKey, (value) => value + 1, ifAbsent: () => 1);
+      }
+      return counts;
+    } on FirebaseException catch (error, stackTrace) {
+      _logError('loadActiveUsersByDayKeyForYear', error, stackTrace);
+      rethrow;
+    }
+  }
+
   @visibleForTesting
   Future<CommunityStats> loadTimeframe(
     String gymId,

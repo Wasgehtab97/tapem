@@ -4,9 +4,11 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_brand_theme.dart';
 import '../../../../core/theme/design_tokens.dart';
+import '../../../../core/widgets/brand_gradient_text.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../profile/presentation/widgets/calendar.dart';
+import '../../../profile/presentation/widgets/calendar_popup.dart';
 import '../../domain/models/community_stats.dart';
-import '../../domain/models/feed_event.dart';
 import '../providers/community_providers.dart';
 
 class CommunityScreen extends riverpod.ConsumerStatefulWidget {
@@ -81,7 +83,6 @@ class _CommunityTab extends riverpod.ConsumerWidget {
   Widget build(BuildContext context, riverpod.WidgetRef ref) {
     final loc = AppLocalizations.of(context)!;
     final statsValue = ref.watch(communityStatsProvider(period));
-    final feedValue = ref.watch(communityFeedProvider);
 
     return statsValue.when(
       loading: () => const _CommunityLoadingView(),
@@ -89,15 +90,12 @@ class _CommunityTab extends riverpod.ConsumerWidget {
         message: loc.communityErrorState,
         onRetry: () {
           ref.invalidate(communityStatsProvider(period));
-          ref.invalidate(communityFeedProvider);
         },
       ),
       data: (stats) {
         return _CommunityContent(
           stats: stats,
-          feedValue: feedValue,
           onRetryStats: () => ref.invalidate(communityStatsProvider(period)),
-          onRetryFeed: () => ref.invalidate(communityFeedProvider),
         );
       },
     );
@@ -107,15 +105,11 @@ class _CommunityTab extends riverpod.ConsumerWidget {
 class _CommunityContent extends StatelessWidget {
   const _CommunityContent({
     required this.stats,
-    required this.feedValue,
     required this.onRetryStats,
-    required this.onRetryFeed,
   });
 
   final CommunityStats stats;
-  final riverpod.AsyncValue<List<FeedEvent>> feedValue;
   final VoidCallback onRetryStats;
-  final VoidCallback onRetryFeed;
 
   @override
   Widget build(BuildContext context) {
@@ -148,8 +142,6 @@ class _CommunityContent extends StatelessWidget {
         sliver: SliverToBoxAdapter(
           child: _CommunityFeedCard(
             highlightColor: brandColor,
-            feedValue: feedValue,
-            onRetry: onRetryFeed,
           ),
         ),
       ),
@@ -159,7 +151,6 @@ class _CommunityContent extends StatelessWidget {
       onRefresh: () async {
         await Future<void>.microtask(() {
           onRetryStats();
-          onRetryFeed();
         });
       },
       child: CustomScrollView(
@@ -367,70 +358,44 @@ class _CommunityMetricTile extends StatelessWidget {
   }
 }
 
-class _CommunityFeedCard extends StatelessWidget {
+class _CommunityFeedCard extends riverpod.ConsumerWidget {
   const _CommunityFeedCard({
     required this.highlightColor,
-    required this.feedValue,
-    required this.onRetry,
   });
 
   final Color highlightColor;
-  final riverpod.AsyncValue<List<FeedEvent>> feedValue;
-  final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, riverpod.WidgetRef ref) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
-    final dateFormat = DateFormat.yMMMd(loc.localeName);
+    final calendarYear = DateTime.now().year;
+    final activeUsersValue =
+        ref.watch(communityActiveUsersByDayProvider(calendarYear));
+    final activeUsersByDay = activeUsersValue.valueOrNull ?? const {};
+    final trainingDates = activeUsersByDay.entries
+        .where((entry) => entry.value > 0)
+        .map((entry) => entry.key)
+        .toList(growable: false);
+    final hasCalendarData = trainingDates.isNotEmpty;
 
-    Widget buildBody(List<FeedEvent> events) {
-      if (events.isEmpty) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-          child: Center(
-            child: Text(
-              loc.communityFeedEmpty,
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ),
-        );
-      }
-      return ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: events.length,
-        itemBuilder: (context, index) {
-          final event = events[index];
-          return _CommunityFeedTile(
-            event: event,
-            dateFormat: dateFormat,
-            highlightColor: highlightColor,
-          );
-        },
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
-      );
-    }
-
-    Widget buildError(Object error, StackTrace? stackTrace) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        child: Column(
-          children: [
-            Text(
-              loc.communityFeedError,
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            TextButton(
-              onPressed: onRetry,
-              child: Text(loc.communityRetryButton, style: TextStyle(color: highlightColor)),
-            ),
-          ],
+    Future<void> openCalendar() async {
+      final selected = await showDialog<DateTime>(
+        context: context,
+        barrierColor: Colors.black54,
+        builder: (_) => CalendarPopup(
+          trainingDates: trainingDates,
+          initialYear: calendarYear,
+          userId: '',
+          navigateOnTap: false,
         ),
       );
+      if (selected == null) {
+        return;
+      }
+      final dateKey = DateFormat('yyyy-MM-dd').format(selected);
+      final count = activeUsersByDay[dateKey] ?? 0;
+      _showActiveUsersSheet(context, count);
     }
 
     return Container(
@@ -439,17 +404,17 @@ class _CommunityFeedCard extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            highlightColor.withOpacity(0.28),
-            theme.colorScheme.surface.withOpacity(0.96),
+            highlightColor.withOpacity(0.18),
+            theme.colorScheme.surface.withOpacity(0.92),
           ],
         ),
         borderRadius: BorderRadius.circular(AppRadius.cardLg),
-        border: Border.all(color: highlightColor.withOpacity(0.26)),
+        border: Border.all(color: highlightColor.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
-            color: highlightColor.withOpacity(0.25),
-            blurRadius: 26,
-            offset: const Offset(0, 18),
+            color: Colors.black.withOpacity(0.35),
+            blurRadius: 28,
+            offset: const Offset(0, 16),
           ),
         ],
       ),
@@ -472,13 +437,6 @@ class _CommunityFeedCard extends StatelessWidget {
                       highlightColor.withOpacity(0.75),
                     ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: highlightColor.withOpacity(0.4),
-                      blurRadius: 18,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
                 ),
                 padding: const EdgeInsets.all(AppSpacing.xs * 0.75),
                 child: const Icon(Icons.bolt, color: Colors.black87),
@@ -488,7 +446,7 @@ class _CommunityFeedCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    BrandGradientText(
                       loc.communityFeedTitle,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
@@ -502,21 +460,6 @@ class _CommunityFeedCard extends StatelessWidget {
                         color: theme.colorScheme.onSurface.withOpacity(0.65),
                         letterSpacing: 0.3,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: highlightColor.withOpacity(0.9),
-                  boxShadow: [
-                    BoxShadow(
-                      color: highlightColor.withOpacity(0.6),
-                      blurRadius: 12,
-                      spreadRadius: 2,
                     ),
                   ],
                 ),
@@ -537,10 +480,43 @@ class _CommunityFeedCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          feedValue.when(
-            data: buildBody,
-            loading: () => const _CommunityFeedSkeleton(),
-            error: buildError,
+          activeUsersValue.when(
+            data: (_) => AnimatedOpacity(
+              duration: const Duration(milliseconds: 180),
+              opacity: hasCalendarData ? 1 : 0.5,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: openCalendar,
+                child: Calendar(
+                  trainingDates: trainingDates,
+                  showNavigation: false,
+                  year: calendarYear,
+                ),
+              ),
+            ),
+            loading: () => const _CommunityCalendarSkeleton(),
+            error: (error, stackTrace) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              child: Column(
+                children: [
+                  Text(
+                    loc.communityFeedError,
+                    style: theme.textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  TextButton(
+                    onPressed: () => ref.invalidate(
+                      communityActiveUsersByDayProvider(calendarYear),
+                    ),
+                    child: Text(
+                      loc.communityRetryButton,
+                      style: TextStyle(color: highlightColor),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -548,96 +524,57 @@ class _CommunityFeedCard extends StatelessWidget {
   }
 }
 
-
-
-
-
-
-class _CommunityFeedTile extends StatelessWidget {
-  const _CommunityFeedTile({
-    required this.event,
-    required this.dateFormat,
-    required this.highlightColor,
-  });
-
-  final FeedEvent event;
-  final DateFormat dateFormat;
-  final Color highlightColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final eventDate = _resolveEventDate()?.toLocal();
-    final createdLabel = eventDate != null ? dateFormat.format(eventDate) : '–';
-    final headline = loc.communityFeedTrainingDayHeadline;
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: highlightColor.withOpacity(0.18)),
-        color: highlightColor.withOpacity(0.1),
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: highlightColor.withOpacity(0.85),
-            ),
-            child: Icon(
-              event.type == FeedEventType.milestone
-                  ? Icons.emoji_events
-                  : Icons.calendar_today,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  headline,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.2,
+void _showActiveUsersSheet(BuildContext context, int count) {
+  final theme = Theme.of(context);
+  final loc = AppLocalizations.of(context)!;
+  final message = count == 1
+      ? loc.communityCalendarCountOne
+      : loc.communityCalendarCountOther(count);
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: theme.colorScheme.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.cardLg)),
+    ),
+    builder: (context) {
+      return SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  createdLabel,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    letterSpacing: 0.1,
-                  ),
+              ),
+              const SizedBox(height: 16),
+              BrandGradientText(
+                loc.communityCalendarTitle,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  DateTime? _resolveEventDate() {
-    if (event.createdAt != null) {
-      return event.createdAt;
-    }
-    if (event.dayKey.isNotEmpty) {
-      return DateTime.tryParse(event.dayKey);
-    }
-    return null;
-  }
+        ),
+      );
+    },
+  );
 }
 
 class _CommunityPlaceholder extends StatelessWidget {
@@ -664,85 +601,26 @@ class _CommunityPlaceholder extends StatelessWidget {
   }
 }
 
-class _CommunityFeedSkeleton extends StatelessWidget {
-  const _CommunityFeedSkeleton();
+class _CommunityCalendarSkeleton extends StatelessWidget {
+  const _CommunityCalendarSkeleton();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final baseColor = theme.colorScheme.surfaceVariant.withOpacity(0.4);
-
-    return Column(
-      children: List.generate(4, (index) {
-        final opacity = 0.34 - (index * 0.04);
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  baseColor.withOpacity(0.9),
-                  baseColor.withOpacity(0.4),
-                ],
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: baseColor,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Container(
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: baseColor.withOpacity(0.7 - (index * 0.1)),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Container(
-                      width: 36,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: baseColor.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Container(
-                  height: 12,
-                  width: 140,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: baseColor.withOpacity(
-                      opacity.clamp(0.1, 0.4).toDouble(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }),
+    final baseColor = theme.colorScheme.surfaceVariant.withOpacity(0.35);
+    return Container(
+      height: 140,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.cardLg),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            baseColor.withOpacity(0.7),
+            baseColor.withOpacity(0.35),
+          ],
+        ),
+      ),
     );
   }
 }

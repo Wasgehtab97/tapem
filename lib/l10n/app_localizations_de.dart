@@ -374,10 +374,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get historyWorkouts => 'Workouts';
 
   @override
+  String get historyWorkoutsDesc => 'Anzahl der Workouts, die du für diese Übung absolviert hast.';
+
+  @override
   String get historySetsAvg => 'Sets (Ø)';
 
   @override
-  String get historyHeaviest => 'Schwerstes';
+  String get historySetsAvgDesc => 'Durchschnittliche Satzanzahl pro Workout für diese Übung.';
+
+  @override
+  String get historyHeaviest => 'Beste';
+
+  @override
+  String get historyHeaviestDesc => 'Dein bester Satz in der Form kg × Wdh., basierend auf deinem stärksten Satz.';
 
   @override
   String get historySessionsChartTitle => 'Sitzungen im Verlauf';
@@ -387,6 +396,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get historyAxisE1rm => 'E1RM';
+
+  @override
+  String get historyE1rmDesc => 'Geschätztes 1-Wiederholungs-Maximum, also dein berechnetes Gewicht für eine Wiederholung.';
 
   @override
   String get historyAxisSessions => 'Sitzungen';
@@ -2134,4 +2146,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get communityFeedTrainingDayHeadline => 'Trainingstag abgeschlossen';
+
+  @override
+  String get communityCalendarTitle => 'Trainingstage';
+
+  @override
+  String get communityCalendarCountOne => '1 Person hat an diesem Tag trainiert.';
+
+  @override
+  String communityCalendarCountOther(Object count) {
+    return '$count Personen haben an diesem Tag trainiert.';
+  }
 }

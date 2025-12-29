@@ -437,13 +437,25 @@
   "@historyWorkouts": {
     "description": "KPI Bezeichnung für Anzahl Workouts"
   },
+  "historyWorkoutsDesc": "Anzahl der Workouts, die du für diese Übung absolviert hast.",
+  "@historyWorkoutsDesc": {
+    "description": "Kurze Erklärung für die Workouts-KPI"
+  },
   "historySetsAvg": "Sets (Ø)",
   "@historySetsAvg": {
     "description": "KPI Bezeichnung für durchschnittliche Sets pro Workout"
   },
-  "historyHeaviest": "Schwerstes",
+  "historySetsAvgDesc": "Durchschnittliche Satzanzahl pro Workout für diese Übung.",
+  "@historySetsAvgDesc": {
+    "description": "Kurze Erklärung für die durchschnittlichen Sets"
+  },
+  "historyHeaviest": "Beste",
   "@historyHeaviest": {
-    "description": "KPI Bezeichnung für höchstes Gewicht"
+    "description": "KPI Bezeichnung für besten Satz"
+  },
+  "historyHeaviestDesc": "Dein bester Satz in der Form kg × Wdh., basierend auf deinem stärksten Satz.",
+  "@historyHeaviestDesc": {
+    "description": "Kurze Erklärung für den besten Satz"
   },
   "historySessionsChartTitle": "Sitzungen im Verlauf",
   "@historySessionsChartTitle": {
@@ -456,6 +468,10 @@
   "historyAxisE1rm": "E1RM",
   "@historyAxisE1rm": {
     "description": "Achsentitel für E1RM-Chart"
+  },
+  "historyE1rmDesc": "Geschätztes 1-Wiederholungs-Maximum, also dein berechnetes Gewicht für eine Wiederholung.",
+  "@historyE1rmDesc": {
+    "description": "Kurze Erklärung für die E1RM-KPI"
   },
   "historyAxisSessions": "Sitzungen",
   "@historyAxisSessions": {
@@ -1886,4 +1902,10 @@
   ,"@communityFeedError": {"description": "Fehlermeldung für den Live-Ticker"}
   ,"communityFeedTrainingDayHeadline": "Trainingstag abgeschlossen"
   ,"@communityFeedTrainingDayHeadline": {"description": "Überschrift für anonymisierte Trainingstage im Feed"}
+  ,"communityCalendarTitle": "Trainingstage"
+  ,"@communityCalendarTitle": {"description": "Label für den Community-Trainingskalender"}
+  ,"communityCalendarCountOne": "1 Person hat an diesem Tag trainiert."
+  ,"@communityCalendarCountOne": {"description": "Hinweis für einen aktiven Nutzer im Community-Kalender"}
+  ,"communityCalendarCountOther": "{count} Personen haben an diesem Tag trainiert."
+  ,"@communityCalendarCountOther": {"description": "Hinweis für mehrere aktive Nutzer im Community-Kalender", "placeholders": {"count": {}}}
 }

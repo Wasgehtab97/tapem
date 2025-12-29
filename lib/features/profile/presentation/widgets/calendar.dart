@@ -146,7 +146,7 @@ class _CalendarState extends State<Calendar> {
         const margin = 1.0;
         final usable = constraints.maxWidth - hPad * 2;
         final rawSize = (usable - weekCount * margin * 2) / weekCount;
-        final cellSize = rawSize.clamp(4.0, usable);
+        final cellSize = rawSize.clamp(2.0, usable);
 
         final monthLabelTextStyle =
             theme.textTheme.bodySmall?.copyWith(color: accentColor) ??

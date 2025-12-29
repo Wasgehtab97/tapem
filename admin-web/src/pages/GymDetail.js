@@ -1,10 +1,11 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { collection, doc, getDoc, getDocs, limit, query, updateDoc, setDoc, addDoc, serverTimestamp, orderBy, } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, query, updateDoc, setDoc, addDoc, serverTimestamp, orderBy, writeBatch, } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useActiveGym } from '../hooks/useActiveGym';
 import { Card } from '../components/Card';
+import { defaultMuscleGroups } from '../data/defaultMuscleGroups';
 export function GymDetail() {
     const { gymId } = useParams();
     const [devices, setDevices] = useState([]);
@@ -29,6 +30,9 @@ export function GymDetail() {
     const [deviceSort, setDeviceSort] = useState('name');
     const [fixingIds, setFixingIds] = useState(false);
     const [editingMuscleGroups, setEditingMuscleGroups] = useState(false);
+    const [autoSeeded, setAutoSeeded] = useState(false);
+    const [seedingGroups, setSeedingGroups] = useState(false);
+    const [seedError, setSeedError] = useState(null);
     const [muscleGroupEdits, setMuscleGroupEdits] = useState({});
     const [editFields, setEditFields] = useState({
         id: '',
@@ -83,6 +87,10 @@ export function GymDetail() {
                     });
                     return next;
                 });
+                if (mgItems.length === 0 && !autoSeeded) {
+                    setAutoSeeded(true);
+                    await seedDefaultMuscleGroups();
+                }
                 const codeSnap = await getDocs(query(collection(db, 'gym_codes', gymIdSafe, 'codes'), limit(50)));
                 setCodes(codeSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
                 const fbSnap = await getDocs(query(collection(db, 'gyms', gymIdSafe, 'feedback'), limit(50)));
@@ -259,6 +267,7 @@ export function GymDetail() {
     async function saveEdit() {
         if (!resolvedGymId || !editingDeviceId)
             return;
+        setDeviceError(null);
         setSavingDevice(editingDeviceId);
         try {
             const gymId = String(resolvedGymId);
@@ -267,6 +276,10 @@ export function GymDetail() {
             const nextNfcCode = normalizeText(editFields.nfcCode) || generateNfcCode();
             const primary = uniq(normalizeList(editFields.primaryMuscleGroups));
             const secondary = uniq(normalizeList(editFields.secondaryMuscleGroups));
+            if (!editFields.isMulti && primary.length === 0) {
+                setDeviceError('Bitte mindestens eine Primärgruppe auswählen.');
+                return;
+            }
             const allGroups = uniq([...primary, ...secondary]);
             const normalized = {
                 name: normalizedName || editingDeviceId,
@@ -313,6 +326,7 @@ export function GymDetail() {
     async function createDevice() {
         if (!resolvedGymId || !createFields.name?.trim())
             return;
+        setDeviceError(null);
         setCreatingDevice(true);
         try {
             const gymId = String(resolvedGymId);
@@ -322,6 +336,10 @@ export function GymDetail() {
             const nextId = getNextDeviceId();
             const primary = uniq(normalizeList(createFields.primaryMuscleGroups));
             const secondary = uniq(normalizeList(createFields.secondaryMuscleGroups));
+            if (!createFields.isMulti && primary.length === 0) {
+                setDeviceError('Bitte mindestens eine Primärgruppe auswählen.');
+                return;
+            }
             const allGroups = uniq([...primary, ...secondary]);
             const normalized = {
                 name: normalizedName,
@@ -368,6 +386,42 @@ export function GymDetail() {
         }
         finally {
             setCreatingDevice(false);
+        }
+    }
+    async function seedDefaultMuscleGroups() {
+        if (!resolvedGymId)
+            return;
+        setSeedError(null);
+        setSeedingGroups(true);
+        try {
+            const gymId = String(resolvedGymId);
+            const batch = writeBatch(db);
+            defaultMuscleGroups.forEach((group) => {
+                batch.set(doc(db, 'gyms', gymId, 'muscleGroups', group.id), {
+                    name: group.name,
+                    region: group.region,
+                    majorCategory: group.majorCategory,
+                });
+            });
+            await batch.commit();
+            setMuscleGroups(defaultMuscleGroups.map((g) => ({ id: g.id, name: g.name, region: g.region })));
+            setMuscleGroupEdits((prev) => {
+                const next = { ...prev };
+                defaultMuscleGroups.forEach((g) => {
+                    if (!(g.id in next))
+                        next[g.id] = g.name;
+                });
+                return next;
+            });
+        }
+        catch (err) {
+            console.error(err);
+            const message = `${err?.code ? `[${err.code}] ` : ''}${err?.message || err}`;
+            setSeedError(message);
+            alert(`Konnte Standard-Muskelgruppen nicht anlegen: ${message}`);
+        }
+        finally {
+            setSeedingGroups(false);
         }
     }
     async function createSurvey() {
@@ -479,7 +533,7 @@ export function GymDetail() {
             alert('Konnte Muskelgruppen-Name nicht speichern.');
         }
     }
-    return (_jsxs("div", { className: "page", children: [_jsx("h1", { children: gymName || resolvedGymId || 'Gym' }), loading && _jsx("p", { className: "muted", children: "Lade\u2026" }), error && _jsx("p", { className: "error", children: error }), !loading && !error && (_jsxs("div", { style: { display: 'grid', gap: '1rem' }, children: [_jsxs(Card, { title: "Ger\u00E4te", children: [deviceError && _jsxs("p", { className: "error", children: ["Ger\u00E4te-Fehler: ", deviceError] }), _jsxs("div", { className: "device-form", children: [_jsxs("div", { className: "device-grid", children: [_jsxs("label", { children: ["Name", _jsx("input", { className: "input", placeholder: "Ger\u00E4tename", value: createFields.name || '', onChange: (e) => setCreateFields((p) => ({ ...p, name: e.target.value })) })] }), _jsxs("label", { children: ["Description", _jsx("input", { className: "input", placeholder: "Beschreibung", value: createFields.description || '', onChange: (e) => setCreateFields((p) => ({ ...p, description: e.target.value })) })] }), _jsxs("label", { children: ["NFC-Code", _jsxs("div", { style: { display: 'flex', gap: '0.5rem' }, children: [_jsx("input", { className: "input", placeholder: "NFC Code", value: createFields.nfcCode || '', onChange: (e) => setCreateFields((p) => ({ ...p, nfcCode: e.target.value })) }), _jsx("button", { type: "button", className: "ghost btn-small", onClick: () => setCreateFields((p) => ({ ...p, nfcCode: generateNfcCode() })), children: "NFC auto" })] })] }), _jsxs("label", { className: "inline-check", children: [_jsx("input", { type: "checkbox", checked: !!createFields.isMulti, onChange: (e) => setCreateFields((p) => ({ ...p, isMulti: e.target.checked })) }), "multi"] }), _jsxs("div", { className: "muscle-selectors", children: [renderGroupPicker(createFields.primaryMuscleGroups || [], (id) => setCreateFields((p) => {
+    return (_jsxs("div", { className: "page", children: [_jsx("h1", { children: gymName || resolvedGymId || 'Gym' }), loading && _jsx("p", { className: "muted", children: "Lade\u2026" }), error && _jsx("p", { className: "error", children: error }), !loading && !error && (_jsxs("div", { style: { display: 'grid', gap: '1rem' }, children: [_jsxs(Card, { title: "Ger\u00E4te", children: [muscleGroups.length === 0 && (_jsxs("div", { style: { display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.6rem' }, children: [_jsx("span", { className: "muted", children: "Keine Muskelgruppen gefunden." }), _jsx("button", { className: "ghost btn-small", onClick: seedDefaultMuscleGroups, disabled: seedingGroups, children: seedingGroups ? 'Anlegen…' : 'Standard-Muskelgruppen anlegen' })] })), seedError && _jsxs("p", { className: "error", children: ["Muskelgruppen-Seed: ", seedError] }), deviceError && _jsxs("p", { className: "error", children: ["Ger\u00E4te-Fehler: ", deviceError] }), _jsxs("div", { className: "device-form", children: [_jsxs("div", { className: "device-grid", children: [_jsxs("label", { children: ["Name", _jsx("input", { className: "input", placeholder: "Ger\u00E4tename", value: createFields.name || '', onChange: (e) => setCreateFields((p) => ({ ...p, name: e.target.value })) })] }), _jsxs("label", { children: ["Description", _jsx("input", { className: "input", placeholder: "Beschreibung", value: createFields.description || '', onChange: (e) => setCreateFields((p) => ({ ...p, description: e.target.value })) })] }), _jsxs("label", { children: ["NFC-Code", _jsxs("div", { style: { display: 'flex', gap: '0.5rem' }, children: [_jsx("input", { className: "input", placeholder: "NFC Code", value: createFields.nfcCode || '', onChange: (e) => setCreateFields((p) => ({ ...p, nfcCode: e.target.value })) }), _jsx("button", { type: "button", className: "ghost btn-small", onClick: () => setCreateFields((p) => ({ ...p, nfcCode: generateNfcCode() })), children: "NFC auto" })] })] }), _jsxs("label", { className: "inline-check", children: [_jsx("input", { type: "checkbox", checked: !!createFields.isMulti, onChange: (e) => setCreateFields((p) => ({ ...p, isMulti: e.target.checked })) }), "multi"] }), _jsxs("div", { className: "muscle-selectors", children: [renderGroupPicker(createFields.primaryMuscleGroups || [], (id) => setCreateFields((p) => {
                                                         const current = new Set(p.primaryMuscleGroups || []);
                                                         if (current.has(id)) {
                                                             current.delete(id);
@@ -564,7 +618,7 @@ export function GymDetail() {
                                                                     ])
                                                                         .map((id) => nameForGroup(id))
                                                                         .join(', ') || '–'] })] }), _jsxs("div", { className: "device-actions", children: [_jsx("button", { className: "ghost btn-small", disabled: !!savingDevice, onClick: saveEdit, children: "Speichern" }), _jsx("button", { className: "ghost btn-small", onClick: () => setEditingDeviceId(null), children: "Abbrechen" })] })] }))] }, d.id));
-                                }) })] }), _jsxs(Card, { title: "Muskelgruppen", children: [_jsxs("div", { style: { display: 'flex', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap' }, children: [_jsxs("span", { className: "muted small", children: [muscleGroups.length, " Gruppen \u00B7 ", muscleGroups.filter((g) => !g.name).length, " ohne Namen"] }), _jsx("button", { className: "ghost btn-small", onClick: () => setEditingMuscleGroups((v) => !v), children: editingMuscleGroups ? 'Schließen' : 'Bearbeiten' })] }), editingMuscleGroups && (_jsx("div", { className: "mg-list", children: muscleGroups
+                                }) })] }), _jsxs(Card, { title: "Muskelgruppen", children: [_jsxs("div", { style: { display: 'flex', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap' }, children: [_jsxs("span", { className: "muted small", children: [muscleGroups.length, " Gruppen \u00B7 ", muscleGroups.filter((g) => !g.name).length, " ohne Namen"] }), _jsxs("div", { style: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }, children: [_jsx("button", { className: "ghost btn-small", onClick: seedDefaultMuscleGroups, disabled: muscleGroups.length > 0 || seedingGroups, children: seedingGroups ? 'Anlegen…' : 'Standard anlegen' }), _jsx("button", { className: "ghost btn-small", onClick: () => setEditingMuscleGroups((v) => !v), children: editingMuscleGroups ? 'Schließen' : 'Bearbeiten' })] })] }), editingMuscleGroups && (_jsx("div", { className: "mg-list", children: muscleGroups
                                     .slice()
                                     .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
                                     .map((g) => (_jsxs("div", { className: "mg-row", children: [_jsx("div", { className: "mono", children: g.id }), _jsx("input", { className: "input", placeholder: "Name anzeigen", value: muscleGroupEdits[g.id] ?? '', onChange: (e) => setMuscleGroupEdits((prev) => ({ ...prev, [g.id]: e.target.value })) }), _jsx("button", { className: "ghost btn-small", onClick: () => saveMuscleGroupName(g.id), children: "Speichern" })] }, g.id))) }))] }), _jsxs(Card, { title: "Gym Codes", children: [_jsx("div", { style: { display: 'flex', justifyContent: 'flex-end', marginBottom: '0.6rem' }, children: _jsx("button", { className: "ghost btn-small", disabled: creatingCode, onClick: createGymCode, children: creatingCode ? 'Erstelle…' : 'Neuen Code erstellen' }) }), codes.length === 0 && _jsx("p", { className: "muted", children: "Keine Codes gefunden." }), codes.length > 0 && (_jsxs("table", { className: "table", children: [_jsx("thead", { children: _jsxs("tr", { children: [_jsx("th", { children: "Code" }), _jsx("th", { children: "Aktiv" }), _jsx("th", { children: "Expires" }), _jsx("th", { children: "CreatedBy" }), _jsx("th", { children: "Aktionen" })] }) }), _jsx("tbody", { children: codes.map((c) => (_jsxs("tr", { children: [_jsx("td", { className: "mono", children: c.code || c.id }), _jsx("td", { children: c.isActive ? 'Ja' : 'Nein' }), _jsx("td", { children: c.expiresAt ? formatDate(c.expiresAt) : '–' }), _jsx("td", { children: c?.createdBy || '–' }), _jsx("td", { children: c.isActive ? (_jsxs("div", { style: { display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }, children: [_jsx("button", { className: "ghost btn-small", disabled: updatingCode === c.id, onClick: () => deactivateGymCode(c.id), children: "Deaktivieren" }), _jsx("button", { className: "ghost btn-small", disabled: updatingCode === c.id, onClick: () => rotateGymCode(c.id), children: "Rotieren" })] })) : ('–') })] }, c.id))) })] }))] }), _jsxs(Card, { title: "Umfragen", children: [_jsxs("div", { className: "form", style: { marginBottom: '1rem' }, children: [_jsxs("label", { children: ["Titel", _jsx("input", { className: "input", placeholder: "z.B. Welche Ger\u00E4te sollen wir erg\u00E4nzen?", value: surveyTitle, onChange: (e) => setSurveyTitle(e.target.value) })] }), _jsxs("label", { children: ["Optionen (kommagetrennt)", _jsx("input", { className: "input", placeholder: "Ger\u00E4t A, Ger\u00E4t B, Ger\u00E4t C", value: surveyOptions, onChange: (e) => setSurveyOptions(e.target.value) })] }), _jsx("div", { children: _jsx("button", { className: "ghost btn-small", disabled: creatingSurvey, onClick: createSurvey, children: creatingSurvey ? 'Erstelle…' : 'Umfrage anlegen' }) })] }), surveys.length === 0 && _jsx("p", { className: "muted", children: "Keine Umfragen gefunden." }), surveys.length > 0 && (_jsxs("table", { className: "table", children: [_jsx("thead", { children: _jsxs("tr", { children: [_jsx("th", { children: "Titel" }), _jsx("th", { children: "Status" }), _jsx("th", { children: "Optionen" }), _jsx("th", { children: "Aktionen" })] }) }), _jsx("tbody", { children: surveys.map((s) => (_jsxs("tr", { children: [_jsx("td", { children: s.title || '–' }), _jsx("td", { children: s.status || '–' }), _jsx("td", { children: s.options?.join(', ') || '–' }), _jsxs("td", { children: [_jsxs("div", { style: { display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }, children: [_jsx("button", { className: "ghost btn-small", onClick: () => loadSurveyResults(s.id, s.options || []), children: "Ergebnisse" }), s.status !== 'abgeschlossen' && (_jsx("button", { className: "ghost btn-small", disabled: closingSurvey === s.id, onClick: () => closeSurvey(s.id), children: "Schlie\u00DFen" }))] }), surveyResults[s.id] && (_jsx("div", { className: "muted small", style: { marginTop: '0.4rem' }, children: Object.entries(surveyResults[s.id])

@@ -437,13 +437,25 @@
   "@historyWorkouts": {
     "description": "KPI label for workout count"
   },
+  "historyWorkoutsDesc": "Number of completed workouts for this exercise.",
+  "@historyWorkoutsDesc": {
+    "description": "Short explanation for the workouts KPI"
+  },
   "historySetsAvg": "Sets (Ø)",
   "@historySetsAvg": {
     "description": "KPI label for average sets per session"
   },
-  "historyHeaviest": "Heaviest",
+  "historySetsAvgDesc": "Average number of sets per workout for this exercise.",
+  "@historySetsAvgDesc": {
+    "description": "Short explanation for the average sets KPI"
+  },
+  "historyHeaviest": "Best",
   "@historyHeaviest": {
-    "description": "KPI label for heaviest weight"
+    "description": "KPI label for best set"
+  },
+  "historyHeaviestDesc": "Your best set shown as kg × reps, based on your strongest set.",
+  "@historyHeaviestDesc": {
+    "description": "Short explanation for the best set KPI"
   },
   "historySessionsChartTitle": "Sessions over time",
   "@historySessionsChartTitle": {
@@ -456,6 +468,10 @@
   "historyAxisE1rm": "E1RM",
   "@historyAxisE1rm": {
     "description": "Axis title for E1RM chart"
+  },
+  "historyE1rmDesc": "Estimated one-rep max, your calculated max for a single rep.",
+  "@historyE1rmDesc": {
+    "description": "Short explanation for the E1RM KPI"
   },
   "historyAxisSessions": "Sessions",
   "@historyAxisSessions": {
@@ -1900,4 +1916,10 @@
   ,"@communityFeedError": {"description": "Error message for the live ticker"}
   ,"communityFeedTrainingDayHeadline": "Training day completed"
   ,"@communityFeedTrainingDayHeadline": {"description": "Headline shown for anonymized training day feed entries"}
+  ,"communityCalendarTitle": "Training days"
+  ,"@communityCalendarTitle": {"description": "Label for the community training calendar"}
+  ,"communityCalendarCountOne": "1 person trained on this day."
+  ,"@communityCalendarCountOne": {"description": "Message for a single active user in the community calendar"}
+  ,"communityCalendarCountOther": "{count} people trained on this day."
+  ,"@communityCalendarCountOther": {"description": "Message for multiple active users in the community calendar", "placeholders": {"count": {}}}
 }
