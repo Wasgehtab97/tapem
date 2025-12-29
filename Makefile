@@ -296,6 +296,12 @@ admin-web-avatars-prod:
 	rsync -a --delete assets/avatars/ admin-web/public/avatars/
 	node scripts/generate_admin_avatar_manifest.js
 
+dev-to-prod-and-back:
+	git checkout antigravity_prod
+	git reset --hard antigravity_dev
+	git push --force-with-lease origin antigravity_prod
+	git checkout antigravity_dev
+
 
 
 reset:
