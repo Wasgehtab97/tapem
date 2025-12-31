@@ -1610,6 +1610,156 @@
   ,"@homeTabAffiliate": {"description": "Label of the affiliate tab"}
   ,"homeTabPlans": "Plans"
   ,"@homeTabPlans": {"description": "Label of the plans tab"}
+  ,"homeTabNutrition": "Nutrition"
+  ,"@homeTabNutrition": {"description": "Label of the nutrition tab"}
+  ,"nutritionHomeSubtitle": "Calories, macros, and daily goals at a glance."
+  ,"@nutritionHomeSubtitle": {"description": "Subtitle on the nutrition home screen"}
+  ,"nutritionHomeGoalsTitle": "Set daily goals"
+  ,"@nutritionHomeGoalsTitle": {"description": "Nutrition home card title for goals"}
+  ,"nutritionHomeGoalsSubtitle": "Define calories and macro distribution."
+  ,"@nutritionHomeGoalsSubtitle": {"description": "Nutrition home card subtitle for goals"}
+  ,"nutritionHomeScanTitle": "Scan product"
+  ,"@nutritionHomeScanTitle": {"description": "Nutrition home card title for scan"}
+  ,"nutritionHomeScanSubtitle": "Scan a barcode and add an entry."
+  ,"@nutritionHomeScanSubtitle": {"description": "Nutrition home card subtitle for scan"}
+  ,"nutritionHomeCalendarTitle": "Year calendar"
+  ,"@nutritionHomeCalendarTitle": {"description": "Nutrition home card title for calendar"}
+  ,"nutritionHomeCalendarSubtitle": "See days under/on/over target."
+  ,"@nutritionHomeCalendarSubtitle": {"description": "Nutrition home card subtitle for calendar"}
+  ,"nutritionDayTitle": "Daily overview"
+  ,"@nutritionDayTitle": {"description": "Title of the nutrition day screen"}
+  ,"nutritionTargetLabel": "Target"
+  ,"@nutritionTargetLabel": {"description": "Label for daily target calories"}
+  ,"nutritionTotalLabel": "Total"
+  ,"@nutritionTotalLabel": {"description": "Label for total calories"}
+  ,"nutritionEmptyEntries": "No entries yet."
+  ,"@nutritionEmptyEntries": {"description": "Empty state for daily entries"}
+  ,"nutritionEntriesTitle": "Entries"
+  ,"@nutritionEntriesTitle": {"description": "Section title for daily entries"}
+  ,"nutritionChangeDateCta": "Change date"
+  ,"@nutritionChangeDateCta": {"description": "Tooltip for changing nutrition date"}
+  ,"nutritionScanTitle": "Scan product"
+  ,"@nutritionScanTitle": {"description": "Title of scan screen"}
+  ,"nutritionScanHint": "Align the barcode within the frame."
+  ,"@nutritionScanHint": {"description": "Hint text on scan screen"}
+  ,"nutritionScanManualCta": "Add manually"
+  ,"@nutritionScanManualCta": {"description": "CTA to open manual entry from scan"}
+  ,"nutritionScanCta": "Scan product"
+  ,"@nutritionScanCta": {"description": "CTA to open scan screen"}
+  ,"nutritionProductTitle": "Product"
+  ,"@nutritionProductTitle": {"description": "Title of product detail screen"}
+  ,"nutritionProductBarcode": "Barcode: {code}"
+  ,"@nutritionProductBarcode": {"description": "Label for barcode in product screen", "placeholders": {"code": {}}}
+  ,"nutritionProductOpenOffCta": "Open in Open Food Facts"
+  ,"@nutritionProductOpenOffCta": {"description": "CTA to open OFF product page"}
+  ,"nutritionProductRetryCta": "Retry lookup"
+  ,"@nutritionProductRetryCta": {"description": "Tooltip for retry lookup"}
+  ,"nutritionBarcodeInvalidHint": "Barcode looks invalid. Please rescan."
+  ,"@nutritionBarcodeInvalidHint": {"description": "Hint when barcode format is invalid"}
+  ,"nutritionProductNotFound": "Product not found. Add it manually."
+  ,"@nutritionProductNotFound": {"description": "Text when product is missing"}
+  ,"nutritionProductManualCta": "Manual entry"
+  ,"@nutritionProductManualCta": {"description": "CTA to manual entry from product screen"}
+  ,"nutritionProductSaveCta": "Save product"
+  ,"@nutritionProductSaveCta": {"description": "CTA to save manual product"}
+  ,"nutritionProductPer100g": "Per 100 g"
+  ,"@nutritionProductPer100g": {"description": "Label for per 100g section"}
+  ,"nutritionProductGramsLabel": "Grams"
+  ,"@nutritionProductGramsLabel": {"description": "Label for grams input"}
+  ,"nutritionProductComputedTitle": "Calculated for your amount"
+  ,"@nutritionProductComputedTitle": {"description": "Title for calculated macros"}
+  ,"nutritionProductAddCta": "Add to day"
+  ,"@nutritionProductAddCta": {"description": "CTA to add computed entry"}
+  ,"nutritionAttributionTitle": "Data source"
+  ,"@nutritionAttributionTitle": {"description": "Title for data source section"}
+  ,"nutritionAttributionBody": "Product data provided by Open Food Facts under the ODbL 1.0 license."
+  ,"@nutritionAttributionBody": {"description": "Attribution body text"}
+  ,"nutritionAttributionSourceLink": "Open Food Facts"
+  ,"@nutritionAttributionSourceLink": {"description": "Label for OFF link"}
+  ,"nutritionAttributionLicenseLink": "ODbL 1.0"
+  ,"@nutritionAttributionLicenseLink": {"description": "Label for license link"}
+  ,"nutritionAddEntryCta": "Add entry"
+  ,"@nutritionAddEntryCta": {"description": "CTA to add a nutrition entry"}
+  ,"nutritionEntryTitle": "Add entry"
+  ,"@nutritionEntryTitle": {"description": "Title of the nutrition entry screen"}
+  ,"nutritionEntryNameLabel": "Name"
+  ,"@nutritionEntryNameLabel": {"description": "Label for entry name"}
+  ,"nutritionEntryBarcodeLabel": "Barcode (optional)"
+  ,"@nutritionEntryBarcodeLabel": {"description": "Label for entry barcode"}
+  ,"nutritionEntryKcalLabel": "Calories"
+  ,"@nutritionEntryKcalLabel": {"description": "Label for entry calories"}
+  ,"nutritionEntryProteinLabel": "Protein (g)"
+  ,"@nutritionEntryProteinLabel": {"description": "Label for entry protein"}
+  ,"nutritionEntryCarbsLabel": "Carbs (g)"
+  ,"@nutritionEntryCarbsLabel": {"description": "Label for entry carbs"}
+  ,"nutritionEntryFatLabel": "Fat (g)"
+  ,"@nutritionEntryFatLabel": {"description": "Label for entry fat"}
+  ,"nutritionEntryQtyLabel": "Quantity (optional)"
+  ,"@nutritionEntryQtyLabel": {"description": "Label for entry quantity"}
+  ,"nutritionEntrySaveCta": "Save entry"
+  ,"@nutritionEntrySaveCta": {"description": "CTA to save nutrition entry"}
+  ,"nutritionEntrySaved": "Entry saved."
+  ,"@nutritionEntrySaved": {"description": "Snackbar when entry saved"}
+  ,"nutritionEntrySaveError": "Could not save entry."
+  ,"@nutritionEntrySaveError": {"description": "Snackbar when entry save fails"}
+  ,"nutritionEntryLookupCta": "Lookup"
+  ,"@nutritionEntryLookupCta": {"description": "CTA to lookup a barcode"}
+  ,"nutritionEntryLookupFound": "Product loaded."
+  ,"@nutritionEntryLookupFound": {"description": "Snackbar when product is found"}
+  ,"nutritionEntryLookupEmpty": "No product found."
+  ,"@nutritionEntryLookupEmpty": {"description": "Snackbar when product not found"}
+  ,"nutritionEntryLookupError": "Lookup failed."
+  ,"@nutritionEntryLookupError": {"description": "Snackbar when lookup fails"}
+  ,"nutritionSearchTitle": "Search products"
+  ,"@nutritionSearchTitle": {"description": "Title of the nutrition product search screen"}
+  ,"nutritionSearchHint": "Search Open Food Facts"
+  ,"@nutritionSearchHint": {"description": "Hint text for nutrition search field"}
+  ,"nutritionSearchCta": "Search"
+  ,"@nutritionSearchCta": {"description": "CTA to run a nutrition search"}
+  ,"nutritionSearchMinChars": "Enter at least 2 characters."
+  ,"@nutritionSearchMinChars": {"description": "Hint before minimum search length is reached"}
+  ,"nutritionSearchEmpty": "No products found."
+  ,"@nutritionSearchEmpty": {"description": "Empty state for nutrition search"}
+  ,"nutritionSearchError": "Search failed."
+  ,"@nutritionSearchError": {"description": "Error shown when nutrition search fails"}
+  ,"nutritionSearchMacroLine": "{kcal} kcal | Protein {protein} g | Carbs {carbs} g | Fat {fat} g"
+  ,"@nutritionSearchMacroLine": {"description": "Macro line for nutrition search results", "placeholders": {"kcal": {}, "protein": {}, "carbs": {}, "fat": {}}}
+  ,"nutritionEditGoalCta": "Edit goals"
+  ,"@nutritionEditGoalCta": {"description": "CTA to edit nutrition goals"}
+  ,"nutritionOpenCalendarCta": "Open calendar"
+  ,"@nutritionOpenCalendarCta": {"description": "CTA to open nutrition calendar"}
+  ,"nutritionGoalsTitle": "Daily goals"
+  ,"@nutritionGoalsTitle": {"description": "Title of the nutrition goals screen"}
+  ,"nutritionGoalsIntro": "Set a daily calorie target and macro split."
+  ,"@nutritionGoalsIntro": {"description": "Intro text on the nutrition goals screen"}
+  ,"nutritionGoalsSaveCta": "Save goals"
+  ,"@nutritionGoalsSaveCta": {"description": "CTA to save nutrition goals"}
+  ,"nutritionGoalsSaved": "Goals saved."
+  ,"@nutritionGoalsSaved": {"description": "Snackbar text when goals are saved"}
+  ,"nutritionGoalsSaveError": "Could not save goals."
+  ,"@nutritionGoalsSaveError": {"description": "Snackbar text when goals saving failed"}
+  ,"nutritionGoalsCaloriesLabel": "Calories"
+  ,"@nutritionGoalsCaloriesLabel": {"description": "Label for calories goal"}
+  ,"nutritionGoalsProteinLabel": "Protein (g)"
+  ,"@nutritionGoalsProteinLabel": {"description": "Label for protein goal"}
+  ,"nutritionGoalsCarbsLabel": "Carbs (g)"
+  ,"@nutritionGoalsCarbsLabel": {"description": "Label for carbs goal"}
+  ,"nutritionGoalsFatLabel": "Fat (g)"
+  ,"@nutritionGoalsFatLabel": {"description": "Label for fat goal"}
+  ,"nutritionCalendarTitle": "Calendar"
+  ,"@nutritionCalendarTitle": {"description": "Title of the nutrition calendar screen"}
+  ,"nutritionCalendarIntro": "Track how often you hit your target throughout the year."
+  ,"@nutritionCalendarIntro": {"description": "Intro text on nutrition calendar"}
+  ,"nutritionCalendarPlaceholder": "Calendar visualization will appear here."
+  ,"@nutritionCalendarPlaceholder": {"description": "Placeholder text for nutrition calendar"}
+  ,"nutritionLegendUnder": "Under"
+  ,"@nutritionLegendUnder": {"description": "Legend label for under target"}
+  ,"nutritionLegendOn": "On target"
+  ,"@nutritionLegendOn": {"description": "Legend label for on target"}
+  ,"nutritionLegendOver": "Over"
+  ,"@nutritionLegendOver": {"description": "Legend label for over target"}
+  ,"nutritionLegendHint": "Colors indicate the daily status."
+  ,"@nutritionLegendHint": {"description": "Legend hint for calendar"}
   ,"reportTitle": "Report"
   ,"@reportTitle": {"description": "AppBar title of the report screen"}
   ,"reportFeedbackCardTitle": "Feedback"

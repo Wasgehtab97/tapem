@@ -11,6 +11,7 @@ import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.d
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/coaching/presentation/screens/coaching_home_screen.dart';
+import 'package:tapem/features/nutrition/presentation/screens/nutrition_home_screen.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
@@ -79,6 +80,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         item: BottomNavigationBarItem(
           icon: const Icon(Icons.person),
           label: loc.profileTitle,
+        ),
+      ),
+      _TabInfo(
+        id: _HomeTabId.nutrition,
+        page: const NutritionHomeScreen(key: PageStorageKey('Nutrition')),
+        item: BottomNavigationBarItem(
+          icon: const Icon(Icons.restaurant),
+          label: loc.homeTabNutrition,
         ),
       ),
       _TabInfo(
@@ -217,6 +226,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     const restrictedTabIds = {
       _HomeTabId.gym,
       _HomeTabId.profile,
+      _HomeTabId.nutrition,
       _HomeTabId.workout,
       _HomeTabId.rank,
       _HomeTabId.plan,
@@ -350,6 +360,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 enum _HomeTabId {
   gym,
   profile,
+  nutrition,
   workout,
   report,
   admin,

@@ -180,6 +180,31 @@ service cloud.firestore {
       return !(field in data) || data[field] is number;
     }
 
+    function isNutritionDateKey(key) {
+      return key.matches('^\\d{8}$');
+    }
+
+    function isYearKey(key) {
+      return key.matches('^\\d{4}$');
+    }
+
+    function isNutritionMacros(data) {
+      return data is map &&
+        data.keys().hasOnly(['protein', 'carbs', 'fat']) &&
+        data.protein is int &&
+        data.carbs is int &&
+        data.fat is int;
+    }
+
+    function isNutritionTotals(data) {
+      return data is map &&
+        data.keys().hasOnly(['kcal', 'protein', 'carbs', 'fat']) &&
+        data.kcal is int &&
+        data.protein is int &&
+        data.carbs is int &&
+        data.fat is int;
+    }
+
     // ─────────────────────────
     // Activity stream (server only)
     // ─────────────────────────
@@ -511,6 +536,47 @@ service cloud.firestore {
         allow read, write: if isOwner(uid);
       }
 
+      match /nutrition_goal_templates/{templateId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /nutrition_goals/{dateKey} {
+        allow read: if isOwner(uid) && isNutritionDateKey(dateKey);
+        allow create, update: if isOwner(uid) &&
+          isNutritionDateKey(dateKey) &&
+          request.resource.data.keys().hasOnly(['kcal', 'macros', 'source', 'updatedAt']) &&
+          request.resource.data.kcal is int &&
+          isNutritionMacros(request.resource.data.macros) &&
+          (!('source' in request.resource.data) || request.resource.data.source is string) &&
+          (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
+        allow delete: if isOwner(uid) && isNutritionDateKey(dateKey);
+      }
+
+      match /nutrition_logs/{dateKey} {
+        allow read: if isOwner(uid) && isNutritionDateKey(dateKey);
+        allow create, update: if isOwner(uid) &&
+          isNutritionDateKey(dateKey) &&
+          request.resource.data.keys().hasOnly(['date', 'total', 'entries', 'status', 'updatedAt']) &&
+          (!('date' in request.resource.data) || request.resource.data.date is string) &&
+          isNutritionTotals(request.resource.data.total) &&
+          (!('entries' in request.resource.data) ||
+            (request.resource.data.entries is list &&
+             request.resource.data.entries.size() <= 50)) &&
+          (!('status' in request.resource.data) ||
+            request.resource.data.status in ['under', 'on', 'over']) &&
+          (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
+        allow delete: if isOwner(uid) && isNutritionDateKey(dateKey);
+      }
+
+      match /nutrition_year_summary/{year} {
+        allow read: if isOwner(uid) && isYearKey(year);
+        allow create, update: if isOwner(uid) &&
+          isYearKey(year) &&
+          request.resource.data.keys().hasOnly(['days']) &&
+          request.resource.data.days is map;
+        allow delete: if isOwner(uid) && isYearKey(year);
+      }
+
       // Training plan stats per user (owner or active coach)
       match /training_plans/{planId}/meta/{docId} {
         allow read: if isOwner(uid) ||
@@ -593,6 +659,27 @@ service cloud.firestore {
       match /{document=**} {
         allow read, write: if isOwner(uid);
       }
+    }
+
+    match /nutrition_products/{barcode} {
+      allow read: if isAuthed();
+      allow create, update: if isAuthed() &&
+        barcode.size() <= 64 &&
+        request.resource.data.keys().hasOnly([
+          'name',
+          'kcalPer100',
+          'proteinPer100',
+          'carbsPer100',
+          'fatPer100',
+          'updatedAt'
+        ]) &&
+        request.resource.data.name is string &&
+        request.resource.data.kcalPer100 is int &&
+        request.resource.data.proteinPer100 is int &&
+        request.resource.data.carbsPer100 is int &&
+        request.resource.data.fatPer100 is int &&
+        (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
+      allow delete: if false;
     }
 
     // ─────────────────────────

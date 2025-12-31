@@ -1,4 +1,4 @@
-.PHONY: ios android push ios-dev ios-emu ios-emu-prod ios-mobile-dev ios-mobile-prod android-emu ios-emu-both R rules rules-dev rules-prod ios-wireless admin admin-web admin-web-dev admin-web-prod admin-web-avatars admin-web-avatars-dev admin-web-avatars-prod logo
+.PHONY: ios android push ios-dev ios-emu ios-emu-prod ios-mobile-dev ios-mobile-prod android-emu ios-emu-both R rules rules-dev rules-prod ios-wireless ios-wireless-dev-d admin admin-web admin-web-dev admin-web-prod admin-web-avatars admin-web-avatars-dev admin-web-avatars-prod logo
 
 # Gerätedefinitionen
 iOS_DEV_ID   := 00008030-001E59420191802E
@@ -137,7 +137,7 @@ ios-mobile-dev:
 	@echo "🔧 Installing CocoaPods dependencies..."
 	cd ios && pod install && cd ..
 	@echo "🚀 Launching DEV app on iPhone (Release Build)..."
-	fvm flutter run --release -d $(iOS_DEV_ID) --dart-define=ENV=dev
+	fvm flutter run --release --flavor dev -d $(iOS_DEV_ID) --dart-define=ENV=dev
 
 # iOS Mobile (Dev - on physical iPhone - DEBUG)
 ios-mobile-dev-d:
@@ -153,7 +153,7 @@ ios-mobile-dev-d:
 	@echo "🔧 Installing CocoaPods dependencies..."
 	cd ios && pod install && cd ..
 	@echo "🚀 Launching DEV app on iPhone (Debug Build)..."
-	fvm flutter run -d $(iOS_DEV_ID) --dart-define=ENV=dev
+	fvm flutter run --flavor dev -d $(iOS_DEV_ID) --dart-define=ENV=dev
 
 # iOS Mobile (Prod - on physical iPhone)
 ios-mobile-prod:
@@ -169,7 +169,7 @@ ios-mobile-prod:
 	@echo "🔧 Installing CocoaPods dependencies..."
 	cd ios && pod install && cd ..
 	@echo "🚀 Launching PROD app on iPhone (Release Build)..."
-	./scripts/build_with_prod_config.sh Release $(iOS_DEV_ID) release
+	fvm flutter run -d $(iOS_DEV_ID) --release --flavor prod --dart-define=ENV=prod
 
 # iOS Mobile (Prod - on physical iPhone - DEBUG) - CLEAN BUILD
 ios-mobile-prod-d:
@@ -249,6 +249,22 @@ ios-wireless:
 	fvm flutter gen-l10n
 	cd ios && pod install && cd ..
 	fvm flutter run --release -d $(iOS_DEV_ID) --device-timeout=30
+
+# iOS über Netzwerk (Dev - Debug)
+ios-wireless-dev-d:
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📱 Wireless iPhone - DEV Environment (DEBUG Build)"
+	@echo "🔥 Hot Restart Enabled"
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📋 Using Dev Firebase config..."
+	@echo "📦 Bundle ID: com.example.tapem.dev"
+	cp ios/config/dev/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+	fvm flutter pub get > /dev/null 2>&1
+	fvm flutter gen-l10n > /dev/null 2>&1
+	@echo "🔧 Installing CocoaPods dependencies..."
+	cd ios && pod install && cd ..
+	@echo "🚀 Launching DEV app on iPhone (Wireless Debug)..."
+	fvm flutter run -d $(iOS_DEV_ID) --dart-define=ENV=dev --device-timeout=30
 
 # Firestore-Regeln deployen
 rules: rules-prod

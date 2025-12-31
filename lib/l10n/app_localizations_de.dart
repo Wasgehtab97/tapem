@@ -1649,6 +1649,235 @@ class AppLocalizationsDe extends AppLocalizations {
   String get homeTabPlans => 'Plan';
 
   @override
+  String get homeTabNutrition => 'Ernährung';
+
+  @override
+  String get nutritionHomeSubtitle => 'Kalorien, Makros und Tagesziele im Blick.';
+
+  @override
+  String get nutritionHomeGoalsTitle => 'Tagesziel setzen';
+
+  @override
+  String get nutritionHomeGoalsSubtitle => 'Kalorien und Makroverteilung definieren.';
+
+  @override
+  String get nutritionHomeScanTitle => 'Produkt scannen';
+
+  @override
+  String get nutritionHomeScanSubtitle => 'Barcode scannen und Eintrag erfassen.';
+
+  @override
+  String get nutritionHomeCalendarTitle => 'Jahreskalender';
+
+  @override
+  String get nutritionHomeCalendarSubtitle => 'Tage unter/auf/ueber Ziel sehen.';
+
+  @override
+  String get nutritionDayTitle => 'Tagesuebersicht';
+
+  @override
+  String get nutritionTargetLabel => 'Ziel';
+
+  @override
+  String get nutritionTotalLabel => 'Gesamt';
+
+  @override
+  String get nutritionEmptyEntries => 'Noch keine Eintraege.';
+
+  @override
+  String get nutritionEntriesTitle => 'Eintraege';
+
+  @override
+  String get nutritionChangeDateCta => 'Datum aendern';
+
+  @override
+  String get nutritionScanTitle => 'Produkt scannen';
+
+  @override
+  String get nutritionScanHint => 'Barcode im Rahmen ausrichten.';
+
+  @override
+  String get nutritionScanManualCta => 'Manuell hinzufuegen';
+
+  @override
+  String get nutritionScanCta => 'Produkt scannen';
+
+  @override
+  String get nutritionProductTitle => 'Produkt';
+
+  @override
+  String nutritionProductBarcode(Object code) {
+    return 'Barcode: $code';
+  }
+
+  @override
+  String get nutritionProductOpenOffCta => 'In Open Food Facts oeffnen';
+
+  @override
+  String get nutritionProductRetryCta => 'Suche erneut';
+
+  @override
+  String get nutritionBarcodeInvalidHint => 'Barcode wirkt ungueltig. Bitte neu scannen.';
+
+  @override
+  String get nutritionProductNotFound => 'Produkt nicht gefunden. Bitte manuell anlegen.';
+
+  @override
+  String get nutritionProductManualCta => 'Manuelle Eingabe';
+
+  @override
+  String get nutritionProductSaveCta => 'Produkt speichern';
+
+  @override
+  String get nutritionProductPer100g => 'Pro 100 g';
+
+  @override
+  String get nutritionProductGramsLabel => 'Gramm';
+
+  @override
+  String get nutritionProductComputedTitle => 'Berechnet fuer deine Menge';
+
+  @override
+  String get nutritionProductAddCta => 'Zum Tag hinzufuegen';
+
+  @override
+  String get nutritionAttributionTitle => 'Datenquelle';
+
+  @override
+  String get nutritionAttributionBody => 'Produktdaten von Open Food Facts unter ODbL 1.0.';
+
+  @override
+  String get nutritionAttributionSourceLink => 'Open Food Facts';
+
+  @override
+  String get nutritionAttributionLicenseLink => 'ODbL 1.0';
+
+  @override
+  String get nutritionAddEntryCta => 'Eintrag hinzufuegen';
+
+  @override
+  String get nutritionEntryTitle => 'Eintrag hinzufügen';
+
+  @override
+  String get nutritionEntryNameLabel => 'Name';
+
+  @override
+  String get nutritionEntryBarcodeLabel => 'Barcode (optional)';
+
+  @override
+  String get nutritionEntryKcalLabel => 'Kalorien';
+
+  @override
+  String get nutritionEntryProteinLabel => 'Protein (g)';
+
+  @override
+  String get nutritionEntryCarbsLabel => 'Kohlenhydrate (g)';
+
+  @override
+  String get nutritionEntryFatLabel => 'Fett (g)';
+
+  @override
+  String get nutritionEntryQtyLabel => 'Menge (optional)';
+
+  @override
+  String get nutritionEntrySaveCta => 'Eintrag speichern';
+
+  @override
+  String get nutritionEntrySaved => 'Eintrag gespeichert.';
+
+  @override
+  String get nutritionEntrySaveError => 'Eintrag konnte nicht gespeichert werden.';
+
+  @override
+  String get nutritionEntryLookupCta => 'Suchen';
+
+  @override
+  String get nutritionEntryLookupFound => 'Produkt geladen.';
+
+  @override
+  String get nutritionEntryLookupEmpty => 'Kein Produkt gefunden.';
+
+  @override
+  String get nutritionEntryLookupError => 'Suche fehlgeschlagen.';
+
+  @override
+  String get nutritionSearchTitle => 'Produkte suchen';
+
+  @override
+  String get nutritionSearchHint => 'Open Food Facts durchsuchen';
+
+  @override
+  String get nutritionSearchCta => 'Suchen';
+
+  @override
+  String get nutritionSearchMinChars => 'Bitte mindestens 2 Zeichen eingeben.';
+
+  @override
+  String get nutritionSearchEmpty => 'Keine Produkte gefunden.';
+
+  @override
+  String get nutritionSearchError => 'Suche fehlgeschlagen.';
+
+  @override
+  String nutritionSearchMacroLine(Object kcal, Object protein, Object carbs, Object fat) {
+    return '$kcal kcal | Protein $protein g | Kohlenhydrate $carbs g | Fett $fat g';
+  }
+
+  @override
+  String get nutritionEditGoalCta => 'Ziele bearbeiten';
+
+  @override
+  String get nutritionOpenCalendarCta => 'Kalender oeffnen';
+
+  @override
+  String get nutritionGoalsTitle => 'Tagesziele';
+
+  @override
+  String get nutritionGoalsIntro => 'Setze dein Kalorienziel und die Makros pro Tag.';
+
+  @override
+  String get nutritionGoalsSaveCta => 'Ziele speichern';
+
+  @override
+  String get nutritionGoalsSaved => 'Ziele gespeichert.';
+
+  @override
+  String get nutritionGoalsSaveError => 'Ziele konnten nicht gespeichert werden.';
+
+  @override
+  String get nutritionGoalsCaloriesLabel => 'Kalorien';
+
+  @override
+  String get nutritionGoalsProteinLabel => 'Protein (g)';
+
+  @override
+  String get nutritionGoalsCarbsLabel => 'Kohlenhydrate (g)';
+
+  @override
+  String get nutritionGoalsFatLabel => 'Fett (g)';
+
+  @override
+  String get nutritionCalendarTitle => 'Kalender';
+
+  @override
+  String get nutritionCalendarIntro => 'Uebersicht, wie oft du dein Ziel im Jahr triffst.';
+
+  @override
+  String get nutritionCalendarPlaceholder => 'Kalender-Visualisierung folgt hier.';
+
+  @override
+  String get nutritionLegendUnder => 'Unter Ziel';
+
+  @override
+  String get nutritionLegendOn => 'Auf Ziel';
+
+  @override
+  String get nutritionLegendOver => 'Ueber Ziel';
+
+  @override
+  String get nutritionLegendHint => 'Farben zeigen den Tagesstatus.';
+
+  @override
   String get reportTitle => 'Report';
 
   @override

@@ -3107,6 +3107,456 @@ abstract class AppLocalizations {
   /// **'Plans'**
   String get homeTabPlans;
 
+  /// Label of the nutrition tab
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition'**
+  String get homeTabNutrition;
+
+  /// Subtitle on the nutrition home screen
+  ///
+  /// In en, this message translates to:
+  /// **'Calories, macros, and daily goals at a glance.'**
+  String get nutritionHomeSubtitle;
+
+  /// Nutrition home card title for goals
+  ///
+  /// In en, this message translates to:
+  /// **'Set daily goals'**
+  String get nutritionHomeGoalsTitle;
+
+  /// Nutrition home card subtitle for goals
+  ///
+  /// In en, this message translates to:
+  /// **'Define calories and macro distribution.'**
+  String get nutritionHomeGoalsSubtitle;
+
+  /// Nutrition home card title for scan
+  ///
+  /// In en, this message translates to:
+  /// **'Scan product'**
+  String get nutritionHomeScanTitle;
+
+  /// Nutrition home card subtitle for scan
+  ///
+  /// In en, this message translates to:
+  /// **'Scan a barcode and add an entry.'**
+  String get nutritionHomeScanSubtitle;
+
+  /// Nutrition home card title for calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Year calendar'**
+  String get nutritionHomeCalendarTitle;
+
+  /// Nutrition home card subtitle for calendar
+  ///
+  /// In en, this message translates to:
+  /// **'See days under/on/over target.'**
+  String get nutritionHomeCalendarSubtitle;
+
+  /// Title of the nutrition day screen
+  ///
+  /// In en, this message translates to:
+  /// **'Daily overview'**
+  String get nutritionDayTitle;
+
+  /// Label for daily target calories
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get nutritionTargetLabel;
+
+  /// Label for total calories
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get nutritionTotalLabel;
+
+  /// Empty state for daily entries
+  ///
+  /// In en, this message translates to:
+  /// **'No entries yet.'**
+  String get nutritionEmptyEntries;
+
+  /// Section title for daily entries
+  ///
+  /// In en, this message translates to:
+  /// **'Entries'**
+  String get nutritionEntriesTitle;
+
+  /// Tooltip for changing nutrition date
+  ///
+  /// In en, this message translates to:
+  /// **'Change date'**
+  String get nutritionChangeDateCta;
+
+  /// Title of scan screen
+  ///
+  /// In en, this message translates to:
+  /// **'Scan product'**
+  String get nutritionScanTitle;
+
+  /// Hint text on scan screen
+  ///
+  /// In en, this message translates to:
+  /// **'Align the barcode within the frame.'**
+  String get nutritionScanHint;
+
+  /// CTA to open manual entry from scan
+  ///
+  /// In en, this message translates to:
+  /// **'Add manually'**
+  String get nutritionScanManualCta;
+
+  /// CTA to open scan screen
+  ///
+  /// In en, this message translates to:
+  /// **'Scan product'**
+  String get nutritionScanCta;
+
+  /// Title of product detail screen
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get nutritionProductTitle;
+
+  /// Label for barcode in product screen
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode: {code}'**
+  String nutritionProductBarcode(Object code);
+
+  /// CTA to open OFF product page
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Open Food Facts'**
+  String get nutritionProductOpenOffCta;
+
+  /// Tooltip for retry lookup
+  ///
+  /// In en, this message translates to:
+  /// **'Retry lookup'**
+  String get nutritionProductRetryCta;
+
+  /// Hint when barcode format is invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode looks invalid. Please rescan.'**
+  String get nutritionBarcodeInvalidHint;
+
+  /// Text when product is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Product not found. Add it manually.'**
+  String get nutritionProductNotFound;
+
+  /// CTA to manual entry from product screen
+  ///
+  /// In en, this message translates to:
+  /// **'Manual entry'**
+  String get nutritionProductManualCta;
+
+  /// CTA to save manual product
+  ///
+  /// In en, this message translates to:
+  /// **'Save product'**
+  String get nutritionProductSaveCta;
+
+  /// Label for per 100g section
+  ///
+  /// In en, this message translates to:
+  /// **'Per 100 g'**
+  String get nutritionProductPer100g;
+
+  /// Label for grams input
+  ///
+  /// In en, this message translates to:
+  /// **'Grams'**
+  String get nutritionProductGramsLabel;
+
+  /// Title for calculated macros
+  ///
+  /// In en, this message translates to:
+  /// **'Calculated for your amount'**
+  String get nutritionProductComputedTitle;
+
+  /// CTA to add computed entry
+  ///
+  /// In en, this message translates to:
+  /// **'Add to day'**
+  String get nutritionProductAddCta;
+
+  /// Title for data source section
+  ///
+  /// In en, this message translates to:
+  /// **'Data source'**
+  String get nutritionAttributionTitle;
+
+  /// Attribution body text
+  ///
+  /// In en, this message translates to:
+  /// **'Product data provided by Open Food Facts under the ODbL 1.0 license.'**
+  String get nutritionAttributionBody;
+
+  /// Label for OFF link
+  ///
+  /// In en, this message translates to:
+  /// **'Open Food Facts'**
+  String get nutritionAttributionSourceLink;
+
+  /// Label for license link
+  ///
+  /// In en, this message translates to:
+  /// **'ODbL 1.0'**
+  String get nutritionAttributionLicenseLink;
+
+  /// CTA to add a nutrition entry
+  ///
+  /// In en, this message translates to:
+  /// **'Add entry'**
+  String get nutritionAddEntryCta;
+
+  /// Title of the nutrition entry screen
+  ///
+  /// In en, this message translates to:
+  /// **'Add entry'**
+  String get nutritionEntryTitle;
+
+  /// Label for entry name
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get nutritionEntryNameLabel;
+
+  /// Label for entry barcode
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode (optional)'**
+  String get nutritionEntryBarcodeLabel;
+
+  /// Label for entry calories
+  ///
+  /// In en, this message translates to:
+  /// **'Calories'**
+  String get nutritionEntryKcalLabel;
+
+  /// Label for entry protein
+  ///
+  /// In en, this message translates to:
+  /// **'Protein (g)'**
+  String get nutritionEntryProteinLabel;
+
+  /// Label for entry carbs
+  ///
+  /// In en, this message translates to:
+  /// **'Carbs (g)'**
+  String get nutritionEntryCarbsLabel;
+
+  /// Label for entry fat
+  ///
+  /// In en, this message translates to:
+  /// **'Fat (g)'**
+  String get nutritionEntryFatLabel;
+
+  /// Label for entry quantity
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity (optional)'**
+  String get nutritionEntryQtyLabel;
+
+  /// CTA to save nutrition entry
+  ///
+  /// In en, this message translates to:
+  /// **'Save entry'**
+  String get nutritionEntrySaveCta;
+
+  /// Snackbar when entry saved
+  ///
+  /// In en, this message translates to:
+  /// **'Entry saved.'**
+  String get nutritionEntrySaved;
+
+  /// Snackbar when entry save fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save entry.'**
+  String get nutritionEntrySaveError;
+
+  /// CTA to lookup a barcode
+  ///
+  /// In en, this message translates to:
+  /// **'Lookup'**
+  String get nutritionEntryLookupCta;
+
+  /// Snackbar when product is found
+  ///
+  /// In en, this message translates to:
+  /// **'Product loaded.'**
+  String get nutritionEntryLookupFound;
+
+  /// Snackbar when product not found
+  ///
+  /// In en, this message translates to:
+  /// **'No product found.'**
+  String get nutritionEntryLookupEmpty;
+
+  /// Snackbar when lookup fails
+  ///
+  /// In en, this message translates to:
+  /// **'Lookup failed.'**
+  String get nutritionEntryLookupError;
+
+  /// Title of the nutrition product search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Search products'**
+  String get nutritionSearchTitle;
+
+  /// Hint text for nutrition search field
+  ///
+  /// In en, this message translates to:
+  /// **'Search Open Food Facts'**
+  String get nutritionSearchHint;
+
+  /// CTA to run a nutrition search
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get nutritionSearchCta;
+
+  /// Hint before minimum search length is reached
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least 2 characters.'**
+  String get nutritionSearchMinChars;
+
+  /// Empty state for nutrition search
+  ///
+  /// In en, this message translates to:
+  /// **'No products found.'**
+  String get nutritionSearchEmpty;
+
+  /// Error shown when nutrition search fails
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed.'**
+  String get nutritionSearchError;
+
+  /// Macro line for nutrition search results
+  ///
+  /// In en, this message translates to:
+  /// **'{kcal} kcal | Protein {protein} g | Carbs {carbs} g | Fat {fat} g'**
+  String nutritionSearchMacroLine(Object kcal, Object protein, Object carbs, Object fat);
+
+  /// CTA to edit nutrition goals
+  ///
+  /// In en, this message translates to:
+  /// **'Edit goals'**
+  String get nutritionEditGoalCta;
+
+  /// CTA to open nutrition calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Open calendar'**
+  String get nutritionOpenCalendarCta;
+
+  /// Title of the nutrition goals screen
+  ///
+  /// In en, this message translates to:
+  /// **'Daily goals'**
+  String get nutritionGoalsTitle;
+
+  /// Intro text on the nutrition goals screen
+  ///
+  /// In en, this message translates to:
+  /// **'Set a daily calorie target and macro split.'**
+  String get nutritionGoalsIntro;
+
+  /// CTA to save nutrition goals
+  ///
+  /// In en, this message translates to:
+  /// **'Save goals'**
+  String get nutritionGoalsSaveCta;
+
+  /// Snackbar text when goals are saved
+  ///
+  /// In en, this message translates to:
+  /// **'Goals saved.'**
+  String get nutritionGoalsSaved;
+
+  /// Snackbar text when goals saving failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save goals.'**
+  String get nutritionGoalsSaveError;
+
+  /// Label for calories goal
+  ///
+  /// In en, this message translates to:
+  /// **'Calories'**
+  String get nutritionGoalsCaloriesLabel;
+
+  /// Label for protein goal
+  ///
+  /// In en, this message translates to:
+  /// **'Protein (g)'**
+  String get nutritionGoalsProteinLabel;
+
+  /// Label for carbs goal
+  ///
+  /// In en, this message translates to:
+  /// **'Carbs (g)'**
+  String get nutritionGoalsCarbsLabel;
+
+  /// Label for fat goal
+  ///
+  /// In en, this message translates to:
+  /// **'Fat (g)'**
+  String get nutritionGoalsFatLabel;
+
+  /// Title of the nutrition calendar screen
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get nutritionCalendarTitle;
+
+  /// Intro text on nutrition calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Track how often you hit your target throughout the year.'**
+  String get nutritionCalendarIntro;
+
+  /// Placeholder text for nutrition calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar visualization will appear here.'**
+  String get nutritionCalendarPlaceholder;
+
+  /// Legend label for under target
+  ///
+  /// In en, this message translates to:
+  /// **'Under'**
+  String get nutritionLegendUnder;
+
+  /// Legend label for on target
+  ///
+  /// In en, this message translates to:
+  /// **'On target'**
+  String get nutritionLegendOn;
+
+  /// Legend label for over target
+  ///
+  /// In en, this message translates to:
+  /// **'Over'**
+  String get nutritionLegendOver;
+
+  /// Legend hint for calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Colors indicate the daily status.'**
+  String get nutritionLegendHint;
+
   /// AppBar title of the report screen
   ///
   /// In en, this message translates to:

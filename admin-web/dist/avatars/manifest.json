@@ -22,6 +22,9 @@
       "dominik",
       "lauch"
     ],
+    "julian_home": [
+      "1"
+    ],
     "lifthouse_koblenz": [
       "Yi",
       "Yi_christmas",
@@ -30,7 +33,8 @@
       "kurzhantel",
       "neele",
       "neele_weihnachten1",
-      "neele_weihnachten2"
+      "neele_weihnachten2",
+      "pumpingturtle1"
     ],
     "mcfit_baelau": [
       "kurzhantel",
@@ -40,7 +44,8 @@
     "medifitness_ruesselsheim": [
       "alex",
       "alex_weihnachten",
-      "kurzhantel"
+      "kurzhantel",
+      "pumpinggoose_1"
     ],
     "studentgym_london": [
       "london"
@@ -51,6 +56,10 @@
     "unigym_essen": [
       "kurzhantel",
       "luca"
+    ],
+    "world_gym_cologne": [
+      "1",
+      "2"
     ]
   }
 }

@@ -1649,6 +1649,235 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTabPlans => 'Plans';
 
   @override
+  String get homeTabNutrition => 'Nutrition';
+
+  @override
+  String get nutritionHomeSubtitle => 'Calories, macros, and daily goals at a glance.';
+
+  @override
+  String get nutritionHomeGoalsTitle => 'Set daily goals';
+
+  @override
+  String get nutritionHomeGoalsSubtitle => 'Define calories and macro distribution.';
+
+  @override
+  String get nutritionHomeScanTitle => 'Scan product';
+
+  @override
+  String get nutritionHomeScanSubtitle => 'Scan a barcode and add an entry.';
+
+  @override
+  String get nutritionHomeCalendarTitle => 'Year calendar';
+
+  @override
+  String get nutritionHomeCalendarSubtitle => 'See days under/on/over target.';
+
+  @override
+  String get nutritionDayTitle => 'Daily overview';
+
+  @override
+  String get nutritionTargetLabel => 'Target';
+
+  @override
+  String get nutritionTotalLabel => 'Total';
+
+  @override
+  String get nutritionEmptyEntries => 'No entries yet.';
+
+  @override
+  String get nutritionEntriesTitle => 'Entries';
+
+  @override
+  String get nutritionChangeDateCta => 'Change date';
+
+  @override
+  String get nutritionScanTitle => 'Scan product';
+
+  @override
+  String get nutritionScanHint => 'Align the barcode within the frame.';
+
+  @override
+  String get nutritionScanManualCta => 'Add manually';
+
+  @override
+  String get nutritionScanCta => 'Scan product';
+
+  @override
+  String get nutritionProductTitle => 'Product';
+
+  @override
+  String nutritionProductBarcode(Object code) {
+    return 'Barcode: $code';
+  }
+
+  @override
+  String get nutritionProductOpenOffCta => 'Open in Open Food Facts';
+
+  @override
+  String get nutritionProductRetryCta => 'Retry lookup';
+
+  @override
+  String get nutritionBarcodeInvalidHint => 'Barcode looks invalid. Please rescan.';
+
+  @override
+  String get nutritionProductNotFound => 'Product not found. Add it manually.';
+
+  @override
+  String get nutritionProductManualCta => 'Manual entry';
+
+  @override
+  String get nutritionProductSaveCta => 'Save product';
+
+  @override
+  String get nutritionProductPer100g => 'Per 100 g';
+
+  @override
+  String get nutritionProductGramsLabel => 'Grams';
+
+  @override
+  String get nutritionProductComputedTitle => 'Calculated for your amount';
+
+  @override
+  String get nutritionProductAddCta => 'Add to day';
+
+  @override
+  String get nutritionAttributionTitle => 'Data source';
+
+  @override
+  String get nutritionAttributionBody => 'Product data provided by Open Food Facts under the ODbL 1.0 license.';
+
+  @override
+  String get nutritionAttributionSourceLink => 'Open Food Facts';
+
+  @override
+  String get nutritionAttributionLicenseLink => 'ODbL 1.0';
+
+  @override
+  String get nutritionAddEntryCta => 'Add entry';
+
+  @override
+  String get nutritionEntryTitle => 'Add entry';
+
+  @override
+  String get nutritionEntryNameLabel => 'Name';
+
+  @override
+  String get nutritionEntryBarcodeLabel => 'Barcode (optional)';
+
+  @override
+  String get nutritionEntryKcalLabel => 'Calories';
+
+  @override
+  String get nutritionEntryProteinLabel => 'Protein (g)';
+
+  @override
+  String get nutritionEntryCarbsLabel => 'Carbs (g)';
+
+  @override
+  String get nutritionEntryFatLabel => 'Fat (g)';
+
+  @override
+  String get nutritionEntryQtyLabel => 'Quantity (optional)';
+
+  @override
+  String get nutritionEntrySaveCta => 'Save entry';
+
+  @override
+  String get nutritionEntrySaved => 'Entry saved.';
+
+  @override
+  String get nutritionEntrySaveError => 'Could not save entry.';
+
+  @override
+  String get nutritionEntryLookupCta => 'Lookup';
+
+  @override
+  String get nutritionEntryLookupFound => 'Product loaded.';
+
+  @override
+  String get nutritionEntryLookupEmpty => 'No product found.';
+
+  @override
+  String get nutritionEntryLookupError => 'Lookup failed.';
+
+  @override
+  String get nutritionSearchTitle => 'Search products';
+
+  @override
+  String get nutritionSearchHint => 'Search Open Food Facts';
+
+  @override
+  String get nutritionSearchCta => 'Search';
+
+  @override
+  String get nutritionSearchMinChars => 'Enter at least 2 characters.';
+
+  @override
+  String get nutritionSearchEmpty => 'No products found.';
+
+  @override
+  String get nutritionSearchError => 'Search failed.';
+
+  @override
+  String nutritionSearchMacroLine(Object kcal, Object protein, Object carbs, Object fat) {
+    return '$kcal kcal | Protein $protein g | Carbs $carbs g | Fat $fat g';
+  }
+
+  @override
+  String get nutritionEditGoalCta => 'Edit goals';
+
+  @override
+  String get nutritionOpenCalendarCta => 'Open calendar';
+
+  @override
+  String get nutritionGoalsTitle => 'Daily goals';
+
+  @override
+  String get nutritionGoalsIntro => 'Set a daily calorie target and macro split.';
+
+  @override
+  String get nutritionGoalsSaveCta => 'Save goals';
+
+  @override
+  String get nutritionGoalsSaved => 'Goals saved.';
+
+  @override
+  String get nutritionGoalsSaveError => 'Could not save goals.';
+
+  @override
+  String get nutritionGoalsCaloriesLabel => 'Calories';
+
+  @override
+  String get nutritionGoalsProteinLabel => 'Protein (g)';
+
+  @override
+  String get nutritionGoalsCarbsLabel => 'Carbs (g)';
+
+  @override
+  String get nutritionGoalsFatLabel => 'Fat (g)';
+
+  @override
+  String get nutritionCalendarTitle => 'Calendar';
+
+  @override
+  String get nutritionCalendarIntro => 'Track how often you hit your target throughout the year.';
+
+  @override
+  String get nutritionCalendarPlaceholder => 'Calendar visualization will appear here.';
+
+  @override
+  String get nutritionLegendUnder => 'Under';
+
+  @override
+  String get nutritionLegendOn => 'On target';
+
+  @override
+  String get nutritionLegendOver => 'Over';
+
+  @override
+  String get nutritionLegendHint => 'Colors indicate the daily status.';
+
+  @override
   String get reportTitle => 'Report';
 
   @override

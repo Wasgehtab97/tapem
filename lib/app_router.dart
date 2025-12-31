@@ -46,6 +46,13 @@ import 'package:tapem/features/admin/presentation/screens/user_symbols_screen.da
 import 'package:tapem/features/rest_stats/presentation/screens/rest_stats_screen.dart';
 import 'package:tapem/features/community/presentation/screens/community_screen.dart';
 import 'package:tapem/features/settings/presentation/screens/settings_screen.dart';
+import 'package:tapem/features/nutrition/presentation/screens/nutrition_day_screen.dart';
+import 'package:tapem/features/nutrition/presentation/screens/nutrition_calendar_screen.dart';
+import 'package:tapem/features/nutrition/presentation/screens/nutrition_goals_screen.dart';
+import 'package:tapem/features/nutrition/presentation/screens/nutrition_entry_screen.dart';
+import 'package:tapem/features/nutrition/presentation/screens/nutrition_scan_screen.dart';
+import 'package:tapem/features/nutrition/presentation/screens/nutrition_product_screen.dart';
+import 'package:tapem/features/nutrition/presentation/screens/nutrition_search_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/profile/presentation/screens/powerlifting_screen.dart';
@@ -108,6 +115,14 @@ class AppRouter {
   static const restStats = '/rest_stats';
   static const community = '/community';
   static const settings = '/settings';
+  static const nutrition = '/nutrition';
+  static const nutritionDay = '/nutrition/day';
+  static const nutritionGoals = '/nutrition/goals';
+  static const nutritionCalendar = '/nutrition/calendar';
+  static const nutritionEntry = '/nutrition/entry';
+  static const nutritionScan = '/nutrition/scan';
+  static const nutritionProduct = '/nutrition/product';
+  static const nutritionSearch = '/nutrition/search';
 
   static const restrictedRoutesForMembers = {
     report,
@@ -270,6 +285,44 @@ class AppRouter {
 
       case restStats:
         return MaterialPageRoute(builder: (_) => const RestStatsScreen());
+
+      case nutrition:
+      case nutritionDay:
+        return MaterialPageRoute(builder: (_) => const NutritionDayScreen());
+
+      case nutritionGoals:
+        return MaterialPageRoute(builder: (_) => const NutritionGoalsScreen());
+
+      case nutritionCalendar:
+        return MaterialPageRoute(builder: (_) => const NutritionCalendarScreen());
+
+      case nutritionEntry:
+        final args = settings.arguments as Map<String, dynamic>? ?? const {};
+        return MaterialPageRoute(
+          builder: (_) => NutritionEntryScreen(
+            initialBarcode: args['barcode'] as String?,
+            initialName: args['name'] as String?,
+          ),
+        );
+
+      case nutritionScan:
+        return MaterialPageRoute(builder: (_) => const NutritionScanScreen());
+
+      case nutritionProduct:
+        final args = settings.arguments as Map<String, dynamic>? ?? const {};
+        return MaterialPageRoute(
+          builder: (_) => NutritionProductScreen(
+            barcode: args['barcode'] as String? ?? '',
+          ),
+        );
+
+      case nutritionSearch:
+        final args = settings.arguments as Map<String, dynamic>? ?? const {};
+        return MaterialPageRoute(
+          builder: (_) => NutritionSearchScreen(
+            initialQuery: args['query'] as String?,
+          ),
+        );
 
       case community:
         return MaterialPageRoute(builder: (_) => const CommunityScreen());

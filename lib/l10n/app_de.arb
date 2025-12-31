@@ -1596,6 +1596,156 @@
   ,"@homeTabAffiliate": {"description": "Label des Affiliate-Tabs"}
   ,"homeTabPlans": "Plan"
   ,"@homeTabPlans": {"description": "Label des Pläne-Tabs"}
+  ,"homeTabNutrition": "Ernährung"
+  ,"@homeTabNutrition": {"description": "Label des Ernährungs-Tabs"}
+  ,"nutritionHomeSubtitle": "Kalorien, Makros und Tagesziele im Blick."
+  ,"@nutritionHomeSubtitle": {"description": "Untertitel auf dem Nutrition-Startscreen"}
+  ,"nutritionHomeGoalsTitle": "Tagesziel setzen"
+  ,"@nutritionHomeGoalsTitle": {"description": "Card-Titel fuer Ziele"}
+  ,"nutritionHomeGoalsSubtitle": "Kalorien und Makroverteilung definieren."
+  ,"@nutritionHomeGoalsSubtitle": {"description": "Card-Untertitel fuer Ziele"}
+  ,"nutritionHomeScanTitle": "Produkt scannen"
+  ,"@nutritionHomeScanTitle": {"description": "Card-Titel fuer Scan"}
+  ,"nutritionHomeScanSubtitle": "Barcode scannen und Eintrag erfassen."
+  ,"@nutritionHomeScanSubtitle": {"description": "Card-Untertitel fuer Scan"}
+  ,"nutritionHomeCalendarTitle": "Jahreskalender"
+  ,"@nutritionHomeCalendarTitle": {"description": "Card-Titel fuer Kalender"}
+  ,"nutritionHomeCalendarSubtitle": "Tage unter/auf/ueber Ziel sehen."
+  ,"@nutritionHomeCalendarSubtitle": {"description": "Card-Untertitel fuer Kalender"}
+  ,"nutritionDayTitle": "Tagesuebersicht"
+  ,"@nutritionDayTitle": {"description": "Titel der Nutrition-Tagesansicht"}
+  ,"nutritionTargetLabel": "Ziel"
+  ,"@nutritionTargetLabel": {"description": "Label fuer Tagesziel"}
+  ,"nutritionTotalLabel": "Gesamt"
+  ,"@nutritionTotalLabel": {"description": "Label fuer Tagesgesamt"}
+  ,"nutritionEmptyEntries": "Noch keine Eintraege."
+  ,"@nutritionEmptyEntries": {"description": "Empty State fuer Tagesentries"}
+  ,"nutritionEntriesTitle": "Eintraege"
+  ,"@nutritionEntriesTitle": {"description": "Bereichstitel fuer Tagesentries"}
+  ,"nutritionChangeDateCta": "Datum aendern"
+  ,"@nutritionChangeDateCta": {"description": "Tooltip fuer Datum aendern"}
+  ,"nutritionScanTitle": "Produkt scannen"
+  ,"@nutritionScanTitle": {"description": "Titel fuer Scan-Ansicht"}
+  ,"nutritionScanHint": "Barcode im Rahmen ausrichten."
+  ,"@nutritionScanHint": {"description": "Hinweistext in der Scan-Ansicht"}
+  ,"nutritionScanManualCta": "Manuell hinzufuegen"
+  ,"@nutritionScanManualCta": {"description": "CTA fuer manuelle Eingabe"}
+  ,"nutritionScanCta": "Produkt scannen"
+  ,"@nutritionScanCta": {"description": "CTA zum Scan-Screen"}
+  ,"nutritionProductTitle": "Produkt"
+  ,"@nutritionProductTitle": {"description": "Titel der Produkt-Ansicht"}
+  ,"nutritionProductBarcode": "Barcode: {code}"
+  ,"@nutritionProductBarcode": {"description": "Barcode-Label in Produktansicht", "placeholders": {"code": {}}}
+  ,"nutritionProductOpenOffCta": "In Open Food Facts oeffnen"
+  ,"@nutritionProductOpenOffCta": {"description": "CTA zum OFF Produktlink"}
+  ,"nutritionProductRetryCta": "Suche erneut"
+  ,"@nutritionProductRetryCta": {"description": "Tooltip fuer erneute Suche"}
+  ,"nutritionBarcodeInvalidHint": "Barcode wirkt ungueltig. Bitte neu scannen."
+  ,"@nutritionBarcodeInvalidHint": {"description": "Hinweis bei ungueltigem Barcode"}
+  ,"nutritionProductNotFound": "Produkt nicht gefunden. Bitte manuell anlegen."
+  ,"@nutritionProductNotFound": {"description": "Text wenn Produkt fehlt"}
+  ,"nutritionProductManualCta": "Manuelle Eingabe"
+  ,"@nutritionProductManualCta": {"description": "CTA zur manuellen Eingabe"}
+  ,"nutritionProductSaveCta": "Produkt speichern"
+  ,"@nutritionProductSaveCta": {"description": "CTA fuer Produkt speichern"}
+  ,"nutritionProductPer100g": "Pro 100 g"
+  ,"@nutritionProductPer100g": {"description": "Label fuer 100g-Werte"}
+  ,"nutritionProductGramsLabel": "Gramm"
+  ,"@nutritionProductGramsLabel": {"description": "Label fuer Gramm-Eingabe"}
+  ,"nutritionProductComputedTitle": "Berechnet fuer deine Menge"
+  ,"@nutritionProductComputedTitle": {"description": "Titel fuer berechnete Makros"}
+  ,"nutritionProductAddCta": "Zum Tag hinzufuegen"
+  ,"@nutritionProductAddCta": {"description": "CTA zum Hinzufuegen"}
+  ,"nutritionAttributionTitle": "Datenquelle"
+  ,"@nutritionAttributionTitle": {"description": "Titel fuer Datenquelle"}
+  ,"nutritionAttributionBody": "Produktdaten von Open Food Facts unter ODbL 1.0."
+  ,"@nutritionAttributionBody": {"description": "Attribution Text"}
+  ,"nutritionAttributionSourceLink": "Open Food Facts"
+  ,"@nutritionAttributionSourceLink": {"description": "Label fuer OFF Link"}
+  ,"nutritionAttributionLicenseLink": "ODbL 1.0"
+  ,"@nutritionAttributionLicenseLink": {"description": "Label fuer Lizenz-Link"}
+  ,"nutritionAddEntryCta": "Eintrag hinzufuegen"
+  ,"@nutritionAddEntryCta": {"description": "CTA fuer Eintrag hinzufügen"}
+  ,"nutritionEntryTitle": "Eintrag hinzufügen"
+  ,"@nutritionEntryTitle": {"description": "Titel fuer Eintrag-Ansicht"}
+  ,"nutritionEntryNameLabel": "Name"
+  ,"@nutritionEntryNameLabel": {"description": "Label fuer Eintragsname"}
+  ,"nutritionEntryBarcodeLabel": "Barcode (optional)"
+  ,"@nutritionEntryBarcodeLabel": {"description": "Label fuer Barcode"}
+  ,"nutritionEntryKcalLabel": "Kalorien"
+  ,"@nutritionEntryKcalLabel": {"description": "Label fuer Kalorien"}
+  ,"nutritionEntryProteinLabel": "Protein (g)"
+  ,"@nutritionEntryProteinLabel": {"description": "Label fuer Protein"}
+  ,"nutritionEntryCarbsLabel": "Kohlenhydrate (g)"
+  ,"@nutritionEntryCarbsLabel": {"description": "Label fuer Kohlenhydrate"}
+  ,"nutritionEntryFatLabel": "Fett (g)"
+  ,"@nutritionEntryFatLabel": {"description": "Label fuer Fett"}
+  ,"nutritionEntryQtyLabel": "Menge (optional)"
+  ,"@nutritionEntryQtyLabel": {"description": "Label fuer Menge"}
+  ,"nutritionEntrySaveCta": "Eintrag speichern"
+  ,"@nutritionEntrySaveCta": {"description": "CTA fuer Eintrag speichern"}
+  ,"nutritionEntrySaved": "Eintrag gespeichert."
+  ,"@nutritionEntrySaved": {"description": "Snackbar fuer gespeicherten Eintrag"}
+  ,"nutritionEntrySaveError": "Eintrag konnte nicht gespeichert werden."
+  ,"@nutritionEntrySaveError": {"description": "Snackbar fuer Fehler beim Speichern"}
+  ,"nutritionEntryLookupCta": "Suchen"
+  ,"@nutritionEntryLookupCta": {"description": "CTA fuer Barcode-Suche"}
+  ,"nutritionEntryLookupFound": "Produkt geladen."
+  ,"@nutritionEntryLookupFound": {"description": "Snackbar fuer gefundenes Produkt"}
+  ,"nutritionEntryLookupEmpty": "Kein Produkt gefunden."
+  ,"@nutritionEntryLookupEmpty": {"description": "Snackbar fuer kein Produkt"}
+  ,"nutritionEntryLookupError": "Suche fehlgeschlagen."
+  ,"@nutritionEntryLookupError": {"description": "Snackbar fuer Suche fehlgeschlagen"}
+  ,"nutritionSearchTitle": "Produkte suchen"
+  ,"@nutritionSearchTitle": {"description": "Titel der Nutrition-Produktsuche"}
+  ,"nutritionSearchHint": "Open Food Facts durchsuchen"
+  ,"@nutritionSearchHint": {"description": "Hinweistext fuer die Produktsuche"}
+  ,"nutritionSearchCta": "Suchen"
+  ,"@nutritionSearchCta": {"description": "CTA fuer Produktsuche"}
+  ,"nutritionSearchMinChars": "Bitte mindestens 2 Zeichen eingeben."
+  ,"@nutritionSearchMinChars": {"description": "Hinweis vor Mindestlaenge der Suche"}
+  ,"nutritionSearchEmpty": "Keine Produkte gefunden."
+  ,"@nutritionSearchEmpty": {"description": "Empty State fuer Produktsuche"}
+  ,"nutritionSearchError": "Suche fehlgeschlagen."
+  ,"@nutritionSearchError": {"description": "Fehlertext fuer Produktsuche"}
+  ,"nutritionSearchMacroLine": "{kcal} kcal | Protein {protein} g | Kohlenhydrate {carbs} g | Fett {fat} g"
+  ,"@nutritionSearchMacroLine": {"description": "Makrozeile fuer Produktsuche", "placeholders": {"kcal": {}, "protein": {}, "carbs": {}, "fat": {}}}
+  ,"nutritionEditGoalCta": "Ziele bearbeiten"
+  ,"@nutritionEditGoalCta": {"description": "CTA fuer Ziele bearbeiten"}
+  ,"nutritionOpenCalendarCta": "Kalender oeffnen"
+  ,"@nutritionOpenCalendarCta": {"description": "CTA fuer Kalender"}
+  ,"nutritionGoalsTitle": "Tagesziele"
+  ,"@nutritionGoalsTitle": {"description": "Titel der Ziele-Ansicht"}
+  ,"nutritionGoalsIntro": "Setze dein Kalorienziel und die Makros pro Tag."
+  ,"@nutritionGoalsIntro": {"description": "Intro Text fuer Ziele"}
+  ,"nutritionGoalsSaveCta": "Ziele speichern"
+  ,"@nutritionGoalsSaveCta": {"description": "CTA fuer Ziele speichern"}
+  ,"nutritionGoalsSaved": "Ziele gespeichert."
+  ,"@nutritionGoalsSaved": {"description": "Snackbar Text fuer gespeicherte Ziele"}
+  ,"nutritionGoalsSaveError": "Ziele konnten nicht gespeichert werden."
+  ,"@nutritionGoalsSaveError": {"description": "Snackbar Text fuer Fehler beim Speichern"}
+  ,"nutritionGoalsCaloriesLabel": "Kalorien"
+  ,"@nutritionGoalsCaloriesLabel": {"description": "Label fuer Kalorienziel"}
+  ,"nutritionGoalsProteinLabel": "Protein (g)"
+  ,"@nutritionGoalsProteinLabel": {"description": "Label fuer Proteinziel"}
+  ,"nutritionGoalsCarbsLabel": "Kohlenhydrate (g)"
+  ,"@nutritionGoalsCarbsLabel": {"description": "Label fuer Kohlenhydratziel"}
+  ,"nutritionGoalsFatLabel": "Fett (g)"
+  ,"@nutritionGoalsFatLabel": {"description": "Label fuer Fettziel"}
+  ,"nutritionCalendarTitle": "Kalender"
+  ,"@nutritionCalendarTitle": {"description": "Titel der Kalender-Ansicht"}
+  ,"nutritionCalendarIntro": "Uebersicht, wie oft du dein Ziel im Jahr triffst."
+  ,"@nutritionCalendarIntro": {"description": "Intro Text fuer Kalender"}
+  ,"nutritionCalendarPlaceholder": "Kalender-Visualisierung folgt hier."
+  ,"@nutritionCalendarPlaceholder": {"description": "Placeholder fuer Kalender"}
+  ,"nutritionLegendUnder": "Unter Ziel"
+  ,"@nutritionLegendUnder": {"description": "Legende fuer unter Ziel"}
+  ,"nutritionLegendOn": "Auf Ziel"
+  ,"@nutritionLegendOn": {"description": "Legende fuer auf Ziel"}
+  ,"nutritionLegendOver": "Ueber Ziel"
+  ,"@nutritionLegendOver": {"description": "Legende fuer ueber Ziel"}
+  ,"nutritionLegendHint": "Farben zeigen den Tagesstatus."
+  ,"@nutritionLegendHint": {"description": "Legendenhinweis"}
   ,"reportTitle": "Report"
   ,"@reportTitle": {"description": "AppBar-Titel des Report-Screens"}
   ,"reportFeedbackCardTitle": "Feedback"

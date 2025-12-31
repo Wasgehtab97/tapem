@@ -1,4 +1,4 @@
-platform :ios, '13.0'
+platform :ios, '15.5'
 install! 'cocoapods', :disable_input_output_paths => true
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
@@ -48,7 +48,7 @@ post_install do |installer|
     
     t.build_configurations.each do |c|
       # Einheitliche Targets/Flags
-      c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.5'
       c.build_settings['ENABLE_BITCODE'] = 'NO'
       c.build_settings['SWIFT_VERSION'] = '5.0'
 
