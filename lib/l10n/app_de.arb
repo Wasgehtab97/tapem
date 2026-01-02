@@ -1612,7 +1612,7 @@
   ,"@nutritionHomeCalendarTitle": {"description": "Card-Titel fuer Kalender"}
   ,"nutritionHomeCalendarSubtitle": "Tage unter/auf/ueber Ziel sehen."
   ,"@nutritionHomeCalendarSubtitle": {"description": "Card-Untertitel fuer Kalender"}
-  ,"nutritionDayTitle": "Tagesuebersicht"
+  ,"nutritionDayTitle": "Tagesübersicht"
   ,"@nutritionDayTitle": {"description": "Titel der Nutrition-Tagesansicht"}
   ,"nutritionTargetLabel": "Ziel"
   ,"@nutritionTargetLabel": {"description": "Label fuer Tagesziel"}

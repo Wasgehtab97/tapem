@@ -156,6 +156,25 @@ Status-Legende:
   - Umsetzung: Produktdaten anzeigen, Gramm/Portion eingeben.
 - [x] Automatische Berechnung pro Gramm/Portion
   - Umsetzung: per 100g Werte auf Menge umrechnen, Entry erzeugen.
+- [~] Gerichte/Rezepte (mehrere Zutaten speichern und wiederverwenden)
+  - Umsetzung: Eigene Rezepte mit Zutatenliste speichern, Faktor anpassen, vollständig zu einer Mahlzeit hinzufügen; Zutaten können aus Suche/Barcode oder manuell kommen.
+
+## Firestore Read/Write Audit (aktueller Stand)
+- Tages-Load: `loadDay` macht 2 Reads (Goal + Log) pro Datum. `loadYear` macht 1 Read (Year-Summary). Vertretbar; kein Listener/Stream, nur On-Demand.
+- Add Entry: 1 optionaler Read auf Log (wenn nicht im State), 1 optionaler Read auf Goal (falls nicht im State), 1 Write für Log, 1 Write für Year-Summary. Limit: 50 Entries/Tag (Soft-Limit im Client).
+- Remove Entry / Update Entry: gleiche Struktur (Log-Write + Year-Summary-Write).  
+- Rezepte hinzufügen zu Mahlzeit: derzeit 1 `addEntry`-Write pro Zutat → multipliziert sich bei vielen Zutaten (inkl. Year-Summary-Update je Zutat). Skalierungsrisiko: Viele Writes pro Rezept. Empfehlung: in Zukunft batching/sammel-Write (Log neu berechnen, einmal schreiben, einmal Year-Summary).
+- Rezepte CRUD: `fetchRecipes` holt alle Rezepte; keine Pagination. Kann bei vielen Rezepten teuer werden; überlegen: Limit + Paging.
+- Produktsuche: Filter lokal, aber ohne Paging/Limits; abhängig von Service/Backend. Falls auf Firestore-Query basiert, Limit erwägen.
+- Year-Summary: Map-Update per Tag (Merge) → unproblematisch, 1 Write.
+- Kein Echtzeit-Listener → Reads bleiben deterministisch, aber jeder Bildschirmaufruf triggert frische Reads (Home lädt Day; Day lädt Day; Rezepte laden Rezepte). Caching/Reuse wäre ein möglicher Optimierungspfad.
+- Lokales Caching der Produkte erwähnt, aber nicht überall ersichtlich; sicherstellen, dass ProductService zuerst lokal/Firestore cached, bevor API/Netz.
+
+### Launch-Readiness (Fazit)
+- Funktional lauffähig für MVP; Reads/Writes sind linear und ohne Streams.  
+- Größter Kostentreiber: Rezepte hinzufügen (n Writes pro Zutat). Für hohes Volumen besser: Sammelberechnung und ein einziger Log-Write + Year-Summary-Write.  
+- Produktsuche und Rezepte-Liste sollten Limits/Paging bekommen, falls Nutzer sehr viele Datensätze haben.  
+- Sonst keine offensichtlichen Write-Amplifications; Year-Summary-Map ist O(1) pro Tag.
 
 ### 4.3 State Management
 - [x] Repository Layer fuer `nutrition_*`

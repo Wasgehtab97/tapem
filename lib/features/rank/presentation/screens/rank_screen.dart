@@ -241,7 +241,8 @@ class _RankCard extends StatelessWidget {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-    final secondary = theme.colorScheme.onSurface.withOpacity(0.6);
+    final secondary = theme.colorScheme.onSurface.withOpacity(0.7);
+    final gradient = brandTheme?.gradient;
 
     return BrandInteractiveCard(
       onTap: onTap,
@@ -249,13 +250,21 @@ class _RankCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: gradient?.begin ?? Alignment.topLeft,
+            end: gradient?.end ?? Alignment.bottomRight,
             colors: [
-              gradientStart ?? theme.colorScheme.surface,
-              gradientEnd ?? theme.colorScheme.surface.withOpacity(0.5),
+              (gradientStart ??
+                      gradient?.colors.first ??
+                      theme.colorScheme.surface)
+                  .withOpacity(0.25),
+              (gradientEnd ??
+                      gradient?.colors.last ??
+                      theme.colorScheme.surface.withOpacity(0.6))
+                  .withOpacity(0.3),
             ],
           ),
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(color: brandColor.withOpacity(0.35)),
         ),
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
@@ -269,8 +278,11 @@ class _RankCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onSurface,
+                    style: (brandTheme?.textStyle ?? theme.textTheme.titleMedium)
+                        ?.copyWith(
+                      color: (brandTheme?.textStyle.color ??
+                              theme.colorScheme.onSurface)
+                          .withOpacity(0.9),
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),

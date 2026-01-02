@@ -1673,7 +1673,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get nutritionHomeCalendarSubtitle => 'Tage unter/auf/ueber Ziel sehen.';
 
   @override
-  String get nutritionDayTitle => 'Tagesuebersicht';
+  String get nutritionDayTitle => 'Tagesübersicht';
 
   @override
   String get nutritionTargetLabel => 'Ziel';

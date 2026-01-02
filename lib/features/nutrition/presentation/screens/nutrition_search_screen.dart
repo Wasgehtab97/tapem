@@ -22,6 +22,7 @@ class _NutritionSearchScreenState
   bool _loading = false;
   String? _error;
   List<NutritionProduct> _results = [];
+  bool _filteredZero = false;
 
   @override
   void initState() {
@@ -47,18 +48,28 @@ class _NutritionSearchScreenState
       setState(() {
         _results = [];
         _error = null;
+        _filteredZero = false;
       });
       return;
     }
     setState(() {
       _loading = true;
       _error = null;
+      _filteredZero = false;
     });
     try {
       final service = ref.read(nutritionProductServiceProvider);
       final results = await service.searchByName(q);
+      final filtered = results
+          .where((p) =>
+              (p.kcalPer100 + p.proteinPer100 + p.carbsPer100 + p.fatPer100) >
+              0)
+          .toList();
       if (!mounted) return;
-      setState(() => _results = results);
+      setState(() {
+        _results = filtered;
+        _filteredZero = results.length != filtered.length;
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() => _error = 'error');
@@ -133,7 +144,9 @@ class _NutritionSearchScreenState
                 AppSpacing.sm,
                 AppSpacing.xs,
               ),
-              child: HeroGradientCard(
+              child: NutritionCard(
+                background:
+                    theme.colorScheme.surfaceVariant.withOpacity(0.35),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -146,14 +159,21 @@ class _NutritionSearchScreenState
                     TextField(
                       controller: _controller,
                       textInputAction: TextInputAction.search,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      textCapitalization: TextCapitalization.none,
                       decoration: InputDecoration(
                         hintText: loc.nutritionSearchHint,
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.08),
+                        fillColor:
+                            theme.colorScheme.surface.withOpacity(0.6),
                         border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(AppRadius.card),
-                          borderSide: BorderSide.none,
+                          borderSide: BorderSide(
+                            color:
+                                theme.colorScheme.outline.withOpacity(0.3),
+                          ),
                         ),
                         suffixIcon: IconButton(
                           onPressed:
@@ -167,6 +187,17 @@ class _NutritionSearchScreenState
                 ),
               ),
             ),
+            if (_filteredZero)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
+                child: Text(
+                  'Einige Ergebnisse ohne Nährwerte wurden ausgeblendet.',
+                  style: theme.textTheme.labelSmall,
+                ),
+              ),
             Expanded(child: _buildState(loc)),
           ],
         ),

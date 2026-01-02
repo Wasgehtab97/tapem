@@ -4,6 +4,7 @@ class NutritionEntry {
   final int protein;
   final int carbs;
   final int fat;
+  final String meal;
   final String? barcode;
   final double? qty;
 
@@ -13,6 +14,7 @@ class NutritionEntry {
     required this.protein,
     required this.carbs,
     required this.fat,
+    required this.meal,
     this.barcode,
     this.qty,
   });
@@ -24,6 +26,7 @@ class NutritionEntry {
       protein: (data['protein'] as num?)?.round() ?? 0,
       carbs: (data['carbs'] as num?)?.round() ?? 0,
       fat: (data['fat'] as num?)?.round() ?? 0,
+      meal: data['meal'] as String? ?? 'unspecified',
       barcode: data['barcode'] as String?,
       qty: (data['qty'] as num?)?.toDouble(),
     );
@@ -35,6 +38,7 @@ class NutritionEntry {
     'protein': protein,
     'carbs': carbs,
     'fat': fat,
+    'meal': meal,
     if (barcode != null) 'barcode': barcode,
     if (qty != null) 'qty': qty,
   };

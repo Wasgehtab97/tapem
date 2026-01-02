@@ -3,6 +3,7 @@ import '../domain/models/nutrition_goal.dart';
 import '../domain/models/nutrition_log.dart';
 import '../domain/models/nutrition_year_summary.dart';
 import '../domain/models/nutrition_product.dart';
+import '../domain/models/nutrition_recipe.dart';
 
 class NutritionRepository {
   final FirebaseFirestore _firestore;
@@ -39,6 +40,17 @@ class NutritionRepository {
         .set(goal.toMap(), SetOptions(merge: true));
   }
 
+  Future<NutritionGoal?> fetchDefaultGoal(String uid) async {
+    final snap = await _userDoc(uid, 'nutrition_goal_defaults', 'current').get();
+    if (!snap.exists || snap.data() == null) return null;
+    return NutritionGoal.fromMap(snap.id, snap.data()!);
+  }
+
+  Future<void> upsertDefaultGoal(String uid, NutritionGoal goal) async {
+    await _userDoc(uid, 'nutrition_goal_defaults', 'current')
+        .set(goal.toMap(), SetOptions(merge: true));
+  }
+
   Future<NutritionLog?> fetchLog(String uid, String dateKey) async {
     final snap = await _userDoc(uid, 'nutrition_logs', dateKey).get();
     if (!snap.exists || snap.data() == null) return null;
@@ -57,15 +69,24 @@ class NutritionRepository {
     return NutritionYearSummary.fromMap(year, snap.data()!);
   }
 
-  Future<void> updateYearStatus(
+  Future<void> updateYearDay(
     String uid,
     int year,
     String dateKey,
-    String status,
+    String status, {
+    required int goal,
+    required int total,
+  }
   ) async {
     final key = year.toString();
     await _userDoc(uid, 'nutrition_year_summary', key).set(
-      {'days.$dateKey': status},
+      {
+        'days.$dateKey': {
+          'status': status,
+          'goal': goal,
+          'total': total,
+        }
+      },
       SetOptions(merge: true),
     );
   }
@@ -81,5 +102,31 @@ class NutritionRepository {
         .collection('nutrition_products')
         .doc(product.barcode)
         .set(product.toMap(), SetOptions(merge: true));
+  }
+
+  // --- Recipes ---
+  Future<List<NutritionRecipe>> fetchRecipes(String uid) async {
+    final snap =
+        await _userCol(uid, 'nutrition_recipes').orderBy('name').get();
+    return snap.docs
+        .map((d) => NutritionRecipe.fromMap(d.id, d.data()))
+        .toList();
+  }
+
+  Future<String> upsertRecipe(String uid, NutritionRecipe recipe) async {
+    final col = _userCol(uid, 'nutrition_recipes');
+    final docId = recipe.id.isEmpty ? col.doc().id : recipe.id;
+    await col.doc(docId).set(
+          recipe
+              .copyWith(id: docId, updatedAt: DateTime.now())
+              .toMap(),
+          SetOptions(merge: true),
+        );
+    return docId;
+  }
+
+  Future<void> deleteRecipe(String uid, String id) async {
+    if (id.isEmpty) return;
+    await _userCol(uid, 'nutrition_recipes').doc(id).delete();
   }
 }

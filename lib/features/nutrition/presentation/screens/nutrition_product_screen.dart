@@ -13,7 +13,12 @@ import 'package:url_launcher/url_launcher.dart';
 
 class NutritionProductScreen extends ConsumerStatefulWidget {
   final String barcode;
-  const NutritionProductScreen({super.key, required this.barcode});
+  final String initialMeal;
+  const NutritionProductScreen({
+    super.key,
+    required this.barcode,
+    this.initialMeal = 'breakfast',
+  });
 
   @override
   ConsumerState<NutritionProductScreen> createState() =>
@@ -25,6 +30,7 @@ class _NutritionProductScreenState
   NutritionProduct? _product;
   bool _loading = false;
   bool _saving = false;
+  String _meal = 'breakfast';
   late final TextEditingController _gramsController;
   late final TextEditingController _nameController;
   late final TextEditingController _kcalController;
@@ -41,11 +47,14 @@ class _NutritionProductScreenState
     _proteinController = TextEditingController();
     _carbsController = TextEditingController();
     _fatController = TextEditingController();
+    _meal = widget.initialMeal;
+    _gramsController.addListener(_onGramsChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadProduct());
   }
 
   @override
   void dispose() {
+    _gramsController.removeListener(_onGramsChanged);
     _gramsController.dispose();
     _nameController.dispose();
     _kcalController.dispose();
@@ -53,6 +62,11 @@ class _NutritionProductScreenState
     _carbsController.dispose();
     _fatController.dispose();
     super.dispose();
+  }
+
+  void _onGramsChanged() {
+    // keep UI in sync with gram edits
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadProduct() async {
@@ -109,6 +123,7 @@ class _NutritionProductScreenState
       protein: _scaledInt(_product!.proteinPer100, grams),
       carbs: _scaledInt(_product!.carbsPer100, grams),
       fat: _scaledInt(_product!.fatPer100, grams),
+      meal: _meal,
       barcode: _product!.barcode,
       qty: grams,
     );
@@ -123,7 +138,15 @@ class _NutritionProductScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntrySaved)),
       );
-      Navigator.of(context).popUntil((route) => route.settings.name == AppRouter.nutritionDay);
+      bool popped = false;
+      Navigator.of(context).popUntil((route) {
+        final match = route.settings.name == AppRouter.nutritionEntry;
+        if (!popped && match) popped = true;
+        return match;
+      });
+      if (!popped && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -131,6 +154,50 @@ class _NutritionProductScreenState
       );
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  String _mealLabel(String meal) {
+    switch (meal) {
+      case 'lunch':
+        return 'Mittagessen';
+      case 'dinner':
+        return 'Abendessen';
+      case 'snack':
+        return 'Snack';
+      default:
+        return 'Frühstück';
+    }
+  }
+
+  Future<void> _pickMeal() async {
+    final meals = [
+      ('breakfast', 'Frühstück'),
+      ('lunch', 'Mittagessen'),
+      ('dinner', 'Abendessen'),
+      ('snack', 'Snack'),
+    ];
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              for (final meal in meals)
+                ListTile(
+                  title: Text(meal.$2),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(ctx).pop(meal.$1),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+    if (choice != null && mounted) {
+      setState(() => _meal = choice);
     }
   }
 
@@ -184,223 +251,230 @@ class _NutritionProductScreenState
     final displayBarcode = _product?.barcode ?? widget.barcode;
     final isValidBarcode = _isValidBarcode(displayBarcode);
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(loc.nutritionProductTitle),
-        actions: [
-          IconButton(
-            tooltip: loc.nutritionProductRetryCta,
-            onPressed: _loading ? null : _loadProduct,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.sm,
-            AppSpacing.md,
-            AppSpacing.sm,
-            AppSpacing.lg,
-          ),
-          children: [
-            HeroGradientCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    loc.nutritionProductBarcode(displayBarcode),
-                    style: theme.textTheme.labelMedium,
-                  ),
-                  if (!isValidBarcode) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      loc.nutritionBarcodeInvalidHint,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.xs),
-                  Row(
-                    children: [
-                      SecondaryCTA(
-                        label: loc.nutritionProductOpenOffCta,
-                        icon: Icons.open_in_new,
-                        onPressed: () => launchUrl(
-                          Uri.parse(
-                            'https://world.openfoodfacts.org/product/$displayBarcode',
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(loc.nutritionProductTitle),
+          actions: [
+            IconButton(
+              tooltip: loc.nutritionProductRetryCta,
+              onPressed: _loading ? null : _loadProduct,
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.lg,
+            ),
+            children: [
+              HeroGradientCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: AppSpacing.xs,
+                      runSpacing: AppSpacing.xs,
+                      children: [
+                        SecondaryCTA(
+                          label: loc.nutritionProductOpenOffCta,
+                          icon: Icons.open_in_new,
+                          onPressed: () => launchUrl(
+                            Uri.parse(
+                              'https://world.openfoodfacts.org/product/$displayBarcode',
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      SecondaryCTA(
-                        label: loc.nutritionSearchCta,
-                        icon: Icons.search,
-                        onPressed: _openSearch,
+                        SecondaryCTA(
+                          label: loc.nutritionSearchCta,
+                          icon: Icons.search,
+                          onPressed: _openSearch,
+                        ),
+                        SecondaryCTA(
+                          label: 'Mahlzeit: ${_mealLabel(_meal)}',
+                          icon: Icons.restaurant_menu,
+                          onPressed: _pickMeal,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (!isValidBarcode) ...[
+                      Text(
+                        loc.nutritionBarcodeInvalidHint,
+                        style: theme.textTheme.bodySmall,
                       ),
                     ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            if (_loading)
-              const Center(child: CircularProgressIndicator())
-            else if (_product == null)
-              NutritionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      loc.nutritionProductNotFound,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    _TextFieldBlock(
-                      controller: _nameController,
-                      label: loc.nutritionEntryNameLabel,
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _TextFieldBlock(
-                            controller: _kcalController,
-                            label: loc.nutritionEntryKcalLabel,
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Expanded(
-                          child: _TextFieldBlock(
-                            controller: _proteinController,
-                            label: loc.nutritionEntryProteinLabel,
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _TextFieldBlock(
-                            controller: _carbsController,
-                            label: loc.nutritionEntryCarbsLabel,
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Expanded(
-                          child: _TextFieldBlock(
-                            controller: _fatController,
-                            label: loc.nutritionEntryFatLabel,
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    _TextFieldBlock(
-                      controller: _gramsController,
-                      label: loc.nutritionProductGramsLabel,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    PrimaryCTA(
-                      label: loc.nutritionProductSaveCta,
-                      icon: Icons.save_outlined,
-                      onPressed: _saving ? null : _saveManualProduct,
-                    ),
                   ],
-                ),
-              )
-            else ...[
-              NutritionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _product!.name,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(loc.nutritionProductPer100g,
-                        style: theme.textTheme.labelMedium),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        MacroPill(
-                          label: loc.nutritionEntryKcalLabel,
-                          value: '${_product!.kcalPer100} kcal',
-                          color: theme.colorScheme.primary,
-                        ),
-                        MacroPill(
-                          label: loc.nutritionEntryProteinLabel,
-                          value: '${_product!.proteinPer100} g',
-                          color: theme.colorScheme.secondary,
-                        ),
-                        MacroPill(
-                          label: loc.nutritionEntryCarbsLabel,
-                          value: '${_product!.carbsPer100} g',
-                          color: theme.colorScheme.tertiary ?? Colors.orange,
-                        ),
-                        MacroPill(
-                          label: loc.nutritionEntryFatLabel,
-                          value: '${_product!.fatPer100} g',
-                          color: Colors.amber,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              NutritionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(loc.nutritionProductGramsLabel,
-                        style: theme.textTheme.labelMedium),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _gramsController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor:
-                            theme.colorScheme.surface.withOpacity(0.5),
-                        border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.card),
-                          borderSide: BorderSide(
-                            color: theme.colorScheme.outline.withOpacity(0.4),
-                          ),
-                        ),
-                        isDense: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              NutritionCard(
-                child: _ComputedCard(
-                  calories: _scaledInt(_product!.kcalPer100, _grams()),
-                  protein: _scaledInt(_product!.proteinPer100, _grams()),
-                  carbs: _scaledInt(_product!.carbsPer100, _grams()),
-                  fat: _scaledInt(_product!.fatPer100, _grams()),
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              PrimaryCTA(
-                label: loc.nutritionProductAddCta,
-                icon: Icons.check_circle,
-                onPressed: _saving ? null : _saveEntry,
-              ),
+              if (_loading)
+                const Center(child: CircularProgressIndicator())
+              else if (_product == null)
+                NutritionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        loc.nutritionProductNotFound,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      _TextFieldBlock(
+                        controller: _nameController,
+                        label: loc.nutritionEntryNameLabel,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _TextFieldBlock(
+                              controller: _kcalController,
+                              label: loc.nutritionEntryKcalLabel,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Expanded(
+                            child: _TextFieldBlock(
+                              controller: _proteinController,
+                              label: loc.nutritionEntryProteinLabel,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _TextFieldBlock(
+                              controller: _carbsController,
+                              label: loc.nutritionEntryCarbsLabel,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Expanded(
+                            child: _TextFieldBlock(
+                              controller: _fatController,
+                              label: loc.nutritionEntryFatLabel,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      _TextFieldBlock(
+                        controller: _gramsController,
+                        label: loc.nutritionProductGramsLabel,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      PrimaryCTA(
+                        label: loc.nutritionProductSaveCta,
+                        icon: Icons.save_outlined,
+                        onPressed: _saving ? null : _saveManualProduct,
+                      ),
+                    ],
+                  ),
+                )
+              else ...[
+                NutritionCard(
+                  background: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _product!.name,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(loc.nutritionProductPer100g,
+                          style: theme.textTheme.labelMedium),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          MacroPill(
+                            label: loc.nutritionEntryKcalLabel,
+                            value: '${_product!.kcalPer100} kcal',
+                            color: theme.colorScheme.primary,
+                          ),
+                          MacroPill(
+                            label: loc.nutritionEntryProteinLabel,
+                            value: '${_product!.proteinPer100} g',
+                            color: theme.colorScheme.secondary,
+                          ),
+                          MacroPill(
+                            label: loc.nutritionEntryCarbsLabel,
+                            value: '${_product!.carbsPer100} g',
+                            color: theme.colorScheme.tertiary ?? Colors.orange,
+                          ),
+                          MacroPill(
+                            label: loc.nutritionEntryFatLabel,
+                            value: '${_product!.fatPer100} g',
+                            color: Colors.amber,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                NutritionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(loc.nutritionProductGramsLabel,
+                          style: theme.textTheme.labelMedium),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _gramsController,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        textCapitalization: TextCapitalization.none,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: theme.colorScheme.surface.withOpacity(0.5),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.outline.withOpacity(0.4),
+                            ),
+                          ),
+                          isDense: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                NutritionCard(
+                  child: _ComputedCard(
+                    calories: _scaledInt(_product!.kcalPer100, _grams()),
+                    protein: _scaledInt(_product!.proteinPer100, _grams()),
+                    carbs: _scaledInt(_product!.carbsPer100, _grams()),
+                    fat: _scaledInt(_product!.fatPer100, _grams()),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                PrimaryCTA(
+                  label: loc.nutritionProductAddCta,
+                  icon: Icons.check_circle,
+                  onPressed: _saving ? null : _saveEntry,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -475,6 +549,9 @@ class _TextFieldBlock extends StatelessWidget {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
+      autocorrect: false,
+      enableSuggestions: false,
+      textCapitalization: TextCapitalization.none,
       decoration: InputDecoration(
         labelText: label,
         filled: true,

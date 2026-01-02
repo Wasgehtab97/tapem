@@ -74,8 +74,9 @@ ios-emu-dev-d:
 	@echo "📋 Using Dev Firebase config..."
 	@echo "📦 Bundle ID: com.example.tapem.dev"
 	cp ios/config/dev/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
-	open -a Simulator
-	@sleep 5
+	@echo "▶️  Booting simulator $(IOS_EMU_ID)..."
+	@xcrun simctl boot "$(IOS_EMU_ID)" || true
+	@sleep 2
 	fvm flutter pub get > /dev/null 2>&1
 	fvm flutter gen-l10n > /dev/null 2>&1
 	@echo "🚀 Launching DEV app with flavor..."

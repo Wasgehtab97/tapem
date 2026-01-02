@@ -20,6 +20,7 @@ class AvatarCatalog {
   final Set<String> _global = <String>{};
   final Map<String, Set<String>> _gym = <String, Set<String>>{};
   final Set<String> _manifestPaths = <String>{};
+  final Map<String, String> _gymNameLookup = <String, String>{};
 
   bool manifestHasPrefix = false;
   bool manifestHasGlobalDefault = false;
@@ -27,6 +28,12 @@ class AvatarCatalog {
 
   bool get warmed => _warmed;
   Set<String> get manifestPaths => _manifestPaths;
+
+  void registerGymName(String code, String name) {
+    _gymNameLookup[code] = name;
+  }
+
+  String? gymNameForCode(String code) => _gymNameLookup[code];
 
   Future<void> warmUp({AssetBundle? bundle}) async {
     if (_warmed) return;

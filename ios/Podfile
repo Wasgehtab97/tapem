@@ -52,8 +52,9 @@ post_install do |installer|
       c.build_settings['ENABLE_BITCODE'] = 'NO'
       c.build_settings['SWIFT_VERSION'] = '5.0'
 
-      # *** WICHTIG: Simulator darf NICHT arm64 ausschließen! ***
-      c.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = ''
+      # Für den Simulator nur die x86_64-Slice verwenden (vermeidet
+      # vorgebaute Device-Frameworks, die arm64 enthalten).
+      c.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
 
       # Suchpfade & Linker-Flags vererben (beugt "No such module" vor)
       c.build_settings['HEADER_SEARCH_PATHS']   = '$(inherited)'
@@ -80,6 +81,17 @@ post_install do |installer|
         # Explicit linking
         c.build_settings['OTHER_LDFLAGS'] ||= ['$(inherited)']
         c.build_settings['OTHER_LDFLAGS'] << '-lisar_flutter_libs'
+      end
+    end
+  end
+
+  # MLKit/MLImage liefern teilweise iOS-Binaries, die auf Apple Silicon nicht
+  # mit dem Simulator verlinken. Für diese Targets den Simulator-Arm64
+  # ausschließen, damit x86_64-Slices genutzt werden.
+  installer.pods_project.targets.each do |t|
+    if t.name.start_with?('MLImage', 'MLKit', 'GoogleMLKit')
+      t.build_configurations.each do |c|
+        c.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
       end
     end
   end

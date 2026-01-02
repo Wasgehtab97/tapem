@@ -53,6 +53,10 @@ import 'package:tapem/features/nutrition/presentation/screens/nutrition_entry_sc
 import 'package:tapem/features/nutrition/presentation/screens/nutrition_scan_screen.dart';
 import 'package:tapem/features/nutrition/presentation/screens/nutrition_product_screen.dart';
 import 'package:tapem/features/nutrition/presentation/screens/nutrition_search_screen.dart';
+import 'package:tapem/features/nutrition/presentation/screens/nutrition_recipe_list_screen.dart';
+import 'package:tapem/features/nutrition/presentation/screens/nutrition_recipe_edit_screen.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_product.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_recipe.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/profile/presentation/screens/powerlifting_screen.dart';
@@ -123,6 +127,8 @@ class AppRouter {
   static const nutritionScan = '/nutrition/scan';
   static const nutritionProduct = '/nutrition/product';
   static const nutritionSearch = '/nutrition/search';
+  static const nutritionRecipes = '/nutrition/recipes';
+  static const nutritionRecipeEdit = '/nutrition/recipes/edit';
 
   static const restrictedRoutesForMembers = {
     report,
@@ -302,17 +308,28 @@ class AppRouter {
           builder: (_) => NutritionEntryScreen(
             initialBarcode: args['barcode'] as String?,
             initialName: args['name'] as String?,
+            initialMeal: args['meal'] as String? ?? 'breakfast',
+            initialProduct: args['product'] as NutritionProduct?,
+            initialQty: (args['qty'] as num?)?.toDouble(),
+            entryIndex: args['index'] as int?,
           ),
         );
 
       case nutritionScan:
-        return MaterialPageRoute(builder: (_) => const NutritionScanScreen());
+        final args = settings.arguments as Map<String, dynamic>? ?? const {};
+        return MaterialPageRoute(
+          builder: (_) => NutritionScanScreen(
+            initialMeal: args['meal'] as String? ?? 'breakfast',
+            returnBarcode: args['returnBarcode'] as bool? ?? false,
+          ),
+        );
 
       case nutritionProduct:
         final args = settings.arguments as Map<String, dynamic>? ?? const {};
         return MaterialPageRoute(
           builder: (_) => NutritionProductScreen(
             barcode: args['barcode'] as String? ?? '',
+            initialMeal: args['meal'] as String? ?? 'breakfast',
           ),
         );
 
@@ -321,6 +338,15 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => NutritionSearchScreen(
             initialQuery: args['query'] as String?,
+          ),
+        );
+      case nutritionRecipes:
+        return MaterialPageRoute(builder: (_) => const NutritionRecipeListScreen());
+      case nutritionRecipeEdit:
+        final args = settings.arguments as Map<String, dynamic>? ?? const {};
+        return MaterialPageRoute(
+          builder: (_) => NutritionRecipeEditScreen(
+            recipe: args['recipe'] as NutritionRecipe?,
           ),
         );
 

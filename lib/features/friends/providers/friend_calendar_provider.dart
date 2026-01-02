@@ -72,10 +72,10 @@ class FriendCalendarNotifier extends Notifier<FriendCalendarState> {
     }
 
     try {
-      final year = DateTime.now().year;
-      final start = DateTime(year, 1, 1);
-      final end = DateTime(year, 12, 31, 23, 59, 59, 999);
-      print('[FriendCalendar] Loading training dates for friend=$uid year=$year');
+      final nowYear = DateTime.now().year;
+      final start = DateTime(nowYear - 1, 1, 1);
+      final end = DateTime(nowYear, 12, 31, 23, 59, 59, 999);
+      print('[FriendCalendar] Loading training dates for friend=$uid range=${start.toIso8601String()}..${end.toIso8601String()}');
       final snap = await _firestore
           .collectionGroup('logs')
           .where('userId', isEqualTo: uid)

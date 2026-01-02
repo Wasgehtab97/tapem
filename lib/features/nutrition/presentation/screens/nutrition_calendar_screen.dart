@@ -1,8 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/nutrition/providers/nutrition_provider.dart';
 import 'package:tapem/features/nutrition/domain/utils/nutrition_dates.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_year_summary.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
@@ -102,26 +104,13 @@ class _LegendChip extends StatelessWidget {
 class _MonthCard extends StatelessWidget {
   final int year;
   final int month;
-  final Map<String, String> days;
+  final Map<String, NutritionYearDay> days;
 
   const _MonthCard({
     required this.year,
     required this.month,
     required this.days,
   });
-
-  Color _statusColor(BuildContext context, String? status) {
-    switch (status) {
-      case 'on':
-        return Colors.green;
-      case 'over':
-        return Colors.orange;
-      case 'under':
-        return Colors.redAccent;
-      default:
-        return Theme.of(context).dividerColor;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -159,23 +148,110 @@ class _MonthCard extends StatelessWidget {
                 }
                 final day = index - offset + 1;
                 final key = nutritionDateKeyFromParts(year, month, day);
-                final status = days[key];
-                return Container(
-                  decoration: BoxDecoration(
-                    color: _statusColor(context, status),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '$day',
-                    style: Theme.of(context).textTheme.labelSmall,
-                  ),
+                final summary = days[key];
+                return _DayCell(
+                  day: day,
+                  summary: summary,
                 );
               },
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DayCell extends StatelessWidget {
+  final int day;
+  final NutritionYearDay? summary;
+
+  const _DayCell({
+    required this.day,
+    required this.summary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final goal = summary?.goal ?? 0;
+    final total = summary?.total ?? 0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = constraints.maxHeight;
+        final width = constraints.maxWidth;
+        double ratio = 0;
+        if (goal > 0) {
+          ratio = (total / goal).clamp(0.0, 2.0);
+        }
+        final fillGreen = goal > 0 ? math.min(ratio, 1.0) : 0.0;
+        final over = ratio > 1 ? math.min(ratio - 1.0, 1.0) : 0.0;
+        final under = goal > 0 && ratio < 1 ? (1 - ratio) : 0.0;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.25),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+            ),
+          ),
+          child: Stack(
+            children: [
+              if (fillGreen > 0)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: height * fillGreen,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.greenAccent.withOpacity(0.8),
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              if (over > 0)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: height * over,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withOpacity(0.8),
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              if (under > 0)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  height: height * under,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withOpacity(0.35),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              Center(
+                child: Text(
+                  '$day',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
