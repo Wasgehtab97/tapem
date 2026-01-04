@@ -53,8 +53,6 @@ class _DeviceXpScreenState extends ConsumerState<DeviceXpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authViewStateProvider);
-
     final loc = AppLocalizations.of(context)!;
     final gymProv = ref.watch(gymProvider);
     final xpProv = ref.watch(xpProvider);

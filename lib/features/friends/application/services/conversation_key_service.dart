@@ -25,9 +25,7 @@ class ConversationKeyService {
 
   Future<String?> _ensureLocalPublicKey(String userId) async {
     var localPublicKey = await _encryptionService.getPublicKey();
-    if (localPublicKey == null) {
-      localPublicKey = await _encryptionService.generateAndStoreKeyPair();
-    }
+    localPublicKey ??= await _encryptionService.generateAndStoreKeyPair();
 
     try {
       final userDoc = await _firestore.collection('users').doc(userId).get();

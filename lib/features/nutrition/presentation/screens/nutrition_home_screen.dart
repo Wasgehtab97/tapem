@@ -146,7 +146,7 @@ class _AttributionLink extends StatelessWidget {
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
     final color = brand?.outline ?? theme.colorScheme.secondary;
-    Future<void> _open() async {
+    Future<void> openLink() async {
       final uri = Uri.parse(url);
       final ok = await launchUrl(
         uri,
@@ -171,7 +171,7 @@ class _AttributionLink extends StatelessWidget {
       ),
       backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.9),
       side: BorderSide(color: color.withOpacity(0.35)),
-      onPressed: _open,
+      onPressed: openLink,
       avatar: Icon(Icons.link, size: 16, color: color),
       pressElevation: 1,
       visualDensity: VisualDensity.compact,

@@ -135,7 +135,6 @@ class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
     final loc = AppLocalizations.of(context)!;
     final state = ref.watch(nutritionProvider);
     final date = state.selectedDate;
-    final dateLabel = DateFormat.yMMMd().format(date);
     final total = state.log?.total;
     final goal = state.goal;
     final targetKcal = goal?.kcal ?? 0;
@@ -388,32 +387,10 @@ class NutritionHeaderCard extends StatelessWidget {
     final theme = Theme.of(context);
     final dateLabel = DateFormat.yMMMd().format(date);
     final remaining = goal - total;
-    final proteinKcal = (protein * 4).toDouble();
-    final carbsKcal = (carbs * 4).toDouble();
-    final fatKcal = (fat * 9).toDouble();
-    final kcalTotal = (proteinKcal + carbsKcal + fatKcal).clamp(1, double.infinity);
-
-    int _segmentFlex(double value) {
-      final ratio = (value / kcalTotal) * 1000;
-      return ratio.isFinite ? ratio.clamp(1, 1000).round() : 1;
-    }
-
-    final proteinFlex = _segmentFlex(proteinKcal);
-    final carbsFlex = _segmentFlex(carbsKcal);
-    final fatFlex = _segmentFlex(fatKcal);
 
     final brand = theme.extension<AppBrandTheme>();
     final gradient = brand?.gradient ?? AppGradients.brandGradient;
     final brandColor = brand?.outline ?? theme.colorScheme.secondary;
-    final cardGradient = LinearGradient(
-      begin: gradient.begin,
-      end: gradient.end,
-      colors: gradient.colors
-          .map(
-            (c) => Color.lerp(c, theme.scaffoldBackgroundColor, 0.5) ?? c,
-          )
-          .toList(growable: false),
-    );
     final ringBase = brandColor.withOpacity(0.18);
     final ringProgressStart = gradient.colors.first.withOpacity(0.95);
     final ringProgressEnd = gradient.colors.last.withOpacity(0.95);

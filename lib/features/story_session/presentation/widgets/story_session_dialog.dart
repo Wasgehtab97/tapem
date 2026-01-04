@@ -352,118 +352,6 @@ class _StorySessionCard extends StatelessWidget {
   }
 }
 
-class _XpBanner extends StatelessWidget {
-  final StoryDailyXp dailyXp;
-  final _StorySessionPalette palette;
-
-  const _XpBanner({required this.dailyXp, required this.palette});
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    final format = NumberFormat.decimalPattern(loc.localeName);
-    final theme = Theme.of(context);
-    final netDelta = dailyXp.xp + dailyXp.penaltySum;
-    final netText = '${_formatSignedInt(netDelta, format)} XP';
-    final labelStyle = GoogleFonts.spaceGrotesk(
-      textStyle: theme.textTheme.labelLarge,
-      color: palette.onGradientMuted,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 1.4,
-    );
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: palette.xpRadius,
-        gradient: palette.xpBanner,
-        border: Border.all(color: palette.xpBorder),
-        boxShadow: [
-          BoxShadow(
-            color: palette.xpShadow,
-            blurRadius: 30,
-            offset: const Offset(0, 16),
-          ),
-        ],
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: palette.xpRadius,
-                gradient: palette.xpInnerGlow,
-              ),
-            ),
-          ),
-          Positioned(
-            top: 22,
-            left: 38,
-            child: _FloatingStar(
-              size: 16,
-              opacity: 0.45,
-              color: palette.onGradientPrimary,
-            ),
-          ),
-          Positioned(
-            bottom: 22,
-            right: 42,
-            child: _FloatingStar(
-              size: 20,
-              opacity: 0.38,
-              color: palette.onGradientPrimary,
-            ),
-          ),
-          Positioned(
-            top: -48,
-            right: -60,
-            child: _GlowingBlob(
-              size: 160,
-              color: palette.glowColors.last,
-              opacity: 0.18,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 26),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  loc.storySessionDailyXpTitle.toUpperCase(),
-                  style: labelStyle,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  netText,
-                  style: GoogleFonts.sora(
-                    textStyle: theme.textTheme.displaySmall,
-                    color: palette.onGradientPrimary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.6,
-                  ),
-                ),
-                if (dailyXp.floorApplied) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    loc.storySessionDailyXpFloorAppliedNotice,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.spaceGrotesk(
-                      textStyle: theme.textTheme.bodySmall,
-                      color: palette.onGradientMuted,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _StoryHeroRow extends StatelessWidget {
   final StoryDailyXp dailyXp;
   final StorySessionStats stats;
@@ -492,7 +380,6 @@ class _StoryHeroRow extends StatelessWidget {
     final progress = level >= LevelService.maxLevel
         ? 1.0
         : (xpInLevel / LevelService.xpPerLevel).clamp(0.0, 1.0);
-    final theme = Theme.of(context);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -802,50 +689,6 @@ class _XpProgressRing extends CustomPainter {
         oldDelegate.baseColor != baseColor ||
         oldDelegate.glowColor != glowColor ||
         oldDelegate.gradientColors != gradientColors;
-  }
-}
-
-class _LevelPill extends StatelessWidget {
-  final int level;
-  final _StorySessionPalette palette;
-
-  const _LevelPill({
-    required this.level,
-    required this.palette,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        gradient: palette.chipBackground,
-        border: Border.all(color: palette.chipBorder),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.auto_awesome,
-              size: 16,
-              color: palette.onGradientPrimary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Level $level',
-              style: GoogleFonts.spaceGrotesk(
-                textStyle: theme.textTheme.bodySmall,
-                color: palette.onCardPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

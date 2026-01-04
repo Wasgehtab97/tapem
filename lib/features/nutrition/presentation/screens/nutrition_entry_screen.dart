@@ -7,6 +7,8 @@ import 'package:tapem/features/nutrition/domain/models/nutrition_entry.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_product.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_totals.dart';
 import 'package:tapem/features/nutrition/presentation/widgets/nutrition_ui.dart';
+import 'package:tapem/features/nutrition/data/nutrition_recents_store.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_recent_item.dart';
 import 'package:tapem/features/nutrition/providers/nutrition_product_provider.dart';
 import 'package:tapem/features/nutrition/providers/nutrition_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -258,6 +260,13 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
               entry: entry,
             );
       }
+      final product = _product;
+      if (product != null) {
+        await ref.read(nutritionRecentsStoreProvider).add(
+              product: product,
+              grams: _grams(),
+            );
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntrySaved)),
@@ -282,6 +291,116 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  String _formatGrams(double grams) {
+    if (grams % 1 == 0) return grams.toInt().toString();
+    return grams.toStringAsFixed(1);
+  }
+
+  Future<void> _openRecents() async {
+    final loc = AppLocalizations.of(context)!;
+    final items = ref.read(nutritionRecentsStoreProvider).load();
+    if (items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Keine zuletzt verwendeten Produkte.')),
+      );
+      return;
+    }
+    final picked = await showModalBottomSheet<NutritionRecentItem>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        final controller = TextEditingController();
+        return SafeArea(
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              final q = controller.text.trim().toLowerCase();
+              final filtered = q.isEmpty
+                  ? items
+                  : items
+                      .where((i) => i.name.toLowerCase().contains(q))
+                      .toList(growable: false);
+              return SizedBox(
+                height: MediaQuery.sizeOf(ctx).height * 0.75,
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.sm,
+                        AppSpacing.xs,
+                        AppSpacing.sm,
+                        AppSpacing.xs,
+                      ),
+                      child: TextField(
+                        controller: controller,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        textCapitalization: TextCapitalization.none,
+                        decoration: InputDecoration(
+                          hintText: 'Zuletzt suchen…',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: controller.text.isEmpty
+                              ? null
+                              : IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () => setModalState(() {
+                                    controller.clear();
+                                  }),
+                                ),
+                        ),
+                        onChanged: (_) => setModalState(() {}),
+                      ),
+                    ),
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? Center(
+                              child: Text(
+                                'Keine Treffer.',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            )
+                          : ListView.separated(
+                              itemCount: filtered.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (_, index) {
+                                final item = filtered[index];
+                                int scale(int per100) =>
+                                    ((per100 * item.lastGrams) / 100).round();
+                                final line = loc.nutritionSearchMacroLine(
+                                  scale(item.kcalPer100),
+                                  scale(item.proteinPer100),
+                                  scale(item.carbsPer100),
+                                  scale(item.fatPer100),
+                                );
+                                return ListTile(
+                                  title: Text(item.name),
+                                  subtitle: Text(
+                                    '${_formatGrams(item.lastGrams)} g · $line',
+                                  ),
+                                  trailing: const Icon(Icons.add),
+                                  onTap: () => Navigator.of(ctx).pop(item),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _product = picked.toProduct();
+      _nameController.text = picked.name;
+      _barcodeController.text = picked.barcode ?? '';
+      _qtyController.text = _formatGrams(picked.lastGrams);
+    });
   }
 
   @override
@@ -392,6 +511,18 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
                                       onPressed: _isLookup ? null : _openScanner,
                                     ),
                                   ),
+                                  const SizedBox(width: AppSpacing.xs),
+                                  Expanded(
+                                    child: _ActionButtonEntry(
+                                      label: Localizations.localeOf(context)
+                                              .languageCode
+                                              .startsWith('de')
+                                          ? 'Zuletzt'
+                                          : 'Recent',
+                                      icon: Icons.history,
+                                      onPressed: _isSaving ? null : _openRecents,
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: AppSpacing.sm),
@@ -438,19 +569,15 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
 class _FieldCard extends StatelessWidget {
   final TextEditingController controller;
   final String label;
-  final Widget? trailing;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
-  final VoidCallback? onTap;
   final ValueChanged<String>? onChanged;
 
   const _FieldCard({
     required this.controller,
     required this.label,
-    this.trailing,
     this.keyboardType,
     this.textInputAction,
-    this.onTap,
     this.onChanged,
   });
 
@@ -471,7 +598,6 @@ class _FieldCard extends StatelessWidget {
               controller: controller,
               keyboardType: keyboardType,
               textInputAction: textInputAction,
-              onTap: onTap,
               onChanged: onChanged,
               autocorrect: false,
               enableSuggestions: false,
@@ -482,7 +608,6 @@ class _FieldCard extends StatelessWidget {
               ),
             ),
           ),
-          if (trailing != null) trailing!,
         ],
       ),
     );
@@ -504,40 +629,6 @@ class _Panel extends StatelessWidget {
         border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
       ),
       child: child,
-    );
-  }
-}
-
-class _ReadOnlyField extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _ReadOnlyField({
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.25),
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: theme.textTheme.labelMedium),
-          const SizedBox(height: 4),
-          Text(
-            value.isEmpty ? '-' : value,
-            style: theme.textTheme.titleMedium,
-          ),
-        ],
-      ),
     );
   }
 }
@@ -685,45 +776,6 @@ class _ActionButtonEntry extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.button),
           side: BorderSide(color: outline.withOpacity(0.35)),
-        ),
-      ),
-    );
-  }
-}
-
-class _MealChip extends StatelessWidget {
-  final String label;
-  final String value;
-  final String group;
-  final ValueChanged<String> onChanged;
-
-  const _MealChip({
-    required this.label,
-    required this.value,
-    required this.group,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final selected = value == group;
-    final theme = Theme.of(context);
-    return ChoiceChip(
-      selected: selected,
-      label: Text(label),
-      onSelected: (_) => onChanged(value),
-      selectedColor: theme.colorScheme.primary.withOpacity(0.25),
-      backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-      labelStyle: theme.textTheme.bodySmall?.copyWith(
-        color: selected
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurface,
-        fontWeight: FontWeight.w600,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.outline.withOpacity(selected ? 0.8 : 0.3),
         ),
       ),
     );

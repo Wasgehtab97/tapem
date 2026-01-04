@@ -1765,11 +1765,6 @@ class _WorkoutSwipeableSessionContentState
   int _currentPage = 0;
   double _dragAccum = 0;
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
   void _goToPage(int target) {
     if (target == _currentPage) return;
     setState(() {

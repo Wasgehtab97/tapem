@@ -61,8 +61,9 @@ class _NutritionScanScreenState extends State<NutritionScanScreen> {
     if (_hasScanned) return;
     final barcode = capture.barcodes
         .map((b) => b.rawValue)
-        .firstWhere((v) => v != null && v!.isNotEmpty, orElse: () => null);
-    if (barcode == null) return;
+        .whereType<String>()
+        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+    if (barcode.isEmpty) return;
     _hasScanned = true;
     if (widget.returnBarcode) {
       Navigator.of(context).pop(barcode);

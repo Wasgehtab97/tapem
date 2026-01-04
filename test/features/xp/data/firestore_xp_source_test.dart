@@ -168,10 +168,15 @@ void main() {
           .collection('xpPenalties')
           .get();
 
-      int sumForYear(Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> docs, String prefix) {
-        return docs
-            .where((doc) => doc.id.startsWith(prefix))
-            .fold<int>(0, (sum, doc) => sum + ((doc.data()['xp'] as num?)?.toInt() ?? 0));
+      int sumForYear(
+        Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+        String prefix,
+      ) {
+        return docs.where((doc) => doc.id.startsWith(prefix)).fold<int>(
+              0,
+              (sumValue, doc) =>
+                  sumValue + ((doc.data()['xp'] as num?)?.toInt() ?? 0),
+            );
       }
 
       final season25Expected =

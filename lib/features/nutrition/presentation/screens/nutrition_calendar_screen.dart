@@ -178,7 +178,6 @@ class _DayCell extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight;
-        final width = constraints.maxWidth;
         double ratio = 0;
         if (goal > 0) {
           ratio = (total / goal).clamp(0.0, 2.0);

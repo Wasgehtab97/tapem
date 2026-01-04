@@ -72,7 +72,6 @@ class _NutritionRecipeEditScreenState
   }
 
   Future<void> _addManualIngredient() async {
-    final theme = Theme.of(context);
     final nameCtrl = TextEditingController();
     final barcodeCtrl = TextEditingController();
     final kcalCtrl = TextEditingController();

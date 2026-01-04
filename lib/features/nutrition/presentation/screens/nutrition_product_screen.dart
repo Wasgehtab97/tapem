@@ -417,7 +417,7 @@ class _NutritionProductScreenState
                           MacroPill(
                             label: loc.nutritionEntryCarbsLabel,
                             value: '${_product!.carbsPer100} g',
-                            color: theme.colorScheme.tertiary ?? Colors.orange,
+                            color: theme.colorScheme.tertiary,
                           ),
                           MacroPill(
                             label: loc.nutritionEntryFatLabel,
