@@ -11,6 +11,8 @@ import 'package:tapem/features/nutrition/providers/nutrition_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/widgets/brand_interactive_card.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'dart:math' as math;
 
 class NutritionDayScreen extends ConsumerStatefulWidget {
@@ -171,6 +173,12 @@ class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
         title: Text(loc.nutritionDayTitle),
         actions: [
           IconButton(
+            tooltip: 'Mehr Funktionen',
+            icon: const Icon(Icons.dashboard_customize_outlined),
+            onPressed: () =>
+                Navigator.of(context).pushNamed(AppRouter.nutritionHome),
+          ),
+          IconButton(
             tooltip: loc.nutritionChangeDateCta,
             icon: const Icon(Icons.calendar_today),
             onPressed: () async {
@@ -208,28 +216,25 @@ class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Expanded(
-                  child: _ActionButton(
-                    label: loc.nutritionAddEntryCta,
-                    icon: Icons.add,
-                    onPressed: () => _openEntry(),
-                  ),
+                _QuickIconButton(
+                  tooltip: loc.nutritionAddEntryCta,
+                  icon: Icons.search,
+                  onTap: () => _openEntry(),
                 ),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: _ActionButton(
-                    label: loc.nutritionScanCta,
-                    icon: Icons.qr_code_scanner,
-                    onPressed: () async {
-                      final meal = await _pickMeal(context);
-                      if (meal == null || !mounted) return;
-                      Navigator.of(context).pushNamed(
-                        AppRouter.nutritionScan,
-                        arguments: {'meal': meal},
-                      );
-                    },
-                  ),
+                const SizedBox(width: AppSpacing.md),
+                _QuickIconButton(
+                  tooltip: loc.nutritionScanCta,
+                  icon: Icons.qr_code_scanner,
+                  onTap: () async {
+                    final meal = await _pickMeal(context);
+                    if (meal == null || !mounted) return;
+                    Navigator.of(context).pushNamed(
+                      AppRouter.nutritionScan,
+                      arguments: {'meal': meal},
+                    );
+                  },
                 ),
               ],
             ),
@@ -312,6 +317,13 @@ class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
                                       value: '${e.$1.fat} g',
                                       color: Colors.amber.shade700,
                                     ),
+                                    if ((e.$1.qty ?? 0) > 0)
+                                      MacroPill(
+                                        label: 'Menge',
+                                        value:
+                                            '${(e.$1.qty ?? 0).toStringAsFixed(0)} g',
+                                        color: theme.colorScheme.outline,
+                                      ),
                                   ],
                                 ),
                               ],
@@ -329,38 +341,150 @@ class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
   }
 }
 
+/// Premium calorie ring with brand gradient and glow
 class _CalorieRing extends StatelessWidget {
   final double total;
   final double goal;
-  final Color trackColor;
-  final Color progressStart;
-  final Color progressEnd;
-  final Color overStart;
-  final Color overEnd;
 
   const _CalorieRing({
     required this.total,
     required this.goal,
-    required this.trackColor,
-    required this.progressStart,
-    required this.progressEnd,
-    required this.overStart,
-    required this.overEnd,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final gradient = brand?.gradient ?? AppGradients.brandGradient;
+    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
+
+    // Premium styling matching NutritionHomeScreen
+    final progress = goal > 0 ? (total / goal).clamp(0.0, 2.0) : 0.0;
+    final isOnTarget = progress >= 1.0;
+
+    // Use improved painter from home screen logic (inline here for simplicity or shared)
+    // We'll reimplement the painter here to ensure it matches the premium look exactly
     return CustomPaint(
-      painter: _CalorieRingPainter(
-        total: total,
-        goal: goal,
-        trackColor: trackColor,
-        progressStart: progressStart,
-        progressEnd: progressEnd,
-        overStart: overStart,
-        overEnd: overEnd,
+      painter: _DayCalorieRingPainter(
+        progress: progress,
+        brandColor: brandColor,
+        isOnTarget: isOnTarget,
       ),
     );
+  }
+}
+
+class _DayCalorieRingPainter extends CustomPainter {
+  final double progress;
+  final Color brandColor;
+  final bool isOnTarget;
+
+  _DayCalorieRingPainter({
+    required this.progress,
+    required this.brandColor,
+    required this.isOnTarget,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2 - 4;
+    final strokeWidth = 14.0;
+
+    // 1. Background track (subtle)
+    final trackPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..color = brandColor.withOpacity(0.08)
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(center, radius, trackPaint);
+
+    if (progress <= 0) return;
+
+    // 2. Main progress arc
+    // Mint -> Turquoise -> Amber brand gradient
+    final gradientColors = [
+      AppColors.accentMint,
+      AppColors.accentTurquoise,
+      if (progress > 1.0) AppColors.accentAmber,
+    ];
+    
+    // Adjust colors based on progress overflow
+    final sweep = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..shader = SweepGradient(
+        colors: gradientColors,
+        stops: progress > 1.0 ? [0.0, 0.6, 1.0] : null,
+        transform: GradientRotation(-math.pi / 2),
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+
+    // Draw main arc
+    final sweepAngle = 2 * math.pi * progress.clamp(0.0, 1.0);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      sweepAngle,
+      false,
+      sweep,
+    );
+
+    // 3. Overflow arc (if any)
+    if (progress > 1.0) {
+      final overflowAngle = 2 * math.pi * (progress - 1.0).clamp(0.0, 1.0);
+      final overflowPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round
+        ..color = AppColors.accentAmber
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -math.pi / 2,
+        overflowAngle,
+        false,
+        overflowPaint,
+      );
+      
+      // Draw overflow again without blur for sharpness
+      overflowPaint.maskFilter = null;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -math.pi / 2,
+        overflowAngle,
+        false,
+        overflowPaint,
+      );
+    }
+
+    // 4. Glow tip
+    if (isOnTarget || progress > 0) {
+      final angle = -math.pi / 2 + (2 * math.pi * progress).clamp(0.0, 2 * math.pi);
+      final tipCenter = Offset(
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
+      );
+      
+      canvas.drawCircle(
+        tipCenter,
+        strokeWidth / 1.5,
+        Paint()
+          ..color = (progress > 1.0 ? AppColors.accentAmber : AppColors.accentTurquoise).withOpacity(0.5)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+      );
+       canvas.drawCircle(
+        tipCenter,
+        strokeWidth / 2.5,
+        Paint()..color = Colors.white,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DayCalorieRingPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.brandColor != brandColor;
   }
 }
 
@@ -387,84 +511,103 @@ class NutritionHeaderCard extends StatelessWidget {
     final theme = Theme.of(context);
     final dateLabel = DateFormat.yMMMd().format(date);
     final remaining = goal - total;
-
-    final brand = theme.extension<AppBrandTheme>();
-    final gradient = brand?.gradient ?? AppGradients.brandGradient;
-    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
-    final ringBase = brandColor.withOpacity(0.18);
-    final ringProgressStart = gradient.colors.first.withOpacity(0.95);
-    final ringProgressEnd = gradient.colors.last.withOpacity(0.95);
-    final ringOverStart =
-        Color.lerp(brandColor, Colors.deepOrangeAccent, 0.35) ??
-            Colors.deepOrangeAccent;
-    final ringOverEnd = Colors.redAccent.withOpacity(0.95);
-    final remainingColor =
-        remaining >= 0 ? brandColor : Colors.redAccent.withOpacity(0.9);
-
-    return NutritionCard(
-      neutral: true,
-      padding: const EdgeInsets.all(AppSpacing.md),
+    
+    // Premium Hero Card
+    return HeroGradientCard(
       child: Row(
         children: [
           SizedBox(
             height: 120,
             width: 120,
-            child: _CalorieRing(
-              total: total.toDouble(),
-              goal: goal.toDouble(),
-              trackColor: ringBase,
-              progressStart: ringProgressStart,
-              progressEnd: ringProgressEnd,
-              overStart: ringOverStart,
-              overEnd: ringOverEnd,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final box = math.min(constraints.maxWidth, constraints.maxHeight);
+                final pctFontSize = (box * 0.18).clamp(12, 22).toDouble();
+                final pct = goal > 0 ? (total / goal * 100).clamp(0, 999) : 0;
+                final isOver = pct > 100;
+                final color = isOver ? AppColors.accentAmber : AppColors.accentMint;
+                final text = '${pct.round()}%';
+                
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned.fill(
+                      child: _CalorieRing(
+                        total: total.toDouble(),
+                        goal: goal.toDouble(),
+                      ),
+                    ),
+                    BrandGradientText(
+                      text,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: pctFontSize,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                BrandGradientText(
                   dateLabel,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Ziel: $goal kcal',
-                  style: theme.textTheme.bodyMedium,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
                 Text(
                   'Gesamt: $total kcal',
-                  style: theme.textTheme.bodyMedium,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   'Freie kcal: $remaining',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: remainingColor,
+                    color: remaining >= 0 ? AppColors.accentMint : AppColors.accentAmber,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    MacroPill(
-                      label: 'P',
-                      value: '$protein g',
-                      color: Colors.redAccent,
+                    Expanded(
+                      child: MacroPill(
+                        label: 'P',
+                        value: '$protein g',
+                        color: AppColors.accentMint,
+                      ),
                     ),
                     const SizedBox(width: 6),
-                    MacroPill(
-                      label: 'C',
-                      value: '$carbs g',
-                      color: Colors.greenAccent.shade400,
+                    Expanded(
+                      child: MacroPill(
+                        label: 'C',
+                        value: '$carbs g',
+                        color: AppColors.accentTurquoise,
+                      ),
                     ),
                     const SizedBox(width: 6),
-                    MacroPill(
-                      label: 'F',
-                      value: '$fat g',
-                      color: Colors.amber.shade700,
+                    Expanded(
+                      child: MacroPill(
+                        label: 'F',
+                        value: '$fat g',
+                        color: AppColors.accentAmber,
+                      ),
                     ),
                   ],
                 ),
@@ -477,93 +620,7 @@ class NutritionHeaderCard extends StatelessWidget {
   }
 }
 
-class _CalorieRingPainter extends CustomPainter {
-  final double total;
-  final double goal;
-  final Color trackColor;
-  final Color progressStart;
-  final Color progressEnd;
-  final Color overStart;
-  final Color overEnd;
 
-  _CalorieRingPainter({
-    required this.total,
-    required this.goal,
-    required this.trackColor,
-    required this.progressStart,
-    required this.progressEnd,
-    required this.overStart,
-    required this.overEnd,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - 6;
-    final track = Paint()
-      ..color = trackColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawCircle(center, radius, track);
-
-    if (goal <= 0) return;
-
-    final progress = total / goal;
-    final firstLap = progress.clamp(0.0, 1.0);
-    final secondLap = (progress - 1.0).clamp(0.0, 1.0);
-    final fullCircle = 2 * math.pi;
-
-    final arcPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..strokeCap = StrokeCap.round;
-
-    if (firstLap > 0) {
-      arcPaint.shader = SweepGradient(
-        startAngle: -math.pi / 2,
-        endAngle: -math.pi / 2 + fullCircle * firstLap,
-        colors: [
-          Color.lerp(progressStart, progressEnd, 0.3)!,
-          Color.lerp(progressStart, progressEnd, firstLap)!,
-        ],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -math.pi / 2,
-        fullCircle * firstLap,
-        false,
-        arcPaint,
-      );
-    }
-
-    if (secondLap > 0) {
-      arcPaint.shader = SweepGradient(
-        startAngle: -math.pi / 2 + fullCircle * firstLap,
-        endAngle: -math.pi / 2 + fullCircle * (firstLap + secondLap),
-        colors: [
-          Color.lerp(overStart, overEnd, 0.2)!,
-          Color.lerp(overStart, overEnd, secondLap)!,
-        ],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -math.pi / 2 + fullCircle * firstLap,
-        fullCircle * secondLap,
-        false,
-        arcPaint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _CalorieRingPainter oldDelegate) {
-    return oldDelegate.total != total || oldDelegate.goal != goal;
-  }
-}
 
 class _ActionButton extends StatelessWidget {
   final String label;
@@ -667,6 +724,71 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
+class _QuickIconButton extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _QuickIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final outline = brand?.outline ?? theme.colorScheme.primary;
+    final bg = theme.colorScheme.surface.withOpacity(0.22);
+    final gradient = LinearGradient(
+      colors: [
+        outline.withOpacity(0.35),
+        outline.withOpacity(0.08),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: gradient,
+            border: Border.all(color: outline.withOpacity(0.35), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: outline.withOpacity(0.22),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Container(
+            margin: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              icon,
+              size: 22,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Styled expansion tile for meals
 class _MealExpansion extends StatefulWidget {
   final String title;
   final NutritionTotals? totals;
@@ -683,79 +805,82 @@ class _MealExpansion extends StatefulWidget {
 }
 
 class _MealExpansionState extends State<_MealExpansion> {
-  bool _open = false;
+  bool _open = true; // Default open for better visibility
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final totals = widget.totals;
-    return Card(
-      color: Colors.transparent,
-      elevation: 0,
+    
+    // Premium glassmorphism card
+    return BrandInteractiveCard(
+      padding: EdgeInsets.zero,
+      enableScaleAnimation: false, // Handle interactivity manually
       child: Column(
         children: [
           InkWell(
             onTap: () => setState(() => _open = !_open),
-            borderRadius: BorderRadius.circular(AppRadius.card),
+            borderRadius: BorderRadius.circular(24),
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
+                  // Meal icon/title
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _open ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           widget.title,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 6),
-                        if (totals != null)
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: [
-                              MacroPill(
-                                label: 'Kcal',
-                                value: '${totals.kcal}',
-                                color: Colors.blueAccent,
-                              ),
-                              MacroPill(
-                                label: 'P',
-                                value: '${totals.protein} g',
-                                color: Colors.redAccent,
-                              ),
-                              MacroPill(
-                                label: 'C',
-                                value: '${totals.carbs} g',
-                                color: Colors.greenAccent.shade400,
-                              ),
-                              MacroPill(
-                                label: 'F',
-                                value: '${totals.fat} g',
-                                color: Colors.amber.shade700,
-                              ),
-                            ],
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
+                        ),
+                        if (totals != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            '${totals.kcal} kcal · ${totals.protein}g P · ${totals.carbs}g C · ${totals.fat}g F',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                  Icon(_open ? Icons.expand_less : Icons.expand_more),
                 ],
               ),
             ),
           ),
+          
+          // Content
           AnimatedCrossFade(
-            duration: const Duration(milliseconds: 200),
-            firstChild: const SizedBox.shrink(),
-            secondChild: Column(
-              children: widget.children,
+            firstChild: Container(),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.sm, 0, AppSpacing.sm, AppSpacing.sm),
+              child: Column(
+                children: widget.children,
+              ),
             ),
-            crossFadeState:
-                _open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            crossFadeState: _open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
           ),
         ],
       ),
     );
   }
 }
+

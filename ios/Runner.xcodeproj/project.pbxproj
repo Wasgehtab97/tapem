@@ -361,8 +361,12 @@
 			);
 			inputFileListPaths = (
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -505,6 +509,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 67BH6Q84CG;
 				ENABLE_BITCODE = NO;
+				FLUTTER_BUILD_NAME = 1.0.3;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -640,6 +645,7 @@
 				DEVELOPMENT_TEAM = 67BH6Q84CG;
 				DISPLAY_NAME = "Tap'em DEV";
 				ENABLE_BITCODE = NO;
+				FLUTTER_BUILD_NAME = 1.0.3;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -740,6 +746,7 @@
 				DEVELOPMENT_TEAM = 67BH6Q84CG;
 				DISPLAY_NAME = "Tap'em";
 				ENABLE_BITCODE = NO;
+				FLUTTER_BUILD_NAME = 1.0.3;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -838,6 +845,7 @@
 				DEVELOPMENT_TEAM = 67BH6Q84CG;
 				DISPLAY_NAME = "Tap'em";
 				ENABLE_BITCODE = NO;
+				FLUTTER_BUILD_NAME = 1.0.3;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -993,6 +1001,7 @@
 				DEVELOPMENT_TEAM = 67BH6Q84CG;
 				DISPLAY_NAME = "Tap'em DEV";
 				ENABLE_BITCODE = NO;
+				FLUTTER_BUILD_NAME = 1.0.3;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1021,6 +1030,7 @@
 				DEVELOPMENT_TEAM = 67BH6Q84CG;
 				DISPLAY_NAME = "Tap'em";
 				ENABLE_BITCODE = NO;
+				FLUTTER_BUILD_NAME = 1.0.3;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1106,6 +1116,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 67BH6Q84CG;
 				ENABLE_BITCODE = NO;
+				FLUTTER_BUILD_NAME = 1.0.3;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

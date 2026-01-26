@@ -65,9 +65,15 @@ class AppTheme {
     );
     final btnColor = buttonColor ?? secondary;
     final s2 = surface2 ?? surface;
+    
+    // CRITICAL: Always use consistent dark background like WorkoutDayScreen!
+    // This creates a premium look where theme colors are only used for accents.
+    const universalDarkBackground = Color(0xFF0A0A0A); // Very dark gray, almost black
+    
     return base.copyWith(
       colorScheme: scheme,
-      scaffoldBackgroundColor: background,
+      // ALWAYS dark background - theme colors only for accents!
+      scaffoldBackgroundColor: universalDarkBackground,
       canvasColor: s2,
       cardColor: surface,
       hintColor: textSecondary,
@@ -77,14 +83,16 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: background,
+        // AppBar also uses universal dark background!
+        backgroundColor: universalDarkBackground,
         foregroundColor: textPrimary,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
         systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: surface,
+        // Bottom nav also uses universal dark background!
+        backgroundColor: universalDarkBackground,
         selectedItemColor: secondary,
         unselectedItemColor: textSecondary,
         showUnselectedLabels: true,

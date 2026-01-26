@@ -9,6 +9,11 @@ import 'package:tapem/features/nutrition/presentation/widgets/nutrition_ui.dart'
 import 'package:tapem/features/nutrition/providers/nutrition_product_provider.dart';
 import 'package:tapem/features/nutrition/providers/nutrition_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
+import 'package:tapem/core/widgets/brand_interactive_card.dart';
+import 'package:tapem/core/widgets/brand_primary_button.dart';
+import 'package:tapem/core/widgets/brand_outline_button.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class NutritionProductScreen extends ConsumerStatefulWidget {
@@ -387,19 +392,25 @@ class _NutritionProductScreenState
                   ),
                 )
               else ...[
+                // Product Header (already HeroGradientCard conceptually, but ensure content looks good)
                 NutritionCard(
-                  background: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+                  neutral: true, // Darker neutral card
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      BrandGradientText(
                         _product!.name,
-                        style: theme.textTheme.titleMedium,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(loc.nutritionProductPer100g,
-                          style: theme.textTheme.labelMedium),
-                      const SizedBox(height: 8),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          )),
+                      const SizedBox(height: AppSpacing.md),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -407,58 +418,98 @@ class _NutritionProductScreenState
                           MacroPill(
                             label: loc.nutritionEntryKcalLabel,
                             value: '${_product!.kcalPer100} kcal',
-                            color: theme.colorScheme.primary,
+                            color: AppColors.accentTurquoise,
+                            enableGlow: true,
                           ),
                           MacroPill(
                             label: loc.nutritionEntryProteinLabel,
                             value: '${_product!.proteinPer100} g',
-                            color: theme.colorScheme.secondary,
+                            color: AppColors.accentMint,
                           ),
                           MacroPill(
                             label: loc.nutritionEntryCarbsLabel,
                             value: '${_product!.carbsPer100} g',
-                            color: theme.colorScheme.tertiary,
+                            color: AppColors.accentTurquoise,
                           ),
                           MacroPill(
                             label: loc.nutritionEntryFatLabel,
                             value: '${_product!.fatPer100} g',
-                            color: Colors.amber,
+                            color: AppColors.accentAmber,
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
+                
+                // Quantity Input
                 NutritionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(loc.nutritionProductGramsLabel,
                           style: theme.textTheme.labelMedium),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _gramsController,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        textCapitalization: TextCapitalization.none,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: theme.colorScheme.surface.withOpacity(0.5),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.card),
-                            borderSide: BorderSide(
-                              color: theme.colorScheme.outline.withOpacity(0.4),
+                      const SizedBox(height: 8),
+                      BrandInteractiveCard(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.3),
+                        enableScaleAnimation: false,
+                        showShadow: false,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _gramsController,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                textCapitalization: TextCapitalization.none,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  suffixText: 'g',
+                                ),
+                              ),
                             ),
-                          ),
-                          isDense: true,
+                            // Quick adjust buttons
+                            IconButton(
+                              onPressed: () {
+                                double val = _grams();
+                                if (val >= 10) _gramsController.text = (val - 10).toInt().toString();
+                              },
+                              icon: const Icon(Icons.remove_circle_outline),
+                              color: theme.colorScheme.onSurface.withOpacity(0.5),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                double val = _grams();
+                                _gramsController.text = (val + 10).toInt().toString();
+                              },
+                              icon: const Icon(Icons.add_circle_outline),
+                              color: theme.colorScheme.primary,
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
+
+                // Computed Totals
                 NutritionCard(
+                  backgroundGradient: LinearGradient(
+                    colors: [
+                      theme.extension<AppBrandTheme>()?.outline?.withOpacity(0.1) ?? Colors.transparent,
+                      Colors.transparent,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   child: _ComputedCard(
                     calories: _scaledInt(_product!.kcalPer100, _grams()),
                     protein: _scaledInt(_product!.proteinPer100, _grams()),
@@ -466,7 +517,10 @@ class _NutritionProductScreenState
                     fat: _scaledInt(_product!.fatPer100, _grams()),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
+                
+                const SizedBox(height: AppSpacing.lg),
+                
+                // Action Button
                 PrimaryCTA(
                   label: loc.nutritionProductAddCta,
                   icon: Icons.check_circle,
@@ -517,16 +571,52 @@ class _ComputedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
+    
+    // Use the premium grid layout
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(loc.nutritionProductComputedTitle),
-        const SizedBox(height: 8),
-        _MacroRow(label: loc.nutritionEntryKcalLabel, value: '$calories kcal'),
-        _MacroRow(label: loc.nutritionEntryProteinLabel, value: '$protein g'),
-        _MacroRow(label: loc.nutritionEntryCarbsLabel, value: '$carbs g'),
-        _MacroRow(label: loc.nutritionEntryFatLabel, value: '$fat g'),
+        BrandGradientText(
+          loc.nutritionProductComputedTitle,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        GridView.count(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          crossAxisCount: 2,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: 3,
+          children: [
+            MacroPill(
+              label: loc.nutritionEntryKcalLabel,
+              value: '$calories kcal',
+              color: AppColors.accentTurquoise,
+              enableGlow: true,
+            ),
+            MacroPill(
+              label: loc.nutritionEntryProteinLabel,
+              value: '$protein g',
+              color: AppColors.accentMint,
+            ),
+            MacroPill(
+              label: loc.nutritionEntryCarbsLabel,
+              value: '$carbs g',
+              color: AppColors.accentTurquoise,
+            ),
+            MacroPill(
+              label: loc.nutritionEntryFatLabel,
+              value: '$fat g',
+              color: AppColors.accentAmber,
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -546,23 +636,28 @@ class _TextFieldBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      autocorrect: false,
-      enableSuggestions: false,
-      textCapitalization: TextCapitalization.none,
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: theme.colorScheme.surface.withOpacity(0.4),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          borderSide: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.35),
-          ),
+    final brand = theme.extension<AppBrandTheme>();
+    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
+
+    return BrandInteractiveCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.3),
+      enableScaleAnimation: false,
+      showShadow: false,
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        autocorrect: false,
+        enableSuggestions: false,
+        textCapitalization: TextCapitalization.none,
+        style: theme.textTheme.bodyLarge,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: brandColor.withOpacity(0.7)),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
         ),
-        isDense: true,
       ),
     );
   }

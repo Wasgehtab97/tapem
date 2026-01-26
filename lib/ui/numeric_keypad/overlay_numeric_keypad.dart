@@ -33,21 +33,21 @@ class NumericKeypadTheme {
   final Color glowInner;
 
   const NumericKeypadTheme({
-    this.gap = 12.0,
-    this.corner = 18.0,
-    this.minKeySide = 44.0,
-    this.minFrac = 0.28,
-    this.maxFrac = 0.45,
-    this.heightScale = 0.5,
-    this.sheetBg = const Color(0xFF0F1012),
-    this.keyBg = const Color(0xFF1A1D21),
+    this.gap = 10.0,
+    this.corner = 22.0,
+    this.minKeySide = 48.0,
+    this.minFrac = 0.36,
+    this.maxFrac = 0.52,
+    this.heightScale = 0.60,
+    this.sheetBg = const Color(0xFF0C0E14),
+    this.keyBg = const Color(0xFF151821),
     this.keyFg = Colors.white,
-    this.railBg = const Color(0xFF14171A),
+    this.railBg = const Color(0xFF0C0E14),
     this.railIcon = Colors.white70,
-    this.press = const Color(0xFF2A2E33),
-    this.keyBorder = const Color(0xFF2C2F33),
-    this.glowOuter = const Color(0x00000000),
-    this.glowInner = const Color(0x00000000),
+    this.press = const Color(0xFF1F222C),
+    this.keyBorder = const Color(0xFF313846),
+    this.glowOuter = const Color(0x33292F3A),
+    this.glowInner = const Color(0x44292F3A),
   });
 
   factory NumericKeypadTheme.fromContext(BuildContext context) {
@@ -112,25 +112,75 @@ class OverlayNumericKeypadController extends ChangeNotifier {
   TextEditingController? _target;
   bool _isOpen = false;
   bool allowDecimal = true;
+  bool alphaMode = false;
+  bool shift = false;
+  bool symbols = false;
+  bool railArrowsOnly = false;
+  bool railPlusMinusAndArrows = false;
   double decimalStep = 2.5;
   double integerStep = 1.0;
   double _contentHeight = 0.0;
   bool _pendingHeightNotify = false;
+  bool railEnabled = true;
+  bool railPlusMinusMode = false;
+  VoidCallback? onRailMinus;
+  VoidCallback? onRailPlus;
+  VoidCallback? onConfirm;
+  VoidCallback? onRailPrev;
+  VoidCallback? onRailNext;
 
   bool get isOpen => _isOpen;
   TextEditingController? get target => _target;
   double get keypadContentHeight => _isOpen ? _contentHeight : 0.0;
 
+  void _setAlphaMode(bool value) {
+    alphaMode = value;
+    notifyListeners();
+  }
+
+  void toggleShift() {
+    shift = !shift;
+    notifyListeners();
+  }
+
+  void toggleSymbols() {
+    symbols = !symbols;
+    shift = false;
+    notifyListeners();
+  }
+
   void openFor(
     TextEditingController controller, {
     bool allowDecimal = true,
+    bool alphaMode = false,
     double? decimalStep,
     double? integerStep,
+    bool railEnabled = true,
+    bool railPlusMinusMode = false,
+    bool railPlusMinusAndArrows = false,
+    bool railArrowsOnly = false,
+    VoidCallback? onRailMinus,
+    VoidCallback? onRailPlus,
+    VoidCallback? onConfirm,
+    VoidCallback? onRailPrev,
+    VoidCallback? onRailNext,
   }) {
     _target = controller;
     this.allowDecimal = allowDecimal;
+    this.alphaMode = alphaMode;
+    shift = false;
+    symbols = false;
     if (decimalStep != null) this.decimalStep = decimalStep;
     if (integerStep != null) this.integerStep = integerStep;
+    this.railEnabled = railEnabled;
+    this.railPlusMinusMode = railPlusMinusMode;
+    this.railPlusMinusAndArrows = railPlusMinusAndArrows;
+    this.railArrowsOnly = railArrowsOnly;
+    this.onRailMinus = onRailMinus;
+    this.onRailPlus = onRailPlus;
+    this.onConfirm = onConfirm;
+    this.onRailPrev = onRailPrev;
+    this.onRailNext = onRailNext;
 
     FocusManager.instance.primaryFocus?.unfocus();
     SystemChannels.textInput.invokeMethod('TextInput.hide');
@@ -351,7 +401,12 @@ class OverlayNumericKeypad extends StatelessWidget {
     final minFitH = theme.minKeySide * 4 + 3 * gap;
     final contentH = math.max(minFitH, scaledH);
 
-    final innerH = contentH - (gap + gap);
+    // Real drawable height for the keypad rows after padding + grab handle
+    //   paddingTop = gap + 8
+    //   paddingBottom = gap + safeBottom
+    //   grab handle + spacing = 6 + 14 = 20
+    // -> available height for the grid/rail rows:
+    final innerH = contentH - (gap + 8) - gap - 20;
     controller._updateContentHeight(contentH);
 
     final cellH = (innerH - 3 * gap) / 4.0;
@@ -368,68 +423,138 @@ class OverlayNumericKeypad extends StatelessWidget {
       'build() size=${size.width}x${size.height} safeBottom=$safeBottom contentH=$contentH innerH=$innerH allowDecimal=${controller.allowDecimal}',
     );
 
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: SizedBox(
-        width: double.infinity,
-        height: barHeight,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            decoration: BoxDecoration(
-              color: theme.sheetBg,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(theme.corner),
-              ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black54,
-                  blurRadius: 20,
-                  offset: Offset(0, -8),
-                ),
-              ],
-            ),
-            padding: EdgeInsets.fromLTRB(gap, gap, gap, gap + safeBottom),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: innerH,
-                    child: _KeyGrid(
-                      aspect: aspect,
-                      gap: gap,
-                      theme: theme,
-                      allowDecimal: controller.allowDecimal,
-                      decimalLabel: decLabel,
-                      onKey: (t) => _applyToken(context, controller, t),
+    return SafeArea(
+      top: false,
+      left: false,
+      right: false,
+      bottom: true,
+      child: GestureDetector(
+        onVerticalDragEnd: (details) {
+          if ((details.primaryVelocity ?? 0) > 300) {
+            controller.close();
+            FocusManager.instance.primaryFocus?.unfocus();
+          }
+        },
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: SizedBox(
+            width: double.infinity,
+            height: barHeight,
+            child: Material(
+              color: Colors.transparent,
+              clipBehavior: Clip.antiAlias,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.sheetBg,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(theme.corner * 1.25),
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black54,
+                      blurRadius: 24,
+                      offset: Offset(0, -10),
+                    ),
+                  ],
+                  border: Border(
+                    top: BorderSide(
+                      color: Colors.white24,
+                      width: 0.9,
                     ),
                   ),
                 ),
-                SizedBox(width: gap),
-                ConstrainedBox(
-                  constraints: BoxConstraints.tightFor(width: railW),
-                  child: _ActionRailCompact(
-                    gridCellWidth: enforcedCellW,
-                    gridCellHeight: enforcedCellH,
-                    totalGridRows: 4,
-                    gap: gap,
-                    theme: theme,
-                    onHide: () {
-                      final container =
-                          ProviderScope.containerOf(context, listen: false);
-                      final dayController =
-                          container.read(workoutDayControllerProvider);
-                      dayController.focusedProvider?.clearFocus();
-                      controller.close();
-                    },
-                    onNavigate: () => _navigateNext(context, controller),
-                    onNavigateBack: () => _navigatePrevious(context, controller),
-                    onAddSet: () => _addSet(context),
-                    onDuplicate: () => _duplicateFromPrevious(context, controller),
-                  ),
+                padding: EdgeInsets.fromLTRB(
+                  gap + 6,
+                  gap + 8,
+                  gap + 6,
+                  gap + safeBottom,
                 ),
-              ],
+                child: Column(
+                  children: [
+                    Container(
+                      width: 54,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.22),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: innerH,
+                              child: _KeyGrid(
+                                aspect: aspect,
+                                gap: gap,
+                                theme: theme,
+                                allowDecimal: controller.allowDecimal,
+                                alphaMode: controller.alphaMode,
+                                shift: controller.shift,
+                                symbols: controller.symbols,
+                                decimalLabel: decLabel,
+                                onKey: (t) => _applyToken(context, controller, t),
+                              ),
+                            ),
+                          ),
+                          if (controller.railEnabled) ...[
+                            SizedBox(width: gap),
+                            ConstrainedBox(
+                              constraints: BoxConstraints.tightFor(width: railW),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: theme.railBg,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.06),
+                                    width: 0.8,
+                                  ),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Colors.black45,
+                                      blurRadius: 14,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: _ActionRailCompact(
+                                  gridCellWidth: enforcedCellW,
+                                  gridCellHeight: enforcedCellH,
+                                  totalGridRows: 4,
+                                  gap: gap,
+                                  theme: theme,
+                                  controller: controller,
+                                  onConfirm: () {
+                                    controller.onConfirm?.call();
+                                  },
+                                  onHide: () {
+                                    final container = ProviderScope.containerOf(
+                                      context,
+                                      listen: false,
+                                    );
+                                    final dayController =
+                                        container.read(workoutDayControllerProvider);
+                                    dayController.focusedProvider?.clearFocus();
+                                    controller.close();
+                                  },
+                                  onNavigate: () => _navigateNext(context, controller),
+                                  onNavigateBack: () => _navigatePrevious(context, controller),
+                                  onAddSet: () => _addSet(context),
+                                  onDuplicate: () =>
+                                      _duplicateFromPrevious(context, controller),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -809,8 +934,37 @@ class OverlayNumericKeypad extends StatelessWidget {
       if (!(v.contains('.') || v.contains(','))) {
         v += _decimalChar(ctx);
       }
+    } else if (ctl.alphaMode) {
+      if (token == 'shift') {
+        ctl.toggleShift();
+        return;
+      }
+      if (token == 'sym') {
+        ctl.toggleSymbols();
+        return;
+      }
+      if (token == 'abc') {
+        ctl.toggleSymbols(); // switches back
+        return;
+      }
+      if (token == 'space') {
+        v += ' ';
+      } else if (token == 'done') {
+        ctl.onConfirm?.call();
+        return;
+      } else if (RegExp(r"^[a-zA-Z]$").hasMatch(token) ||
+          ['.', ',', '-', '\'', '?', '!', '@', '_'].contains(token)) {
+        final out = ctl.shift ? token.toUpperCase() : token;
+        v += out;
+      } else {
+        return;
+      }
     } else if (RegExp(r'^[0-9]$').hasMatch(token)) {
-      v += token;
+      if (v == '0') {
+        v = token;
+      } else {
+        v += token;
+      }
     } else {
       return;
     }
@@ -829,6 +983,9 @@ class _KeyGrid extends StatelessWidget {
   final double aspect;
   final double gap;
   final bool allowDecimal;
+  final bool alphaMode;
+  final bool shift;
+  final bool symbols;
   final String decimalLabel;
   final NumericKeypadTheme theme;
   final ValueChanged<String> onKey;
@@ -838,6 +995,9 @@ class _KeyGrid extends StatelessWidget {
     required this.gap,
     required this.theme,
     required this.allowDecimal,
+    required this.alphaMode,
+    required this.shift,
+    required this.symbols,
     required this.decimalLabel,
     required this.onKey,
   });
@@ -845,30 +1005,72 @@ class _KeyGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final items = <_KeySpec>[
-      for (final n in ['1', '2', '3', '4', '5', '6', '7', '8', '9'])
-        _KeySpec(token: n, label: n, semantics: loc.numericKeypadSemanticsDigit(n)),
-      _KeySpec(
-        token: allowDecimal ? 'dec' : '_',
-        label: allowDecimal ? decimalLabel : '',
-        disabled: !allowDecimal,
-        semantics: loc.numericKeypadSemanticsDecimal,
-      ),
-      _KeySpec(token: '0', label: '0', semantics: loc.numericKeypadSemanticsDigit('0')),
-      _KeySpec(
-        token: 'del',
-        icon: Icons.backspace_outlined,
-        semantics: loc.numericKeypadSemanticsDelete,
-      ),
-    ];
+    List<_KeySpec> items;
+    if (alphaMode && symbols) {
+      // Symbols layer
+      final symChars = [
+        '1','2','3','4','5','6','7','8','9','0',
+        '!','?','@','#','€','%','&','/','(' ,')',
+        '+','*','"','\'','-','_','=',':',';',
+        '.',',','<','>','[',']','{','}','\\','|',
+      ];
+      items = [
+        for (final s in symChars)
+          _KeySpec(token: s, label: s, semantics: s),
+        _KeySpec(token: 'space', label: '⎵', semantics: 'space'),
+        _KeySpec(token: 'del', icon: Icons.backspace_outlined, semantics: loc.numericKeypadSemanticsDelete),
+        _KeySpec(token: 'done', icon: Icons.check_circle_outline, semantics: 'done'),
+        _KeySpec(token: 'abc', label: 'ABC', semantics: 'abc'),
+      ];
+    } else if (alphaMode) {
+      final letters = [
+        'q','w','e','r','t','y','u','i','o','p','ü',
+        'a','s','d','f','g','h','j','k','l','ö',
+        'shift','z','x','c','v','b','n','m','ä','ß',
+      ];
+      items = [
+        for (final ch in letters)
+          _KeySpec(
+            token: ch,
+            label: ch == 'shift'
+                ? (shift ? '⇧' : '⇪')
+                : (ch.length == 1
+                    ? (shift ? ch.toUpperCase() : ch.toUpperCase())
+                    : ch.toUpperCase()),
+            semantics: ch,
+            icon: ch == 'shift' ? Icons.keyboard_capslock : null,
+          ),
+        _KeySpec(token: 'sym', label: '123', semantics: 'symbols'),
+        _KeySpec(token: 'space', label: '⎵', semantics: 'space'),
+        _KeySpec(token: 'del', icon: Icons.backspace_outlined, semantics: loc.numericKeypadSemanticsDelete),
+        _KeySpec(token: 'done', icon: Icons.check_circle_outline, semantics: 'done'),
+      ];
+    } else {
+      items = <_KeySpec>[
+        for (final n in ['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+          _KeySpec(token: n, label: n, semantics: loc.numericKeypadSemanticsDigit(n)),
+        _KeySpec(
+          token: allowDecimal ? 'dec' : '_',
+          label: allowDecimal ? decimalLabel : '',
+          disabled: !allowDecimal,
+          semantics: loc.numericKeypadSemanticsDecimal,
+        ),
+        _KeySpec(token: '0', label: '0', semantics: loc.numericKeypadSemanticsDigit('0')),
+        _KeySpec(
+          token: 'del',
+          icon: Icons.backspace_outlined,
+          semantics: loc.numericKeypadSemanticsDelete,
+        ),
+      ];
+    }
 
     return GridView.count(
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
-      crossAxisCount: 3,
+      crossAxisCount: alphaMode ? 10 : 3,
       mainAxisSpacing: gap,
       crossAxisSpacing: gap,
-      childAspectRatio: aspect,
+      childAspectRatio: alphaMode ? 0.8 : aspect,
       children: [
         for (final k in items)
           _KeyButton(
@@ -909,11 +1111,13 @@ class _ActionRailCompact extends StatelessWidget {
   final int totalGridRows;
   final double gap;
   final NumericKeypadTheme theme;
+  final OverlayNumericKeypadController controller;
   final VoidCallback onHide;
   final VoidCallback onNavigate;
   final VoidCallback onNavigateBack;
   final VoidCallback onAddSet;
   final VoidCallback onDuplicate;
+  final VoidCallback? onConfirm;
 
   const _ActionRailCompact({
     required this.gridCellWidth,
@@ -921,11 +1125,13 @@ class _ActionRailCompact extends StatelessWidget {
     required this.totalGridRows,
     required this.gap,
     required this.theme,
+    required this.controller,
     required this.onHide,
     required this.onNavigate,
     required this.onNavigateBack,
     required this.onAddSet,
     required this.onDuplicate,
+    required this.onConfirm,
   });
 
   @override
@@ -934,35 +1140,129 @@ class _ActionRailCompact extends StatelessWidget {
         totalGridRows * gridCellHeight + (totalGridRows - 1) * gap;
     final loc = AppLocalizations.of(context)!;
 
-    // Actions without "done". Last action is WIDE hide-keyboard.
-    final actions = <_RailAction>[
-      _RailAction(
-        Icons.arrow_back_rounded,
-        loc.numericKeypadSemanticsPrevious,
-        onNavigateBack,
-      ),
-      _RailAction(
-        Icons.arrow_forward_rounded,
-        loc.numericKeypadSemanticsNext,
-        onNavigate,
-      ),
-      _RailAction(
-        Icons.add_rounded,
-        loc.addSetButton,
-        onAddSet,
-      ),
-      _RailAction(
-        Icons.copy_all_rounded,
-        loc.numericKeypadSemanticsDuplicate,
-        onDuplicate,
-      ),
-      _RailAction(
-        Icons.keyboard_hide_rounded,
-        loc.numericKeypadSemanticsHideKeyboard,
-        onHide,
-        wide: true,
-      ),
-    ];
+    List<_RailAction> actions;
+    if (controller.railPlusMinusAndArrows) {
+      actions = [
+        _RailAction(
+          Icons.arrow_back_rounded,
+          loc.numericKeypadSemanticsPrevious,
+          controller.onRailPrev ?? onNavigateBack,
+        ),
+        _RailAction(
+          Icons.arrow_forward_rounded,
+          loc.numericKeypadSemanticsNext,
+          controller.onRailNext ?? onNavigate,
+        ),
+        _RailAction(
+          Icons.remove_rounded,
+          loc.numericKeypadSemanticsDecrease,
+          controller.onRailMinus ?? onNavigateBack,
+        ),
+        _RailAction(
+          Icons.add_rounded,
+          loc.numericKeypadSemanticsIncrease,
+          controller.onRailPlus ?? onNavigate,
+        ),
+        _RailAction(
+          Icons.check_circle_outline,
+          loc.saveButton,
+          controller.onConfirm ?? onHide,
+        ),
+        _RailAction(
+          Icons.keyboard_hide_rounded,
+          loc.numericKeypadSemanticsHideKeyboard,
+          onHide,
+          wide: true,
+        ),
+      ];
+    } else if (controller.railPlusMinusMode) {
+      actions = [
+        _RailAction(
+          Icons.remove_rounded,
+          loc.numericKeypadSemanticsDecrease,
+          controller.onRailMinus ?? onNavigateBack,
+        ),
+        _RailAction(
+          Icons.add_rounded,
+          loc.numericKeypadSemanticsIncrease,
+          controller.onRailPlus ?? onNavigate,
+        ),
+        _RailAction(
+          Icons.check_circle_outline,
+          loc.saveButton,
+          controller.onConfirm ?? onHide,
+        ),
+        _RailAction(
+          Icons.keyboard_hide_rounded,
+          loc.numericKeypadSemanticsHideKeyboard,
+          onHide,
+          wide: true,
+        ),
+      ];
+    } else if (controller.railArrowsOnly) {
+      actions = [
+        _RailAction(
+          Icons.arrow_back_rounded,
+          loc.numericKeypadSemanticsPrevious,
+          controller.onRailPrev ?? onNavigateBack,
+        ),
+        _RailAction(
+          Icons.arrow_forward_rounded,
+          loc.numericKeypadSemanticsNext,
+          controller.onRailNext ?? onNavigate,
+        ),
+        _RailAction(
+          Icons.keyboard_hide_rounded,
+          loc.numericKeypadSemanticsHideKeyboard,
+          onHide,
+          wide: true,
+        ),
+      ];
+    } else if (controller.alphaMode) {
+      actions = [
+        _RailAction(
+          Icons.check_circle_outline,
+          loc.saveButton,
+          controller.onConfirm ?? onHide,
+        ),
+        _RailAction(
+          Icons.keyboard_hide_rounded,
+          loc.numericKeypadSemanticsHideKeyboard,
+          onHide,
+          wide: true,
+        ),
+      ];
+    } else {
+      // Actions without "done". Last action is WIDE hide-keyboard.
+      actions = <_RailAction>[
+        _RailAction(
+          Icons.arrow_back_rounded,
+          loc.numericKeypadSemanticsPrevious,
+          onNavigateBack,
+        ),
+        _RailAction(
+          Icons.arrow_forward_rounded,
+          loc.numericKeypadSemanticsNext,
+          onNavigate,
+        ),
+        _RailAction(
+          Icons.add_rounded,
+          loc.addSetButton,
+          onAddSet,
+        ),
+        _RailAction(
+          Icons.copy_all_rounded,
+          loc.numericKeypadSemanticsDuplicate,
+          onDuplicate,
+        ),
+        _RailAction(
+          Icons.keyboard_hide_rounded,
+          loc.numericKeypadSemanticsHideKeyboard,
+          onHide,
+          wide: true,
+        ),
+      ];
+    }
 
     // Compute how many 1x slots we need (wide counts as 2).
     final slotCount = actions.fold<int>(0, (sum, a) => sum + (a.wide ? 2 : 1));
@@ -1228,11 +1528,11 @@ class _KeyButtonState extends State<_KeyButton> {
     final child = FittedBox(
       fit: BoxFit.scaleDown,
       child: widget.icon != null
-          ? Icon(widget.icon, color: fg)
+          ? Icon(widget.icon, color: fg, size: 26)
           : Text(
               widget.label ?? '',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 27,
                 fontWeight: FontWeight.w600,
                 color: fg,
               ),
@@ -1250,28 +1550,20 @@ class _KeyButtonState extends State<_KeyButton> {
         duration: const Duration(milliseconds: 110),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color: disabled ? th.keyBg.withOpacity(0.6) : th.keyBg,
-          borderRadius: BorderRadius.circular(16),
+          color: (disabled ? th.keyBg.withOpacity(0.7) : th.keyBg)
+              .withOpacity(0.95),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: disabled
-                ? th.keyBorder.withOpacity(0.35)
-                : th.keyBorder,
-            width: 1.0,
+            color: disabled ? th.keyBorder.withOpacity(0.2) : th.keyBorder,
+            width: 0.9,
           ),
-          boxShadow: disabled
-              ? null
-              : [
-                  BoxShadow(
-                    color: th.glowOuter,
-                    blurRadius: 16,
-                    offset: const Offset(0, -2),
-                  ),
-                  BoxShadow(
-                    color: th.glowInner,
-                    blurRadius: 24,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,

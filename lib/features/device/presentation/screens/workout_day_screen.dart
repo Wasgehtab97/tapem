@@ -8,7 +8,6 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
-import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/training_plan/data/sources/firestore_training_plan_source.dart';
 import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
@@ -59,8 +58,6 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
   bool _ownsSession = false;
   String? _planId;
   String? _planName;
-  final GlobalKey<SessionRestTimerState> _restTimerKey =
-      GlobalKey<SessionRestTimerState>();
 
 
 
@@ -236,12 +233,15 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
       );
     }
 
-    final restSeconds = _resolveRestSeconds(sessions);
     final theme = Theme.of(context);
     final brandColor = theme.colorScheme.primary;
 
+    const screenTop = Color(0xFF05060A);
+    const screenBottom = Color(0xFF020305);
+
     return Scaffold(
       extendBodyBehindAppBar: true,
+      backgroundColor: screenTop,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -309,14 +309,6 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
                   sessionKey: _sessionKey,
                 ),
               ),
-              const SizedBox(width: 8), // Reduced gap
-              Flexible(
-                child: SessionRestTimer(
-                  key: _restTimerKey,
-                  initialSeconds: restSeconds,
-                  onInteraction: _handleTimerInteraction,
-                ),
-              ),
             ],
           ),
         ),
@@ -342,17 +334,11 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              theme.scaffoldBackgroundColor,
-              Color.alphaBlend(
-                brandColor.withOpacity(0.05),
-                theme.scaffoldBackgroundColor,
-              ),
-            ],
+            colors: [screenTop, screenBottom],
           ),
         ),
         child: SafeArea(
@@ -386,8 +372,8 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
                 child: ReorderableListView.builder(
                   scrollController: _scrollController,
                   padding: const EdgeInsets.only(
-                    top: 16,
-                    bottom: 24,
+                    top: 10,
+                    bottom: 14,
                   ),
                   buildDefaultDragHandles: false,
                   proxyDecorator: (child, index, animation) {
@@ -453,7 +439,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
                     Widget child;
                     if (builder != null) {
                       child = Container(
-                        padding: const EdgeInsets.only(bottom: 24),
+                        padding: const EdgeInsets.only(bottom: 12),
                         child: builder(
                           context,
                           session,
@@ -462,7 +448,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
                       );
                     } else {
                       child = Padding(
-                        padding: const EdgeInsets.only(bottom: 24),
+                        padding: const EdgeInsets.only(bottom: 12),
                         child: DeviceSessionSection(
                           provider: session.provider,
                           gymId: session.gymId,
@@ -493,26 +479,6 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
     );
   }
 
-  int? _resolveRestSeconds(
-    List<WorkoutDaySession> sessions,
-  ) {
-    if (sessions.isEmpty) {
-      return null;
-    }
-    final key = _sessionKey;
-    if (key != null) {
-      final index = sessions.indexWhere((session) => session.key == key);
-      if (index != -1) {
-      }
-    }
-    return null;
-  }
-
-  void _handleTimerInteraction() {
-    FocusManager.instance.primaryFocus?.unfocus();
-    final keypad = ref.read(overlayNumericKeypadControllerProvider);
-    keypad.close();
-  }
 
   Future<void> _handleSaveAllSessions(
     List<WorkoutDaySession> sessions,

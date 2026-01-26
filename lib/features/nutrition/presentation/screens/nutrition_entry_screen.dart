@@ -13,6 +13,9 @@ import 'package:tapem/features/nutrition/providers/nutrition_product_provider.da
 import 'package:tapem/features/nutrition/providers/nutrition_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/core/widgets/brand_interactive_card.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
 
 class NutritionEntryScreen extends ConsumerStatefulWidget {
   final String? initialBarcode;
@@ -41,10 +44,25 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
   late final TextEditingController _barcodeController;
   NutritionProduct? _product;
   late final TextEditingController _qtyController;
+  late final FocusNode _qtyFocus;
+  late final FocusNode _nameFocus;
+  // Manuelle Nährwerte (pro 100 g)
+  late final TextEditingController _kcalPer100Ctrl;
+  late final TextEditingController _proteinPer100Ctrl;
+  late final TextEditingController _carbsPer100Ctrl;
+  late final TextEditingController _fatPer100Ctrl;
+  late final FocusNode _kcalFocus;
+  late final FocusNode _proteinFocus;
+  late final FocusNode _carbsFocus;
+  late final FocusNode _fatFocus;
+  late final List<TextEditingController> _macroCtrls;
+  late final List<FocusNode> _macroFocus;
+  int _macroIndex = 0;
   bool _isSaving = false;
   bool _isLookup = false;
   bool _isSearch = false;
   String _meal = 'breakfast';
+  bool _showManualMacros = false;
 
   bool get _isEditing => widget.entryIndex != null;
 
@@ -54,6 +72,34 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     _nameController = TextEditingController();
     _barcodeController = TextEditingController();
     _qtyController = TextEditingController(text: '100');
+    _qtyFocus = FocusNode();
+    _nameFocus = FocusNode();
+    _kcalPer100Ctrl = TextEditingController();
+    _proteinPer100Ctrl = TextEditingController();
+    _carbsPer100Ctrl = TextEditingController();
+    _fatPer100Ctrl = TextEditingController();
+    _kcalFocus = FocusNode();
+    _proteinFocus = FocusNode();
+    _carbsFocus = FocusNode();
+    _fatFocus = FocusNode();
+    _macroCtrls = [
+      _kcalPer100Ctrl,
+      _proteinPer100Ctrl,
+      _carbsPer100Ctrl,
+      _fatPer100Ctrl,
+    ];
+    _macroFocus = [
+      _kcalFocus,
+      _proteinFocus,
+      _carbsFocus,
+      _fatFocus,
+    ];
+    // Makro-Felder starten leer; werden bei Lookup/Scan befüllt.
+    _nameFocus.addListener(() {
+      if (_nameFocus.hasFocus) {
+        _closeKeypad();
+      }
+    });
     _meal = widget.initialMeal;
     if (widget.initialBarcode != null && widget.initialBarcode!.isNotEmpty) {
       _barcodeController.text = widget.initialBarcode!;
@@ -63,6 +109,7 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     }
     if (widget.initialProduct != null) {
       _product = widget.initialProduct;
+      _syncMacroCtrlsFromProduct(_product!);
     }
     if (widget.initialQty != null && widget.initialQty! > 0) {
       _qtyController.text = widget.initialQty!.toString();
@@ -76,9 +123,21 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
 
   @override
   void dispose() {
+    // Overlay direkt schließen.
+    ref.read(overlayNumericKeypadControllerProvider).close();
     _nameController.dispose();
     _barcodeController.dispose();
     _qtyController.dispose();
+    _qtyFocus.dispose();
+    _nameFocus.dispose();
+    _kcalFocus.dispose();
+    _proteinFocus.dispose();
+    _carbsFocus.dispose();
+    _fatFocus.dispose();
+    _kcalPer100Ctrl.dispose();
+    _proteinPer100Ctrl.dispose();
+    _carbsPer100Ctrl.dispose();
+    _fatPer100Ctrl.dispose();
     super.dispose();
   }
 
@@ -93,14 +152,138 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     return val <= 0 ? 100 : val;
   }
 
+  String get _gramsLabel => '${_grams().round()}g';
+
+  int _per100From(TextEditingController ctrl, int fallback) {
+    final v = _parseDouble(ctrl.text);
+    return v == null ? fallback : v.round();
+  }
+
+  int get _kcalPer100 => _per100From(_kcalPer100Ctrl, _product?.kcalPer100 ?? 0);
+  int get _proteinPer100 => _per100From(_proteinPer100Ctrl, _product?.proteinPer100 ?? 0);
+  int get _carbsPer100 => _per100From(_carbsPer100Ctrl, _product?.carbsPer100 ?? 0);
+  int get _fatPer100 => _per100From(_fatPer100Ctrl, _product?.fatPer100 ?? 0);
+
+  void _syncMacroCtrlsFromProduct(NutritionProduct product) {
+    _kcalPer100Ctrl.text = product.kcalPer100.toString();
+    _proteinPer100Ctrl.text = product.proteinPer100.toString();
+    _carbsPer100Ctrl.text = product.carbsPer100.toString();
+    _fatPer100Ctrl.text = product.fatPer100.toString();
+  }
+
+  NutritionProduct _buildProductForSave() {
+    final barcode = _barcodeController.text.trim().isEmpty
+        ? 'manual-${DateTime.now().millisecondsSinceEpoch}'
+        : _barcodeController.text.trim();
+    return NutritionProduct(
+      barcode: barcode,
+      name: _nameController.text.trim(),
+      kcalPer100: _kcalPer100,
+      proteinPer100: _proteinPer100,
+      carbsPer100: _carbsPer100,
+      fatPer100: _fatPer100,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  void _openQtyKeypad() {
+    _openNumericKeypad(_qtyController, _qtyFocus,
+        allowDecimal: false, plusMinusRail: true);
+  }
+
+  void _bumpQty(int delta) {
+    final current = (_parseDouble(_qtyController.text) ?? 0).round();
+    final next = (current + delta).clamp(0, 1000);
+    _qtyController.text = next.toString();
+    setState(() {});
+  }
+
+  void _openNameKeypad() {}
+
+  void _openNumericKeypad(
+    TextEditingController controller,
+    FocusNode focus, {
+    bool allowDecimal = false,
+    bool plusMinusRail = false,
+    bool railPlusMinusAndArrows = false,
+    bool arrowsOnly = false,
+    VoidCallback? onRailMinus,
+    VoidCallback? onRailPlus,
+    VoidCallback? onPrev,
+    VoidCallback? onNext,
+  }) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final keypad = ref.read(overlayNumericKeypadControllerProvider);
+    keypad.openFor(
+      controller,
+      allowDecimal: allowDecimal,
+      integerStep: 1,
+      decimalStep: 1,
+      railPlusMinusMode: plusMinusRail,
+      railPlusMinusAndArrows: railPlusMinusAndArrows,
+      railArrowsOnly: arrowsOnly,
+      onRailMinus: onRailMinus ?? (plusMinusRail ? () => _bumpQty(-1) : null),
+      onRailPlus: onRailPlus ?? (plusMinusRail ? () => _bumpQty(1) : null),
+      onConfirm: _saveEntry,
+      onRailPrev: onPrev,
+      onRailNext: onNext,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Scrollable.ensureVisible(
+        focus.context ?? context,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+      );
+      if (focus.canRequestFocus) {
+        focus.requestFocus();
+      }
+      controller.selection =
+          TextSelection.collapsed(offset: controller.text.length);
+    });
+  }
+
+  void _openMacroKeypadAt(int index) {
+    _macroIndex = index.clamp(0, _macroCtrls.length - 1);
+    final ctrl = _macroCtrls[index];
+    final focus = _macroFocus[index];
+    final prev = index > 0 ? () => _openMacroKeypadAt(index - 1) : null;
+    final next = index < _macroCtrls.length - 1
+        ? () => _openMacroKeypadAt(index + 1)
+        : null;
+    _openNumericKeypad(
+      ctrl,
+      focus,
+      allowDecimal: false,
+      plusMinusRail: true,
+      arrowsOnly: false,
+      railPlusMinusAndArrows: true,
+      onPrev: prev,
+      onNext: next,
+      onRailMinus: () => _bumpMacroCurrent(-1),
+      onRailPlus: () => _bumpMacroCurrent(1),
+    );
+  }
+
+  void _bumpMacroCurrent(int delta) {
+    final controller = _macroCtrls[_macroIndex];
+    final current = double.tryParse(controller.text.replaceAll(',', '.')) ?? 0;
+    final next = (current + delta).clamp(0, 100000).toInt();
+    setState(() => controller.text = next.toString());
+  }
+
+  void _closeKeypad() {
+    ref.read(overlayNumericKeypadControllerProvider).close();
+  }
+
   NutritionEntry _buildEntry(String uid) {
     final grams = _grams();
     final name = _nameController.text.trim();
     int scale(int per100) => ((per100 * grams) / 100).round();
-    final kcal = scale(_product?.kcalPer100 ?? 0);
-    final protein = scale(_product?.proteinPer100 ?? 0);
-    final carbs = scale(_product?.carbsPer100 ?? 0);
-    final fat = scale(_product?.fatPer100 ?? 0);
+    final kcal = scale(_kcalPer100);
+    final protein = scale(_proteinPer100);
+    final carbs = scale(_carbsPer100);
+    final fat = scale(_fatPer100);
     return NutritionEntry(
       name: name,
       kcal: kcal,
@@ -119,10 +302,10 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     final grams = _grams();
     int scale(int per100) => ((per100 * grams) / 100).round();
     return NutritionTotals(
-      kcal: scale(_product?.kcalPer100 ?? 0),
-      protein: scale(_product?.proteinPer100 ?? 0),
-      carbs: scale(_product?.carbsPer100 ?? 0),
-      fat: scale(_product?.fatPer100 ?? 0),
+      kcal: scale(_kcalPer100),
+      protein: scale(_proteinPer100),
+      carbs: scale(_carbsPer100),
+      fat: scale(_fatPer100),
     );
   }
 
@@ -171,6 +354,7 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
       setState(() {
         _product = product;
         _nameController.text = product.name;
+        _syncMacroCtrlsFromProduct(product);
         if (_barcodeController.text.trim().isEmpty) {
           _barcodeController.text = product.barcode;
         }
@@ -205,6 +389,7 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
       setState(() {
         _product = result;
         _nameController.text = result.name;
+        _syncMacroCtrlsFromProduct(result);
         if (_barcodeController.text.trim().isEmpty) {
           _barcodeController.text = result.barcode;
         }
@@ -240,12 +425,25 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     final auth = ref.read(authControllerProvider);
     final uid = auth.userId;
     if (uid == null || uid.isEmpty) return;
-    final name = _nameController.text.trim();
-    if (name.isEmpty) return;
+    final manualName = _nameController.text.trim();
+    if (manualName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bitte einen Namen eingeben.')),
+      );
+      return;
+    }
+    if (_kcalPer100 <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kalorien /100g müssen > 0 sein.')),
+      );
+      return;
+    }
+    final name = manualName;
     setState(() => _isSaving = true);
     final entry = _buildEntry(uid);
     try {
       final date = ref.read(nutritionProvider).selectedDate;
+      final productForSave = _buildProductForSave();
       if (_isEditing && widget.entryIndex != null) {
         await ref.read(nutritionProvider).updateEntry(
               uid: uid,
@@ -260,13 +458,17 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
               entry: entry,
             );
       }
-      final product = _product;
-      if (product != null) {
-        await ref.read(nutritionRecentsStoreProvider).add(
-              product: product,
-              grams: _grams(),
-            );
+      // immer Produkt (manuell oder aus Lookup) speichern und in Recents ablegen
+      final productService = ref.read(nutritionProductServiceProvider);
+      try {
+        await productService.saveProduct(productForSave);
+      } catch (_) {
+        // Wenn das Persistieren fehlschlägt (z.B. wegen Offline/Rules), trotzdem den Eintrag anlegen.
       }
+      await ref.read(nutritionRecentsStoreProvider).add(
+            product: productForSave,
+            grams: _grams(),
+          );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntrySaved)),
@@ -487,41 +689,39 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                loc.nutritionEntryTitle,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
+                              // Circle buttons for actions - NO title needed!
                               Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Expanded(
-                                    child: _ActionButtonEntry(
-                                      label: loc.nutritionSearchCta,
-                                      icon: Icons.search,
-                                      onPressed: _isSearch ? null : _openSearch,
-                                    ),
+                                  _CircleIconButton(
+                                    tooltip: loc.nutritionSearchCta,
+                                    icon: Icons.search,
+                                    onTap: _isSearch ? null : _openSearch,
                                   ),
-                                  const SizedBox(width: AppSpacing.xs),
-                                  Expanded(
-                                    child: _ActionButtonEntry(
-                                      label: loc.nutritionEntryLookupCta,
-                                      icon: Icons.qr_code_scanner,
-                                      onPressed: _isLookup ? null : _openScanner,
-                                    ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  _CircleIconButton(
+                                    tooltip: loc.nutritionEntryLookupCta,
+                                    icon: Icons.qr_code_scanner,
+                                    onTap: _isLookup ? null : _openScanner,
                                   ),
-                                  const SizedBox(width: AppSpacing.xs),
-                                  Expanded(
-                                    child: _ActionButtonEntry(
-                                      label: Localizations.localeOf(context)
-                                              .languageCode
-                                              .startsWith('de')
-                                          ? 'Zuletzt'
-                                          : 'Recent',
-                                      icon: Icons.history,
-                                      onPressed: _isSaving ? null : _openRecents,
+                                  const SizedBox(width: AppSpacing.sm),
+                                  _CircleIconButton(
+                                    tooltip: Localizations.localeOf(context)
+                                            .languageCode
+                                            .startsWith('de')
+                                        ? 'Zuletzt'
+                                        : 'Recent',
+                                    icon: Icons.history,
+                                    onTap: _isSaving ? null : _openRecents,
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  _CircleIconButton(
+                                    tooltip: 'Manuell',
+                                    icon: Icons.edit_note_rounded,
+                                    onTap: () => setState(
+                                      () => _showManualMacros = !_showManualMacros,
                                     ),
+                                    active: _showManualMacros,
                                   ),
                                 ],
                               ),
@@ -530,16 +730,52 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
                                 controller: _nameController,
                                 label: loc.nutritionEntryNameLabel,
                                 textInputAction: TextInputAction.next,
+                                focusNode: _nameFocus,
+                                onTap: _closeKeypad,
                               ),
                               const SizedBox(height: AppSpacing.xs),
+                              AnimatedCrossFade(
+                                duration: const Duration(milliseconds: 180),
+                                crossFadeState: _showManualMacros
+                                    ? CrossFadeState.showSecond
+                                    : CrossFadeState.showFirst,
+                                firstChild: const SizedBox.shrink(),
+                                secondChild: Column(
+                                  children: [
+                                    const SizedBox(height: AppSpacing.xs),
+                                    _MacroFields(
+                                      kcalCtrl: _kcalPer100Ctrl,
+                                      proteinCtrl: _proteinPer100Ctrl,
+                                      carbsCtrl: _carbsPer100Ctrl,
+                                    fatCtrl: _fatPer100Ctrl,
+                                    kcalFocus: _kcalFocus,
+                                    proteinFocus: _proteinFocus,
+                                    carbsFocus: _carbsFocus,
+                                    fatFocus: _fatFocus,
+                                    gramsLabel: _gramsLabel,
+                                    onChanged: () => setState(() {}),
+                                    onRequestKeypad: () => _openMacroKeypadAt(0),
+                                    onRequestKeypadProtein: () =>
+                                        _openMacroKeypadAt(1),
+                                      onRequestKeypadCarbs: () =>
+                                          _openMacroKeypadAt(2),
+                                      onRequestKeypadFat: () =>
+                                          _openMacroKeypadAt(3),
+                                    ),
+                                    const SizedBox(height: AppSpacing.xs),
+                                  ],
+                                ),
+                              ),
                               _QtyField(
                                 controller: _qtyController,
+                                focusNode: _qtyFocus,
+                                onRequestKeypad: _openQtyKeypad,
                                 onChanged: () => setState(() {}),
                               ),
                               const SizedBox(height: AppSpacing.xs),
                               _ComputedPanel(
                                 grams: _grams(),
-                                product: _product,
+                                product: _buildProductForSave(),
                                 theme: Theme.of(context),
                                 loc: loc,
                               ),
@@ -566,12 +802,18 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
   }
 }
 
+/// Premium input field with brand interactive styling - NO ugly borders!
 class _FieldCard extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
+  final FocusNode? focusNode;
+  final bool readOnly;
+  final VoidCallback? onTap;
+  final bool showCursor;
+  final bool enableInteractiveSelection;
 
   const _FieldCard({
     required this.controller,
@@ -579,41 +821,52 @@ class _FieldCard extends StatelessWidget {
     this.keyboardType,
     this.textInputAction,
     this.onChanged,
+    this.focusNode,
+    this.readOnly = false,
+    this.onTap,
+    this.showCursor = true,
+    this.enableInteractiveSelection = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.35)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              keyboardType: keyboardType,
-              textInputAction: textInputAction,
-              onChanged: onChanged,
-              autocorrect: false,
-              enableSuggestions: false,
-              textCapitalization: TextCapitalization.none,
-              decoration: InputDecoration(
-                labelText: label,
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-        ],
+    final brand = theme.extension<AppBrandTheme>();
+    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
+    
+    return BrandInteractiveCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.3),
+      enableScaleAnimation: false,
+      showShadow: false,
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        keyboardType: keyboardType,
+        textInputAction: textInputAction,
+        onChanged: onChanged,
+        readOnly: readOnly,
+        onTap: onTap,
+        showCursor: showCursor,
+        enableInteractiveSelection: enableInteractiveSelection,
+        scrollPadding: const EdgeInsets.only(bottom: 200),
+        autocorrect: false,
+        enableSuggestions: false,
+        textCapitalization: TextCapitalization.none,
+        style: theme.textTheme.bodyLarge,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: brandColor.withOpacity(0.7)),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+        ),
       ),
     );
   }
 }
 
+/// Premium panel with NO borders - glassmorphism effect
 class _Panel extends StatelessWidget {
   final Widget child;
   const _Panel({required this.child});
@@ -621,12 +874,22 @@ class _Panel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    
+    // Ultra subtle background - NO ugly borders!
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+        color: theme.scaffoldBackgroundColor.withOpacity(0.3),
+        borderRadius: brand?.outlineRadius as BorderRadius? ?? BorderRadius.circular(AppRadius.cardLg),
+        // NO border! Just subtle shadow
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: child,
     );
@@ -636,13 +899,24 @@ class _Panel extends StatelessWidget {
 class _QtyField extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onChanged;
+  final FocusNode focusNode;
+  final VoidCallback onRequestKeypad;
 
   const _QtyField({
     required this.controller,
     required this.onChanged,
+    required this.focusNode,
+    required this.onRequestKeypad,
   });
 
-  double _value() => double.tryParse(controller.text) ?? 100;
+  double _value() => double.tryParse(controller.text) ?? 0;
+
+  void _bump(int delta) {
+    final current = _value().round();
+    final next = (current + delta).clamp(0, 1000);
+    controller.text = next.toString();
+    onChanged();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -653,23 +927,260 @@ class _QtyField extends StatelessWidget {
         _FieldCard(
           controller: controller,
           label: 'Menge (g)',
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          keyboardType: TextInputType.none,
           textInputAction: TextInputAction.done,
           onChanged: (_) => onChanged(),
+          focusNode: focusNode,
+          readOnly: true,
+          showCursor: true,
+          enableInteractiveSelection: false,
+          onTap: onRequestKeypad,
         ),
-        Slider(
-          value: _value().clamp(10, 2000),
-          min: 10,
-          max: 2000,
-          divisions: 199,
-          label: '${controller.text} g',
-          activeColor: theme.colorScheme.primary,
-          onChanged: (v) {
-            controller.text = v.round().toString();
-            onChanged();
-          },
+    const SizedBox(height: 6),
+    Row(
+      children: [
+        _QtyIconButton(
+          icon: Icons.remove,
+          onTap: () => _bump(-1),
+        ),
+            Expanded(
+              child: Slider(
+                value: _value().clamp(0, 1000),
+                min: 0,
+                max: 1000,
+                divisions: 200, // 5g Schritte
+                label: '${controller.text} g',
+                activeColor: theme.colorScheme.primary,
+                onChanged: (v) {
+                  final snapped = (v / 5).round() * 5;
+                  controller.text = snapped.toInt().toString();
+                  onChanged();
+                },
+              ),
+            ),
+            _QtyIconButton(
+              icon: Icons.add,
+              onTap: () => _bump(1),
+            ),
+          ],
         ),
       ],
+    );
+  }
+}
+
+class _QtyIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _QtyIconButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.35)),
+        ),
+        child: Icon(icon, size: 18, color: theme.colorScheme.onSurface),
+      ),
+    );
+  }
+}
+
+class _MacroFields extends StatelessWidget {
+  final TextEditingController kcalCtrl;
+  final TextEditingController proteinCtrl;
+  final TextEditingController carbsCtrl;
+  final TextEditingController fatCtrl;
+  final VoidCallback onChanged;
+  final VoidCallback onRequestKeypad;
+  final VoidCallback onRequestKeypadProtein;
+  final VoidCallback onRequestKeypadCarbs;
+  final VoidCallback onRequestKeypadFat;
+  final FocusNode kcalFocus;
+  final FocusNode proteinFocus;
+  final FocusNode carbsFocus;
+  final FocusNode fatFocus;
+  final String gramsLabel;
+
+  const _MacroFields({
+    required this.kcalCtrl,
+    required this.proteinCtrl,
+    required this.carbsCtrl,
+    required this.fatCtrl,
+    required this.onChanged,
+    required this.onRequestKeypad,
+    required this.onRequestKeypadProtein,
+    required this.onRequestKeypadCarbs,
+    required this.onRequestKeypadFat,
+    required this.kcalFocus,
+    required this.proteinFocus,
+    required this.carbsFocus,
+    required this.fatFocus,
+    required this.gramsLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    InputDecoration deco(String label) => InputDecoration(
+          labelText: label,
+          hintText: '0',
+          filled: true,
+          fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            borderSide: BorderSide(
+              color: theme.colorScheme.outline.withOpacity(0.3),
+            ),
+          ),
+          isDense: true,
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: kcalCtrl,
+                focusNode: kcalFocus,
+                keyboardType: TextInputType.none,
+                readOnly: true,
+                showCursor: true,
+                enableInteractiveSelection: false,
+                onTap: onRequestKeypad,
+                decoration: deco('Kalorien /100g'),
+                onChanged: (_) => onChanged(),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: TextField(
+                controller: proteinCtrl,
+                focusNode: proteinFocus,
+                keyboardType: TextInputType.none,
+                readOnly: true,
+                showCursor: true,
+                enableInteractiveSelection: false,
+                onTap: onRequestKeypadProtein,
+                decoration: deco('Protein /100g'),
+                onChanged: (_) => onChanged(),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: carbsCtrl,
+                focusNode: carbsFocus,
+                keyboardType: TextInputType.none,
+                readOnly: true,
+                showCursor: true,
+                enableInteractiveSelection: false,
+                onTap: onRequestKeypadCarbs,
+                decoration: deco('Carbs /100g'),
+                onChanged: (_) => onChanged(),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: TextField(
+                controller: fatCtrl,
+                focusNode: fatFocus,
+                keyboardType: TextInputType.none,
+                readOnly: true,
+                showCursor: true,
+                enableInteractiveSelection: false,
+                onTap: onRequestKeypadFat,
+                decoration: deco('Fett /100g'),
+                onChanged: (_) => onChanged(),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CircleIconButton extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final bool active;
+
+  const _CircleIconButton({
+    required this.tooltip,
+    required this.icon,
+    this.onTap,
+    this.active = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final outline = brand?.outline ?? theme.colorScheme.primary;
+    final bg = theme.colorScheme.surface.withOpacity(0.22);
+    final gradient = LinearGradient(
+      colors: [
+        outline.withOpacity(active ? 0.55 : 0.35),
+        outline.withOpacity(0.08),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: gradient,
+            border: Border.all(color: outline.withOpacity(0.35), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: outline.withOpacity(0.18),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Container(
+            margin: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              icon,
+              size: 22,
+              color: active ? outline : theme.colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

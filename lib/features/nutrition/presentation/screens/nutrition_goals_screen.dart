@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_macros.dart';
 import 'package:tapem/features/nutrition/presentation/widgets/nutrition_ui.dart';
 import 'package:tapem/features/nutrition/providers/nutrition_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 
 class NutritionGoalsScreen extends ConsumerStatefulWidget {
   const NutritionGoalsScreen({super.key});
@@ -85,8 +87,8 @@ class _NutritionGoalsScreenState extends ConsumerState<NutritionGoalsScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final accent = theme.colorScheme.primary;
-    final surface = theme.colorScheme.surface;
+    final brand = theme.extension<AppBrandTheme>();
+    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
 
     return Scaffold(
       appBar: AppBar(
@@ -101,121 +103,116 @@ class _NutritionGoalsScreenState extends ConsumerState<NutritionGoalsScreen> {
             AppSpacing.lg,
           ),
           children: [
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.cardLg),
-                gradient: LinearGradient(
-                  colors: [
-                    surface.withOpacity(0.8),
-                    surface.withOpacity(0.92),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 24,
-                    offset: const Offset(0, 12),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(AppSpacing.md),
+            // Premium hero card with goal input
+            HeroGradientCard(
+              enableBackdropBlur: true,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  BrandGradientText(
                     loc.nutritionGoalsTitle,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.3,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     loc.nutritionGoalsIntro,
-                    style: theme.textTheme.bodyMedium,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  // Large animated calorie display
+                  Center(
+                    child: AnimatedNutritionStat(
+                      value: _initialized ? _kcal : 0,
+                      label: 'kcal Tagesziel',
+                      enableFlicker: false,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  // Text input
+                  Center(
+                    child: SizedBox(
+                      width: 200,
+                      child: NutritionCard(
+                        enableGlow: false,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.xs,
+                        ),
+                        child: TextField(
+                          controller: _kcalController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: brandColor,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: loc.nutritionGoalsCaloriesLabel,
+                            border: InputBorder.none,
+                            floatingLabelBehavior: FloatingLabelBehavior.never,
+                          ),
+                          onChanged: (val) {
+                            final parsed = int.tryParse(val.replaceAll(RegExp(r'\\D'), ''));
+                            if (parsed != null) _setKcal(parsed);
+                          },
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          '${_initialized ? _kcal : 0} kcal',
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: accent,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        SizedBox(
-                          width: 220,
-                          child: TextField(
-                            controller: _kcalController,
-                            keyboardType: TextInputType.number,
-                            textAlign: TextAlign.center,
-                            decoration: InputDecoration(
-                              labelText: loc.nutritionGoalsCaloriesLabel,
-                              filled: true,
-                              fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.35),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.card),
-                                borderSide: BorderSide(
-                                  color: theme.colorScheme.outline.withOpacity(0.3),
-                                ),
-                              ),
-                              isDense: true,
-                            ),
-                            onChanged: (val) {
-                              final parsed = int.tryParse(val.replaceAll(RegExp(r'\\D'), ''));
-                              if (parsed != null) _setKcal(parsed);
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SecondaryCTA(
-                              label: '-100',
-                              icon: Icons.remove,
-                              onPressed: () => _setKcal(_kcal - 100),
-                            ),
-                            const SizedBox(width: AppSpacing.xs),
-                            SecondaryCTA(
-                              label: '+100',
-                              icon: Icons.add,
-                              onPressed: () => _setKcal(_kcal + 100),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
-                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
-                          ),
-                          child: Slider(
-                            value: _kcal.toDouble().clamp(0, 6000),
-                            min: 0,
-                            max: 6000,
-                            divisions: 60,
-                            label: '$_kcal kcal',
-                            activeColor: accent,
-                            onChanged: (v) => _setKcal(v.round()),
-                          ),
-                        ),
-                      ],
+                  // Quick adjust buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SecondaryCTA(
+                        label: '-100',
+                        icon: Icons.remove_rounded,
+                        onPressed: () => _setKcal(_kcal - 100),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      SecondaryCTA(
+                        label: '+100',
+                        icon: Icons.add_rounded,
+                        onPressed: () => _setKcal(_kcal + 100),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  // Brand gradient slider
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: brandColor,
+                      inactiveTrackColor: brandColor.withOpacity(0.2),
+                      thumbColor: brandColor,
+                      overlayColor: brandColor.withOpacity(0.15),
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
+                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 22),
+                      trackHeight: 6,
+                    ),
+                    child: Slider(
+                      value: _kcal.toDouble().clamp(0, 6000),
+                      min: 0,
+                      max: 6000,
+                      divisions: 60,
+                      label: '$_kcal kcal',
+                      onChanged: (v) => _setKcal(v.round()),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: AppSpacing.md),
+            // Save button
             PrimaryCTA(
               label: loc.nutritionGoalsSaveCta,
-              icon: Icons.check_circle,
+              icon: Icons.check_circle_outline_rounded,
               onPressed: _isSaving ? null : _saveGoals,
+              isLoading: _isSaving,
             ),
           ],
         ),

@@ -47,6 +47,7 @@ import 'package:tapem/features/rest_stats/presentation/screens/rest_stats_screen
 import 'package:tapem/features/community/presentation/screens/community_screen.dart';
 import 'package:tapem/features/settings/presentation/screens/settings_screen.dart';
 import 'package:tapem/features/nutrition/presentation/screens/nutrition_day_screen.dart';
+import 'package:tapem/features/nutrition/presentation/screens/nutrition_home_screen.dart';
 import 'package:tapem/features/nutrition/presentation/screens/nutrition_calendar_screen.dart';
 import 'package:tapem/features/nutrition/presentation/screens/nutrition_goals_screen.dart';
 import 'package:tapem/features/nutrition/presentation/screens/nutrition_entry_screen.dart';
@@ -120,6 +121,7 @@ class AppRouter {
   static const community = '/community';
   static const settings = '/settings';
   static const nutrition = '/nutrition';
+  static const nutritionHome = '/nutrition/home';
   static const nutritionDay = '/nutrition/day';
   static const nutritionGoals = '/nutrition/goals';
   static const nutritionCalendar = '/nutrition/calendar';
@@ -293,6 +295,11 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const RestStatsScreen());
 
       case nutrition:
+        return MaterialPageRoute(builder: (_) => const NutritionHomeScreen());
+
+      case nutritionHome:
+        return MaterialPageRoute(builder: (_) => const NutritionHomeScreen());
+
       case nutritionDay:
         return MaterialPageRoute(builder: (_) => const NutritionDayScreen());
 

@@ -9,6 +9,10 @@ import 'package:tapem/features/nutrition/presentation/widgets/nutrition_ui.dart'
 import 'package:tapem/features/nutrition/providers/nutrition_provider.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_totals.dart';
 import 'package:tapem/features/nutrition/providers/nutrition_product_provider.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
+import 'package:tapem/core/widgets/brand_interactive_card.dart';
+import 'package:tapem/core/widgets/brand_primary_button.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 
 class NutritionRecipeEditScreen extends ConsumerStatefulWidget {
   final NutritionRecipe? recipe;
@@ -359,12 +363,26 @@ class _NutritionRecipeEditScreenState
             AppSpacing.lg,
           ),
           children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name des Gerichts'),
+            BrandInteractiveCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.3),
+              enableScaleAnimation: false,
+              showShadow: false,
+              child: TextField(
+                controller: _nameController,
+                style: theme.textTheme.titleMedium,
+                decoration: const InputDecoration(
+                  labelText: 'Name des Gerichts',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
             NutritionCard(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              background: theme.colorScheme.surfaceVariant.withOpacity(0.15),
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -392,47 +410,30 @@ class _NutritionRecipeEditScreenState
                 ],
               ),
             ),
+            const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _addFromProduct,
-                    icon: const Icon(Icons.search),
-                    label: const Text('Produkt suchen'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                      foregroundColor: theme.colorScheme.onSurface,
-                      elevation: 0,
-                    ),
+                  child: _MiniActionButton(
+                    icon: Icons.search,
+                    label: 'Suchen',
+                    onTap: _addFromProduct,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _addFromScan,
-                    icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('Barcode scannen'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                      foregroundColor: theme.colorScheme.onSurface,
-                      elevation: 0,
-                    ),
+                  child: _MiniActionButton(
+                    icon: Icons.qr_code_scanner,
+                    label: 'Scannen',
+                    onTap: _addFromScan,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _addManualIngredient,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Manuell'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                      foregroundColor: theme.colorScheme.onSurface,
-                      elevation: 0,
-                    ),
+                  child: _MiniActionButton(
+                    icon: Icons.add,
+                    label: 'Manuell',
+                    onTap: _addManualIngredient,
                   ),
                 ),
               ],
@@ -513,6 +514,53 @@ class _NutritionRecipeEditScreenState
               label: 'Gericht speichern',
               icon: Icons.save,
               onPressed: _saving ? null : _save,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _MiniActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final brandColor = brand?.outline ?? theme.colorScheme.secondary; 
+    
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.colorScheme.outline.withOpacity(0.1),
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 22, color: brandColor),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

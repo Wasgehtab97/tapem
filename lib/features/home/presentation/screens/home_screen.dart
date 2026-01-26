@@ -11,7 +11,7 @@ import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.d
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/coaching/presentation/screens/coaching_home_screen.dart';
-import 'package:tapem/features/nutrition/presentation/screens/nutrition_home_screen.dart';
+import 'package:tapem/features/nutrition/presentation/widgets/nutrition_tab_navigator.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
@@ -26,6 +26,7 @@ import 'package:tapem/features/device/providers/workout_day_controller_provider.
 import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
 import 'package:tapem/features/device/presentation/widgets/workout_day_table_card.dart';
 import 'package:tapem/app_router.dart';
+import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -84,7 +85,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       _TabInfo(
         id: _HomeTabId.nutrition,
-        page: const NutritionHomeScreen(key: PageStorageKey('Nutrition')),
+        // Eigenes Navigator-Stack für Ernährung, damit BottomTab sichtbar bleibt
+        page: const NutritionTabNavigator(key: PageStorageKey('NutritionTab')),
         item: BottomNavigationBarItem(
           icon: const Icon(Icons.restaurant),
           label: loc.homeTabNutrition,
@@ -287,11 +289,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       SizedBox(width: 8),
                     ],
             ),
-      body: currentTab.page,
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [for (final t in tabs) t.page],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         type: BottomNavigationBarType.fixed,
-        onTap: (i) => setState(() => _currentIndex = i),
+        onTap: (i) {
+          // Beim Tab-Wechsel immer Overlay-Keypad schließen, damit es nicht liegen bleibt.
+          ref.read(overlayNumericKeypadControllerProvider).close();
+          setState(() => _currentIndex = i);
+        },
         items: [for (final t in tabs) t.item],
       ),
     );

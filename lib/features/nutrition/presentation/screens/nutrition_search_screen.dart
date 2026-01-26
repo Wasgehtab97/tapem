@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:ui';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/brand_gradient_text.dart';
+import 'package:tapem/core/widgets/brand_gradient_icon.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_product.dart';
 import 'package:tapem/features/nutrition/presentation/widgets/nutrition_ui.dart';
 import 'package:tapem/features/nutrition/providers/nutrition_product_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 
 class NutritionSearchScreen extends ConsumerStatefulWidget {
   final String? initialQuery;
+  
   const NutritionSearchScreen({super.key, this.initialQuery});
 
   @override
@@ -52,11 +57,13 @@ class _NutritionSearchScreenState
       });
       return;
     }
+    
     setState(() {
       _loading = true;
       _error = null;
       _filteredZero = false;
     });
+    
     try {
       final service = ref.read(nutritionProductServiceProvider);
       final results = await service.searchByName(q);
@@ -80,18 +87,76 @@ class _NutritionSearchScreenState
 
   Widget _buildState(AppLocalizations loc) {
     final query = _controller.text.trim();
+    
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.xl),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
+    
     if (_error != null) {
-      return Center(child: Text(loc.nutritionSearchError));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const BrandGradientIcon(Icons.error_outline_rounded, size: 64),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                loc.nutritionSearchError,
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
     }
+    
     if (query.length < _minChars) {
-      return Center(child: Text(loc.nutritionSearchMinChars));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const BrandGradientIcon(Icons.search_rounded, size: 64),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                loc.nutritionSearchMinChars,
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
     }
+    
     if (_results.isEmpty) {
-      return Center(child: Text(loc.nutritionSearchEmpty));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const BrandGradientIcon(Icons.inbox_rounded, size: 64),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                loc.nutritionSearchEmpty,
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
     }
+    
     return ListView.builder(
       padding: const EdgeInsets.only(
         top: AppSpacing.xs,
@@ -102,24 +167,73 @@ class _NutritionSearchScreenState
       itemCount: _results.length,
       itemBuilder: (context, index) {
         final product = _results[index];
-        return NutritionCard(
-          onTap: () => Navigator.of(context).pop(product),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(product.name,
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 6),
-              Text(
-                '${loc.nutritionSearchMacroLine(
-                  product.kcalPer100,
-                  product.proteinPer100,
-                  product.carbsPer100,
-                  product.fatPer100,
-                )} (${loc.nutritionProductPer100g})',
-                style: Theme.of(context).textTheme.bodySmall,
+        
+        // Staggered fade-in animation
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: Duration(milliseconds: 200 + (index * 50).clamp(0, 400)),
+          curve: Curves.easeOut,
+          builder: (context, value, child) {
+            return Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 20 * (1 - value)),
+                child: child,
               ),
-            ],
+            );
+          },
+          child: NutritionCard(
+            onTap: () => Navigator.of(context).pop(product),
+            margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.name,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    MacroPill(
+                      label: '',
+                      value: '${product.kcalPer100} kcal',
+                      color: Theme.of(context)
+                          .extension<AppBrandTheme>()
+                          ?.outline ??
+                          Theme.of(context).colorScheme.secondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'P:${product.proteinPer100}g C:${product.carbsPer100}g F:${product.fatPer100}g',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.color
+                                  ?.withOpacity(0.6),
+                            ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '(${loc.nutritionProductPer100g})',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context)
+                            .textTheme
+                            .labelSmall
+                            ?.color
+                            ?.withOpacity(0.5),
+                      ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -130,6 +244,9 @@ class _NutritionSearchScreenState
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.nutritionSearchTitle),
@@ -137,6 +254,7 @@ class _NutritionSearchScreenState
       body: SafeArea(
         child: Column(
           children: [
+            // Premium search field with glassmorphism
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.sm,
@@ -144,42 +262,69 @@ class _NutritionSearchScreenState
                 AppSpacing.sm,
                 AppSpacing.xs,
               ),
-              child: NutritionCard(
-                background:
-                    theme.colorScheme.surfaceVariant.withOpacity(0.35),
+              child: HeroGradientCard(
+                enableBackdropBlur: true,
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
+                    BrandGradientText(
                       loc.nutritionSearchTitle,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.xs),
+                    const SizedBox(height: AppSpacing.sm),
                     TextField(
                       controller: _controller,
                       textInputAction: TextInputAction.search,
                       autocorrect: false,
                       enableSuggestions: false,
                       textCapitalization: TextCapitalization.none,
+                      autofocus: true,
+                      style: theme.textTheme.bodyLarge,
                       decoration: InputDecoration(
                         hintText: loc.nutritionSearchHint,
                         filled: true,
-                        fillColor:
-                            theme.colorScheme.surface.withOpacity(0.6),
+                        fillColor: theme.scaffoldBackgroundColor.withOpacity(0.5),
                         border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.card),
+                          borderRadius: BorderRadius.circular(AppRadius.card),
                           borderSide: BorderSide(
-                            color:
-                                theme.colorScheme.outline.withOpacity(0.3),
+                            color: brandColor.withOpacity(0.2),
                           ),
                         ),
-                        suffixIcon: IconButton(
-                          onPressed:
-                              _loading ? null : () => _runSearch(_controller.text),
-                          icon: const Icon(Icons.search),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          borderSide: BorderSide(
+                            color: brandColor.withOpacity(0.2),
+                          ),
                         ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          borderSide: BorderSide(
+                            color: brandColor.withOpacity(0.5),
+                            width: 2,
+                          ),
+                        ),
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: BrandGradientIcon(Icons.search_rounded, size: 24),
+                        ),
+                        suffixIcon: _loading
+                            ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              )
+                            : IconButton(
+                                onPressed: _loading ? null : () => _runSearch(_controller.text),
+                                icon: const BrandGradientIcon(Icons.arrow_forward_rounded),
+                              ),
                       ),
                       onSubmitted: _runSearch,
                     ),
@@ -187,6 +332,8 @@ class _NutritionSearchScreenState
                 ),
               ),
             ),
+            
+            // Filtered hint
             if (_filteredZero)
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -195,9 +342,13 @@ class _NutritionSearchScreenState
                 ),
                 child: Text(
                   'Einige Ergebnisse ohne Nährwerte wurden ausgeblendet.',
-                  style: theme.textTheme.labelSmall,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.textTheme.labelSmall?.color?.withOpacity(0.6),
+                  ),
                 ),
               ),
+            
+            // Results
             Expanded(child: _buildState(loc)),
           ],
         ),

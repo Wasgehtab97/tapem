@@ -1,7 +1,10 @@
 
 import 'dart:ui';
+import 'dart:typed_data';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:tapem/ui/timer/session_timer_service.dart';
 
 class SessionRestTimer extends StatefulWidget {
@@ -9,10 +12,18 @@ class SessionRestTimer extends StatefulWidget {
     super.key,
     this.initialSeconds,
     this.onInteraction,
+    this.onDurationChanged,
+    this.compact = false,
+    this.inline = false,
+    this.showLabel = true,
   });
 
   final int? initialSeconds;
   final VoidCallback? onInteraction;
+  final ValueChanged<int>? onDurationChanged;
+  final bool compact;
+  final bool inline;
+  final bool showLabel;
 
   @override
   SessionRestTimerState createState() => SessionRestTimerState();
@@ -21,17 +32,21 @@ class SessionRestTimer extends StatefulWidget {
 class SessionRestTimerState extends State<SessionRestTimer> {
   late final SessionTimerService _service;
   late final VoidCallback _doneListener;
+  static final AudioPlayer _player = AudioPlayer();
+  static bool _audioContextSet = false;
+  static final Uint8List _beepBytes = _buildBeep();
 
   SessionTimerService get service => _service;
 
   @override
   void initState() {
     super.initState();
+    _ensureAudioContext();
     _service = SessionTimerService(
       initialDuration: _initialDurationFrom(widget.initialSeconds),
     );
     _doneListener = () {
-      SystemSound.play(SystemSoundType.click);
+      _playDoneSound();
       HapticFeedback.mediumImpact();
     };
     _service.addDoneListener(_doneListener);
@@ -52,6 +67,33 @@ class SessionRestTimerState extends State<SessionRestTimer> {
     super.dispose();
   }
 
+  void _ensureAudioContext() {
+    if (_audioContextSet) return;
+    _audioContextSet = true;
+    AudioPlayer.global.setAudioContext(
+      AudioContext(
+        android: const AudioContextAndroid(
+          isSpeakerphoneOn: true,
+          stayAwake: false,
+        ),
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.playback,
+          options: const {AVAudioSessionOptions.mixWithOthers},
+        ),
+      ),
+    );
+  }
+
+  Future<void> _playDoneSound() async {
+    try {
+      await _player.play(BytesSource(_beepBytes), volume: 1.0);
+    } catch (_) {
+      try {
+        SystemSound.play(SystemSoundType.alert);
+      } catch (_) {}
+    }
+  }
+
   void applyInitialSeconds(int? seconds) {
     final duration = _initialDurationFrom(seconds);
     if (duration != null) {
@@ -68,111 +110,129 @@ class SessionRestTimerState extends State<SessionRestTimer> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.1),
-          width: 1,
-        ),
-        boxShadow: [
-           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-           ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          ValueListenableBuilder<bool>(
-            valueListenable: _service.running,
-            builder: (context, isRunning, _) {
-              return Semantics(
-                button: true,
-                label: isRunning ? 'Pause rest timer' : 'Start rest timer',
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () {
-                      widget.onInteraction?.call();
-                      if (isRunning) {
-                        _service.stop();
-                      } else {
-                        _service.start();
-                      }
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Icon(
-                        isRunning ? Icons.pause : Icons.play_arrow,
-                        size: 18,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
+    final isCompact = widget.compact;
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
+    final size = isCompact ? 38.0 : 44.0;
+    final stroke = isCompact ? 3.0 : 3.6;
+
+    Widget dial = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        widget.onInteraction?.call();
+        if (_service.isRunning) {
+          _service.stop();
+        } else {
+          _service.start();
+        }
+      },
+      onLongPress: () => _handleTimerTap(context),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: ValueListenableBuilder<Duration>(
+          valueListenable: _service.remaining,
+          builder: (context, remaining, _) {
+            final totalMillis = _service.total.inMilliseconds;
+            final progress = totalMillis == 0
+                ? 0.0
+                : 1 -
+                    (remaining.inMilliseconds / totalMillis)
+                        .clamp(0.0, 1.0);
+            final isRunning = _service.isRunning;
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Transform.rotate(
+                  angle: -1.57,
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: stroke,
+                    backgroundColor: Colors.white.withOpacity(0.08),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      accent.withOpacity(0.85),
                     ),
                   ),
                 ),
-              );
-            },
-          ),
-          const SizedBox(width: 2),
-          Tooltip(
-            message: 'Select rest duration',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => _handleTimerTap(context),
-              child: SizedBox(
-                 width: 38,
-                 height: 38,
-                child: ValueListenableBuilder<Duration>(
-                  valueListenable: _service.remaining,
-                  builder: (context, remaining, _) {
-                    final totalMillis = _service.total.inMilliseconds;
-                    final progress = totalMillis == 0
-                        ? 0.0
-                        : 1 -
-                            (remaining.inMilliseconds / totalMillis)
-                                .clamp(0.0, 1.0);
-                    final displaySeconds = remaining.inSeconds % 60;
-                    final displayMinutes = remaining.inMinutes;
-                    final timeLabel =
-                        '${displayMinutes.toString().padLeft(2, '0')}:${displaySeconds.toString().padLeft(2, '0')}';
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 2.5,
-                          backgroundColor: Colors.white.withOpacity(0.1),
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                        Text(
-                          timeLabel,
-                          style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.5,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
+                Container(
+                  width: size - stroke * 2.4,
+                  height: size - stroke * 2.4,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        Colors.black.withOpacity(0.9),
+                        Colors.black.withOpacity(0.6),
                       ],
-                    );
-                  },
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accent.withOpacity(0.18),
+                        blurRadius: 10,
+                        spreadRadius: 0,
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    size: isCompact ? 15 : 17,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-            ),
-          ),
-        ],
+              ],
+            );
+          },
+        ),
       ),
+    );
+
+    final label = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _handleTimerTap(context),
+      child: ValueListenableBuilder<Duration>(
+        valueListenable: _service.remaining,
+        builder: (context, remaining, _) {
+          final displaySeconds = remaining.inSeconds % 60;
+          final displayMinutes = remaining.inMinutes;
+          final timeLabel =
+              '${displayMinutes.toString().padLeft(2, '0')}:${displaySeconds.toString().padLeft(2, '0')}';
+          return Text(
+            timeLabel,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.75),
+              fontSize: isCompact ? 10 : 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.2,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          );
+        },
+      ),
+    );
+
+    if (widget.inline) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          dial,
+          if (widget.showLabel) ...[
+            const SizedBox(width: 6),
+            label,
+          ],
+        ],
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        dial,
+        if (widget.showLabel) ...[
+          const SizedBox(height: 4),
+          label,
+        ],
+      ],
     );
   }
 
@@ -307,6 +367,53 @@ class SessionRestTimerState extends State<SessionRestTimer> {
     if (delta != 0) {
       widget.onInteraction?.call();
       _service.changeDuration(delta);
+      widget.onDurationChanged?.call(chosenSeconds);
     }
+  }
+
+  static Uint8List _buildBeep() {
+    const sampleRate = 16000;
+    const seconds = 0.25;
+    const freq = 1100.0;
+    final totalSamples = (sampleRate * seconds).round();
+    final bytes = BytesBuilder();
+
+    // WAV header
+    final byteRate = sampleRate * 2; // mono 16-bit
+    final dataSize = totalSamples * 2;
+    final fileSize = 44 + dataSize - 8;
+    void w32(int v) => bytes.add([
+          v & 0xff,
+          (v >> 8) & 0xff,
+          (v >> 16) & 0xff,
+          (v >> 24) & 0xff
+        ]);
+    void w16(int v) => bytes.add([v & 0xff, (v >> 8) & 0xff]);
+
+    bytes.add('RIFF'.codeUnits);
+    w32(fileSize);
+    bytes.add('WAVEfmt '.codeUnits);
+    w32(16); // PCM chunk size
+    w16(1); // PCM format
+    w16(1); // channels
+    w32(sampleRate);
+    w32(byteRate);
+    w16(2); // block align
+    w16(16); // bits per sample
+    bytes.add('data'.codeUnits);
+    w32(dataSize);
+
+    // samples
+    for (var i = 0; i < totalSamples; i++) {
+      final t = i / sampleRate;
+      final amp = (0.35 *
+              (1 - (i / totalSamples)) *
+              32767 *
+              math.sin(2 * math.pi * freq * t))
+          .round()
+          .clamp(-32767, 32767);
+      w16(amp);
+    }
+    return bytes.toBytes();
   }
 }

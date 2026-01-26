@@ -12,6 +12,7 @@ import 'package:tapem/features/device/presentation/controllers/workout_day_contr
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/models/session_set_vm.dart';
 import 'package:tapem/features/device/presentation/widgets/machine_leaderboard_sheet.dart';
+import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
@@ -22,6 +23,16 @@ import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart'
     show showFeedbackDialog;
 import 'package:tapem/app_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Fixed dark palette for workout table cards (theme-independent)
+const _cardSurface = Color(0xFF07080D); // near‑black with slight blue hue
+const _cardPanelTop = Color(0xFF0A0C13);
+const _cardPanelBottom = Color(0xFF06070C);
+const _rowBgStart = Color(0xFF0C0E16);
+const _rowBgEnd = Color(0xFF090B12);
+const _strokeLight = Color(0x10FFFFFF); // ~6% white tint
+const _strokeStrong = Color(0x1AFFFFFF); // ~10% white tint
 
 enum _SessionOptionAction {
   remove,
@@ -75,9 +86,13 @@ class _WorkoutDayTableCardState
   final List<List<TextEditingController>> _dropRepsCtrls = [];
   final List<List<FocusNode>> _dropWeightFocusNodes = [];
   final List<List<FocusNode>> _dropRepsFocusNodes = [];
+  final List<GlobalKey> _rowKeys = [];
   bool _muteCtrls = false;
   int _lastFocusRequestId = -1;
   final Set<int> _expandedDropRows = <int>{};
+  int? _restSeconds;
+  final GlobalKey<SessionRestTimerState> _rowRestTimerKey =
+      GlobalKey<SessionRestTimerState>();
 
   DeviceProvider get _provider => widget.session.provider;
 
@@ -86,6 +101,7 @@ class _WorkoutDayTableCardState
     super.initState();
     _provider.addListener(_handleProviderChanged);
     _syncControllersFromProvider();
+    _loadPersistedRestSeconds();
   }
 
   @override
@@ -278,6 +294,7 @@ class _WorkoutDayTableCardState
       final dropReps = _dropRepsCtrls.removeLast();
       final dropWeightFocus = _dropWeightFocusNodes.removeLast();
       final dropRepsFocus = _dropRepsFocusNodes.removeLast();
+      if (_rowKeys.isNotEmpty) _rowKeys.removeLast();
       wc.dispose();
       rc.dispose();
       wf.dispose();
@@ -341,6 +358,10 @@ class _WorkoutDayTableCardState
         dropRepsFocusRow.removeLast().dispose();
       }
 
+      while (_rowKeys.length < sets.length) {
+        _rowKeys.add(GlobalKey());
+      }
+
       for (var d = 0; d < drops.length; d++) {
         final dropWeight = drops[d]['weight'] ?? '';
         final dropReps = drops[d]['reps'] ?? '';
@@ -355,6 +376,9 @@ class _WorkoutDayTableCardState
               TextSelection.collapsed(offset: dropRepsRow[d].text.length);
         }
       }
+    }
+    while (_rowKeys.length < sets.length) {
+      _rowKeys.add(GlobalKey());
     }
     _muteCtrls = false;
   }
@@ -482,6 +506,7 @@ class _WorkoutDayTableCardState
     required DeviceSetFieldFocus field,
     int dropIndex = 0,
   }) {
+    _ensureRowVisible(setIndex);
     _focusSession();
 
     final container =
@@ -489,6 +514,13 @@ class _WorkoutDayTableCardState
     final dayController = container.read(workoutDayControllerProvider);
     final prov = dayController.providerForKey(widget.session.key);
     if (prov == null) return;
+
+    // Clear focus on all other sessions to avoid multiple highlighted fields.
+    for (final other in dayController.activeSessions()) {
+      if (!identical(other.provider, prov)) {
+        other.provider.clearFocus();
+      }
+    }
 
     TextEditingController controller;
     FocusNode focusNode;
@@ -537,9 +569,7 @@ class _WorkoutDayTableCardState
 
     final keypad =
         container.read(overlayNumericKeypadControllerProvider);
-    final allowDecimal = field == DeviceSetFieldFocus.weight ||
-        field == DeviceSetFieldFocus.dropWeight;
-    keypad.openFor(controller, allowDecimal: allowDecimal);
+    keypad.openFor(controller, allowDecimal: true);
   }
 
   void _toggleDone(int index) {
@@ -584,6 +614,19 @@ class _WorkoutDayTableCardState
       field: DeviceSetFieldFocus.dropWeight,
       dropIndex: 0,
     );
+  }
+
+  void _ensureRowVisible(int index) {
+    if (index < 0 || index >= _rowKeys.length) return;
+    final ctx = _rowKeys[index].currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        alignment: 0.35,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   void _openLeaderboard(DeviceProvider prov, String? headerTitle) {
@@ -647,6 +690,31 @@ class _WorkoutDayTableCardState
       ref,
       gymId: widget.session.gymId,
       deviceId: widget.session.deviceId,
+    );
+  }
+
+  void _handleRestTimerInteraction() {
+    _focusSession();
+    final keypad =
+        riverpod.ProviderScope.containerOf(context, listen: false)
+            .read(overlayNumericKeypadControllerProvider);
+    if (keypad.isOpen) {
+      keypad.close();
+    }
+  }
+
+  Widget _buildRestTimerChip({bool inline = false}) {
+    final brandColor =
+        Theme.of(context).extension<AppBrandTheme>()?.outline ??
+            Theme.of(context).colorScheme.secondary;
+    return SessionRestTimer(
+      key: _rowRestTimerKey,
+      initialSeconds: _restSeconds,
+      onInteraction: _handleRestTimerInteraction,
+      onDurationChanged: (secs) => _persistRestSeconds(secs),
+      compact: true,
+      inline: inline,
+      showLabel: true,
     );
   }
 
@@ -740,6 +808,37 @@ class _WorkoutDayTableCardState
     return device.name;
   }
 
+  String _restPrefKey() {
+    final exerciseKey = widget.session.exerciseId.isNotEmpty
+        ? widget.session.exerciseId
+        : widget.session.deviceId;
+    return 'restTimer/${widget.session.userId}/$exerciseKey';
+  }
+
+  Future<void> _loadPersistedRestSeconds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getInt(_restPrefKey());
+      if (!mounted) return;
+      setState(() => _restSeconds = stored);
+      if (stored != null) {
+        _rowRestTimerKey.currentState?.applyInitialSeconds(stored);
+      }
+    } catch (_) {
+      // fail silently; timer just falls back to default
+    }
+  }
+
+  Future<void> _persistRestSeconds(int seconds) async {
+    setState(() => _restSeconds = seconds);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_restPrefKey(), seconds);
+    } catch (_) {
+      // ignore persistence failure
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -783,6 +882,7 @@ class _WorkoutDayTableCardState
         focusIndex < prov.sets.length &&
         focusRequestId != _lastFocusRequestId) {
       _lastFocusRequestId = focusRequestId;
+      _ensureRowVisible(focusIndex);
       TextEditingController? controller;
       FocusNode? focusNode;
       switch (focusField) {
@@ -837,11 +937,19 @@ class _WorkoutDayTableCardState
     final cardRadius = BorderRadius.circular(28);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
+        color: _cardSurface,
         borderRadius: cardRadius,
+        border: Border.all(color: _strokeLight, width: 0.75),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x99000000),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -849,11 +957,11 @@ class _WorkoutDayTableCardState
         children: [
           // Header – liegt jetzt direkt auf dem Seiten-Hintergrund
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 28,
-                height: 28,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
@@ -876,51 +984,61 @@ class _WorkoutDayTableCardState
                 child: Text(
                   widget.displayIndex.toString(),
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.2,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: GoogleFonts.inter(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: 0.05,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildRestTimerChip(inline: true),
+                      ],
                     ),
                     if (deviceDescription != null &&
                         deviceDescription.trim().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          deviceDescription,
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white.withOpacity(0.7),
-                          ),
+                      Text(
+                        deviceDescription,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withOpacity(0.7),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                   ],
                 ),
               ),
               SizedBox(
-                height: 32,
-                width: 32,
+                height: 26,
+                width: 26,
                 child: IconButton(
                   padding: EdgeInsets.zero,
-                  splashRadius: 18,
+                  splashRadius: 16,
                   icon: Icon(
                     Icons.close_rounded,
-                    size: 18,
+                    size: 15,
                     color: Colors.white.withOpacity(0.65),
                   ),
                   onPressed: _showSessionOptions,
@@ -928,7 +1046,7 @@ class _WorkoutDayTableCardState
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 8),
           // Swipeable content: table + actions
           _WorkoutSwipeableSessionContent(
             setsPage: _buildTableSection(
@@ -957,9 +1075,9 @@ class _WorkoutDayTableCardState
                   }
                   return count;
                 }),
+            trailing: null,
           ),
-          const SizedBox(height: 12),
-          // "+ Set hinzufügen" link
+          const SizedBox(height: 4),
           Center(
             child: GestureDetector(
               onTap: () {
@@ -974,7 +1092,7 @@ class _WorkoutDayTableCardState
               child: Text(
                 '+ ${loc.addSetButton}',
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: brandColor,
                 ),
@@ -994,31 +1112,29 @@ class _WorkoutDayTableCardState
   }) {
     final sets = prov.sets;
     final theme = Theme.of(context);
-    final tableBaseColor =
-        theme.bottomNavigationBarTheme.backgroundColor ??
-        theme.colorScheme.surface;
 
     if (sets.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          color: theme.cardColor.withOpacity(0.7),
+          color: _cardPanelTop,
+          border: Border.all(color: _strokeLight),
         ),
         child: Text(
           'Noch keine Sätze angelegt.',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.7),
-          ),
+                color: Colors.white.withOpacity(0.72),
+              ),
         ),
       );
     }
 
     final headerStyle = GoogleFonts.inter(
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: FontWeight.w600,
-      letterSpacing: 0.2,
-      color: theme.colorScheme.onSurface.withOpacity(0.7),
+      letterSpacing: 0.1,
+      color: Colors.white.withOpacity(0.62),
     );
 
     return ClipRRect(
@@ -1026,23 +1142,17 @@ class _WorkoutDayTableCardState
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              tableBaseColor,
-              Color.lerp(tableBaseColor, Colors.black, 0.12)!,
-            ],
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_cardPanelTop, _cardPanelBottom],
           ),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.04),
-            width: 1,
-          ),
-          boxShadow: [
+          border: Border.all(color: _strokeStrong, width: 0.9),
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black.withOpacity(0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
+              color: Color(0x66000000),
+              blurRadius: 16,
+              offset: Offset(0, 10),
             ),
           ],
         ),
@@ -1051,18 +1161,18 @@ class _WorkoutDayTableCardState
           children: [
             Padding(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   SizedBox(
-                    width: 32,
+                    width: 28,
                     child: Text(
                       'Satz',
                       style: headerStyle,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     flex: 3,
                     child: Align(
@@ -1093,11 +1203,11 @@ class _WorkoutDayTableCardState
                       ),
                     ),
                   ),
-                  const SizedBox(width: 56),
+                  const SizedBox(width: 52),
                 ],
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             for (var i = 0; i < sets.length; i++)
               () {
                 final dropsForSet = _dropsFromSet(sets[i]);
@@ -1217,18 +1327,19 @@ class _WorkoutDayTableCardState
                       _openKeypadForField(
                         setIndex: i,
                         field: DeviceSetFieldFocus.reps,
-                      );
-                    },
-                    onToggleDone: () => _toggleDone(i),
-                    onOpenDrop: () => _openDropEditor(i),
-                    weightController: _weightCtrls[i],
-                    repsController: _repsCtrls[i],
-                    weightFocusNode: _weightFocusNodes[i],
-                    repsFocusNode: _repsFocusNodes[i],
-                    dropRows: dropRows,
-                  ),
-                );
-              }(),
+                  );
+                },
+                onToggleDone: () => _toggleDone(i),
+                onOpenDrop: () => _openDropEditor(i),
+                weightController: _weightCtrls[i],
+                repsController: _repsCtrls[i],
+                weightFocusNode: _weightFocusNodes[i],
+                repsFocusNode: _repsFocusNodes[i],
+                dropRows: dropRows,
+                rowKey: _rowKeys[i],
+              ),
+            );
+          }(),
           ],
         ),
       ),
@@ -1384,6 +1495,7 @@ class _WorkoutTableRow extends StatelessWidget {
     required this.weightFocusNode,
     required this.repsFocusNode,
     required this.dropRows,
+    required this.rowKey,
   });
 
   final int index;
@@ -1401,6 +1513,7 @@ class _WorkoutTableRow extends StatelessWidget {
   final FocusNode weightFocusNode;
   final FocusNode repsFocusNode;
   final List<_DropRowView> dropRows;
+  final GlobalKey rowKey;
 
   String _formatPrevious(SessionSetVM? prev) {
     if (prev == null) return '-';
@@ -1421,9 +1534,6 @@ class _WorkoutTableRow extends StatelessWidget {
     final brandColor =
         theme.extension<AppBrandTheme>()?.outline ??
         theme.colorScheme.primary;
-    final tableBaseColor =
-        theme.bottomNavigationBarTheme.backgroundColor ??
-        theme.colorScheme.surface;
 
     final doneVal = set['done'];
     final done = doneVal == true || doneVal == 'true';
@@ -1431,31 +1541,30 @@ class _WorkoutTableRow extends StatelessWidget {
     final textStyle = GoogleFonts.inter(
       fontSize: 13,
       fontWeight: FontWeight.w500,
-      color: theme.colorScheme.onSurface.withOpacity(0.86),
+      color: Colors.white.withOpacity(0.9),
     );
 
     final secondaryStyle = textStyle.copyWith(
-      color: theme.colorScheme.onSurface.withOpacity(0.7),
+      color: Colors.white.withOpacity(0.65),
     );
 
     final rowBg = LinearGradient(
       begin: Alignment.centerLeft,
       end: Alignment.centerRight,
-      colors: [
-        tableBaseColor.withOpacity(0.98),
-        Color.lerp(tableBaseColor, Colors.black, 0.08)!,
-      ],
+      colors: const [_rowBgStart, _rowBgEnd],
     );
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      key: rowKey,
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 0.5),
       decoration: BoxDecoration(
         gradient: rowBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _strokeLight, width: 0.6),
       ),
       padding: const EdgeInsets.symmetric(
         horizontal: 8,
-        vertical: 7,
+        vertical: 5,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1463,13 +1572,13 @@ class _WorkoutTableRow extends StatelessWidget {
           Row(
             children: [
               SizedBox(
-                width: 32,
+                width: 30,
                 child: Text(
                   '${index + 1}',
                   style: secondaryStyle,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 flex: 3,
                 child: Text(
@@ -1567,13 +1676,13 @@ class _WorkoutTableRow extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 32,
+            width: 30,
             child: Text(
               '↘︎',
               style: secondaryStyle,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             flex: 3,
             child: Text(
@@ -1603,7 +1712,7 @@ class _WorkoutTableRow extends StatelessWidget {
               onTap: drop.onTapReps,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           if (drop.showAddButton)
             _WorkoutRoundButton(
               icon: Icons.add,
@@ -1613,9 +1722,9 @@ class _WorkoutTableRow extends StatelessWidget {
               onTap: drop.onAdd,
             )
           else
-            const SizedBox(width: 32, height: 32),
-          const SizedBox(width: 6),
-          const SizedBox(width: 32, height: 32),
+            const SizedBox(width: 30, height: 30),
+          const SizedBox(width: 4),
+          const SizedBox(width: 30, height: 30),
         ],
       ),
     );
@@ -1748,11 +1857,13 @@ class _WorkoutSwipeableSessionContent extends StatefulWidget {
     required this.setsPage,
     required this.actionsPage,
     required this.visibleRowCount,
+    this.trailing,
   });
 
   final Widget setsPage;
   final Widget actionsPage;
   final int visibleRowCount;
+  final Widget? trailing;
 
   @override
   State<_WorkoutSwipeableSessionContent> createState() =>
@@ -1779,46 +1890,56 @@ class _WorkoutSwipeableSessionContentState
         theme.extension<AppBrandTheme>()?.outline ??
         theme.colorScheme.secondary;
 
-    const rowHeight = 44.0;
-    const baseHeight = 110.0;
+    const rowHeight = 36.0;
+    const baseHeight = 70.0;
     final setsHeight =
         baseHeight + widget.visibleRowCount.clamp(1, 20) * rowHeight;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _goToPage(_currentPage == 0 ? 1 : 0),
-            onHorizontalDragStart: (_) => _dragAccum = 0,
-            onHorizontalDragUpdate: (details) {
-              _dragAccum += details.delta.dx;
-              const threshold = 28.0;
-              if (_dragAccum.abs() >= threshold) {
-                _goToPage(_dragAccum < 0 ? 1 : 0);
-                _dragAccum = 0;
-              }
-            },
-            onHorizontalDragEnd: (_) => _dragAccum = 0,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 28, minWidth: 96),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _WorkoutPageIndicator(
-                    isActive: _currentPage == 0,
-                    color: brandColor,
+        SizedBox(
+          height: 32,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _goToPage(_currentPage == 0 ? 1 : 0),
+                onHorizontalDragStart: (_) => _dragAccum = 0,
+                onHorizontalDragUpdate: (details) {
+                  _dragAccum += details.delta.dx;
+                  const threshold = 24.0;
+                  if (_dragAccum.abs() >= threshold) {
+                    _goToPage(_dragAccum < 0 ? 1 : 0);
+                    _dragAccum = 0;
+                  }
+                },
+                onHorizontalDragEnd: (_) => _dragAccum = 0,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 18, minWidth: 88),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _WorkoutPageIndicator(
+                        isActive: _currentPage == 0,
+                        color: brandColor,
+                      ),
+                      const SizedBox(width: 8),
+                      _WorkoutPageIndicator(
+                        isActive: _currentPage == 1,
+                        color: brandColor,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  _WorkoutPageIndicator(
-                    isActive: _currentPage == 1,
-                    color: brandColor,
-                  ),
-                ],
+                ),
               ),
-            ),
+              if (widget.trailing != null)
+                Positioned(
+                  right: 0,
+                  child: widget.trailing!,
+                ),
+            ],
           ),
         ),
         AnimatedSize(

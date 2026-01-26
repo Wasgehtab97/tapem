@@ -15,6 +15,40 @@ import '../../l10n/app_localizations.dart';
 import '../../ui/numeric_keypad/overlay_numeric_keypad.dart';
 import '../app/global_listener_host.dart';
 
+class _OverlayNavigatorObserver extends NavigatorObserver {
+  final OverlayNumericKeypadController controller;
+  _OverlayNavigatorObserver(this.controller);
+
+  void _close() {
+    controller.close();
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  @override
+  void didPush(Route route, Route? previousRoute) {
+    _close();
+    super.didPush(route, previousRoute);
+  }
+
+  @override
+  void didPop(Route route, Route? previousRoute) {
+    _close();
+    super.didPop(route, previousRoute);
+  }
+
+  @override
+  void didRemove(Route route, Route? previousRoute) {
+    _close();
+    super.didRemove(route, previousRoute);
+  }
+
+  @override
+  void didReplace({Route? newRoute, Route? oldRoute}) {
+    _close();
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+  }
+}
+
 class TapemApp extends StatelessWidget {
   const TapemApp({super.key});
 
@@ -37,6 +71,9 @@ class TapemMaterialApp extends ConsumerWidget {
 
     return MaterialApp(
       navigatorKey: navigatorKey,
+      navigatorObservers: [
+        _OverlayNavigatorObserver(keypad),
+      ],
       title: dotenv.env['APP_NAME'] ?? 'Tap\'em',
       debugShowCheckedModeBanner: false,
       theme: theme,
