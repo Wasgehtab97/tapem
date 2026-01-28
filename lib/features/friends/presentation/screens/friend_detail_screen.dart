@@ -117,15 +117,6 @@ class _ProfileCard extends StatelessWidget {
                     'Profil von ${profile.username}',
                     style: theme.textTheme.bodyMedium,
                   ),
-                  if (profile.publicKey != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Public Key: ${profile.publicKey}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),

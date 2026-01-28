@@ -3095,11 +3095,11 @@ abstract class AppLocalizations {
   /// **'Rank'**
   String get homeTabRank;
 
-  /// Label of the affiliate tab
+  /// Label of the deals tab
   ///
   /// In en, this message translates to:
-  /// **'Affiliate'**
-  String get homeTabAffiliate;
+  /// **'Deals'**
+  String get homeTabDeals;
 
   /// Label of the plans tab
   ///

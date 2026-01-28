@@ -235,33 +235,27 @@ class _NutritionHeroCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           
           // Macro pills - with reduced spacing to prevent overflow
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Flexible(
-                child: MacroPill(
-                  label: 'P',
-                  value: '${protein}g',
-                  color: AppColors.accentMint,
-                  enableGlow: false,
-                ),
+              MacroPill(
+                label: 'P',
+                value: '${protein}g',
+                color: Colors.redAccent,
+                enableGlow: false,
               ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: MacroPill(
-                  label: 'C',
-                  value: '${carbs}g',
-                  color: AppColors.accentTurquoise,
-                  enableGlow: false,
-                ),
+              MacroPill(
+                label: 'C',
+                value: '${carbs}g',
+                color: AppColors.accentMint,
+                enableGlow: false,
               ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: MacroPill(
-                  label: 'F',
-                  value: '${fat}g',
-                  color: AppColors.accentAmber,
-                  enableGlow: false,
-                ),
+              MacroPill(
+                label: 'F',
+                value: '${fat}g',
+                color: AppColors.accentAmber,
+                enableGlow: false,
               ),
             ],
           ),

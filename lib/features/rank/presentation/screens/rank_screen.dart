@@ -40,6 +40,18 @@ class _RankScreenState extends ConsumerState<RankScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.gymId.isEmpty || widget.deviceId.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: const Text('Leaderboard'),
+        ),
+        body: const Center(
+          child: Text('Kein Gerät/Gym konfiguriert – bitte zuerst ein Gerät auswählen.'),
+        ),
+      );
+    }
+
     ref.watch(rankProvider);
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();

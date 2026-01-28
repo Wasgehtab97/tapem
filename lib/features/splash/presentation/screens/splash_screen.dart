@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app_router.dart';
 import '../../../../bootstrap/providers.dart';
 import '../../../../core/constants.dart';
+import '../../../../core/theme/design_tokens.dart';
 import '../../application/splash_flow.dart';
+import '../widgets/premium_splash_logo.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -171,8 +173,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       );
     }
 
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF121212),
+              Color(0xFF0A0A0A),
+            ],
+          ),
+        ),
+        child: const Center(
+          child: PremiumSplashLogo(),
+        ),
+      ),
     );
   }
 }

@@ -45,74 +45,6 @@ class _NutritionScanScreenState extends State<NutritionScanScreen>
     super.dispose();
   }
 
-  Future<void> _pickMeal() async {
-    final meals = [
-      ('breakfast', 'Frühstück'),
-      ('lunch', 'Mittagessen'),
-      ('dinner', 'Abendessen'),
-      ('snack', 'Snack'),
-    ];
-    
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: SafeArea(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: AppSpacing.sm),
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    for (final meal in meals)
-                      NutritionCard(
-                        enableGlow: false,
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                          vertical: 4,
-                        ),
-                        onTap: () => Navigator.of(ctx).pop(meal.$1),
-                        child: Row(
-                          children: [
-                            Text(
-                              meal.$2,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const Spacer(),
-                            const BrandGradientIcon(Icons.chevron_right_rounded),
-                          ],
-                        ),
-                      ),
-                    const SizedBox(height: AppSpacing.md),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-    
-    if (choice != null && mounted) {
-      setState(() => _meal = choice);
-    }
-  }
 
   void _handleDetect(BarcodeCapture capture) {
     if (_hasScanned) return;
@@ -149,28 +81,6 @@ class _NutritionScanScreenState extends State<NutritionScanScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.nutritionScanTitle),
-        actions: [
-          // Premium meal selector button
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    brandColor.withOpacity(0.2),
-                    brandColor.withOpacity(0.05),
-                  ],
-                ),
-              ),
-              child: IconButton(
-                tooltip: loc.nutritionAddEntryCta,
-                icon: const BrandGradientIcon(Icons.restaurant_menu_rounded),
-                onPressed: _pickMeal,
-              ),
-            ),
-          ),
-        ],
       ),
       body: Stack(
         children: [
@@ -233,14 +143,6 @@ class _NutritionScanScreenState extends State<NutritionScanScreen>
                           onPressed: () => Navigator.of(context).pushNamed(
                             AppRouter.nutritionEntry,
                             arguments: {'meal': _meal},
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          'Mahlzeit: $_meal',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: brandColor,
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],

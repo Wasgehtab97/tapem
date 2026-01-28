@@ -1606,8 +1606,8 @@
   ,"@homeTabAdmin": {"description": "Label of the admin tab"}
   ,"homeTabRank": "Rank"
   ,"@homeTabRank": {"description": "Label of the rank tab"}
-  ,"homeTabAffiliate": "Affiliate"
-  ,"@homeTabAffiliate": {"description": "Label of the affiliate tab"}
+  ,"homeTabDeals": "Deals"
+  ,"@homeTabDeals": {"description": "Label of the deals tab"}
   ,"homeTabPlans": "Plans"
   ,"@homeTabPlans": {"description": "Label of the plans tab"}
   ,"homeTabNutrition": "Nutrition"

@@ -3,7 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_devices_screen.dart';
-import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
+import 'package:tapem/features/deals/presentation/screens/deals_screen.dart';
+import 'package:tapem/features/admin/presentation/screens/admin_deals_screen.dart';
 import 'package:tapem/features/auth/presentation/screens/gym_access_screen.dart';
 import 'package:tapem/features/auth/presentation/screens/gym_login_screen.dart';
 import 'package:tapem/features/auth/presentation/screens/gym_register_method_screen.dart';
@@ -38,7 +39,6 @@ import 'package:tapem/features/survey/presentation/screens/survey_vote_screen.da
 import 'package:tapem/features/friends/presentation/screens/friends_home_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friend_detail_screen.dart';
 import 'package:tapem/features/friends/presentation/screens/friend_training_calendar_screen.dart';
-import 'package:tapem/features/friends/presentation/screens/friend_chat_screen.dart';
 import 'package:tapem/features/creatine/presentation/screens/creatine_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_symbols_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_remove_users_screen.dart';
@@ -88,7 +88,7 @@ class AppRouter {
   static const admin = '/admin';
   static const adminDevices = '/admin_devices';
   static const adminRemoveUsers = '/admin_remove_users';
-  static const affiliate = '/affiliate';
+  static const deals = '/deals';
   static const rank = '/rank';
   // Deprecated alias for backward compatibility
   static const rankScreen = rank;
@@ -115,7 +115,6 @@ class AppRouter {
   static const friendsHome = '/friends';
   static const friendDetail = '/friend_detail';
   static const friendTrainingCalendar = '/friend_training_calendar';
-  static const friendChat = '/friend_chat';
   static const creatine = '/creatine';
   static const restStats = '/rest_stats';
   static const community = '/community';
@@ -131,11 +130,12 @@ class AppRouter {
   static const nutritionSearch = '/nutrition/search';
   static const nutritionRecipes = '/nutrition/recipes';
   static const nutritionRecipeEdit = '/nutrition/recipes/edit';
+  static const adminDeals = '/admin/deals';
 
   static const restrictedRoutesForMembers = {
     report,
     admin,
-    affiliate,
+    deals,
   };
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -319,6 +319,7 @@ class AppRouter {
             initialProduct: args['product'] as NutritionProduct?,
             initialQty: (args['qty'] as num?)?.toDouble(),
             entryIndex: args['index'] as int?,
+            initialDate: args['date'] as DateTime?,
           ),
         );
 
@@ -348,13 +349,32 @@ class AppRouter {
           ),
         );
       case nutritionRecipes:
-        return MaterialPageRoute(builder: (_) => const NutritionRecipeListScreen());
-      case nutritionRecipeEdit:
         final args = settings.arguments as Map<String, dynamic>? ?? const {};
         return MaterialPageRoute(
-          builder: (_) => NutritionRecipeEditScreen(
-            recipe: args['recipe'] as NutritionRecipe?,
+          builder: (_) => NutritionRecipeListScreen(
+            meal: args['meal'] as String?,
+            isSelectionMode: args['isSelectionMode'] as bool? ?? false,
+            date: args['date'] as DateTime?,
           ),
+        );
+      case nutritionRecipeEdit:
+        final rawArgs = settings.arguments;
+        debugPrint('🔀 [Router] nutritionRecipeEdit rawArgs=$rawArgs');
+        NutritionRecipe? recipe;
+        if (rawArgs is NutritionRecipe) {
+          recipe = rawArgs;
+        } else if (rawArgs is Map) {
+          debugPrint('🔀 [Router] rawArgs is Map. Keys: ${rawArgs.keys}');
+          final val = rawArgs['recipe'];
+          if (val is NutritionRecipe) {
+            recipe = val;
+          } else {
+             debugPrint('🔀 [Router] rawArgs["recipe"] is $val (${val.runtimeType})');
+          }
+        }
+        debugPrint('🔀 [Router] Final recipe: ${recipe?.name} (id=${recipe?.id})');
+        return MaterialPageRoute(
+          builder: (_) => NutritionRecipeEditScreen(recipe: recipe),
         );
 
       case community:
@@ -414,8 +434,15 @@ class AppRouter {
           ),
         );
 
-      case affiliate:
-        return MaterialPageRoute(builder: (_) => const AffiliateScreen());
+      case adminDeals:
+        return MaterialPageRoute(
+          builder: (_) => const GymContextGuard(
+            child: AdminDealsScreen(),
+          ),
+        );
+
+      case deals:
+        return MaterialPageRoute(builder: (_) => const DealsScreen());
 
       case rank:
         final args = settings.arguments as Map<String, String>? ?? const {};
@@ -513,15 +540,6 @@ class AppRouter {
         final args = settings.arguments as Map<String, String>? ?? const {};
         return MaterialPageRoute(
           builder: (_) => FriendTrainingCalendarScreen(
-            friendUid: args['uid'] ?? '',
-            friendName: args['name'] ?? '',
-          ),
-        );
-
-      case friendChat:
-        final args = settings.arguments as Map<String, String>? ?? const {};
-        return MaterialPageRoute(
-          builder: (_) => FriendChatScreen(
             friendUid: args['uid'] ?? '',
             friendName: args['name'] ?? '',
           ),

@@ -51,7 +51,6 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
   Widget build(BuildContext context) {
     final friendsState = ref.watch(friendsProvider);
     final searchState = ref.watch(friendSearchProvider);
-    final chatUnread = ref.watch(chatUnreadProvider);
     final presenceState = ref.watch(friendPresenceProvider);
     final authState = ref.watch(authViewStateProvider);
     final loc = AppLocalizations.of(context)!;
@@ -70,7 +69,7 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _friendsTab(friendsState, chatUnread, presenceState, loc),
+          _friendsTab(friendsState, presenceState, loc),
           _requestsTab(friendsState, loc),
           _searchTab(friendsState, searchState, loc, authState),
         ],
@@ -80,7 +79,6 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
 
   Widget _friendsTab(
     FriendsState friends,
-    AsyncValue<ChatUnreadState> chatUnread,
     FriendPresenceState presence,
     AppLocalizations loc,
   ) {
@@ -116,15 +114,11 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
               return const SizedBox.shrink();
             }
 
-            final unreadCount =
-                chatUnread.valueOrNull?.unreadByFriend[f.friendUid] ?? 0;
-            final hasUnread = unreadCount > 0;
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: _buildFriendCard(
                 profile: profile,
                 presence: presence.stateFor(f.friendUid),
-                hasUnread: hasUnread,
                 onTap: () => _showFriendActions(f.friendUid),
               ),
             );
@@ -368,19 +362,6 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
                   AppRouter.friendTrainingCalendar,
                   arguments: {'uid': uid, 'name': name},
                 );
-              },
-            ),
-            ListTile(
-              title: Text(loc.friends_action_chat),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(
-                  context,
-                  AppRouter.friendChat,
-                  arguments: {'uid': uid, 'name': name},
-                );
-                // TODO: Mark chat as read with new chat system
-                // ref.read(friendChatSummaryProvider.notifier).markRead(uid);
               },
             ),
             ListTile(
@@ -661,7 +642,6 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
   Widget _buildFriendCard({
     required PublicProfile profile,
     required PresenceState? presence,
-    required bool hasUnread,
     required VoidCallback onTap,
   }) {
     final theme = Theme.of(context);
@@ -723,23 +703,6 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
                       ),
                     ),
                   ),
-                  if (hasUnread)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        width: 16,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: theme.cardColor,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
               const SizedBox(width: 16),

@@ -1017,15 +1017,12 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
             riverpod.Consumer(
               builder: (context, ref, _) {
                 final alerts = ref.watch(friendAlertsProvider);
-                final chatUnread = ref.watch(chatUnreadProvider);
-                final hasUnreadMessages = chatUnread.valueOrNull?.hasUnread ?? false;
-                final showBadge = alerts.showBadge || hasUnreadMessages;
 
                 return IconButton(
                   icon: Stack(
                     children: [
                       const BrandGradientIcon(Icons.group),
-                      if (showBadge)
+                      if (alerts.showBadge)
                         const Positioned(
                           right: 0,
                           top: 0,

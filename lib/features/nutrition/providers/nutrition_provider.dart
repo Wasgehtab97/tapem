@@ -1,15 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/nutrition_repository.dart';
-import '../domain/models/nutrition_goal.dart';
-import '../domain/models/nutrition_log.dart';
-import '../domain/models/nutrition_year_summary.dart';
-import '../domain/models/nutrition_macros.dart';
-import '../domain/models/nutrition_entry.dart';
-import '../domain/models/nutrition_totals.dart';
-import '../domain/utils/nutrition_dates.dart';
-import '../domain/services/nutrition_status_service.dart';
-import '../domain/models/nutrition_recipe.dart';
+import 'package:tapem/features/nutrition/data/nutrition_repository.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_goal.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_log.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_year_summary.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_macros.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_entry.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_totals.dart';
+import 'package:tapem/features/nutrition/domain/utils/nutrition_dates.dart';
+import 'package:tapem/features/nutrition/domain/services/nutrition_status_service.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_recipe.dart';
 
 class NutritionProvider extends ChangeNotifier {
   final NutritionRepository _repo;

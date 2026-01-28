@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../domain/models/nutrition_goal.dart';
-import '../domain/models/nutrition_log.dart';
-import '../domain/models/nutrition_year_summary.dart';
-import '../domain/models/nutrition_product.dart';
-import '../domain/models/nutrition_recipe.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_goal.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_log.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_year_summary.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_product.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_recipe.dart';
 
 class NutritionRepository {
   final FirebaseFirestore _firestore;

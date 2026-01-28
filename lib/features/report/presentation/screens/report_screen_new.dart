@@ -56,12 +56,7 @@ class ReportScreenNew extends ConsumerWidget {
     final closedSurveysCount = surveyState.closedSurveys.length;
 
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        title: Text(loc.reportTitle),
-        centerTitle: true,
-        foregroundColor: brandColor,
-      ),
+
       body: Container(
         color: theme.scaffoldBackgroundColor,
         child: SafeArea(
@@ -74,16 +69,7 @@ class ReportScreenNew extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: AppSpacing.sm),
-                Center(
-                  child: Text(
-                    loc.reportTitle,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: brandColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+
                 const SizedBox(height: AppSpacing.sm),
                 Center(
                   child: Text(

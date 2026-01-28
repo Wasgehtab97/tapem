@@ -1643,7 +1643,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTabRank => 'Rank';
 
   @override
-  String get homeTabAffiliate => 'Affiliate';
+  String get homeTabDeals => 'Deals';
 
   @override
   String get homeTabPlans => 'Plans';

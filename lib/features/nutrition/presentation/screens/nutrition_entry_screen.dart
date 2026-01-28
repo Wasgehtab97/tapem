@@ -16,6 +16,7 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
+import 'package:tapem/features/nutrition/domain/models/nutrition_recipe.dart';
 
 class NutritionEntryScreen extends ConsumerStatefulWidget {
   final String? initialBarcode;
@@ -24,6 +25,8 @@ class NutritionEntryScreen extends ConsumerStatefulWidget {
   final NutritionProduct? initialProduct;
   final double? initialQty;
   final int? entryIndex;
+  final DateTime? initialDate;
+  final NutritionRecipe? initialRecipe;
   const NutritionEntryScreen({
     super.key,
     this.initialBarcode,
@@ -32,6 +35,8 @@ class NutritionEntryScreen extends ConsumerStatefulWidget {
     this.initialProduct,
     this.initialQty,
     this.entryIndex,
+    this.initialDate,
+    this.initialRecipe,
   });
 
   @override
@@ -63,6 +68,7 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
   bool _isSearch = false;
   String _meal = 'breakfast';
   bool _showManualMacros = false;
+  List<RecipeIngredient>? _ingredients;
 
   bool get _isEditing => widget.entryIndex != null;
 
@@ -95,11 +101,7 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
       _fatFocus,
     ];
     // Makro-Felder starten leer; werden bei Lookup/Scan befüllt.
-    _nameFocus.addListener(() {
-      if (_nameFocus.hasFocus) {
-        _closeKeypad();
-      }
-    });
+    _nameFocus.addListener(_onNameFocusChange);
     _meal = widget.initialMeal;
     if (widget.initialBarcode != null && widget.initialBarcode!.isNotEmpty) {
       _barcodeController.text = widget.initialBarcode!;
@@ -114,17 +116,54 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     if (widget.initialQty != null && widget.initialQty! > 0) {
       _qtyController.text = widget.initialQty!.toString();
     }
-    if (_barcodeController.text.isNotEmpty) {
+    if (widget.initialRecipe != null) {
+      _ingredients = List.from(widget.initialRecipe!.ingredients);
+      _updateMacrosFromIngredients();
+    }
+    if (_barcodeController.text.isNotEmpty && widget.initialRecipe == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _lookupBarcode();
       });
     }
   }
 
+  void _updateMacrosFromIngredients() {
+    if (_ingredients == null || _ingredients!.isEmpty) return;
+    
+    int scale(int per100, double grams) => ((per100 * grams) / 100).round();
+    
+    int totalKcal = 0;
+    int totalProtein = 0;
+    int totalCarbs = 0;
+    int totalFat = 0;
+    double totalGrams = 0;
+
+    for (final ing in _ingredients!) {
+      totalKcal += scale(ing.kcalPer100, ing.grams);
+      totalProtein += scale(ing.proteinPer100, ing.grams);
+      totalCarbs += scale(ing.carbsPer100, ing.grams);
+      totalFat += scale(ing.fatPer100, ing.grams);
+      totalGrams += ing.grams;
+    }
+
+    // We want to set the "per 100g" fields based on the sum of ingredients
+    // but the entry itself represents the portion. Actually, for a recipe,
+    // "per 100g" should be the normalized value of the whole thing.
+    
+    if (totalGrams > 0) {
+      double factor = 100 / totalGrams;
+      _kcalPer100Ctrl.text = (totalKcal * factor).round().toString();
+      _proteinPer100Ctrl.text = (totalProtein * factor).round().toString();
+      _carbsPer100Ctrl.text = (totalCarbs * factor).round().toString();
+      _fatPer100Ctrl.text = (totalFat * factor).round().toString();
+    }
+  }
+
   @override
   void dispose() {
-    // Overlay direkt schließen.
-    ref.read(overlayNumericKeypadControllerProvider).close();
+    // Remove listeners before disposing to avoid them triggering during disposal
+    _nameFocus.removeListener(_onNameFocusChange);
+    
     _nameController.dispose();
     _barcodeController.dispose();
     _qtyController.dispose();
@@ -139,6 +178,12 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     _carbsPer100Ctrl.dispose();
     _fatPer100Ctrl.dispose();
     super.dispose();
+  }
+
+  void _onNameFocusChange() {
+    if (_nameFocus.hasFocus) {
+      _closeKeypad();
+    }
   }
 
   double? _parseDouble(String raw) {
@@ -273,6 +318,7 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
   }
 
   void _closeKeypad() {
+    if (!mounted) return;
     ref.read(overlayNumericKeypadControllerProvider).close();
   }
 
@@ -442,7 +488,7 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     setState(() => _isSaving = true);
     final entry = _buildEntry(uid);
     try {
-      final date = ref.read(nutritionProvider).selectedDate;
+      final date = widget.initialDate ?? ref.read(nutritionProvider).selectedDate;
       final productForSave = _buildProductForSave();
       if (_isEditing && widget.entryIndex != null) {
         await ref.read(nutritionProvider).updateEntry(
@@ -473,7 +519,7 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntrySaved)),
       );
-      if (_isEditing) {
+      if (_isEditing || widget.initialProduct != null || widget.initialBarcode != null) {
         Navigator.of(context).pop(true);
       } else {
         setState(() {
@@ -653,9 +699,21 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          '$mealTitle: ${mealLabel(_meal)} · Freie kcal: $remainingKcal',
-                          style: Theme.of(context).textTheme.titleSmall,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${mealLabel(_meal)} · Freie kcal: $remainingKcal',
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        const SizedBox(height: AppSpacing.sm),
+                        NutritionMealPicker(
+                          selectedMeal: _meal,
+                          onChanged: (m) => setState(() => _meal = m),
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Wrap(
@@ -665,22 +723,22 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
                             MacroPill(
                               label: 'Kcal',
                               value: '${combinedMeal.kcal}',
-                              color: Colors.blueAccent,
+                              color: AppColors.accentTurquoise,
                             ),
                             MacroPill(
                               label: 'P',
                               value: '${combinedMeal.protein} g',
-                              color: Colors.redAccent,
+                              color: const Color(0xFFE53935),
                             ),
                             MacroPill(
                               label: 'C',
                               value: '${combinedMeal.carbs} g',
-                              color: Colors.greenAccent.shade400,
+                              color: AppColors.accentMint,
                             ),
                             MacroPill(
                               label: 'F',
                               value: '${combinedMeal.fat} g',
-                              color: Colors.amber.shade700,
+                              color: AppColors.accentAmber,
                             ),
                           ],
                         ),
@@ -779,6 +837,18 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
                                 theme: Theme.of(context),
                                 loc: loc,
                               ),
+                              if (_ingredients != null) ...[
+                                const SizedBox(height: AppSpacing.md),
+                                _RecipeIngredientsList(
+                                  ingredients: _ingredients!,
+                                  onIngredientsChanged: (updated) {
+                                    setState(() {
+                                      _ingredients = updated;
+                                      _updateMacrosFromIngredients();
+                                    });
+                                  },
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -803,6 +873,8 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
 }
 
 /// Premium input field with brand interactive styling - NO ugly borders!
+
+
 class _FieldCard extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -1289,6 +1361,126 @@ class _ActionButtonEntry extends StatelessWidget {
           side: BorderSide(color: outline.withOpacity(0.35)),
         ),
       ),
+    );
+  }
+}
+
+class _RecipeIngredientsList extends StatefulWidget {
+  final List<RecipeIngredient> ingredients;
+  final ValueChanged<List<RecipeIngredient>> onIngredientsChanged;
+
+  const _RecipeIngredientsList({
+    required this.ingredients,
+    required this.onIngredientsChanged,
+  });
+
+  @override
+  State<_RecipeIngredientsList> createState() => _RecipeIngredientsListState();
+}
+
+class _RecipeIngredientsListState extends State<_RecipeIngredientsList> {
+  late List<TextEditingController> _controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = widget.ingredients
+        .map<TextEditingController>((ing) => TextEditingController(text: ing.grams.toStringAsFixed(0)))
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    for (final ctrl in _controllers) {
+      ctrl.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.list_alt_rounded, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'Zutaten anpassen',
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ...widget.ingredients.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final ing = entry.value;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: brandColor.withOpacity(0.1)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ing.name,
+                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        '${ing.kcalPer100} kcal/100g',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 80,
+                  child: TextField(
+                    controller: _controllers[idx],
+                    decoration: const InputDecoration(
+                      suffixText: 'g',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: theme.textTheme.bodyMedium,
+                    onChanged: (v) {
+                      final val = double.tryParse(v.replaceAll(',', '.')) ?? 0;
+                      final updated = List<RecipeIngredient>.from(widget.ingredients);
+                      updated[idx] = RecipeIngredient(
+                        name: ing.name,
+                        barcode: ing.barcode,
+                        kcalPer100: ing.kcalPer100,
+                        proteinPer100: ing.proteinPer100,
+                        carbsPer100: ing.carbsPer100,
+                        fatPer100: ing.fatPer100,
+                        grams: val,
+                      );
+                      widget.onIngredientsChanged(updated);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
     );
   }
 }

@@ -25,7 +25,6 @@ class HeroGradientCard extends StatelessWidget {
       onTap: onTap,
       padding: EdgeInsets.zero, // Padding handled by internal container
       enableScaleAnimation: onTap != null,
-      borderColor: null, // Clean up erroneous parameter
       restingBorderColor: gradient.colors.first.withOpacity(0.3),
       child: Container(
         padding: padding ?? const EdgeInsets.all(AppSpacing.md),

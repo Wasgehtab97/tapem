@@ -68,9 +68,40 @@ class NutritionTabNavigator extends ConsumerWidget {
       case AppRouter.nutritionSearch:
         return MaterialPageRoute(builder: (_) => const NutritionSearchScreen());
       case AppRouter.nutritionRecipes:
-        return MaterialPageRoute(builder: (_) => const NutritionRecipeListScreen());
+        final args = settings.arguments as Map<String, dynamic>? ?? const {};
+        return MaterialPageRoute(
+          builder: (_) => NutritionRecipeListScreen(
+            meal: args['meal'] as String?,
+            isSelectionMode: args['isSelectionMode'] as bool? ?? false,
+            date: args['date'] as DateTime?,
+          ),
+        );
       case AppRouter.nutritionRecipeEdit:
-        return MaterialPageRoute(builder: (_) => const NutritionRecipeEditScreen());
+        final rawArgs = settings.arguments;
+        NutritionRecipe? recipe;
+        bool isLogMode = false;
+        String? logMeal;
+        DateTime? logDate;
+
+        if (rawArgs is NutritionRecipe) {
+          recipe = rawArgs;
+        } else if (rawArgs is Map) {
+          final val = rawArgs['recipe'];
+          if (val is NutritionRecipe) {
+            recipe = val;
+          }
+           isLogMode = rawArgs['isLogMode'] as bool? ?? false;
+           logMeal = rawArgs['meal'] as String?;
+           logDate = rawArgs['date'] as DateTime?;
+
+        }
+        return MaterialPageRoute(
+            builder: (_) => NutritionRecipeEditScreen(
+                  recipe: recipe,
+                  isLogMode: isLogMode,
+                  logMeal: logMeal,
+                  logDate: logDate,
+                ));
       case AppRouter.nutritionEntry:
         final args = settings.arguments as Map<String, dynamic>? ?? const {};
         return MaterialPageRoute(

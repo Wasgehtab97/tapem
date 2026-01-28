@@ -219,8 +219,8 @@ class MacroPill extends StatelessWidget {
     
     final pill = Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 8,
+        horizontal: 6,
+        vertical: 4,
       ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -262,6 +262,7 @@ class MacroPill extends StatelessWidget {
             const SizedBox(width: 4),
           ],
           Flexible(
+            fit: FlexFit.loose,
             child: Text(
               value,
               style: theme.textTheme.labelMedium?.copyWith(
@@ -270,7 +271,9 @@ class MacroPill extends StatelessWidget {
                 letterSpacing: 0.3,
                 fontSize: 12,
               ),
-              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.visible, // show full macro amount (no "...").
             ),
           ),
         ],
@@ -583,6 +586,121 @@ class _AnimatedNutritionStatState extends State<AnimatedNutritionStat>
           ],
         );
       },
+    );
+  }
+}
+
+Future<String?> showMealSelectionDialog(BuildContext context) {
+  return showModalBottomSheet<String>(
+    context: context,
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Text(
+              'Mahlzeit wählen',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.wb_sunny_outlined, size: 24),
+            title: const Text('Frühstück'),
+            onTap: () => Navigator.pop(context, 'breakfast'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.wb_sunny_rounded, size: 24),
+            title: const Text('Mittagessen'),
+            onTap: () => Navigator.pop(context, 'lunch'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.nights_stay_outlined, size: 24),
+            title: const Text('Abendessen'),
+            onTap: () => Navigator.pop(context, 'dinner'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.cookie_outlined, size: 24),
+            title: const Text('Snack'),
+            onTap: () => Navigator.pop(context, 'snack'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+      ),
+    ),
+  );
+}
+
+class NutritionMealPicker extends StatelessWidget {
+  final String selectedMeal;
+  final ValueChanged<String> onChanged;
+
+  const NutritionMealPicker({
+    super.key,
+    required this.selectedMeal,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final meals = [
+      ('breakfast', 'Frühstück', Icons.wb_twilight_rounded),
+      ('lunch', 'Mittagessen', Icons.wb_sunny_rounded),
+      ('dinner', 'Abendessen', Icons.nights_stay_rounded),
+      ('snack', 'Snack', Icons.cookie_rounded),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: meals.map((m) {
+          final isSelected = selectedMeal == m.$1;
+          final brand = theme.extension<AppBrandTheme>();
+          final brandColor = brand?.outline ?? theme.colorScheme.secondary;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              showCheckmark: false,
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    m.$3,
+                    size: 16,
+                    color: isSelected ? Colors.white : brandColor.withOpacity(0.7),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(m.$2),
+                ],
+              ),
+              selected: isSelected,
+              onSelected: (s) {
+                if (s) onChanged(m.$1);
+              },
+              selectedColor: brandColor,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+              backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.35),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: isSelected ? brandColor : theme.colorScheme.outline.withOpacity(0.1),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }

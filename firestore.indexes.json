@@ -618,6 +618,20 @@
         }
       ],
       "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "deals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isActive",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "priority",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [

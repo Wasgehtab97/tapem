@@ -8,7 +8,6 @@ class PublicProfile {
     this.avatarUrl,
     this.primaryGymCode,
     this.avatarKey,
-    this.publicKey,
   });
 
   final String uid;
@@ -17,7 +16,6 @@ class PublicProfile {
   final String? avatarUrl;
   final String? primaryGymCode;
   final String? avatarKey;
-  final String? publicKey;
 
   String get safeLower =>
       usernameLower ?? username.toLowerCase();
@@ -30,7 +28,6 @@ class PublicProfile {
       avatarUrl: data['avatarUrl'] as String?,
       primaryGymCode: data['primaryGymCode'] as String?,
       avatarKey: data['avatarKey'] as String? ?? 'default',
-      publicKey: data['publicKey'] as String?,
     );
   }
 

@@ -90,6 +90,14 @@ class AdminDashboardScreen extends ConsumerWidget {
                             .pushNamed(AppRouter.adminRemoveUsers);
                       },
                     ),
+                    _AdminAction(
+                      icon: Icons.local_offer_outlined,
+                      title: 'Deals verwalten',
+                      subtitle: 'Sponsoren & Rabatte pflegen',
+                      onTap: () {
+                        Navigator.of(context).pushNamed(AppRouter.adminDeals);
+                      },
+                    ),
                   ],
                 ),
               ],

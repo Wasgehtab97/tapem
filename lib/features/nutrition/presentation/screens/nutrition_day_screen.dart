@@ -14,6 +14,7 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'dart:math' as math;
+import '../../domain/utils/nutrition_dates.dart';
 
 class NutritionDayScreen extends ConsumerStatefulWidget {
   const NutritionDayScreen({super.key});
@@ -23,10 +24,21 @@ class NutritionDayScreen extends ConsumerStatefulWidget {
 }
 
 class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
+  late PageController _pageController;
+  final int _initialPage = 10000;
+  DateTime _baseDate = nutritionStartOfDay(DateTime.now());
+
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _initialPage);
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadToday());
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadToday() async {
@@ -36,19 +48,39 @@ class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
     await ref.read(nutritionProvider).loadDay(uid, DateTime.now());
   }
 
+  DateTime _getDateForPage(int page) {
+    return _baseDate.add(Duration(days: page - _initialPage));
+  }
+
+  int _getPageForDate(DateTime date) {
+    final diff = nutritionStartOfDay(date).difference(_baseDate).inDays;
+    return _initialPage + diff;
+  }
+
+  Future<void> _onPageChanged(int page) async {
+    final date = _getDateForPage(page);
+    final auth = ref.read(authControllerProvider);
+    final uid = auth.userId;
+    if (uid == null || uid.isEmpty) return;
+    await ref.read(nutritionProvider).loadDay(uid, date);
+  }
+
   Future<void> _openEntry({String? meal}) async {
-    String? chosenMeal = meal;
-    if (chosenMeal == null) {
-      chosenMeal = await _pickMeal(context);
-      if (chosenMeal == null) return; // dismissed
-    }
     if (!mounted) return;
     await Navigator.of(context).pushNamed(
       AppRouter.nutritionEntry,
       arguments: {
-        'meal': chosenMeal,
+        'meal': meal ?? _deriveMealFromTime(),
       },
     );
+  }
+
+  String _deriveMealFromTime() {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return 'breakfast';
+    if (hour < 15) return 'lunch';
+    if (hour < 19) return 'dinner';
+    return 'snack';
   }
 
   Future<void> _openEdit(NutritionEntry entry, int index) async {
@@ -67,56 +99,6 @@ class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
     );
   }
 
-  Future<String?> _pickMeal(BuildContext context) async {
-    final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context)!;
-    String labelFor(String meal) {
-      final isDe = Localizations.localeOf(context).languageCode.startsWith('de');
-      switch (meal) {
-        case 'breakfast':
-          return isDe ? 'Frühstück' : 'Breakfast';
-        case 'lunch':
-          return isDe ? 'Mittagessen' : 'Lunch';
-        case 'dinner':
-          return isDe ? 'Abendessen' : 'Dinner';
-        case 'snack':
-          return isDe ? 'Snack' : 'Snack';
-        default:
-          return meal;
-      }
-    }
-    final meals = [
-      ('breakfast', labelFor('breakfast')),
-      ('lunch', labelFor('lunch')),
-      ('dinner', labelFor('dinner')),
-      ('snack', labelFor('snack')),
-    ];
-    return showModalBottomSheet<String>(
-      context: context,
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                child: Text(
-                  loc.nutritionAddEntryCta,
-                  style: theme.textTheme.titleMedium,
-                ),
-              ),
-              for (final meal in meals)
-                ListTile(
-                  title: Text(meal.$2),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(ctx).pop(meal.$1),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   NutritionProduct _productFromEntry(NutritionEntry entry) {
     final grams = (entry.qty ?? 100).clamp(1, 100000).toDouble();
@@ -137,36 +119,6 @@ class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
     final loc = AppLocalizations.of(context)!;
     final state = ref.watch(nutritionProvider);
     final date = state.selectedDate;
-    final total = state.log?.total;
-    final goal = state.goal;
-    final targetKcal = goal?.kcal ?? 0;
-    final totalKcal = total?.kcal ?? 0;
-    final theme = Theme.of(context);
-    final entriesWithIndex = (state.log?.entries ?? [])
-        .asMap()
-        .entries
-        .map((e) => (e.value, e.key))
-        .toList();
-    Map<String, NutritionTotals> mealTotals = {};
-    void addToMeal(String meal, NutritionEntry entry) {
-      final current = mealTotals[meal];
-      mealTotals[meal] = NutritionTotals(
-        kcal: (current?.kcal ?? 0) + entry.kcal,
-        protein: (current?.protein ?? 0) + entry.protein,
-        carbs: (current?.carbs ?? 0) + entry.carbs,
-        fat: (current?.fat ?? 0) + entry.fat,
-      );
-    }
-    for (final e in entriesWithIndex) {
-      addToMeal(e.$1.meal, e.$1);
-    }
-    final mealOrder = [
-      ('breakfast', 'Frühstück'),
-      ('lunch', 'Mittagessen'),
-      ('dinner', 'Abendessen'),
-      ('snack', 'Snack'),
-      ('unspecified', 'Sonstiges'),
-    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -185,157 +137,245 @@ class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
               final picked = await showDatePicker(
                 context: context,
                 initialDate: date,
-                firstDate: DateTime(date.year - 1, 1, 1),
-                lastDate: DateTime(date.year + 1, 12, 31),
+                firstDate: DateTime(date.year - 5, 1, 1),
+                lastDate: DateTime(date.year + 5, 12, 31),
               );
               if (picked == null || !mounted) return;
-              final auth = ref.read(authControllerProvider);
-              final uid = auth.userId;
-              if (uid == null || uid.isEmpty) return;
-              await ref.read(nutritionProvider).loadDay(uid, picked);
+              
+              _pageController.jumpToPage(_getPageForDate(picked));
+              // _onPageChanged will be called by PageView
             },
           ),
         ],
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.sm,
-            AppSpacing.md,
-            AppSpacing.sm,
-            AppSpacing.lg,
+      body: PageView.builder(
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
+        itemBuilder: (context, index) {
+          final pageDate = _getDateForPage(index);
+          // Only show content for the selected date to simplify state management with the existing provider
+          // Alternatively, we could create a specialized widget for each page that loads its own data.
+          // But here, since nutritionProvider holds only one day, we only render the "current" day.
+          if (nutritionStartOfDay(pageDate) != nutritionStartOfDay(date)) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return _DayContentView(
+            date: date,
+            onOpenEntry: _openEntry,
+            onOpenEdit: _openEdit,
+            onOpenScan: () async {
+              if (!mounted) return;
+              Navigator.of(context).pushNamed(
+                AppRouter.nutritionScan,
+                arguments: {'meal': _deriveMealFromTime()},
+              );
+            },
+            onOpenRecipes: () async {
+              if (!mounted) return;
+              Navigator.of(context).pushNamed(
+                AppRouter.nutritionRecipes,
+                arguments: {
+                  'meal': _deriveMealFromTime(),
+                  'isSelectionMode': true,
+                  'date': date,
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DayContentView extends ConsumerWidget {
+  final DateTime date;
+  final VoidCallback onOpenEntry;
+  final VoidCallback onOpenScan;
+  final VoidCallback onOpenRecipes;
+  final Function(NutritionEntry, int) onOpenEdit;
+
+  const _DayContentView({
+    required this.date,
+    required this.onOpenEntry,
+    required this.onOpenScan,
+    required this.onOpenRecipes,
+    required this.onOpenEdit,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loc = AppLocalizations.of(context)!;
+    final state = ref.watch(nutritionProvider);
+    final theme = Theme.of(context);
+    final total = state.log?.total;
+    final goal = state.goal;
+    final targetKcal = goal?.kcal ?? 0;
+    final totalKcal = total?.kcal ?? 0;
+
+    if (state.isLoadingDay) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final entriesWithIndex = (state.log?.entries ?? [])
+        .asMap()
+        .entries
+        .map((e) => (e.value, e.key))
+        .toList();
+
+    Map<String, NutritionTotals> mealTotals = {};
+    void addToMeal(String meal, NutritionEntry entry) {
+      final current = mealTotals[meal];
+      mealTotals[meal] = NutritionTotals(
+        kcal: (current?.kcal ?? 0) + entry.kcal,
+        protein: (current?.protein ?? 0) + entry.protein,
+        carbs: (current?.carbs ?? 0) + entry.carbs,
+        fat: (current?.fat ?? 0) + entry.fat,
+      );
+    }
+    for (final e in entriesWithIndex) {
+      addToMeal(e.$1.meal, e.$1);
+    }
+
+    final mealOrder = [
+      ('breakfast', 'Frühstück'),
+      ('lunch', 'Mittagessen'),
+      ('dinner', 'Abendessen'),
+      ('snack', 'Snack'),
+      ('unspecified', 'Sonstiges'),
+    ];
+
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.sm,
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.lg,
+        ),
+        children: [
+          NutritionHeaderCard(
+            date: date,
+            goal: targetKcal,
+            total: totalKcal,
+            protein: state.log?.total.protein ?? 0,
+            carbs: state.log?.total.carbs ?? 0,
+            fat: state.log?.total.fat ?? 0,
           ),
-          children: [
-            NutritionHeaderCard(
-              date: date,
-              goal: targetKcal,
-              total: totalKcal,
-              protein: state.log?.total.protein ?? 0,
-              carbs: state.log?.total.carbs ?? 0,
-              fat: state.log?.total.fat ?? 0,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _QuickIconButton(
-                  tooltip: loc.nutritionAddEntryCta,
-                  icon: Icons.search,
-                  onTap: () => _openEntry(),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                _QuickIconButton(
-                  tooltip: loc.nutritionScanCta,
-                  icon: Icons.qr_code_scanner,
-                  onTap: () async {
-                    final meal = await _pickMeal(context);
-                    if (meal == null || !mounted) return;
-                    Navigator.of(context).pushNamed(
-                      AppRouter.nutritionScan,
-                      arguments: {'meal': meal},
-                    );
-                  },
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _QuickIconButton(
+                tooltip: loc.nutritionAddEntryCta,
+                icon: Icons.search,
+                onTap: onOpenEntry,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              _QuickIconButton(
+                tooltip: loc.nutritionScanCta,
+                icon: Icons.qr_code_scanner,
+                onTap: onOpenScan,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              _QuickIconButton(
+                tooltip: 'Gerichte auswählen',
+                icon: Icons.restaurant_menu_rounded,
+                onTap: onOpenRecipes,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          if (entriesWithIndex.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: Text(
+                loc.nutritionEmptyEntries,
+                style: theme.textTheme.bodyMedium,
+              ),
+            )
+          else ...[
+            for (final meal in mealOrder)
+              if (entriesWithIndex.any((e) => e.$1.meal == meal.$1)) ...[
+                _MealExpansion(
+                  title: meal.$2,
+                  totals: mealTotals[meal.$1],
+                  children: entriesWithIndex
+                      .where((e) => e.$1.meal == meal.$1)
+                      .map(
+                        (e) => NutritionCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      e.$1.name,
+                                      style: theme.textTheme.titleMedium,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () async {
+                                      final auth = ref.read(authControllerProvider);
+                                      final uid = auth.userId;
+                                      if (uid == null) return;
+                                      await ref.read(nutritionProvider).removeEntry(
+                                            uid: uid,
+                                            date: date,
+                                            index: e.$2,
+                                          );
+                                    },
+                                    icon: const Icon(Icons.delete_outline),
+                                  ),
+                                  IconButton(
+                                    onPressed: () => onOpenEdit(e.$1, e.$2),
+                                    icon: const Icon(Icons.edit_outlined),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  MacroPill(
+                                    label: 'Kcal',
+                                    value: '${e.$1.kcal}',
+                                    color: AppColors.accentTurquoise,
+                                  ),
+                                  MacroPill(
+                                    label: 'P',
+                                    value: '${e.$1.protein} g',
+                                    color: const Color(0xFFE53935),
+                                  ),
+                                  MacroPill(
+                                    label: 'C',
+                                    value: '${e.$1.carbs} g',
+                                    color: AppColors.accentMint,
+                                  ),
+                                  MacroPill(
+                                    label: 'F',
+                                    value: '${e.$1.fat} g',
+                                    color: AppColors.accentAmber,
+                                  ),
+                                  if ((e.$1.qty ?? 0) > 0)
+                                    MacroPill(
+                                      label: 'Menge',
+                                      value: '${(e.$1.qty ?? 0).toStringAsFixed(0)} g',
+                                      color: theme.colorScheme.outline,
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
               ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            if (state.isLoadingDay)
-              const Center(child: CircularProgressIndicator())
-            else if ((state.log?.entries.isEmpty ?? true))
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                child: Text(
-                  loc.nutritionEmptyEntries,
-                  style: theme.textTheme.bodyMedium,
-                ),
-              )
-            else ...[
-              for (final meal in mealOrder)
-                if (entriesWithIndex.any((e) => e.$1.meal == meal.$1)) ...[
-                  _MealExpansion(
-                    title: meal.$2,
-                    totals: mealTotals[meal.$1],
-                    children: entriesWithIndex
-                        .where((e) => e.$1.meal == meal.$1)
-                        .map(
-                          (e) => NutritionCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        e.$1.name,
-                                        style: theme.textTheme.titleMedium,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      onPressed: () async {
-                                        final auth =
-                                            ref.read(authControllerProvider);
-                                        final uid = auth.userId;
-                                        if (uid == null) return;
-                                        await ref
-                                            .read(nutritionProvider)
-                                            .removeEntry(
-                                              uid: uid,
-                                              date: state.selectedDate,
-                                              index: e.$2,
-                                            );
-                                      },
-                                      icon: const Icon(Icons.delete_outline),
-                                    ),
-                                    IconButton(
-                                      onPressed: () => _openEdit(e.$1, e.$2),
-                                      icon: const Icon(Icons.edit_outlined),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 6,
-                                  children: [
-                                    MacroPill(
-                                      label: 'Kcal',
-                                      value: '${e.$1.kcal}',
-                                      color: Colors.blueAccent,
-                                    ),
-                                    MacroPill(
-                                      label: 'P',
-                                      value: '${e.$1.protein} g',
-                                      color: Colors.redAccent,
-                                    ),
-                                    MacroPill(
-                                      label: 'C',
-                                      value: '${e.$1.carbs} g',
-                                      color: Colors.greenAccent.shade400,
-                                    ),
-                                    MacroPill(
-                                      label: 'F',
-                                      value: '${e.$1.fat} g',
-                                      color: Colors.amber.shade700,
-                                    ),
-                                    if ((e.$1.qty ?? 0) > 0)
-                                      MacroPill(
-                                        label: 'Menge',
-                                        value:
-                                            '${(e.$1.qty ?? 0).toStringAsFixed(0)} g',
-                                        color: theme.colorScheme.outline,
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ],
-            ],
           ],
-        ),
+        ],
       ),
     );
   }
@@ -583,31 +623,24 @@ class NutritionHeaderCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
                   children: [
-                    Expanded(
-                      child: MacroPill(
-                        label: 'P',
-                        value: '$protein g',
-                        color: AppColors.accentMint,
-                      ),
+                    MacroPill(
+                      label: 'P',
+                      value: '$protein g',
+                      color: const Color(0xFFE53935),
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: MacroPill(
-                        label: 'C',
-                        value: '$carbs g',
-                        color: AppColors.accentTurquoise,
-                      ),
+                    MacroPill(
+                      label: 'C',
+                      value: '$carbs g',
+                      color: AppColors.accentMint,
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: MacroPill(
-                        label: 'F',
-                        value: '$fat g',
-                        color: AppColors.accentAmber,
-                      ),
+                    MacroPill(
+                      label: 'F',
+                      value: '$fat g',
+                      color: AppColors.accentAmber,
                     ),
                   ],
                 ),

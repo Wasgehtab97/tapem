@@ -19,6 +19,17 @@ class RankProvider extends ChangeNotifier with GymScopedResettableChangeNotifier
   List<Map<String, dynamic>> get deviceEntries => _deviceEntries;
 
   void watchDevice(String gymId, String deviceId) {
+    if (gymId.isEmpty || deviceId.isEmpty) {
+      // Defensive: avoid invalid Firestore paths that crash with empty IDs.
+      _deviceSub?.cancel();
+      _deviceSub = null;
+      _activeGymId = null;
+      _activeDeviceId = null;
+      _deviceEntries = [];
+      notifyListeners();
+      return;
+    }
+
     if (_activeGymId == gymId && _activeDeviceId == deviceId) {
       return;
     }

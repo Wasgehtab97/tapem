@@ -36,6 +36,15 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.coachEnabled == true;
     }
 
+    // Active coaching relation between current user (coach) and client
+    function hasActiveCoaching(gymId, clientId) {
+      let relId = gymId + '_' + request.auth.uid + '_' + clientId;
+      let path = /databases/$(database)/documents/coachClientRelations/$(relId);
+      return isAuthed() &&
+             exists(path) &&
+             get(path).data.status == 'active';
+    }
+
     // Custom claim based gym admin
     function isGymAdmin(gymId) {
       return isAuthed() &&
@@ -572,6 +581,11 @@ service cloud.firestore {
       match /{document=**} {
         allow read, write: if isOwner(uid);
       }
+    }
+
+    match /deals/{dealId} {
+      allow read: if isAuthed();
+      allow write: if isGlobalAdmin();
     }
 
     // ─────────────────────────

@@ -30,62 +30,7 @@ class _MockExerciseProvider extends Mock
     with ChangeNotifier
     implements ExerciseProvider {}
 
-class _FakeKeypadController extends ChangeNotifier
-    implements OverlayNumericKeypadController {
-  TextEditingController? _target;
-  bool _isOpen = false;
-  double _contentHeight = 0.0;
-
-  @override
-  bool allowDecimal = true;
-
-  @override
-  double decimalStep = 2.5;
-
-  @override
-  double integerStep = 1.0;
-
-  @override
-  bool get isOpen => _isOpen;
-
-  @override
-  TextEditingController? get target => _target;
-
-  @override
-  double get keypadContentHeight => _isOpen ? _contentHeight : 0.0;
-
-  @override
-  void close() {
-    if (!_isOpen) {
-      return;
-    }
-    _isOpen = false;
-    _contentHeight = 0.0;
-    notifyListeners();
-  }
-
-  @override
-  void openFor(
-    TextEditingController controller, {
-    bool allowDecimal = true,
-    double? decimalStep,
-    double? integerStep,
-  }) {
-    _target = controller;
-    this.allowDecimal = allowDecimal;
-    if (decimalStep != null) {
-      this.decimalStep = decimalStep;
-    }
-    if (integerStep != null) {
-      this.integerStep = integerStep;
-    }
-    if (_isOpen) {
-      return;
-    }
-    _isOpen = true;
-    notifyListeners();
-  }
-}
+class _FakeKeypadController extends OverlayNumericKeypadController {}
 
 class _MockSessionTimerService extends Mock
     with ChangeNotifier

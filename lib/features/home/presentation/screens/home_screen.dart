@@ -7,7 +7,7 @@ import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_screen.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
-import 'package:tapem/features/affiliate/presentation/screens/affiliate_screen.dart';
+import 'package:tapem/features/deals/presentation/screens/deals_screen.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
 import 'package:tapem/features/coaching/presentation/screens/coaching_home_screen.dart';
@@ -120,11 +120,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
       _TabInfo(
-        id: _HomeTabId.affiliate,
-        page: const AffiliateScreen(key: PageStorageKey('Affiliate')),
+        id: _HomeTabId.deals,
+        page: const DealsScreen(key: PageStorageKey('Deals')),
         item: BottomNavigationBarItem(
-          icon: const Icon(Icons.group),
-          label: loc.homeTabAffiliate,
+          icon: const Icon(Icons.local_offer),
+          label: loc.homeTabDeals,
         ),
       ),
       _TabInfo(
@@ -231,6 +231,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _HomeTabId.nutrition,
       _HomeTabId.workout,
       _HomeTabId.rank,
+      _HomeTabId.deals,
       _HomeTabId.plan,
       _HomeTabId.coaching,
     };
@@ -284,9 +285,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(width: 8),
                     ]
-                  : const [
-                      NfcScanButton(),
-                      SizedBox(width: 8),
+                  : [
+                      const NfcScanButton(),
+                      const SizedBox(width: 8),
                     ],
             ),
       body: IndexedStack(
@@ -311,39 +312,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final auth = ref.watch(authControllerProvider);
     final gymName = ref.watch(gymProvider.select((g) => g.gym?.name));
 
+    String titleText;
     switch (_currentIndex) {
       case 0:
-        final resolvedGymName =
-            (gymName != null && gymName.trim().isNotEmpty) ? gymName : loc.gymTitle;
-        return TimerAppBarTitle(
-          title: BrandGradientText(
-            resolvedGymName,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge,
-            maxLines: 1,
-          ),
-        );
+        titleText = (gymName != null && gymName.trim().isNotEmpty) ? gymName : loc.gymTitle;
+        break;
       case 1:
-        final username = auth.userName ?? auth.userEmail ?? loc.profileTitle;
-        return TimerAppBarTitle(
-          title: BrandGradientText(
-            username,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge,
-            maxLines: 1,
-          ),
-        );
+        titleText = auth.userName ?? auth.userEmail ?? loc.profileTitle;
+        break;
       default:
-        final resolvedLabel = currentLabel.isNotEmpty ? currentLabel : loc.appTitle;
-        return TimerAppBarTitle(
-          title: BrandGradientText(
-            resolvedLabel,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge,
-            maxLines: 1,
-          ),
-        );
+        titleText = currentLabel.isNotEmpty ? currentLabel : loc.appTitle;
+        break;
     }
+
+    return TimerAppBarTitle(
+      title: BrandGradientText(
+        titleText,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.titleLarge,
+        maxLines: 1,
+      ),
+    );
   }
 
   Future<void> _exitDemo(BuildContext context) async {
@@ -374,7 +363,7 @@ enum _HomeTabId {
   report,
   admin,
   rank,
-  affiliate,
+  deals,
   plan,
   coaching,
 }
