@@ -737,8 +737,17 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                   xpInLevel: xpProv.dailyLevelXp,
                   totalXp: xpProv.statsDailyXp,
                   onAvatarTap: () {
-                    Navigator.pop(dialogContext);
-                    _showAvatarPicker();
+                    // Close the Profile XP Card dialog first? No, keep it open?
+                    // User said: "wenn ich ... klicke ... profilbild ... groß ... change button"
+                    // If I close the card dialog, the context changes.
+                    // The user might expect the flow: Card -> Fullscreen -> (Change) -> Picker -> (Select) -> Back to Fullscreen/Card
+                    // Let's keep existing dialog open? But Fullscreen usually covers everything.
+                    // Let's close the XP Card dialog? OR open Fullscreen on top.
+                    // If we open on top, when we close fullscreen we are back to XP Card. That seems nice.
+                    _showFullAvatarWithEdit(
+                      profile.avatarKey ?? 'default', 
+                      profile.primaryGymCode,
+                    );
                   },
                 ),
               ),
@@ -746,6 +755,99 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showFullAvatarWithEdit(String currentKey, String? gymId) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.95),
+      builder: (ctx) {
+        // Use StatefulBuilder if we need to update the image after change without closing
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final path = AvatarCatalog.instance.resolvePathOrFallback(currentKey, gymId: gymId);
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                InteractiveViewer(
+                  panEnabled: true,
+                  boundaryMargin: const EdgeInsets.all(20),
+                  minScale: 0.5,
+                  maxScale: 4,
+                  child: Image.asset(
+                    path,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                Positioned(
+                  top: 40,
+                  right: 20,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 50,
+                  right: 30, // "unten rechts"
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                         // Open Avatar Picker
+                         // When user selects, we need to update 'currentKey' here to show new image immediately?
+                         // The Profile Screen state updates via riverpod, but this local dialog state needs update too.
+                         // Or we just rely on parent rebuild? But we are in a dialog on top of a dialog.
+                         // Let's close this Fullscreen dialog, open picker?
+                         // User said: "wenn ich den anklicke werden mir erst alle meine verfügbaren angezeigt"
+                         
+                         // Better flow: Open picker on top. If selected, update state.
+                         Navigator.pop(context); // Close fullscreen
+                         _showAvatarPicker(); // Open picker
+                         // Note: After picking, the user is back to ProfileScreen (XP Card dialog is underneath).
+                         // The XP Card dialog will rebuild with new avatar if provider updates.
+                      },
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.edit, color: Colors.white, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Ändern',
+                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

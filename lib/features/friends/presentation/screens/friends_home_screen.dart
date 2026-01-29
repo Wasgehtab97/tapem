@@ -5,9 +5,11 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
+import 'package:tapem/features/friends/data/friend_stats_repository.dart'; // Added
 import '../../providers/friends_riverpod.dart';
 import '../../domain/models/public_profile.dart';
 import '../widgets/friend_list_tile.dart';
+import '../widgets/friend_xp_card.dart';
 
 class FriendsHomeScreen extends ConsumerStatefulWidget {
   const FriendsHomeScreen({Key? key}) : super(key: key);
@@ -22,11 +24,18 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
   late TabController _tabController;
   final _searchCtrl = TextEditingController();
   final Map<String, Future<PublicProfile?>> _profileCache = {};
+  final _statsRepo = FriendStatsRepository(); // Added
+  final Map<String, Future<FriendStats>> _statsCache = {}; // Added
+
 
   Future<PublicProfile?> _fetchProfile(String uid) {
     return _profileCache[uid] ??=
         ref.read(userSearchSourceProvider).getProfile(uid).then<PublicProfile?>
             ((value) => value, onError: (_, __) => null);
+  }
+
+  Future<FriendStats> _fetchStats(String uid, String? gymId) {
+    return _statsCache[uid] ??= _statsRepo.fetchStats(uid, gymId);
   }
 
   @override
@@ -98,31 +107,89 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
       itemCount: friendsList.length,
       itemBuilder: (_, i) {
         final f = friendsList[i];
-        return FutureBuilder<PublicProfile?>(
-          future: _fetchProfile(f.friendUid),
+        
+        // Combined future: Profile + Stats
+        // We fetch profile first to get gymId, then stats.
+        final combinedFuture = _fetchProfile(f.friendUid).then((profile) async {
+          if (profile == null) return null;
+          final stats = await _fetchStats(f.friendUid, profile.primaryGymCode);
+          return MapEntry(profile, stats);
+        });
+
+        return FutureBuilder<MapEntry<PublicProfile, FriendStats>?>(
+          future: combinedFuture,
           builder: (context, snapshot) {
-            final profile = snapshot.data;
+            final data = snapshot.data;
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _buildShimmerCard(),
               );
             }
-            if (profile == null) {
-              // Profil existiert nicht mehr (z.B. User in Firestore gelöscht).
-              // Zeile komplett ausblenden – inklusive Padding.
+            if (data == null) {
+              // Profil existiert nicht mehr
               return const SizedBox.shrink();
             }
 
+            final profile = data.key;
+            final stats = data.value;
+
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _buildFriendCard(
+              child: FriendXpCard(
                 profile: profile,
                 presence: presence.stateFor(f.friendUid),
+                stats: stats, // Pass stats
                 onTap: () => _showFriendActions(f.friendUid),
+                onAvatarTap: () => _showFullAvatar(context, profile),
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showFullAvatar(BuildContext context, PublicProfile profile) {
+    // Resolve avatar path again
+    final rawKey = profile.avatarKey ?? 'default';
+    final gymId = profile.primaryGymCode; 
+    // Note: We might want the gymId from the 'profile' object or the fetch context. 
+    // The profile object has it.
+    
+    final path = AvatarCatalog.instance.resolvePathOrFallback(rawKey, gymId: gymId);
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.92), // Dark barrier
+      builder: (ctx) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // Interactive Viewer for Zoom/Pan
+            InteractiveViewer(
+              panEnabled: true,
+              boundaryMargin: const EdgeInsets.all(20),
+              minScale: 0.5,
+              maxScale: 4,
+              child: Image.asset(
+                path,
+                fit: BoxFit.contain,
+              ),
+            ),
+            // Close Button
+            Positioned(
+              top: 40,
+              right: 20,
+              child: Material(
+                color: Colors.transparent,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -639,123 +706,7 @@ class _FriendsHomeScreenState extends ConsumerState<FriendsHomeScreen>
     );
   }
 
-  Widget _buildFriendCard({
-    required PublicProfile profile,
-    required PresenceState? presence,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    final rawKey = profile.avatarKey ?? 'default';
-    final path = AvatarCatalog.instance.resolvePathOrFallback(rawKey);
-    
-    final statusColor = presence == PresenceState.workedOutToday
-        ? const Color(0xFF4CAF50)
-        : Colors.grey[400];
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.1),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Stack(
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: statusColor ?? Colors.transparent,
-                        width: 3,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (statusColor ?? Colors.transparent).withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        path,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.person),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      profile.username,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          presence == PresenceState.workedOutToday
-                              ? 'Heute trainiert'
-                              : 'Offline',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: Colors.grey[400],
-                size: 24,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildShimmerCard() {
     return Container(
