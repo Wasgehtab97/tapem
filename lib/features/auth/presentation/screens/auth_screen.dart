@@ -4,6 +4,7 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 import 'package:tapem/features/auth/presentation/widgets/auth_background.dart';
+import 'package:tapem/features/auth/presentation/widgets/auth_keyboard_scroll_view.dart';
 import 'package:tapem/features/auth/presentation/widgets/animated_tab_indicator.dart';
 import 'package:tapem/features/auth/presentation/widgets/glass_card.dart';
 import 'package:tapem/features/auth/presentation/widgets/login_form.dart';
@@ -49,17 +50,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 const SizedBox(height: 20),
                 // Logo / Title Area
                 Center(
-                  child: Text(
-                    loc.authTitle,
-                    style: AuthTheme.headingStyle,
-                  ),
+                  child: Text(loc.authTitle, style: AuthTheme.headingStyle),
                 ),
                 const SizedBox(height: AuthTheme.spacingL),
-                
+
                 // Content Area
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: AuthTheme.spacingM),
+                  child: AuthKeyboardScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AuthTheme.spacingM,
+                    ),
                     child: Column(
                       children: [
                         // Custom Tab Bar
@@ -67,9 +67,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                           controller: _tabController,
                           tabs: [loc.loginButton, loc.registerButton],
                         ),
-                        
+
                         const SizedBox(height: AuthTheme.spacingL),
-                        
+
                         // Forms Container
                         GlassCard(
                           child: AnimatedBuilder(
@@ -88,7 +88,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                 },
                                 child: _tabController.index == 0
                                     ? const LoginForm(key: ValueKey('login'))
-                                    : const RegistrationForm(key: ValueKey('register')),
+                                    : const RegistrationForm(
+                                        key: ValueKey('register'),
+                                      ),
                               );
                             },
                           ),
@@ -101,15 +103,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 ),
               ],
             ),
-            
+
             // Loading Overlay
             if (authProv.isLoading)
               Container(
                 color: Colors.black.withOpacity(0.5),
                 child: const Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFF8B5CF6),
-                  ),
+                  child: CircularProgressIndicator(color: Color(0xFF8B5CF6)),
                 ),
               ),
           ],

@@ -1,4 +1,5 @@
 // lib/features/device/providers/workout_day_controller_provider.dart
+import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -42,6 +43,17 @@ final workoutDayControllerProvider =
 
   void handleAuth(AuthViewState state) {
     controller.setActiveUser(state.userId);
+    final userId = state.userId;
+    final gymId = state.gymCode;
+    if (userId == null || userId.isEmpty || gymId == null || gymId.isEmpty) {
+      return;
+    }
+    unawaited(
+      controller.restoreDraftSessions(
+        userId: userId,
+        gymId: gymId,
+      ),
+    );
   }
 
   controller.updateMembership(membership);

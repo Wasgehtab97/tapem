@@ -151,6 +151,45 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
     state = state.copyWith(exercises: reIndexed, isDirty: true);
   }
 
+  Future<void> deleteCurrentPlan({
+    String? planId,
+    String? ownerUserId,
+  }) async {
+    final authState = _ref.read(authViewStateProvider);
+    final effectivePlanId = planId ?? state.originalId;
+    if (effectivePlanId == null || effectivePlanId.isEmpty) {
+      throw Exception('Plan-ID fehlt');
+    }
+
+    final effectiveOwnerId = ownerUserId ?? state.targetUserId ?? authState.userId;
+    final currentUserId = authState.userId;
+    if (effectiveOwnerId == null || effectiveOwnerId.isEmpty) {
+      throw Exception('Nutzer-ID fehlt');
+    }
+
+    final repo = _ref.read(trainingPlanRepositoryProvider);
+    await repo.deletePlan(
+      userId: effectiveOwnerId,
+      planId: effectivePlanId,
+    );
+
+    if (effectiveOwnerId == currentUserId) {
+      _ref.invalidate(trainingPlansProvider);
+      _ref.invalidate(trainingPlanStatsProvider(effectivePlanId));
+    } else {
+      _ref.invalidate(clientTrainingPlansProvider(effectiveOwnerId));
+      _ref.invalidate(
+        clientTrainingPlanStatsProvider(
+          ClientPlanStatsKey(
+            clientId: effectiveOwnerId,
+            planId: effectivePlanId,
+          ),
+        ),
+      );
+      _ref.invalidate(clientCoachingAnalyticsProvider(effectiveOwnerId));
+    }
+  }
+
   Future<String> save() async {
     final authState = _ref.read(authViewStateProvider);
     final targetUserId = state.targetUserId ?? authState.userId;

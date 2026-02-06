@@ -839,6 +839,102 @@ abstract class AppLocalizations {
   /// **'Sessions over time chart'**
   String get historySessionsChartSemantics;
 
+  /// Title of the progress screen
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get progressTitle;
+
+  /// Label for the Progress button on the profile screen
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get progressButtonTitle;
+
+  /// Subtitle for the Progress button on the profile screen
+  ///
+  /// In en, this message translates to:
+  /// **'Workout history overview'**
+  String get progressButtonSubtitle;
+
+  /// Label for the year selector on the progress screen
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get progressYearLabel;
+
+  /// Empty state title when no progress data is available
+  ///
+  /// In en, this message translates to:
+  /// **'No progress data yet'**
+  String get progressEmptyTitle;
+
+  /// Empty state subtitle when no progress data is available
+  ///
+  /// In en, this message translates to:
+  /// **'Complete workouts to see your yearly progress.'**
+  String get progressEmptySubtitle;
+
+  /// Button label to load more progress charts
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get progressLoadMore;
+
+  /// Tooltip for backfill action on the progress screen
+  ///
+  /// In en, this message translates to:
+  /// **'Backfill progress'**
+  String get progressBackfillAction;
+
+  /// Dialog title for progress backfill
+  ///
+  /// In en, this message translates to:
+  /// **'Generate progress data'**
+  String get progressBackfillTitle;
+
+  /// Dialog body for progress backfill
+  ///
+  /// In en, this message translates to:
+  /// **'This will scan your past workouts and generate yearly progress charts. It may take a moment and uses additional reads.'**
+  String get progressBackfillBody;
+
+  /// Confirm button for progress backfill
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get progressBackfillConfirm;
+
+  /// Cancel button for progress backfill
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get progressBackfillCancel;
+
+  /// Snackbar message after backfill
+  ///
+  /// In en, this message translates to:
+  /// **'Backfill done: {sessions} sessions, {exercises} exercises.'**
+  String progressBackfillDone(Object sessions, Object exercises);
+
+  /// Tooltip for the progress info action
+  ///
+  /// In en, this message translates to:
+  /// **'How it works'**
+  String get progressInfoAction;
+
+  /// Title for the progress info dialog
+  ///
+  /// In en, this message translates to:
+  /// **'How progress works'**
+  String get progressInfoTitle;
+
+  /// Body text for the progress info dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Charts appear when an exercise has at least 3 saved sessions in the selected year. Train and save your workouts to build progress. Use the \"Generate progress data\" button in the top right to refresh your data.'**
+  String get progressInfoBody;
+
   /// Greeting on the Home screen
   ///
   /// In en, this message translates to:
@@ -1006,6 +1102,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rest timer'**
   String get profileStatsRestTimerLabel;
+
+  /// Label for the NFC scan count on the profile statistics page
+  ///
+  /// In en, this message translates to:
+  /// **'NFC scans'**
+  String get profileStatsNfcScans;
+
+  /// Subtitle for the NFC scan count on the profile statistics page
+  ///
+  /// In en, this message translates to:
+  /// **'total scans'**
+  String get profileStatsNfcScansSubtitle;
 
   /// KPI label for favourite exercise
   ///

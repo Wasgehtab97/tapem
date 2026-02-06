@@ -35,15 +35,15 @@ class _PasswordResetDialogState extends State<_PasswordResetDialog> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isLoading = true);
     final container = ProviderScope.containerOf(context, listen: false);
     final AuthProvider authProv = container.read(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
-    
+
     final email = _emailController.text.trim();
     await authProv.resetPassword(email);
-    
+
     if (!mounted) return;
     setState(() => _isLoading = false);
 
@@ -70,58 +70,64 @@ class _PasswordResetDialogState extends State<_PasswordResetDialog> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AuthTheme.spacingL),
-        child: GlassCard(
-          padding: const EdgeInsets.all(AuthTheme.spacingL),
-          child: Material(
-            color: Colors.transparent, // Need Material for text inputs to work correctly
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                   Text(
-                    loc.forgotPassword,
-                    style: AuthTheme.subHeadingStyle,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AuthTheme.spacingL),
-                  
-                  PremiumTextField(
-                    label: loc.emailFieldLabel,
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    prefixIcon: Icons.email_outlined,
-                    validator: (v) => 
-                        v != null && v.contains('@') ? null : loc.emailInvalid,
-                  ),
-                  
-                  const SizedBox(height: AuthTheme.spacingL),
-                  
-                  Row(
-                    children: [
-                      Expanded(
-                        child: PremiumButton(
-                          text: 'Cancel', // Should be localized ideally
-                          isOutlined: true,
-                          onPressed: () => Navigator.of(context).pop(),
+    return AnimatedPadding(
+      duration: AuthTheme.animationDurationFast,
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: Center(
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.symmetric(horizontal: AuthTheme.spacingL),
+          child: GlassCard(
+            padding: const EdgeInsets.all(AuthTheme.spacingL),
+            child: Material(
+              color: Colors
+                  .transparent, // Need Material for text inputs to work correctly
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      loc.forgotPassword,
+                      style: AuthTheme.subHeadingStyle,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AuthTheme.spacingL),
+                    PremiumTextField(
+                      label: loc.emailFieldLabel,
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      prefixIcon: Icons.email_outlined,
+                      validator: (v) => v != null && v.contains('@')
+                          ? null
+                          : loc.emailInvalid,
+                    ),
+                    const SizedBox(height: AuthTheme.spacingL),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: PremiumButton(
+                            text: 'Cancel', // Should be localized ideally
+                            isOutlined: true,
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AuthTheme.spacingM),
-                      Expanded(
-                        child: PremiumButton(
-                          text: 'Send',
-                          isLoading: _isLoading,
-                          onPressed: _isLoading ? null : _submit,
+                        const SizedBox(width: AuthTheme.spacingM),
+                        Expanded(
+                          child: PremiumButton(
+                            text: 'Send',
+                            isLoading: _isLoading,
+                            onPressed: _isLoading ? null : _submit,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

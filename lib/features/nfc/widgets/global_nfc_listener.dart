@@ -1,4 +1,6 @@
-import 'package:flutter/widgets.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:tapem/app_router.dart';
@@ -26,6 +28,7 @@ class _GlobalNfcListenerState extends ConsumerState<GlobalNfcListener> {
   late final GetDeviceByNfcCode _getDevice;
   late final AuthProvider _auth;
   bool _listening = false;
+  StreamSubscription<String>? _nfcSubscription;
 
   @override
   void didChangeDependencies() {
@@ -35,55 +38,63 @@ class _GlobalNfcListenerState extends ConsumerState<GlobalNfcListener> {
       _reader = ref.read(readNfcCodeProvider);
       _getDevice = ref.read(getDeviceByNfcCodeProvider);
       _auth = ref.read(authControllerProvider);
-
-      _reader.execute().listen((code) async {
+ 
+      _nfcSubscription = _reader.execute().listen((code) async {
         if (code.isEmpty) return;
         final gymId = _auth.gymCode;
         if (gymId == null) return;
+        final userId = _auth.userId;
+        if (userId == null) return;
+
         final dev = await _getDevice.execute(gymId, code);
         if (dev == null) return;
 
+        // Physisches Feedback bei Erfolg
+        HapticFeedback.mediumImpact();
+
         if (dev.isMulti) {
+          // Bei Multi-Geräten zur Übungsauswahl navigieren.
           navigatorKey.currentState?.pushNamed(
             AppRouter.exerciseList,
             arguments: {'gymId': gymId, 'deviceId': dev.uid},
           );
         } else {
-          final navContext = navigatorKey.currentContext;
-          if (navContext != null) {
-            final container =
-                ProviderScope.containerOf(navContext, listen: false);
-            final controller =
-                container.read(workoutDayControllerProvider);
-            final userId = _auth.userId;
-            if (userId != null) {
-              controller.addOrFocusSession(
-                gymId: gymId,
-                deviceId: dev.uid,
-                exerciseId: dev.uid,
-                userId: userId,
-              );
-            }
+          // Einzelsitzung hinzufügen/fokussieren.
+          final controller = ref.read(workoutDayControllerProvider);
+          controller.addOrFocusSession(
+            gymId: gymId,
+            deviceId: dev.uid,
+            exerciseId: dev.uid,
+            exerciseName: dev.name,
+            userId: userId,
+          );
+
+          // Auto-Start Timer falls nicht aktiv
+          final timer = ref.read(workoutSessionDurationServiceProvider);
+          if (!timer.isRunning) {
+            await timer.start(uid: userId, gymId: gymId);
           }
-          final timer = navContext == null
-              ? null
-              : ProviderScope.containerOf(navContext, listen: false)
-                  .read(workoutSessionDurationServiceProvider);
-          if (timer != null && timer.isRunning) {
-            navigatorKey.currentState?.pushNamed(
-              AppRouter.home,
-              arguments: 2,
-            );
-          } else {
-            navigatorKey.currentState?.pushNamed(
-              AppRouter.workoutDay,
-              arguments: {
-                'gymId': gymId,
-                'deviceId': dev.uid,
-                'exerciseId': dev.uid,
-              },
+
+          // Visuelle Bestätigung
+          final context = navigatorKey.currentContext;
+          if (context != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Übung "${dev.name}" wurde hinzugefügt'),
+                duration: const Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
             );
           }
+
+          // Navigation zum aktiven Workout (Tab 2).
+          // Wir nutzen pushNamedAndRemoveUntil zum HomeScreen, falls wir woanders sind.
+          // Die HomeScreen-Logik erkennt den aktiven Timer und stellt den Tab ein.
+          navigatorKey.currentState?.pushNamedAndRemoveUntil(
+            AppRouter.home,
+            (route) => false,
+            arguments: 2,
+          );
         }
       });
     }
@@ -94,6 +105,7 @@ class _GlobalNfcListenerState extends ConsumerState<GlobalNfcListener> {
 
   @override
   void dispose() {
+    _nfcSubscription?.cancel();
     NfcManager.instance.stopSession();
     super.dispose();
   }

@@ -704,9 +704,6 @@ class _WorkoutDayTableCardState
   }
 
   Widget _buildRestTimerChip({bool inline = false}) {
-    final brandColor =
-        Theme.of(context).extension<AppBrandTheme>()?.outline ??
-            Theme.of(context).colorScheme.secondary;
     return SessionRestTimer(
       key: _rowRestTimerKey,
       initialSeconds: _restSeconds,

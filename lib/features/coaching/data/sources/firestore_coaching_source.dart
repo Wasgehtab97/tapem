@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:tapem/core/logging/app_logger.dart';
 import 'package:tapem/features/coaching/domain/models/coach_client_relation.dart';
 import 'package:tapem/features/coaching/data/sources/firestore_coaching_audit_source.dart';
 
@@ -32,16 +33,17 @@ class FirestoreCoachingSource {
   Future<List<CoachClientRelation>> getRelationsForCoach({
     required String coachId,
   }) async {
-    // ignore: avoid_print
-    print('[CoachingSource] getRelationsForCoach coachId=$coachId');
+    AppLogger.d(
+      'getRelationsForCoach coachId=$coachId',
+      tag: 'CoachingSource',
+    );
     try {
       final snapshot = await _relations
           .where('coachId', isEqualTo: coachId)
           .get();
-      // ignore: avoid_print
-      print(
-        '[CoachingSource] getRelationsForCoach coachId=$coachId '
-        'docs=${snapshot.docs.length}',
+      AppLogger.d(
+        'getRelationsForCoach coachId=$coachId docs=${snapshot.docs.length}',
+        tag: 'CoachingSource',
       );
       return snapshot.docs
           .map(
@@ -50,16 +52,17 @@ class FirestoreCoachingSource {
           )
           .toList();
     } on FirebaseException catch (e) {
-      // ignore: avoid_print
-      print(
-        '[CoachingSource] getRelationsForCoach FIRESTORE_ERROR '
-        'code=${e.code} message=${e.message}',
+      AppLogger.w(
+        'getRelationsForCoach firestore error code=${e.code} message=${e.message}',
+        tag: 'CoachingSource',
+        error: e,
       );
       rethrow;
     } catch (e) {
-      // ignore: avoid_print
-      print(
-        '[CoachingSource] getRelationsForCoach UNKNOWN_ERROR $e',
+      AppLogger.w(
+        'getRelationsForCoach error',
+        tag: 'CoachingSource',
+        error: e,
       );
       rethrow;
     }
@@ -68,16 +71,17 @@ class FirestoreCoachingSource {
   Future<List<CoachClientRelation>> getRelationsForClient({
     required String clientId,
   }) async {
-    // ignore: avoid_print
-    print('[CoachingSource] getRelationsForClient clientId=$clientId');
+    AppLogger.d(
+      'getRelationsForClient clientId=$clientId',
+      tag: 'CoachingSource',
+    );
     try {
       final snapshot = await _relations
           .where('clientId', isEqualTo: clientId)
           .get();
-      // ignore: avoid_print
-      print(
-        '[CoachingSource] getRelationsForClient clientId=$clientId '
-        'docs=${snapshot.docs.length}',
+      AppLogger.d(
+        'getRelationsForClient clientId=$clientId docs=${snapshot.docs.length}',
+        tag: 'CoachingSource',
       );
       return snapshot.docs
           .map(
@@ -86,16 +90,17 @@ class FirestoreCoachingSource {
           )
           .toList();
     } on FirebaseException catch (e) {
-      // ignore: avoid_print
-      print(
-        '[CoachingSource] getRelationsForClient FIRESTORE_ERROR '
-        'code=${e.code} message=${e.message}',
+      AppLogger.w(
+        'getRelationsForClient firestore error code=${e.code} message=${e.message}',
+        tag: 'CoachingSource',
+        error: e,
       );
       rethrow;
     } catch (e) {
-      // ignore: avoid_print
-      print(
-        '[CoachingSource] getRelationsForClient UNKNOWN_ERROR $e',
+      AppLogger.w(
+        'getRelationsForClient error',
+        tag: 'CoachingSource',
+        error: e,
       );
       rethrow;
     }
@@ -108,10 +113,10 @@ class FirestoreCoachingSource {
   }) async {
     final now = DateTime.now();
     final relationId = '${gymId}_${coachId}_$clientId';
-    // ignore: avoid_print
-    print(
-      '[CoachingSource] requestCoaching gymId=$gymId '
-      'coachId=$coachId clientId=$clientId relationId=$relationId',
+    AppLogger.i(
+      'requestCoaching gymId=$gymId coachId=$coachId '
+      'clientId=$clientId relationId=$relationId',
+      tag: 'CoachingSource',
     );
     // Maximal genau eine aktive Coach-Beziehung pro Client/Gym.
     // Mehrere pending-Anfragen sind erlaubt; hier prüfen wir nur,
@@ -161,10 +166,10 @@ class FirestoreCoachingSource {
         updates['endedReason'] = endedReason;
       }
     }
-    // ignore: avoid_print
-    print(
-      '[CoachingSource] updateRelationStatus relationId=$relationId '
-      'status=$status endedReason=$endedReason',
+    AppLogger.i(
+      'updateRelationStatus relationId=$relationId status=$status '
+      'endedReason=$endedReason',
+      tag: 'CoachingSource',
     );
     await _relations.doc(relationId).set(updates, SetOptions(merge: true));
 

@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+resolve_fvmrc_version() {
+  local fvmrc_path="$1"
+  if [[ ! -f "$fvmrc_path" ]]; then
+    return 0
+  fi
+
+  sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$fvmrc_path" | head -n 1
+}
+
+# Preferred path when FVM itself is healthy.
+if command -v fvm >/dev/null 2>&1 && command -v dart >/dev/null 2>&1; then
+  exec fvm flutter "$@"
+fi
+
+# Fallback to a directly executable flutter in PATH (ignores dangling symlinks).
+if FLUTTER_BIN="$(command -v flutter 2>/dev/null)" && [[ -n "${FLUTTER_BIN:-}" ]] && [[ -x "$FLUTTER_BIN" ]]; then
+  exec "$FLUTTER_BIN" "$@"
+fi
+
+# Fallback to flutter version pinned in .fvmrc.
+FVMRC_VERSION="$(resolve_fvmrc_version "$REPO_ROOT/.fvmrc")"
+if [[ -n "${FVMRC_VERSION:-}" ]] && [[ -x "$HOME/fvm/versions/$FVMRC_VERSION/bin/flutter" ]]; then
+  exec "$HOME/fvm/versions/$FVMRC_VERSION/bin/flutter" "$@"
+fi
+
+# Last fallback to stable FVM checkout.
+if [[ -x "$HOME/fvm/versions/stable/bin/flutter" ]]; then
+  exec "$HOME/fvm/versions/stable/bin/flutter" "$@"
+fi
+
+cat >&2 <<'EOF'
+Flutter executable not found.
+Checked in this order:
+1) "fvm flutter" (requires both fvm and dart in PATH)
+2) "flutter" in PATH
+3) "$HOME/fvm/versions/<.fvmrc>/bin/flutter"
+4) "$HOME/fvm/versions/stable/bin/flutter"
+EOF
+exit 127

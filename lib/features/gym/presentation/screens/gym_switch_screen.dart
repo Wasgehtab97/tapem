@@ -4,6 +4,7 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/constants.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/shared_preferences_provider.dart';
+import 'package:tapem/core/widgets/network_circle_avatar.dart';
 import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 import 'package:tapem/features/auth/presentation/widgets/auth_background.dart';
 import 'package:tapem/features/auth/presentation/widgets/glass_card.dart';
@@ -169,18 +170,9 @@ class _GymSwitchScreenState extends ConsumerState<GymSwitchScreen> {
                                           : Colors.transparent,
                                     ),
                                     child: ListTile(
-                                      leading: gym.logoUrl != null
-                                          ? CircleAvatar(
-                                              backgroundImage:
-                                                  NetworkImage(gym.logoUrl!),
-                                              backgroundColor:
-                                                  Colors.white.withOpacity(0.1),
-                                            )
-                                          : const CircleAvatar(
-                                              child: Icon(
-                                                Icons.fitness_center_outlined,
-                                              ),
-                                            ),
+                                      leading: NetworkCircleAvatar(
+                                        url: gym.logoUrl,
+                                      ),
                                       title: Text(
                                         gym.name,
                                         style: AuthTheme.bodyStyle,

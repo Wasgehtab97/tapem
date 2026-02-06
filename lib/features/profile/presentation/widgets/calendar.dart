@@ -102,8 +102,8 @@ class _CalendarState extends State<Calendar> {
     bool isNeutralTheme,
   ) {
     final baseColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-    final opacity = isNeutralTheme ? 0.7 : 0.95;
-    return baseColor.withOpacity(opacity);
+    // Ensure full opacity for high contrast
+    return baseColor.withOpacity(1.0);
   }
 
   Color _resolveTrainingLabelColor(
@@ -112,9 +112,9 @@ class _CalendarState extends State<Calendar> {
     bool isNeutralTheme,
   ) {
     if (brandTheme != null && !isNeutralTheme) {
-      return brandTheme.onBrand.withOpacity(0.9);
+      return brandTheme.onBrand.withOpacity(1.0);
     }
-    return theme.colorScheme.onSecondary.withOpacity(0.9);
+    return theme.colorScheme.onSecondary.withOpacity(1.0);
   }
 
   @override
@@ -233,15 +233,26 @@ class _CalendarState extends State<Calendar> {
                               ? trainingFillColor
                               : Colors.transparent,
                       border: Border.all(
-                        color: isToday
-                            ? theme.colorScheme.error
-                            : hasPlan
-                                ? (customBorderColor ??
-                                    accentColor.withOpacity(0.9))
-                                : theme.dividerColor,
+                        color: isTrain
+                            ? trainingFillColor
+                            : isToday
+                                ? theme.colorScheme.error
+                                : hasPlan
+                                    ? (customBorderColor ??
+                                        accentColor.withOpacity(0.8))
+                                    : theme.dividerColor.withOpacity(0.12), // Subtle grid
                         width: isToday ? 2 : 1,
                       ),
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(1.5), // Slightly sharper
+                      boxShadow: isTrain
+                          ? [
+                              BoxShadow(
+                                color: trainingFillColor.withOpacity(0.4),
+                                blurRadius: 4,
+                                spreadRadius: 0.5,
+                              ),
+                            ]
+                          : null,
                     ),
                     child: widget.showDayNumbers
                         ? Padding(

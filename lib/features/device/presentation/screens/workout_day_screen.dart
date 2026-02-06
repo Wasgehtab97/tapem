@@ -134,6 +134,11 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
   Future<void> _ensureSession() async {
     final auth = ref.read(authControllerProvider);
     final controller = ref.read(workoutDayControllerProvider);
+    // Drafts (ungeplante offene Sessions) automatisch wiederherstellen
+    await controller.restoreDraftSessions(
+      userId: auth.userId ?? '',
+      gymId: widget.gymId,
+    );
     // Plan-Kontext ggf. im Controller hinterlegen oder von dort übernehmen
     final existingPlan = controller.getPlanContext(
       gymId: widget.gymId,
@@ -226,6 +231,17 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
 
 
     final loc = AppLocalizations.of(context)!;
+
+    // LUX: Auto-scroll to top when a new session is added (e.g. via NFC)
+    ref.listen(workoutDayControllerProvider.select((c) {
+      final uid = auth.userId;
+      final gid = auth.gymCode ?? widget.gymId;
+      return c.sessionsFor(userId: uid ?? '', gymId: gid).length;
+    }), (prev, next) {
+      if (next > (prev ?? 0)) {
+        _scrollToLatest();
+      }
+    });
 
     if (_isInitializing) {
       return const Scaffold(

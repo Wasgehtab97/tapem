@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../domain/models/nutrition_product.dart';
 
 class OpenFoodFactsClient {
-  OpenFoodFactsClient({http.Client? client}) : _client = client ?? http.Client();
+  OpenFoodFactsClient({http.Client? client})
+    : _client = client ?? http.Client();
 
   final http.Client _client;
+  static const Duration _requestTimeout = Duration(seconds: 8);
 
   int _toInt(dynamic v) {
     if (v is num) return v.round();
@@ -33,26 +36,28 @@ class OpenFoodFactsClient {
     return 0;
   }
 
+  Map<String, String> _searchLocaleParams() {
+    final locale = PlatformDispatcher.instance.locale;
+    final lc = locale.languageCode.trim().toLowerCase();
+    final cc = (locale.countryCode ?? '').trim().toUpperCase();
+    return {'lc': lc.isEmpty ? 'en' : lc, if (cc.isNotEmpty) 'cc': cc};
+  }
+
   NutritionProduct _buildProduct(String barcode, Map<String, dynamic> product) {
     final nutriments = product['nutriments'] as Map<String, dynamic>? ?? {};
-    final kcal = _getNumber(
-      nutriments,
-      const [
-        'energy-kcal_100g',
-        'energy-kcal',
-        'energy-kcal_value',
-        'energy-kcal_serving',
-      ],
-    );
-    final kJ = _getNumber(
-      nutriments,
-      const ['energy_100g', 'energy'],
-    );
+    final kcal = _getNumber(nutriments, const [
+      'energy-kcal_100g',
+      'energy-kcal',
+      'energy-kcal_value',
+      'energy-kcal_serving',
+    ]);
+    final kJ = _getNumber(nutriments, const ['energy_100g', 'energy']);
     final kcalFinal = kcal > 0 ? kcal : (kJ > 0 ? kJ / 4.184 : 0);
 
     return NutritionProduct(
       barcode: barcode,
-      name: (product['product_name'] as String?) ??
+      name:
+          (product['product_name'] as String?) ??
           (product['product_name_de'] as String?) ??
           (product['product_name_en'] as String?) ??
           barcode,
@@ -63,9 +68,7 @@ class OpenFoodFactsClient {
       carbsPer100: _toInt(
         nutriments['carbohydrates_100g'] ?? nutriments['carbohydrates'],
       ),
-      fatPer100: _toInt(
-        nutriments['fat_100g'] ?? nutriments['fat'],
-      ),
+      fatPer100: _toInt(nutriments['fat_100g'] ?? nutriments['fat']),
       updatedAt: DateTime.now(),
     );
   }
@@ -77,14 +80,23 @@ class OpenFoodFactsClient {
       'https://world.openfoodfacts.org/api/v2/product/$code'
       '.json?fields=code,product_name,product_name_de,product_name_en,nutriments',
     );
-    final res = await _client.get(uri);
+    final http.Response res;
+    try {
+      res = await _client.get(uri).timeout(_requestTimeout);
+    } on TimeoutException {
+      return null;
+    } catch (_) {
+      return null;
+    }
     if (res.statusCode != 200) return null;
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     final status = data['status'];
     if (!(status == 1 || status == '1')) return null;
     final product = data['product'] as Map<String, dynamic>? ?? {};
     final built = _buildProduct(code, product);
-    debugPrint('[OFF] fetchProduct code=$code kcal=${built.kcalPer100} p=${built.proteinPer100} c=${built.carbsPer100} f=${built.fatPer100}');
+    if (kDebugMode) {
+      debugPrint('[OFF] fetchProduct code=$code ok');
+    }
     return built;
   }
 
@@ -102,13 +114,20 @@ class OpenFoodFactsClient {
       'page_size': pageSize.toString(),
       'fields': 'code,product_name,product_name_de,product_name_en,nutriments',
       'sort_by': 'unique_scans_n',
-      'cc': 'de',
-      'lc': 'de',
+      ..._searchLocaleParams(),
     });
-    debugPrint('[OFF] search uri=$uri');
-    final res = await _client.get(uri);
+    final http.Response res;
+    try {
+      res = await _client.get(uri).timeout(_requestTimeout);
+    } on TimeoutException {
+      return [];
+    } catch (_) {
+      return [];
+    }
     if (res.statusCode != 200) {
-      debugPrint('[OFF] search status=${res.statusCode}');
+      if (kDebugMode) {
+        debugPrint('[OFF] search status=${res.statusCode}');
+      }
       return [];
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
@@ -120,9 +139,8 @@ class OpenFoodFactsClient {
       if (code == null || code.isEmpty) continue;
       results.add(_buildProduct(code, raw));
     }
-    debugPrint('[OFF] search "$q" -> ${results.length} results');
-    for (final p in results.take(5)) {
-      debugPrint('[OFF]  - ${p.barcode} ${p.name} kcal=${p.kcalPer100} p=${p.proteinPer100} c=${p.carbsPer100} f=${p.fatPer100}');
+    if (kDebugMode) {
+      debugPrint('[OFF] search "$q" -> ${results.length} results');
     }
     return results;
   }

@@ -10,17 +10,19 @@ class DailyXpAvatar extends StatelessWidget {
     required this.size,
     required this.xp,
     required this.level,
+    this.strokeWidth,
   }) : super(key: key);
 
   final ImageProvider image;
   final double size;
   final int xp;
   final int level;
+  final double? strokeWidth;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<AvatarRingTheme>() ?? AvatarRingTheme.fallback;
-    final stroke = theme.strokeWidth;
+    final stroke = strokeWidth ?? theme.strokeWidth;
     final progress = level >= LevelService.maxLevel
         ? 1.0
         : xp / LevelService.xpPerLevel;

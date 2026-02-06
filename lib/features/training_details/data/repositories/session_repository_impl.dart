@@ -117,6 +117,8 @@ class SessionRepositoryImpl implements SessionRepository {
         'gymId': session.gymId,
         'userId': session.userId,  // ← CRITICAL: Must include userId for friend calendar queries
         'deviceId': session.deviceId,
+        'deviceName': session.deviceName,
+        'deviceDescription': session.deviceDescription,
         'timestamp': session.timestamp.toIso8601String(),
         'sets': session.sets.map((s) => {
           'weight': s.weight,
@@ -128,6 +130,8 @@ class SessionRepositoryImpl implements SessionRepository {
         }).toList(),
         'note': session.note,
         'exerciseId': session.exerciseId ?? '',
+        'exerciseName': session.exerciseName ?? '',
+        'isMulti': session.isMulti,
       },
     );
   }

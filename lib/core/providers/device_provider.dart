@@ -167,6 +167,7 @@ class DeviceProvider extends ChangeNotifier {
   final SessionRepository _sessionRepository;
   final MembershipService _membership;
   final CommunityStatsWriter _communityStatsWriter;
+  final bool _persistEmptyDrafts;
   XpProvider? _xpProvider;
   ChallengeProvider? _challengeProvider;
   WorkoutSessionDurationService? _sessionDurationService;
@@ -251,6 +252,7 @@ class DeviceProvider extends ChangeNotifier {
     required MembershipService membership,
     CommunityStatsWriter? communityStatsWriter,
     bool autoFinalizeEnabled = true,
+    bool persistEmptyDrafts = false,
   })  : _firestore = firestore,
         _sessionRepository = sessionRepository,
        deviceRepository =
@@ -269,7 +271,8 @@ class DeviceProvider extends ChangeNotifier {
        _membership = membership,
        _communityStatsWriter =
            communityStatsWriter ?? CommunityStatsWriter(firestore: firestore),
-       _autoFinalizeEnabled = autoFinalizeEnabled;
+       _autoFinalizeEnabled = autoFinalizeEnabled,
+       _persistEmptyDrafts = persistEmptyDrafts;
 
   void attachExternalServices({
     required XpProvider xpProvider,
@@ -530,6 +533,7 @@ class DeviceProvider extends ChangeNotifier {
         isMulti: _device!.isMulti,
       );
       _draftKey = newKey;
+      _draftCreatedAt = null;
       await _draftRepo.deleteExpired(DateTime.now().millisecondsSinceEpoch);
 
       _xp = 0;
@@ -576,6 +580,9 @@ class DeviceProvider extends ChangeNotifier {
         userXpFuture,
       ]);
       final draftChanged = await _restoreDraft();
+      if (_persistEmptyDrafts && _draftCreatedAt == null) {
+        await _saveDraftNow();
+      }
       _loadedContextKey = _buildContextKey(
         gymId: gymId,
         deviceId: deviceId,
@@ -1030,7 +1037,7 @@ class DeviceProvider extends ChangeNotifier {
     final last = _lastActivityMs;
     if (last == null) return;
     final now = DateTime.now().millisecondsSinceEpoch;
-    final remaining = kDeviceDraftTtlMs - (now - last);
+    final remaining = kDeviceAutoFinalizeInactivityMs - (now - last);
     if (remaining <= 0) {
       unawaited(_handleAutoFinalizeTimer());
       return;
@@ -1063,7 +1070,7 @@ class DeviceProvider extends ChangeNotifier {
     final device = _device;
     if (key == null || device == null) return;
     final now = DateTime.now().millisecondsSinceEpoch;
-    if (_isDraftEmpty()) {
+    if (_isDraftEmpty() && !_persistEmptyDrafts) {
       await _draftRepo.delete(key);
       return;
     }
@@ -1325,7 +1332,15 @@ class DeviceProvider extends ChangeNotifier {
       });
 
       final now = DateTime.now();
-      final startOfDay = DateTime(now.year, now.month, now.day);
+      final timerStart = _sessionDurationService?.startTime;
+      // Session-Datum am Startzeitpunkt festmachen (Timer oder Draft-Erstellung),
+      // damit ein über Mitternacht gehendes Training dem Starttag gutgeschrieben wird.
+      final sessionDate = timerStart ??
+          (_draftCreatedAt != null
+              ? DateTime.fromMillisecondsSinceEpoch(_draftCreatedAt!)
+              : now);
+      final startOfDay =
+          DateTime(sessionDate.year, sessionDate.month, sessionDate.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
 
       final logsCol = _firestore
@@ -1354,7 +1369,6 @@ class DeviceProvider extends ChangeNotifier {
       }
       final ts = Timestamp.now();
       final endDate = ts.toDate();
-      final timerStart = _sessionDurationService?.startTime;
       final sessionTimestamp = timerStart ?? endDate;
       double? averageRestMs;
       if (completionTimes.isNotEmpty) {
@@ -1385,7 +1399,8 @@ class DeviceProvider extends ChangeNotifier {
         deviceName: _device!.name,
         deviceDescription: _device!.description,
         exerciseId: _currentExerciseId,
-        exerciseName: _device!.isMulti ? null : _device!.name, // For non-multi devices
+        exerciseName:
+            _device!.isMulti ? _lookupExerciseName() : _device!.name, // For progress titles
         isMulti: _device!.isMulti,
         timestamp: sessionTimestamp,
         note: _note,
@@ -1550,7 +1565,7 @@ class DeviceProvider extends ChangeNotifier {
           _log('⚠️ [Provider] rest stats record error: $e', st);
         }
       }
-      final dayKey = logicDayKey(DateTime.now());
+      final dayKey = logicDayKey(sessionDate);
       elogUi('SAVE_PERSIST_OK', {
         'uid': userId,
         'gymId': gymId,

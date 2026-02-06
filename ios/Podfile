@@ -3,9 +3,13 @@ install! 'cocoapods', :disable_input_output_paths => true
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
 project 'Runner', {
-  'Debug'   => :debug,
+  'Debug' => :debug,
+  'Debug-dev' => :debug,
+  'Debug-prod' => :debug,
   'Profile' => :release,
   'Release' => :release,
+  'Release-dev' => :release,
+  'Release-prod' => :release,
 }
 
 def flutter_root

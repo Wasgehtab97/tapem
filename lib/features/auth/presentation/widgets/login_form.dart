@@ -34,10 +34,11 @@ class _LoginFormState extends ConsumerState<LoginForm> {
   Future<void> _submit() async {
     final authProv = ref.read(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
-    
+
     // Manual validation since we might use controllers
     if (!_formKey.currentState!.validate()) return;
-    
+
+    FocusManager.instance.primaryFocus?.unfocus();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
@@ -75,9 +76,9 @@ class _LoginFormState extends ConsumerState<LoginForm> {
     }
 
     if (result.missingMembership) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.missingMembershipError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(loc.missingMembershipError)));
     }
 
     AnalyticsService.logEvent(
@@ -90,14 +91,14 @@ class _LoginFormState extends ConsumerState<LoginForm> {
     if (preAuthGymId != null &&
         preAuthGymId.isNotEmpty &&
         !(authProv.gymCodes ?? []).contains(preAuthGymId)) {
-      Navigator.of(context).pushReplacementNamed(
-        AppRouter.gymJoin,
-        arguments: preAuthGymId,
-      );
+      Navigator.of(
+        context,
+      ).pushReplacementNamed(AppRouter.gymJoin, arguments: preAuthGymId);
       return;
     }
 
-    final requiresGymSelection = result.requiresGymSelection ||
+    final requiresGymSelection =
+        result.requiresGymSelection ||
         result.gymContextStatus == GymContextStatus.missingSelection;
 
     if (requiresGymSelection) {
@@ -109,7 +110,9 @@ class _LoginFormState extends ConsumerState<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    final authProv = ref.watch(authControllerProvider);
+    final isLoading = ref.watch(
+      authControllerProvider.select((auth) => auth.isLoading),
+    );
     final loc = AppLocalizations.of(context)!;
 
     return Form(
@@ -125,7 +128,8 @@ class _LoginFormState extends ConsumerState<LoginForm> {
             keyboardType: TextInputType.emailAddress,
             prefixIcon: Icons.email_outlined,
             textInputAction: TextInputAction.next,
-            validator: (v) => v != null && v.contains('@') ? null : loc.emailInvalid,
+            validator: (v) =>
+                v != null && v.contains('@') ? null : loc.emailInvalid,
           ),
           const SizedBox(height: AuthTheme.spacingM),
           PremiumTextField(
@@ -134,16 +138,17 @@ class _LoginFormState extends ConsumerState<LoginForm> {
             obscureText: true,
             prefixIcon: Icons.lock_outline,
             textInputAction: TextInputAction.done,
-            validator: (v) => v != null && v.length >= 6 ? null : loc.passwordTooShort,
+            validator: (v) =>
+                v != null && v.length >= 6 ? null : loc.passwordTooShort,
           ),
           const SizedBox(height: AuthTheme.spacingL),
-          
+
           PremiumButton(
             text: loc.loginButton,
-            isLoading: authProv.isLoading,
-            onPressed: authProv.isLoading ? null : _submit,
+            isLoading: isLoading,
+            onPressed: isLoading ? null : _submit,
           ),
-          
+
           const SizedBox(height: AuthTheme.spacingS),
           Center(
             child: TextButton(

@@ -413,6 +413,56 @@ class AppLocalizationsDe extends AppLocalizations {
   String get historySessionsChartSemantics => 'Sitzungen im Verlauf';
 
   @override
+  String get progressTitle => 'Progress';
+
+  @override
+  String get progressButtonTitle => 'Progress';
+
+  @override
+  String get progressButtonSubtitle => 'Verlauf aller Übungen';
+
+  @override
+  String get progressYearLabel => 'Jahr';
+
+  @override
+  String get progressEmptyTitle => 'Noch keine Progress-Daten';
+
+  @override
+  String get progressEmptySubtitle => 'Trainiere, um deinen Jahresverlauf zu sehen.';
+
+  @override
+  String get progressLoadMore => 'Mehr anzeigen';
+
+  @override
+  String get progressBackfillAction => 'Progress laden';
+
+  @override
+  String get progressBackfillTitle => 'Progress-Daten erstellen';
+
+  @override
+  String get progressBackfillBody => 'Deine bisherigen Workouts werden analysiert und der Jahresverlauf erzeugt. Das kann einen Moment dauern und zusätzliche Reads verursachen.';
+
+  @override
+  String get progressBackfillConfirm => 'Starten';
+
+  @override
+  String get progressBackfillCancel => 'Abbrechen';
+
+  @override
+  String progressBackfillDone(Object sessions, Object exercises) {
+    return 'Backfill fertig: $sessions Sessions, $exercises Übungen.';
+  }
+
+  @override
+  String get progressInfoAction => 'So funktioniert’s';
+
+  @override
+  String get progressInfoTitle => 'So funktioniert Progress';
+
+  @override
+  String get progressInfoBody => 'Charts erscheinen, sobald eine Übung im ausgewählten Jahr mindestens 3 gespeicherte Sessions hat. Trainiere und speichere deine Workouts, um Progress aufzubauen. Nutze den \"Progress-Daten erstellen\" Button oben rechts, um deine Daten zu aktualisieren.';
+
+  @override
   String homeWelcome(Object user) {
     return 'Willkommen, $user';
   }
@@ -499,6 +549,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileStatsRestTimerLabel => 'Satztimer';
+
+  @override
+  String get profileStatsNfcScans => 'NFC-Scans';
+
+  @override
+  String get profileStatsNfcScansSubtitle => 'insgesamt';
 
   @override
   String get profileStatsFavoriteExercise => 'Lieblingsübung';

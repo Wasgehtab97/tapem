@@ -134,14 +134,14 @@ class _NutritionProductScreenState
     );
     try {
       final date = ref.read(nutritionProvider).selectedDate;
-      await ref.read(nutritionProvider).addEntry(
-            uid: uid,
-            date: date,
-            entry: entry,
-          );
+      await ref
+          .read(nutritionProvider)
+          .addEntry(uid: uid, date: date, entry: entry);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntrySaved)),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.nutritionEntrySaved),
+        ),
       );
       bool popped = false;
       Navigator.of(context).popUntil((route) {
@@ -155,7 +155,9 @@ class _NutritionProductScreenState
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntrySaveError)),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.nutritionEntrySaveError),
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -227,13 +229,21 @@ class _NutritionProductScreenState
         updatedAt: DateTime.now(),
       );
       final service = ref.read(nutritionProductServiceProvider);
-      await service.saveProduct(product);
+      if (_isValidBarcode(product.barcode)) {
+        try {
+          await service.saveProduct(product);
+        } catch (_) {
+          // Persisting a custom product is optional for this flow.
+        }
+      }
       setState(() => _product = product);
       await _saveEntry();
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntrySaveError)),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.nutritionEntrySaveError),
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -279,7 +289,8 @@ class _NutritionProductScreenState
               AppSpacing.lg,
             ),
             children: [
-              HeroGradientCard(
+              NutritionCard(
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -379,8 +390,9 @@ class _NutritionProductScreenState
                       _TextFieldBlock(
                         controller: _gramsController,
                         label: loc.nutritionProductGramsLabel,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       PrimaryCTA(
@@ -406,10 +418,12 @@ class _NutritionProductScreenState
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      Text(loc.nutritionProductPer100g,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
-                          )),
+                      Text(
+                        loc.nutritionProductPer100g,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
                       const SizedBox(height: AppSpacing.md),
                       Wrap(
                         spacing: 8,
@@ -419,7 +433,6 @@ class _NutritionProductScreenState
                             label: loc.nutritionEntryKcalLabel,
                             value: '${_product!.kcalPer100} kcal',
                             color: AppColors.accentTurquoise,
-                            enableGlow: true,
                           ),
                           MacroPill(
                             label: loc.nutritionEntryProteinLabel,
@@ -441,18 +454,24 @@ class _NutritionProductScreenState
                     ],
                   ),
                 ),
-                
+
                 // Quantity Input
                 NutritionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(loc.nutritionProductGramsLabel,
-                          style: theme.textTheme.labelMedium),
+                      Text(
+                        loc.nutritionProductGramsLabel,
+                        style: theme.textTheme.labelMedium,
+                      ),
                       const SizedBox(height: 8),
                       BrandInteractiveCard(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        backgroundColor: theme.scaffoldBackgroundColor
+                            .withOpacity(0.3),
                         enableScaleAnimation: false,
                         showShadow: false,
                         child: Row(
@@ -460,7 +479,10 @@ class _NutritionProductScreenState
                             Expanded(
                               child: TextField(
                                 controller: _gramsController,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
                                 autocorrect: false,
                                 enableSuggestions: false,
                                 textCapitalization: TextCapitalization.none,
@@ -480,15 +502,23 @@ class _NutritionProductScreenState
                             IconButton(
                               onPressed: () {
                                 double val = _grams();
-                                if (val >= 10) _gramsController.text = (val - 10).toInt().toString();
+                                if (val >= 10) {
+                                  _gramsController.text = (val - 10)
+                                      .toInt()
+                                      .toString();
+                                }
                               },
                               icon: const Icon(Icons.remove_circle_outline),
-                              color: theme.colorScheme.onSurface.withOpacity(0.5),
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.5,
+                              ),
                             ),
                             IconButton(
                               onPressed: () {
                                 double val = _grams();
-                                _gramsController.text = (val + 10).toInt().toString();
+                                _gramsController.text = (val + 10)
+                                    .toInt()
+                                    .toString();
                               },
                               icon: const Icon(Icons.add_circle_outline),
                               color: theme.colorScheme.primary,
@@ -502,14 +532,6 @@ class _NutritionProductScreenState
 
                 // Computed Totals
                 NutritionCard(
-                  backgroundGradient: LinearGradient(
-                    colors: [
-                      theme.extension<AppBrandTheme>()?.outline?.withOpacity(0.1) ?? Colors.transparent,
-                      Colors.transparent,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
                   child: _ComputedCard(
                     calories: _scaledInt(_product!.kcalPer100, _grams()),
                     protein: _scaledInt(_product!.proteinPer100, _grams()),
@@ -517,9 +539,9 @@ class _NutritionProductScreenState
                     fat: _scaledInt(_product!.fatPer100, _grams()),
                   ),
                 ),
-                
+
                 const SizedBox(height: AppSpacing.lg),
-                
+
                 // Action Button
                 PrimaryCTA(
                   label: loc.nutritionProductAddCta,
@@ -530,27 +552,6 @@ class _NutritionProductScreenState
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _MacroRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _MacroRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label),
-          Text(value),
-        ],
       ),
     );
   }
@@ -573,7 +574,7 @@ class _ComputedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
-    
+
     // Use the premium grid layout
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -598,7 +599,6 @@ class _ComputedCard extends StatelessWidget {
               label: loc.nutritionEntryKcalLabel,
               value: '$calories kcal',
               color: AppColors.accentTurquoise,
-              enableGlow: true,
             ),
             MacroPill(
               label: loc.nutritionEntryProteinLabel,

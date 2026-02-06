@@ -117,6 +117,16 @@ class SyncService {
       }
 
       final sets = (data['sets'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      final userId = data['userId'] as String? ?? '';
+      final exerciseId = (data['exerciseId'] as String? ?? '').trim();
+      final isMulti = data['isMulti'] == true;
+      final exerciseName = (data['exerciseName'] as String? ?? '').trim();
+      final deviceName = (data['deviceName'] as String? ?? deviceId).trim();
+      final deviceDescription = data['deviceDescription'] as String?;
+      final sessionTimestamp = DateTime.tryParse(
+            data['timestamp'] as String? ?? '',
+          ) ??
+          DateTime.now();
       
       // Write each set as a separate log entry
       final batch = _firestore.batch();
@@ -132,12 +142,10 @@ class SyncService {
 
         batch.set(ref, {
           'sessionId': job.docId,
-          'userId': data['userId'] ?? '',
+          'userId': userId,
           'deviceId': deviceId,
-          'exerciseId': data['exerciseId'] ?? '',
-          'timestamp': Timestamp.fromDate(
-            DateTime.parse(data['timestamp'] as String? ?? DateTime.now().toIso8601String())
-          ),
+          'exerciseId': exerciseId,
+          'timestamp': Timestamp.fromDate(sessionTimestamp),
           'weight': set['weight'] ?? 0.0,
           'reps': set['reps'] ?? 0,
           'setNumber': i + 1,
@@ -146,6 +154,77 @@ class SyncService {
           'isBodyweight': set['isBodyweight'] ?? false,
           'note': data['note'],
         });
+      }
+
+      final bestE1rm = _bestE1rmForSets(sets);
+      if (bestE1rm != null && bestE1rm > 0 && userId.isNotEmpty) {
+        final progressKey =
+            (isMulti && exerciseId.isNotEmpty) ? '$deviceId::$exerciseId' : deviceId;
+        final year = sessionTimestamp.year.toString();
+        final fallbackTitle =
+            exerciseId.isNotEmpty ? exerciseId : deviceName;
+        final title = isMulti
+            ? (exerciseName.isNotEmpty ? exerciseName : fallbackTitle)
+            : deviceName;
+        final subtitle = isMulti ? deviceName : (deviceDescription ?? '');
+
+        final progressRef = _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('users')
+            .doc(userId)
+            .collection('progress')
+            .doc(progressKey)
+            .collection('years')
+            .doc(year);
+
+        final indexRef = _firestore
+            .collection('gyms')
+            .doc(gymId)
+            .collection('users')
+            .doc(userId)
+            .collection('progressIndex')
+            .doc(year);
+
+        final dayKey = _dayKey(sessionTimestamp);
+        final point = {
+          'sessionId': job.docId,
+          'ts': Timestamp.fromDate(sessionTimestamp),
+          'e1rm': bestE1rm,
+        };
+
+        batch.set(
+          progressRef,
+          {
+            'deviceId': deviceId,
+            'exerciseId': exerciseId,
+            'isMulti': isMulti,
+            'title': title,
+            'subtitle': subtitle,
+            'year': sessionTimestamp.year,
+            'updatedAt': FieldValue.serverTimestamp(),
+            'sessionCount': FieldValue.increment(1),
+            'pointsByDay.$dayKey': point,
+          },
+          SetOptions(merge: true),
+        );
+
+        batch.set(
+          indexRef,
+          {
+            'year': sessionTimestamp.year,
+            'updatedAt': FieldValue.serverTimestamp(),
+            'items.$progressKey.deviceId': deviceId,
+            'items.$progressKey.exerciseId': exerciseId,
+            'items.$progressKey.isMulti': isMulti,
+            'items.$progressKey.title': title,
+            'items.$progressKey.subtitle': subtitle,
+            'items.$progressKey.sessionCount': FieldValue.increment(1),
+            'items.$progressKey.lastSessionAt':
+                Timestamp.fromDate(sessionTimestamp),
+          },
+          SetOptions(merge: true),
+        );
       }
 
       if (job.action == 'delete') {
@@ -160,7 +239,75 @@ class SyncService {
         final snapshot = await logsRef
             .where('sessionId', isEqualTo: job.docId)
             .get();
-        
+        if (snapshot.docs.isNotEmpty) {
+          final firstData = snapshot.docs.first.data();
+          final deleteExerciseId =
+              (firstData['exerciseId'] as String? ?? '').trim();
+          final deleteTimestamp =
+              (firstData['timestamp'] as Timestamp?)?.toDate() ??
+                  DateTime.now();
+          final deleteUserId =
+              (firstData['userId'] as String? ?? userId).trim();
+          final deleteIsMulti = deleteExerciseId.isNotEmpty;
+          final deleteYear = deleteTimestamp.year.toString();
+          final deleteDayKey = _dayKey(deleteTimestamp);
+          double? deleteBestE1rm;
+          for (final doc in snapshot.docs) {
+            final data = doc.data();
+            final weight = (data['weight'] as num?)?.toDouble() ?? 0.0;
+            final reps = (data['reps'] as num?)?.toInt() ?? 0;
+            if (weight <= 0 || reps <= 0) continue;
+            final e1rm = _calculateE1rm(weight, reps);
+            if (deleteBestE1rm == null || e1rm > deleteBestE1rm) {
+              deleteBestE1rm = e1rm;
+            }
+          }
+
+          if (deleteBestE1rm != null &&
+              deleteBestE1rm > 0 &&
+              deleteUserId.isNotEmpty) {
+            final progressKey = deleteIsMulti && deleteExerciseId.isNotEmpty
+                ? '$deviceId::$deleteExerciseId'
+                : deviceId;
+            final progressRef = _firestore
+                .collection('gyms')
+                .doc(gymId)
+                .collection('users')
+                .doc(deleteUserId)
+                .collection('progress')
+                .doc(progressKey)
+                .collection('years')
+                .doc(deleteYear);
+
+            final indexRef = _firestore
+                .collection('gyms')
+                .doc(gymId)
+                .collection('users')
+                .doc(deleteUserId)
+                .collection('progressIndex')
+                .doc(deleteYear);
+
+            batch.set(
+              progressRef,
+              {
+                'updatedAt': FieldValue.serverTimestamp(),
+                'sessionCount': FieldValue.increment(-1),
+                'pointsByDay.$deleteDayKey': FieldValue.delete(),
+              },
+              SetOptions(merge: true),
+            );
+
+            batch.set(
+              indexRef,
+              {
+                'updatedAt': FieldValue.serverTimestamp(),
+                'items.$progressKey.sessionCount': FieldValue.increment(-1),
+              },
+              SetOptions(merge: true),
+            );
+          }
+        }
+
         for (final doc in snapshot.docs) {
           batch.delete(doc.reference);
         }
@@ -168,6 +315,31 @@ class SyncService {
 
       await batch.commit();
     }
+  }
+
+  double? _bestE1rmForSets(List<Map<String, dynamic>> sets) {
+    double? best;
+    for (final set in sets) {
+      final weight = (set['weight'] as num?)?.toDouble() ?? 0.0;
+      final reps = (set['reps'] as num?)?.toInt() ?? 0;
+      if (weight <= 0 || reps <= 0) continue;
+      final e1rm = _calculateE1rm(weight, reps);
+      if (best == null || e1rm > best) {
+        best = e1rm;
+      }
+    }
+    return best;
+  }
+
+  double _calculateE1rm(double weight, int reps) {
+    return weight * (1 + reps / 30);
+  }
+
+  String _dayKey(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
   }
 
   Future<void> addJob({

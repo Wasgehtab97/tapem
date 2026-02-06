@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:tapem/core/logging/app_logger.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/coaching/data/repositories/coaching_repository_impl.dart';
 import 'package:tapem/features/coaching/data/sources/firestore_coaching_source.dart';
@@ -20,30 +21,43 @@ final coachRelationsProvider =
     FutureProvider<List<CoachClientRelation>>((ref) async {
   final authState = ref.watch(authViewStateProvider);
   final userId = authState.userId;
-
-  // ignore: avoid_print
-  print(
-    '[CoachingProvider] coachRelationsProvider userId=$userId '
-    'isCoach=${authState.isCoach} gymCode=${authState.gymCode}',
-  );
-
-  if (userId == null) {
+  if (!authState.isLoggedIn || userId == null || userId.isEmpty) {
     return [];
   }
+  if (!authState.isCoach) {
+    return [];
+  }
+
+  AppLogger.d(
+    'coachRelationsProvider userId=$userId '
+    'isCoach=${authState.isCoach} gymCode=${authState.gymCode}',
+    tag: 'CoachingProvider',
+  );
 
   final repo = ref.watch(coachingRepositoryProvider);
   try {
     final result = await repo.getRelationsForCoach(coachId: userId);
-    // ignore: avoid_print
-    print(
-      '[CoachingProvider] coachRelationsProvider loaded '
-      '${result.length} relations for coachId=$userId',
+    AppLogger.d(
+      'coachRelationsProvider loaded ${result.length} relations for coachId=$userId',
+      tag: 'CoachingProvider',
     );
     return result;
+  } on FirebaseException catch (e) {
+    if (e.code == 'permission-denied') {
+      // Avoid noisy errors during auth transitions (e.g. logout)
+      return [];
+    }
+    AppLogger.w(
+      'coachRelationsProvider firestore error code=${e.code} message=${e.message}',
+      tag: 'CoachingProvider',
+      error: e,
+    );
+    rethrow;
   } catch (e) {
-    // ignore: avoid_print
-    print(
-      '[CoachingProvider] coachRelationsProvider ERROR for userId=$userId -> $e',
+    AppLogger.w(
+      'coachRelationsProvider error for userId=$userId',
+      tag: 'CoachingProvider',
+      error: e,
     );
     rethrow;
   }
@@ -53,30 +67,38 @@ final clientRelationsProvider =
     FutureProvider<List<CoachClientRelation>>((ref) async {
   final authState = ref.watch(authViewStateProvider);
   final userId = authState.userId;
-
-  // ignore: avoid_print
-  print(
-    '[CoachingProvider] clientRelationsProvider userId=$userId '
-    'gymCode=${authState.gymCode}',
-  );
-
-  if (userId == null) {
+  if (!authState.isLoggedIn || userId == null || userId.isEmpty) {
     return [];
   }
+
+  AppLogger.d(
+    'clientRelationsProvider userId=$userId gymCode=${authState.gymCode}',
+    tag: 'CoachingProvider',
+  );
 
   final repo = ref.watch(coachingRepositoryProvider);
   try {
     final result = await repo.getRelationsForClient(clientId: userId);
-    // ignore: avoid_print
-    print(
-      '[CoachingProvider] clientRelationsProvider loaded '
-      '${result.length} relations for clientId=$userId',
+    AppLogger.d(
+      'clientRelationsProvider loaded ${result.length} relations for clientId=$userId',
+      tag: 'CoachingProvider',
     );
     return result;
+  } on FirebaseException catch (e) {
+    if (e.code == 'permission-denied') {
+      return [];
+    }
+    AppLogger.w(
+      'clientRelationsProvider firestore error code=${e.code} message=${e.message}',
+      tag: 'CoachingProvider',
+      error: e,
+    );
+    rethrow;
   } catch (e) {
-    // ignore: avoid_print
-    print(
-      '[CoachingProvider] clientRelationsProvider ERROR for userId=$userId -> $e',
+    AppLogger.w(
+      'clientRelationsProvider error for userId=$userId',
+      tag: 'CoachingProvider',
+      error: e,
     );
     rethrow;
   }
@@ -88,14 +110,16 @@ final availableCoachIdsProvider =
   final authState = ref.watch(authViewStateProvider);
   final userId = authState.userId;
   final gymId = authState.gymCode;
+  if (!authState.isLoggedIn || userId == null || userId.isEmpty) {
+    return [];
+  }
 
-  // ignore: avoid_print
-  print(
-    '[CoachingProvider] availableCoachIdsProvider userId=$userId '
-    'gymId=$gymId',
+  AppLogger.d(
+    'availableCoachIdsProvider userId=$userId gymId=$gymId',
+    tag: 'CoachingProvider',
   );
 
-  if (userId == null || gymId == null || gymId.isEmpty) {
+  if (gymId == null || gymId.isEmpty) {
     return [];
   }
 
@@ -110,23 +134,26 @@ final availableCoachIdsProvider =
         .map((doc) => doc.id)
         .where((id) => id != userId)
         .toList(growable: false);
-    // ignore: avoid_print
-    print(
-      '[CoachingProvider] availableCoachIdsProvider loaded '
-      '${ids.length} coaches for gymId=$gymId',
+    AppLogger.d(
+      'availableCoachIdsProvider loaded ${ids.length} coaches for gymId=$gymId',
+      tag: 'CoachingProvider',
     );
     return ids;
   } on FirebaseException catch (e) {
-    // ignore: avoid_print
-    print(
-      '[CoachingProvider] availableCoachIdsProvider FIRESTORE_ERROR '
-      'code=${e.code} message=${e.message}',
+    if (e.code == 'permission-denied') {
+      return [];
+    }
+    AppLogger.w(
+      'availableCoachIdsProvider firestore error code=${e.code} message=${e.message}',
+      tag: 'CoachingProvider',
+      error: e,
     );
     rethrow;
   } catch (e) {
-    // ignore: avoid_print
-    print(
-      '[CoachingProvider] availableCoachIdsProvider UNKNOWN_ERROR $e',
+    AppLogger.w(
+      'availableCoachIdsProvider error',
+      tag: 'CoachingProvider',
+      error: e,
     );
     rethrow;
   }
@@ -135,6 +162,10 @@ final availableCoachIdsProvider =
 /// Liefert einen angezeigten Namen für einen User (Username oder E-Mail, Fallback auf ID).
 final userDisplayNameProvider =
     FutureProvider.family<String, String>((ref, String uid) async {
+  final authState = ref.watch(authViewStateProvider);
+  if (!authState.isLoggedIn) {
+    return 'Unbekanntes Mitglied';
+  }
   final firestore = FirebaseFirestore.instance;
   final snap = await firestore.collection('users').doc(uid).get();
   if (!snap.exists) {
@@ -176,7 +207,7 @@ final clientCoachingAnalyticsProvider =
   final authState = ref.watch(authViewStateProvider);
   final gymId = authState.gymCode;
 
-  if (gymId == null || gymId.isEmpty) {
+  if (!authState.isLoggedIn || gymId == null || gymId.isEmpty) {
     return ClientCoachingAnalytics.empty();
   }
 
@@ -215,11 +246,11 @@ final clientCoachingAnalyticsProvider =
       avgPerWeek = totalCompletions / weeksSpan;
     }
 
-    // ignore: avoid_print
-    print(
-      '[CoachingProvider] clientCoachingAnalyticsProvider '
-      'clientId=$clientId totalCompletions=$totalCompletions '
-      'totalPlans=${plans.length} avgPerWeek=${avgPerWeek.toStringAsFixed(2)}',
+    AppLogger.d(
+      'clientCoachingAnalyticsProvider clientId=$clientId '
+      'totalCompletions=$totalCompletions totalPlans=${plans.length} '
+      'avgPerWeek=${avgPerWeek.toStringAsFixed(2)}',
+      tag: 'CoachingProvider',
     );
 
     return ClientCoachingAnalytics(
@@ -229,10 +260,10 @@ final clientCoachingAnalyticsProvider =
       lastActivity: lastCompletedAt,
     );
   } catch (e) {
-    // ignore: avoid_print
-    print(
-      '[CoachingProvider] clientCoachingAnalyticsProvider ERROR '
-      'clientId=$clientId -> $e',
+    AppLogger.w(
+      'clientCoachingAnalyticsProvider error clientId=$clientId',
+      tag: 'CoachingProvider',
+      error: e,
     );
     return ClientCoachingAnalytics.empty();
   }

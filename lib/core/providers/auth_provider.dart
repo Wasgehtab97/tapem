@@ -439,7 +439,9 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(StorageKeys.demoGymId);
       await prefs.remove('selectedGymCode');
-      await _sessionDraftRepository.deleteAll();
+      await _sessionDraftRepository.deleteExpired(
+        DateTime.now().millisecondsSinceEpoch,
+      );
       _setLoading(false);
     }
   }

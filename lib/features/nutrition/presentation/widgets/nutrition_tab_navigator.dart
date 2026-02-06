@@ -52,7 +52,9 @@ class _OverlayCloseObserver extends NavigatorObserver {
 }
 
 class NutritionTabNavigator extends ConsumerWidget {
-  const NutritionTabNavigator({super.key});
+  final GlobalKey<NavigatorState>? navigatorKey;
+
+  const NutritionTabNavigator({super.key, this.navigatorKey});
 
   Route<dynamic> _onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -64,9 +66,15 @@ class NutritionTabNavigator extends ConsumerWidget {
       case AppRouter.nutritionGoals:
         return MaterialPageRoute(builder: (_) => const NutritionGoalsScreen());
       case AppRouter.nutritionCalendar:
-        return MaterialPageRoute(builder: (_) => const NutritionCalendarScreen());
+        return MaterialPageRoute(
+          builder: (_) => const NutritionCalendarScreen(),
+        );
       case AppRouter.nutritionSearch:
-        return MaterialPageRoute(builder: (_) => const NutritionSearchScreen());
+        final args = settings.arguments as Map<String, dynamic>? ?? const {};
+        return MaterialPageRoute(
+          builder: (_) =>
+              NutritionSearchScreen(initialQuery: args['query'] as String?),
+        );
       case AppRouter.nutritionRecipes:
         final args = settings.arguments as Map<String, dynamic>? ?? const {};
         return MaterialPageRoute(
@@ -90,18 +98,18 @@ class NutritionTabNavigator extends ConsumerWidget {
           if (val is NutritionRecipe) {
             recipe = val;
           }
-           isLogMode = rawArgs['isLogMode'] as bool? ?? false;
-           logMeal = rawArgs['meal'] as String?;
-           logDate = rawArgs['date'] as DateTime?;
-
+          isLogMode = rawArgs['isLogMode'] as bool? ?? false;
+          logMeal = rawArgs['meal'] as String?;
+          logDate = rawArgs['date'] as DateTime?;
         }
         return MaterialPageRoute(
-            builder: (_) => NutritionRecipeEditScreen(
-                  recipe: recipe,
-                  isLogMode: isLogMode,
-                  logMeal: logMeal,
-                  logDate: logDate,
-                ));
+          builder: (_) => NutritionRecipeEditScreen(
+            recipe: recipe,
+            isLogMode: isLogMode,
+            logMeal: logMeal,
+            logDate: logDate,
+          ),
+        );
       case AppRouter.nutritionEntry:
         final args = settings.arguments as Map<String, dynamic>? ?? const {};
         return MaterialPageRoute(
@@ -112,6 +120,8 @@ class NutritionTabNavigator extends ConsumerWidget {
             initialProduct: args['product'] as NutritionProduct?,
             initialQty: (args['qty'] as num?)?.toDouble(),
             entryIndex: args['index'] as int?,
+            initialDate: args['date'] as DateTime?,
+            initialRecipe: args['recipe'] as NutritionRecipe?,
           ),
         );
       case AppRouter.nutritionScan:
@@ -131,7 +141,7 @@ class NutritionTabNavigator extends ConsumerWidget {
           ),
         );
       default:
-        return MaterialPageRoute(builder: (_) => const NutritionDayScreen());
+        return MaterialPageRoute(builder: (_) => const NutritionHomeScreen());
     }
   }
 
@@ -139,11 +149,10 @@ class NutritionTabNavigator extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final keypad = ref.watch(overlayNumericKeypadControllerProvider);
     return Navigator(
-      initialRoute: AppRouter.nutritionDay,
+      key: navigatorKey,
+      initialRoute: AppRouter.nutritionHome,
       onGenerateRoute: _onGenerateRoute,
-      observers: [
-        _OverlayCloseObserver(keypad),
-      ],
+      observers: [_OverlayCloseObserver(keypad)],
     );
   }
 }

@@ -4,4 +4,4 @@
 
 // Custom settings for Debug-Dev configuration
 BUNDLE_ID_SUFFIX=.dev
-DISPLAY_NAME=Tap'em DEV
+DISPLAY_NAME=Tap'em Dev

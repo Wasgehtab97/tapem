@@ -10,6 +10,7 @@ import 'package:tapem/features/training_plan/domain/models/training_day_assignme
 import 'package:tapem/features/training_plan/domain/repositories/training_schedule_repository.dart';
 import 'package:tapem/features/training_plan/data/sources/firestore_training_schedule_source.dart';
 import 'package:tapem/features/training_plan/data/repositories/training_schedule_repository_impl.dart';
+import 'package:tapem/core/logging/app_logger.dart';
 
 class ClientPlanStatsKey {
   const ClientPlanStatsKey({
@@ -71,16 +72,29 @@ final trainingPlansProvider = FutureProvider<List<TrainingPlan>>((ref) async {
   final gymId = authState.gymCode;
   final userId = authState.userId;
 
-  if (userId == null || gymId == null) {
+  if (!authState.isLoggedIn || userId == null || gymId == null || gymId.isEmpty) {
     return [];
   }
 
   final repository = ref.watch(trainingPlanRepositoryProvider);
   try {
     return await repository.getPlans(gymId: gymId, userId: userId);
+  } on FirebaseException catch (e) {
+    if (e.code == 'permission-denied') {
+      return [];
+    }
+    AppLogger.w(
+      'Error loading training plans',
+      tag: 'TrainingPlanProvider',
+      error: e,
+    );
+    rethrow;
   } catch (e) {
-    //ignore: avoid_print
-    print('🔴 Error loading training plans: $e');
+    AppLogger.w(
+      'Error loading training plans',
+      tag: 'TrainingPlanProvider',
+      error: e,
+    );
     rethrow;
   }
 });
@@ -89,7 +103,7 @@ final trainingPlanStatsProvider =
     FutureProvider.family<TrainingPlanStats, String>((ref, planId) async {
   final authState = ref.watch(authViewStateProvider);
   final userId = authState.userId;
-  if (userId == null) {
+  if (!authState.isLoggedIn || userId == null || userId.isEmpty) {
     return TrainingPlanStats.empty();
   }
   final repo = ref.watch(trainingPlanRepositoryProvider);
@@ -103,6 +117,10 @@ final trainingPlanStatsProvider =
 /// Stats für einen Plan, explizit für einen Owner-User (z.B. Client).
 final trainingPlanStatsForOwnerProvider =
     FutureProvider.family<TrainingPlanStats, PlanStatsOwnerKey>((ref, key) async {
+  final authState = ref.watch(authViewStateProvider);
+  if (!authState.isLoggedIn) {
+    return TrainingPlanStats.empty();
+  }
   final repo = ref.watch(trainingPlanRepositoryProvider);
   try {
     return await repo.getStats(userId: key.userId, planId: key.planId);
@@ -114,6 +132,10 @@ final trainingPlanStatsForOwnerProvider =
 /// Stats-Provider für einen bestimmten Client-Plan (Coach-Views).
 final clientTrainingPlanStatsProvider =
     FutureProvider.family<TrainingPlanStats, ClientPlanStatsKey>((ref, key) async {
+  final authState = ref.watch(authViewStateProvider);
+  if (!authState.isLoggedIn) {
+    return TrainingPlanStats.empty();
+  }
   final repo = ref.watch(trainingPlanRepositoryProvider);
   try {
     return await repo.getStats(userId: key.clientId, planId: key.planId);
@@ -128,16 +150,29 @@ final clientTrainingPlansProvider =
   final authState = ref.watch(authViewStateProvider);
   final gymId = authState.gymCode;
 
-  if (gymId == null || gymId.isEmpty) {
+  if (!authState.isLoggedIn || gymId == null || gymId.isEmpty) {
     return [];
   }
 
   final repository = ref.watch(trainingPlanRepositoryProvider);
   try {
     return await repository.getPlans(gymId: gymId, userId: clientId);
+  } on FirebaseException catch (e) {
+    if (e.code == 'permission-denied') {
+      return [];
+    }
+    AppLogger.w(
+      'Error loading client training plans',
+      tag: 'TrainingPlanProvider',
+      error: e,
+    );
+    rethrow;
   } catch (e) {
-    //ignore: avoid_print
-    print('🔴 Error loading client training plans: $e');
+    AppLogger.w(
+      'Error loading client training plans',
+      tag: 'TrainingPlanProvider',
+      error: e,
+    );
     rethrow;
   }
 });
@@ -147,15 +182,18 @@ final trainingScheduleForDayProvider =
     FutureProvider.family<TrainingDayAssignment?, String>((ref, String dateKey) async {
   final authState = ref.watch(authViewStateProvider);
   final userId = authState.userId;
-  if (userId == null) {
+  if (!authState.isLoggedIn || userId == null || userId.isEmpty) {
     return null;
   }
   final repo = ref.watch(trainingScheduleRepositoryProvider);
   try {
     return await repo.getAssignment(userId: userId, dateKey: dateKey);
   } catch (e) {
-    //ignore: avoid_print
-    print('🔴 Error loading training schedule for $dateKey: $e');
+    AppLogger.w(
+      'Error loading training schedule for $dateKey',
+      tag: 'TrainingPlanProvider',
+      error: e,
+    );
     return null;
   }
 });
@@ -164,6 +202,10 @@ final trainingScheduleForDayProvider =
 final clientTrainingScheduleForDayProvider =
     FutureProvider.family<TrainingDayAssignment?, Map<String, String>>(
   (ref, Map<String, String> params) async {
+    final authState = ref.watch(authViewStateProvider);
+    if (!authState.isLoggedIn) {
+      return null;
+    }
     final clientId = params['clientId'] ?? '';
     final dateKey = params['dateKey'] ?? '';
     if (clientId.isEmpty || dateKey.isEmpty) {
@@ -173,9 +215,10 @@ final clientTrainingScheduleForDayProvider =
     try {
       return await repo.getAssignment(userId: clientId, dateKey: dateKey);
     } catch (e) {
-      //ignore: avoid_print
-      print(
-        '🔴 Error loading client training schedule clientId=$clientId dateKey=$dateKey: $e',
+      AppLogger.w(
+        'Error loading client training schedule clientId=$clientId dateKey=$dateKey',
+        tag: 'TrainingPlanProvider',
+        error: e,
       );
       return null;
     }
@@ -187,15 +230,18 @@ final trainingScheduleForYearProvider =
     FutureProvider.family<List<TrainingDayAssignment>, int>((ref, int year) async {
   final authState = ref.watch(authViewStateProvider);
   final userId = authState.userId;
-  if (userId == null) {
+  if (!authState.isLoggedIn || userId == null || userId.isEmpty) {
     return [];
   }
   final repo = ref.watch(trainingScheduleRepositoryProvider);
   try {
     return await repo.getAssignmentsForYear(userId: userId, year: year);
   } catch (e) {
-    //ignore: avoid_print
-    print('🔴 Error loading training schedule for year=$year: $e');
+    AppLogger.w(
+      'Error loading training schedule for year=$year',
+      tag: 'TrainingPlanProvider',
+      error: e,
+    );
     return [];
   }
 });

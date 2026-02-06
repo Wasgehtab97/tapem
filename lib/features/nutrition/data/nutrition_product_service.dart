@@ -8,36 +8,41 @@ class NutritionProductService {
   final NutritionProductCacheStore _cache;
   final OpenFoodFactsClient _api;
 
-  bool _isEmptyProduct(NutritionProduct? p) {
+  bool _isInvalidProduct(NutritionProduct? p) {
     if (p == null) return true;
-    return p.kcalPer100 == 0 &&
-        p.proteinPer100 == 0 &&
-        p.carbsPer100 == 0 &&
-        p.fatPer100 == 0;
+    if (p.name.trim().isEmpty) return true;
+    return p.kcalPer100 < 0 ||
+        p.proteinPer100 < 0 ||
+        p.carbsPer100 < 0 ||
+        p.fatPer100 < 0;
   }
 
   NutritionProductService({
     required NutritionRepository repository,
     required NutritionProductCacheStore cache,
     OpenFoodFactsClient? api,
-  })  : _repo = repository,
-        _cache = cache,
-        _api = api ?? OpenFoodFactsClient();
+  }) : _repo = repository,
+       _cache = cache,
+       _api = api ?? OpenFoodFactsClient();
 
   Future<NutritionProduct?> getByBarcode(String barcode) async {
-    final cached = _cache.get(barcode);
-    if (cached != null && !_isEmptyProduct(cached)) return cached;
+    final code = barcode.trim();
+    if (code.isEmpty) return null;
+
+    final cached = _cache.get(code);
+    if (cached != null && !_isInvalidProduct(cached)) return cached;
+
     NutritionProduct? remote;
     try {
-      remote = await _repo.fetchProduct(barcode);
+      remote = await _repo.fetchProduct(code);
     } catch (_) {
       remote = null;
     }
-    if (remote != null && !_isEmptyProduct(remote)) {
+    if (remote != null && !_isInvalidProduct(remote)) {
       await _cache.put(remote);
       return remote;
     }
-    final apiProduct = await _api.fetchProduct(barcode);
+    final apiProduct = await _api.fetchProduct(code);
     if (apiProduct != null) {
       try {
         await _repo.upsertProduct(apiProduct);

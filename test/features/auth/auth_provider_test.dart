@@ -559,7 +559,7 @@ void main() {
       expect(provider2.error, contains('fail'));
     });
 
-    test('logout clears state and session drafts', () async {
+    test('logout clears auth state but keeps session drafts for recovery', () async {
       var storedUser = UserData(
         id: 'uid',
         email: 'user@example.com',
@@ -590,7 +590,11 @@ void main() {
       await _pumpEventQueue();
 
       expect(provider.isLoggedIn, isFalse);
-      expect(sessionRepo.deleted, contains('all'));
+      expect(
+        sessionRepo.deleted.any((entry) => entry.startsWith('expired-')),
+        isTrue,
+      );
+      expect(sessionRepo.deleted, isNot(contains('all')));
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('selectedGymCode'), isNull);
     });

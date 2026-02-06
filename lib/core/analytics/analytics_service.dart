@@ -159,4 +159,23 @@ class AnalyticsService {
       },
     );
   }
+
+  static Future<void> logWorkoutNfcScan({
+    required String userId,
+    required String gymId,
+    required String deviceId,
+    required bool isMulti,
+    required String status,
+  }) {
+    return logEvent(
+      'workout_nfc_scan',
+      parameters: {
+        'user_id': userId,
+        'gym_id': gymId,
+        'device_id': deviceId,
+        'is_multi': isMulti,
+        'status': status, // success | failed
+      },
+    );
+  }
 }

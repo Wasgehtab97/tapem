@@ -155,6 +155,7 @@ class WorkoutDayController extends ChangeNotifier
   XpProvider? _xpProvider;
   ChallengeProvider? _challengeProvider;
   WorkoutSessionDurationService? _sessionDurationService;
+  final Set<String> _restoredDraftContexts = <String>{};
 
   final Map<String, _SessionEntry> _sessions = <String, _SessionEntry>{};
   final List<String> _sessionOrder = <String>[];
@@ -179,6 +180,7 @@ class WorkoutDayController extends ChangeNotifier
     _sessionOrder.clear();
     _focusedSessionKey = null;
     _isSavingAll = false;
+    _restoredDraftContexts.clear();
     _clearPlanContext();
     _activeUserId = userId;
     notifyListeners();
@@ -218,6 +220,7 @@ class WorkoutDayController extends ChangeNotifier
     _sessionOrder.clear();
     _focusedSessionKey = null;
     _isSavingAll = false;
+    _restoredDraftContexts.clear();
     _clearPlanContext();
     notifyListeners();
   }
@@ -269,6 +272,7 @@ class WorkoutDayController extends ChangeNotifier
       membership: _membership,
       communityStatsWriter: _communityStatsWriter,
       autoFinalizeEnabled: autoFinalizeEnabled,
+      persistEmptyDrafts: true,
     );
     final entry = _SessionEntry(
       key: key,
@@ -288,6 +292,51 @@ class WorkoutDayController extends ChangeNotifier
     _focusedSessionKey = key;
     notifyListeners();
     return entry.snapshot;
+  }
+
+  /// Stellt alle gespeicherten Draft-Sessions für Nutzer/Gym wieder her,
+  /// z.B. nach App-Restart. Idempotent pro user/gym.
+  Future<void> restoreDraftSessions({
+    required String userId,
+    required String gymId,
+  }) async {
+    if (userId.isEmpty || gymId.isEmpty) return;
+    final key = '$gymId|$userId';
+    if (_restoredDraftContexts.contains(key)) return;
+    _restoredDraftContexts.add(key);
+
+    final draftRepo = _createDraftRepository();
+    final drafts = await draftRepo.getAll();
+    for (final entry in drafts.entries) {
+      final draft = entry.value;
+      if (draft.gymId != gymId || draft.userId != userId) continue;
+
+      final deviceId = draft.deviceId;
+      final exerciseId = draft.exerciseId ?? deviceId;
+      final existingKey = contextKey(
+        gymId: gymId,
+        deviceId: deviceId,
+        exerciseId: exerciseId,
+        userId: userId,
+      );
+      if (_sessions.containsKey(existingKey)) {
+        continue;
+      }
+      final session = addOrFocusSession(
+        gymId: gymId,
+        deviceId: deviceId,
+        exerciseId: exerciseId,
+        userId: userId,
+        autoFinalizeEnabled: draft.autoFinalizeEnabled,
+      );
+      final provider = providerForKey(session.key);
+      await provider?.loadDevice(
+        gymId: gymId,
+        deviceId: deviceId,
+        exerciseId: exerciseId,
+        userId: userId,
+      );
+    }
   }
 
   List<WorkoutDaySession> activeSessions() {
@@ -374,6 +423,7 @@ class WorkoutDayController extends ChangeNotifier
       debugPrint('⚠️ [WorkoutDayController] closeSession: session not found for key=$key');
       return false;
     }
+    entry.provider.discardDraftForCancellation();
     entry.dispose();
     if (_focusedSessionKey == key) {
       _focusedSessionKey = _sessionOrder.isEmpty ? null : _sessionOrder.last;
@@ -425,6 +475,7 @@ class WorkoutDayController extends ChangeNotifier
 
     _sessions.remove(oldKey);
     _sessionOrder.remove(oldKey);
+    oldEntry.provider.discardDraftForCancellation();
     oldEntry.dispose();
 
     var entry = _sessions[newKey];
@@ -438,6 +489,7 @@ class WorkoutDayController extends ChangeNotifier
         membership: _membership,
         communityStatsWriter: _communityStatsWriter,
         autoFinalizeEnabled: autoFinalizeEnabled,
+        persistEmptyDrafts: true,
       );
       entry = _SessionEntry(
         key: newKey,

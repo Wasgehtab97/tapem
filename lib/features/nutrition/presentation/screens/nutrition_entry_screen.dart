@@ -14,9 +14,9 @@ import 'package:tapem/features/nutrition/providers/nutrition_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
-import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_recipe.dart';
+import 'package:tapem/features/nutrition/domain/utils/nutrition_recipe_math.dart';
 
 class NutritionEntryScreen extends ConsumerStatefulWidget {
   final String? initialBarcode;
@@ -94,12 +94,7 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
       _carbsPer100Ctrl,
       _fatPer100Ctrl,
     ];
-    _macroFocus = [
-      _kcalFocus,
-      _proteinFocus,
-      _carbsFocus,
-      _fatFocus,
-    ];
+    _macroFocus = [_kcalFocus, _proteinFocus, _carbsFocus, _fatFocus];
     // Makro-Felder starten leer; werden bei Lookup/Scan befüllt.
     _nameFocus.addListener(_onNameFocusChange);
     _meal = widget.initialMeal;
@@ -129,41 +124,20 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
 
   void _updateMacrosFromIngredients() {
     if (_ingredients == null || _ingredients!.isEmpty) return;
-    
-    int scale(int per100, double grams) => ((per100 * grams) / 100).round();
-    
-    int totalKcal = 0;
-    int totalProtein = 0;
-    int totalCarbs = 0;
-    int totalFat = 0;
-    double totalGrams = 0;
-
-    for (final ing in _ingredients!) {
-      totalKcal += scale(ing.kcalPer100, ing.grams);
-      totalProtein += scale(ing.proteinPer100, ing.grams);
-      totalCarbs += scale(ing.carbsPer100, ing.grams);
-      totalFat += scale(ing.fatPer100, ing.grams);
-      totalGrams += ing.grams;
-    }
-
-    // We want to set the "per 100g" fields based on the sum of ingredients
-    // but the entry itself represents the portion. Actually, for a recipe,
-    // "per 100g" should be the normalized value of the whole thing.
-    
-    if (totalGrams > 0) {
-      double factor = 100 / totalGrams;
-      _kcalPer100Ctrl.text = (totalKcal * factor).round().toString();
-      _proteinPer100Ctrl.text = (totalProtein * factor).round().toString();
-      _carbsPer100Ctrl.text = (totalCarbs * factor).round().toString();
-      _fatPer100Ctrl.text = (totalFat * factor).round().toString();
-    }
+    final summary = summarizeRecipeIngredients(_ingredients!);
+    if (summary.grams <= 0) return;
+    _kcalPer100Ctrl.text = summary.kcalPer100.toString();
+    _proteinPer100Ctrl.text = summary.proteinPer100.toString();
+    _carbsPer100Ctrl.text = summary.carbsPer100.toString();
+    _fatPer100Ctrl.text = summary.fatPer100.toString();
+    _qtyController.text = _formatGrams(summary.grams);
   }
 
   @override
   void dispose() {
     // Remove listeners before disposing to avoid them triggering during disposal
     _nameFocus.removeListener(_onNameFocusChange);
-    
+
     _nameController.dispose();
     _barcodeController.dispose();
     _qtyController.dispose();
@@ -204,9 +178,12 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     return v == null ? fallback : v.round();
   }
 
-  int get _kcalPer100 => _per100From(_kcalPer100Ctrl, _product?.kcalPer100 ?? 0);
-  int get _proteinPer100 => _per100From(_proteinPer100Ctrl, _product?.proteinPer100 ?? 0);
-  int get _carbsPer100 => _per100From(_carbsPer100Ctrl, _product?.carbsPer100 ?? 0);
+  int get _kcalPer100 =>
+      _per100From(_kcalPer100Ctrl, _product?.kcalPer100 ?? 0);
+  int get _proteinPer100 =>
+      _per100From(_proteinPer100Ctrl, _product?.proteinPer100 ?? 0);
+  int get _carbsPer100 =>
+      _per100From(_carbsPer100Ctrl, _product?.carbsPer100 ?? 0);
   int get _fatPer100 => _per100From(_fatPer100Ctrl, _product?.fatPer100 ?? 0);
 
   void _syncMacroCtrlsFromProduct(NutritionProduct product) {
@@ -217,9 +194,7 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
   }
 
   NutritionProduct _buildProductForSave() {
-    final barcode = _barcodeController.text.trim().isEmpty
-        ? 'manual-${DateTime.now().millisecondsSinceEpoch}'
-        : _barcodeController.text.trim();
+    final barcode = _barcodeController.text.trim();
     return NutritionProduct(
       barcode: barcode,
       name: _nameController.text.trim(),
@@ -231,9 +206,23 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     );
   }
 
+  bool _isPersistableGlobalBarcode(String barcode) {
+    final code = barcode.trim();
+    if (code.isEmpty) return false;
+    if (!RegExp(r'^\d+$').hasMatch(code)) return false;
+    return code.length == 8 ||
+        code.length == 12 ||
+        code.length == 13 ||
+        code.length == 14;
+  }
+
   void _openQtyKeypad() {
-    _openNumericKeypad(_qtyController, _qtyFocus,
-        allowDecimal: false, plusMinusRail: true);
+    _openNumericKeypad(
+      _qtyController,
+      _qtyFocus,
+      allowDecimal: false,
+      plusMinusRail: true,
+    );
   }
 
   void _bumpQty(int delta) {
@@ -242,8 +231,6 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     _qtyController.text = next.toString();
     setState(() {});
   }
-
-  void _openNameKeypad() {}
 
   void _openNumericKeypad(
     TextEditingController controller,
@@ -283,8 +270,9 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
       if (focus.canRequestFocus) {
         focus.requestFocus();
       }
-      controller.selection =
-          TextSelection.collapsed(offset: controller.text.length);
+      controller.selection = TextSelection.collapsed(
+        offset: controller.text.length,
+      );
     });
   }
 
@@ -393,7 +381,11 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
       if (product == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntryLookupEmpty)),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.nutritionEntryLookupEmpty,
+            ),
+          ),
         );
         return;
       }
@@ -410,12 +402,20 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntryLookupFound)),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.nutritionEntryLookupFound,
+          ),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntryLookupError)),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.nutritionEntryLookupError,
+          ),
+        ),
       );
     } finally {
       if (mounted) {
@@ -445,7 +445,11 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntryLookupFound)),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.nutritionEntryLookupFound,
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSearch = false);
@@ -455,10 +459,7 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
   Future<void> _openScanner() async {
     final result = await Navigator.of(context).pushNamed(
       AppRouter.nutritionScan,
-      arguments: {
-        'returnBarcode': true,
-        'meal': _meal,
-      },
+      arguments: {'returnBarcode': true, 'meal': _meal},
     );
     if (result is! String || result.isEmpty) return;
     setState(() {
@@ -484,42 +485,46 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
       );
       return;
     }
-    final name = manualName;
     setState(() => _isSaving = true);
     final entry = _buildEntry(uid);
     try {
-      final date = widget.initialDate ?? ref.read(nutritionProvider).selectedDate;
+      final date =
+          widget.initialDate ?? ref.read(nutritionProvider).selectedDate;
       final productForSave = _buildProductForSave();
       if (_isEditing && widget.entryIndex != null) {
-        await ref.read(nutritionProvider).updateEntry(
+        await ref
+            .read(nutritionProvider)
+            .updateEntry(
               uid: uid,
               date: date,
               index: widget.entryIndex!,
               entry: entry,
             );
       } else {
-        await ref.read(nutritionProvider).addEntry(
-              uid: uid,
-              date: date,
-              entry: entry,
-            );
+        await ref
+            .read(nutritionProvider)
+            .addEntry(uid: uid, date: date, entry: entry);
       }
-      // immer Produkt (manuell oder aus Lookup) speichern und in Recents ablegen
       final productService = ref.read(nutritionProductServiceProvider);
-      try {
-        await productService.saveProduct(productForSave);
-      } catch (_) {
-        // Wenn das Persistieren fehlschlägt (z.B. wegen Offline/Rules), trotzdem den Eintrag anlegen.
+      if (_isPersistableGlobalBarcode(productForSave.barcode)) {
+        try {
+          await productService.saveProduct(productForSave);
+        } catch (_) {
+          // Wenn das Persistieren fehlschlägt (z.B. wegen Offline/Rules), trotzdem den Eintrag anlegen.
+        }
       }
-      await ref.read(nutritionRecentsStoreProvider).add(
-            product: productForSave,
-            grams: _grams(),
-          );
+      await ref
+          .read(nutritionRecentsStoreProvider)
+          .add(product: productForSave, grams: _grams());
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntrySaved)),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.nutritionEntrySaved),
+        ),
       );
-      if (_isEditing || widget.initialProduct != null || widget.initialBarcode != null) {
+      if (_isEditing ||
+          widget.initialProduct != null ||
+          widget.initialBarcode != null) {
         Navigator.of(context).pop(true);
       } else {
         setState(() {
@@ -532,7 +537,9 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.nutritionEntrySaveError)),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.nutritionEntrySaveError),
+        ),
       );
     } finally {
       if (mounted) {
@@ -567,8 +574,8 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
               final filtered = q.isEmpty
                   ? items
                   : items
-                      .where((i) => i.name.toLowerCase().contains(q))
-                      .toList(growable: false);
+                        .where((i) => i.name.toLowerCase().contains(q))
+                        .toList(growable: false);
               return SizedBox(
                 height: MediaQuery.sizeOf(ctx).height * 0.75,
                 child: Column(
@@ -645,6 +652,7 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     if (picked == null || !mounted) return;
     setState(() {
       _product = picked.toProduct();
+      _syncMacroCtrlsFromProduct(_product!);
       _nameController.text = picked.name;
       _barcodeController.text = picked.barcode ?? '';
       _qtyController.text = _formatGrams(picked.lastGrams);
@@ -660,10 +668,11 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
     final mealTotals = _mealTotals(_meal);
     final draftTotals = _draftTotals();
     final combinedMeal = _addTotals(mealTotals, draftTotals);
-    final remainingKcal =
-        goalKcal - (dayTotals?.kcal ?? 0) - draftTotals.kcal;
+    final remainingKcal = goalKcal - (dayTotals?.kcal ?? 0) - draftTotals.kcal;
     String mealLabel(String meal) {
-      final isDe = Localizations.localeOf(context).languageCode.startsWith('de');
+      final isDe = Localizations.localeOf(
+        context,
+      ).languageCode.startsWith('de');
       switch (meal) {
         case 'breakfast':
           return isDe ? 'Frühstück' : 'Breakfast';
@@ -677,15 +686,12 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
           return meal;
       }
     }
-    final isDe = Localizations.localeOf(context).languageCode.startsWith('de');
-    final mealTitle = isDe ? 'Mahlzeit' : 'Meal';
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(loc.nutritionEntryTitle),
-        ),
+        appBar: AppBar(title: Text(loc.nutritionEntryTitle)),
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -709,7 +715,6 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: AppSpacing.sm),
                         const SizedBox(height: AppSpacing.sm),
                         NutritionMealPicker(
                           selectedMeal: _meal,
@@ -764,9 +769,10 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
                                   ),
                                   const SizedBox(width: AppSpacing.sm),
                                   _CircleIconButton(
-                                    tooltip: Localizations.localeOf(context)
-                                            .languageCode
-                                            .startsWith('de')
+                                    tooltip:
+                                        Localizations.localeOf(
+                                          context,
+                                        ).languageCode.startsWith('de')
                                         ? 'Zuletzt'
                                         : 'Recent',
                                     icon: Icons.history,
@@ -777,7 +783,8 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
                                     tooltip: 'Manuell',
                                     icon: Icons.edit_note_rounded,
                                     onTap: () => setState(
-                                      () => _showManualMacros = !_showManualMacros,
+                                      () => _showManualMacros =
+                                          !_showManualMacros,
                                     ),
                                     active: _showManualMacros,
                                   ),
@@ -805,16 +812,17 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
                                       kcalCtrl: _kcalPer100Ctrl,
                                       proteinCtrl: _proteinPer100Ctrl,
                                       carbsCtrl: _carbsPer100Ctrl,
-                                    fatCtrl: _fatPer100Ctrl,
-                                    kcalFocus: _kcalFocus,
-                                    proteinFocus: _proteinFocus,
-                                    carbsFocus: _carbsFocus,
-                                    fatFocus: _fatFocus,
-                                    gramsLabel: _gramsLabel,
-                                    onChanged: () => setState(() {}),
-                                    onRequestKeypad: () => _openMacroKeypadAt(0),
-                                    onRequestKeypadProtein: () =>
-                                        _openMacroKeypadAt(1),
+                                      fatCtrl: _fatPer100Ctrl,
+                                      kcalFocus: _kcalFocus,
+                                      proteinFocus: _proteinFocus,
+                                      carbsFocus: _carbsFocus,
+                                      fatFocus: _fatFocus,
+                                      gramsLabel: _gramsLabel,
+                                      onChanged: () => setState(() {}),
+                                      onRequestKeypad: () =>
+                                          _openMacroKeypadAt(0),
+                                      onRequestKeypadProtein: () =>
+                                          _openMacroKeypadAt(1),
                                       onRequestKeypadCarbs: () =>
                                           _openMacroKeypadAt(2),
                                       onRequestKeypadFat: () =>
@@ -874,7 +882,6 @@ class _NutritionEntryScreenState extends ConsumerState<NutritionEntryScreen> {
 
 /// Premium input field with brand interactive styling - NO ugly borders!
 
-
 class _FieldCard extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -905,33 +912,101 @@ class _FieldCard extends StatelessWidget {
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
     final brandColor = brand?.outline ?? theme.colorScheme.secondary;
-    
-    return BrandInteractiveCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.3),
-      enableScaleAnimation: false,
-      showShadow: false,
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        keyboardType: keyboardType,
-        textInputAction: textInputAction,
-        onChanged: onChanged,
-        readOnly: readOnly,
-        onTap: onTap,
-        showCursor: showCursor,
-        enableInteractiveSelection: enableInteractiveSelection,
-        scrollPadding: const EdgeInsets.only(bottom: 200),
-        autocorrect: false,
-        enableSuggestions: false,
-        textCapitalization: TextCapitalization.none,
-        style: theme.textTheme.bodyLarge,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(color: brandColor.withOpacity(0.7)),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
+    final fieldRadius = BorderRadius.circular(16);
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: fieldRadius,
+        color: theme.colorScheme.surface.withOpacity(0.14),
+      ),
+      child: ClipRRect(
+        borderRadius: fieldRadius,
+        child: Stack(
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 24,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.05),
+                      Colors.white.withOpacity(0.0),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 3,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(2),
+                          gradient: LinearGradient(
+                            colors: [
+                              brandColor.withOpacity(0.95),
+                              brandColor.withOpacity(0.45),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        label,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: brandColor.withOpacity(0.88),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    keyboardType: keyboardType,
+                    textInputAction: textInputAction,
+                    onChanged: onChanged,
+                    readOnly: readOnly,
+                    onTap: onTap,
+                    showCursor: showCursor,
+                    enableInteractiveSelection: enableInteractiveSelection,
+                    scrollPadding: const EdgeInsets.only(bottom: 200),
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    textCapitalization: TextCapitalization.none,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.onSurface,
+                      height: 1.15,
+                    ),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -947,21 +1022,14 @@ class _Panel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
-    
-    // Ultra subtle background - NO ugly borders!
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor.withOpacity(0.3),
-        borderRadius: brand?.outlineRadius as BorderRadius? ?? BorderRadius.circular(AppRadius.cardLg),
-        // NO border! Just subtle shadow
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius:
+            brand?.outlineRadius as BorderRadius? ??
+            BorderRadius.circular(AppRadius.cardLg),
       ),
       child: child,
     );
@@ -1008,13 +1076,10 @@ class _QtyField extends StatelessWidget {
           enableInteractiveSelection: false,
           onTap: onRequestKeypad,
         ),
-    const SizedBox(height: 6),
-    Row(
-      children: [
-        _QtyIconButton(
-          icon: Icons.remove,
-          onTap: () => _bump(-1),
-        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            _QtyIconButton(icon: Icons.remove, onTap: () => _bump(-1)),
             Expanded(
               child: Slider(
                 value: _value().clamp(0, 1000),
@@ -1030,10 +1095,7 @@ class _QtyField extends StatelessWidget {
                 },
               ),
             ),
-            _QtyIconButton(
-              icon: Icons.add,
-              onTap: () => _bump(1),
-            ),
+            _QtyIconButton(icon: Icons.add, onTap: () => _bump(1)),
           ],
         ),
       ],
@@ -1045,10 +1107,7 @@ class _QtyIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _QtyIconButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _QtyIconButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1062,7 +1121,9 @@ class _QtyIconButton extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
-          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.35)),
+          border: Border.all(
+            color: theme.colorScheme.outline.withOpacity(0.35),
+          ),
         ),
         child: Icon(icon, size: 18, color: theme.colorScheme.onSurface),
       ),
@@ -1105,50 +1166,35 @@ class _MacroFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    InputDecoration deco(String label) => InputDecoration(
-          labelText: label,
-          hintText: '0',
-          filled: true,
-          fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.35),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            borderSide: BorderSide(
-              color: theme.colorScheme.outline.withOpacity(0.3),
-            ),
-          ),
-          isDense: true,
-        );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Expanded(
-              child: TextField(
+              child: _FieldCard(
                 controller: kcalCtrl,
+                label: 'Kalorien /100g',
                 focusNode: kcalFocus,
                 keyboardType: TextInputType.none,
                 readOnly: true,
                 showCursor: true,
                 enableInteractiveSelection: false,
                 onTap: onRequestKeypad,
-                decoration: deco('Kalorien /100g'),
                 onChanged: (_) => onChanged(),
               ),
             ),
             const SizedBox(width: AppSpacing.xs),
             Expanded(
-              child: TextField(
+              child: _FieldCard(
                 controller: proteinCtrl,
+                label: 'Protein /100g',
                 focusNode: proteinFocus,
                 keyboardType: TextInputType.none,
                 readOnly: true,
                 showCursor: true,
                 enableInteractiveSelection: false,
                 onTap: onRequestKeypadProtein,
-                decoration: deco('Protein /100g'),
                 onChanged: (_) => onChanged(),
               ),
             ),
@@ -1158,29 +1204,29 @@ class _MacroFields extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: TextField(
+              child: _FieldCard(
                 controller: carbsCtrl,
+                label: 'Carbs /100g',
                 focusNode: carbsFocus,
                 keyboardType: TextInputType.none,
                 readOnly: true,
                 showCursor: true,
                 enableInteractiveSelection: false,
                 onTap: onRequestKeypadCarbs,
-                decoration: deco('Carbs /100g'),
                 onChanged: (_) => onChanged(),
               ),
             ),
             const SizedBox(width: AppSpacing.xs),
             Expanded(
-              child: TextField(
+              child: _FieldCard(
                 controller: fatCtrl,
+                label: 'Fett /100g',
                 focusNode: fatFocus,
                 keyboardType: TextInputType.none,
                 readOnly: true,
                 showCursor: true,
                 enableInteractiveSelection: false,
                 onTap: onRequestKeypadFat,
-                decoration: deco('Fett /100g'),
                 onChanged: (_) => onChanged(),
               ),
             ),
@@ -1212,8 +1258,8 @@ class _CircleIconButton extends StatelessWidget {
     final bg = theme.colorScheme.surface.withOpacity(0.22);
     final gradient = LinearGradient(
       colors: [
-        outline.withOpacity(active ? 0.55 : 0.35),
-        outline.withOpacity(0.08),
+        outline.withOpacity(active ? 0.24 : 0.14),
+        outline.withOpacity(0.03),
       ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
@@ -1223,31 +1269,24 @@ class _CircleIconButton extends StatelessWidget {
       message: tooltip,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          width: 48,
-          height: 48,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             gradient: gradient,
-            border: Border.all(color: outline.withOpacity(0.35), width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: outline.withOpacity(0.18),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            border: Border.all(color: outline.withOpacity(0.28), width: 1),
           ),
           child: Container(
-            margin: const EdgeInsets.all(5),
+            margin: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: bg,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               icon,
-              size: 22,
+              size: 20,
               color: active ? outline : theme.colorScheme.onSurface,
             ),
           ),
@@ -1278,14 +1317,12 @@ class _ComputedPanel extends StatelessWidget {
     final carbs = scale(product?.carbsPer100 ?? 0);
     final fat = scale(product?.fatPer100 ?? 0);
     final panelColor = theme.colorScheme.surfaceVariant.withOpacity(0.15);
-    final border = theme.colorScheme.outline.withOpacity(0.2);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: panelColor,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1331,40 +1368,6 @@ class _ComputedPanel extends StatelessWidget {
   }
 }
 
-class _ActionButtonEntry extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback? onPressed;
-
-  const _ActionButtonEntry({
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brand = theme.extension<AppBrandTheme>();
-    final outline = brand?.outline ?? theme.colorScheme.primary;
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(label, overflow: TextOverflow.ellipsis),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: outline.withOpacity(0.15),
-        foregroundColor: theme.colorScheme.onSurface,
-        elevation: 0,
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.button),
-          side: BorderSide(color: outline.withOpacity(0.35)),
-        ),
-      ),
-    );
-  }
-}
-
 class _RecipeIngredientsList extends StatefulWidget {
   final List<RecipeIngredient> ingredients;
   final ValueChanged<List<RecipeIngredient>> onIngredientsChanged;
@@ -1385,7 +1388,9 @@ class _RecipeIngredientsListState extends State<_RecipeIngredientsList> {
   void initState() {
     super.initState();
     _controllers = widget.ingredients
-        .map<TextEditingController>((ing) => TextEditingController(text: ing.grams.toStringAsFixed(0)))
+        .map<TextEditingController>(
+          (ing) => TextEditingController(text: ing.grams.toStringAsFixed(0)),
+        )
         .toList();
   }
 
@@ -1412,7 +1417,9 @@ class _RecipeIngredientsListState extends State<_RecipeIngredientsList> {
             const SizedBox(width: 8),
             Text(
               'Zutaten anpassen',
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -1437,7 +1444,9 @@ class _RecipeIngredientsListState extends State<_RecipeIngredientsList> {
                     children: [
                       Text(
                         ing.name,
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       Text(
                         '${ing.kcalPer100} kcal/100g',
@@ -1456,13 +1465,20 @@ class _RecipeIngredientsListState extends State<_RecipeIngredientsList> {
                     decoration: const InputDecoration(
                       suffixText: 'g',
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 8,
+                      ),
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     style: theme.textTheme.bodyMedium,
                     onChanged: (v) {
                       final val = double.tryParse(v.replaceAll(',', '.')) ?? 0;
-                      final updated = List<RecipeIngredient>.from(widget.ingredients);
+                      final updated = List<RecipeIngredient>.from(
+                        widget.ingredients,
+                      );
                       updated[idx] = RecipeIngredient(
                         name: ing.name,
                         barcode: ing.barcode,
@@ -1479,7 +1495,7 @@ class _RecipeIngredientsListState extends State<_RecipeIngredientsList> {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

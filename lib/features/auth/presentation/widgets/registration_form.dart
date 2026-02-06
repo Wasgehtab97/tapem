@@ -37,7 +37,7 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
   final _gymDigitControllers = List.generate(6, (_) => TextEditingController());
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   String? _gymError;
   int _attempts = 0;
   bool _isLocked = false;
@@ -84,7 +84,8 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
   Future<void> _submit() async {
     if (_isLocked) return;
     if (!_formKey.currentState!.validate()) return;
-    
+
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       _gymError = null;
       _isValidating = true;
@@ -120,9 +121,7 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
 
       AnalyticsService.logEvent(
         'gym_register_attempt',
-        parameters: {
-          'gym_id': validation.gymId,
-        },
+        parameters: {'gym_id': validation.gymId},
       );
 
       // Show warning if code is expiring soon
@@ -167,26 +166,26 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
 
       AnalyticsService.logEvent(
         'gym_register_success',
-        parameters: {
-          'gym_id': validation.gymId,
-        },
+        parameters: {'gym_id': validation.gymId},
       );
 
       if (result.missingMembership) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(loc.missingMembershipError)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(loc.missingMembershipError)));
       }
 
-      final requiresGymSelection = result.requiresGymSelection ||
+      final requiresGymSelection =
+          result.requiresGymSelection ||
           result.gymContextStatus == GymContextStatus.missingSelection;
 
       if (requiresGymSelection) {
         Navigator.of(context).pushReplacementNamed(AppRouter.selectGym);
       } else {
-        Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
+        Navigator.of(
+          context,
+        ).pushReplacementNamed(AppRouter.home, arguments: 1);
       }
-
     } on GymCodeExpiredException {
       AnalyticsService.logGymCodeValidation(
         gymId: widget.expectedGymId ?? 'unknown',
@@ -249,11 +248,15 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
   }
 
   void _handleGymCodeChange(String value) {
-    setState(() {
-      _gymController.text = value;
-    });
-    if (value.length == 6 && !_isValidating) {
-      _submit();
+    final normalized = value.toUpperCase();
+    if (_gymController.text != normalized) {
+      _gymController.value = TextEditingValue(
+        text: normalized,
+        selection: TextSelection.collapsed(offset: normalized.length),
+      );
+    }
+    if (_gymError != null) {
+      setState(() => _gymError = null);
     }
   }
 
@@ -284,7 +287,9 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
 
   @override
   Widget build(BuildContext context) {
-    final authProv = ref.watch(authControllerProvider);
+    final isAuthLoading = ref.watch(
+      authControllerProvider.select((auth) => auth.isLoading),
+    );
     final loc = AppLocalizations.of(context)!;
     return Form(
       key: _formKey,
@@ -299,20 +304,22 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
             keyboardType: TextInputType.emailAddress,
             prefixIcon: Icons.email_outlined,
             textInputAction: TextInputAction.next,
-            validator: (v) => v != null && v.contains('@') ? null : loc.emailInvalid,
+            validator: (v) =>
+                v != null && v.contains('@') ? null : loc.emailInvalid,
           ),
           const SizedBox(height: AuthTheme.spacingM),
-          
+
           PremiumTextField(
             label: loc.passwordFieldLabel,
             controller: _passwordController,
             obscureText: true,
             prefixIcon: Icons.lock_outline,
             textInputAction: TextInputAction.next,
-            validator: (v) => v != null && v.length >= 6 ? null : loc.passwordTooShort,
+            validator: (v) =>
+                v != null && v.length >= 6 ? null : loc.passwordTooShort,
           ),
           const SizedBox(height: AuthTheme.spacingM),
-          
+
           _GymCodeOtpInput(
             label: loc.gymCodeFieldLabel,
             focusNodes: _gymFocusNodes,
@@ -323,24 +330,16 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
                 : _gymError,
             onChanged: (value) => _handleGymCodeChange(value),
           ),
-          if (_gymError != null && !_isLocked)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0, left: 12.0),
-              child: Text(
-                _gymError!,
-                style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 12),
-              ),
-            ),
-            
+
           const SizedBox(height: AuthTheme.spacingL),
-          
+
           PremiumButton(
-            text: _isLocked 
-                ? 'Locked (${(_lockDuration.inSeconds).toString()}s)' 
+            text: _isLocked
+                ? 'Locked (${(_lockDuration.inSeconds).toString()}s)'
                 : loc.registerButton,
-            isLoading: authProv.isLoading || _isValidating,
-            onPressed: (authProv.isLoading || _isValidating || _isLocked) 
-                ? null 
+            isLoading: isAuthLoading || _isValidating,
+            onPressed: (isAuthLoading || _isValidating || _isLocked)
+                ? null
                 : _submit,
           ),
         ],
@@ -386,10 +385,14 @@ class _GymCodeOtpInput extends StatelessWidget {
                 readOnly: readOnly,
                 textAlign: TextAlign.center,
                 keyboardType: TextInputType.text,
+                textCapitalization: TextCapitalization.characters,
+                autocorrect: false,
+                enableSuggestions: false,
                 textInputAction: index == 5
                     ? TextInputAction.done
                     : TextInputAction.next,
                 maxLength: 1,
+                scrollPadding: const EdgeInsets.only(bottom: 180),
                 style: AuthTheme.bodyStyle.copyWith(color: Colors.white),
                 decoration: InputDecoration(
                   counterText: '',
@@ -417,9 +420,12 @@ class _GymCodeOtpInput extends StatelessWidget {
                         .where((ch) => _allowed.contains(ch))
                         .toList();
                     for (var i = 0; i < controllers.length; i++) {
+                      final digit = i < filtered.length ? filtered[i] : '';
                       controllers[i].value = TextEditingValue(
-                        text: i < filtered.length ? filtered[i] : '',
-                        selection: const TextSelection.collapsed(offset: 1),
+                        text: digit,
+                        selection: TextSelection.collapsed(
+                          offset: digit.isEmpty ? 0 : 1,
+                        ),
                       );
                     }
                     onChanged(filtered.join());
@@ -436,7 +442,9 @@ class _GymCodeOtpInput extends StatelessWidget {
                   if (controllers[index].text != upper) {
                     controllers[index].value = TextEditingValue(
                       text: upper,
-                      selection: const TextSelection.collapsed(offset: 1),
+                      selection: TextSelection.collapsed(
+                        offset: upper.isEmpty ? 0 : 1,
+                      ),
                     );
                   }
                   final joined = controllers.map((c) => c.text).join();

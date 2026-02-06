@@ -8,6 +8,7 @@ import 'package:tapem/features/nutrition/domain/models/nutrition_macros.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_entry.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_totals.dart';
 import 'package:tapem/features/nutrition/domain/utils/nutrition_dates.dart';
+import 'package:tapem/features/nutrition/domain/utils/nutrition_recipe_math.dart';
 import 'package:tapem/features/nutrition/domain/services/nutrition_status_service.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_recipe.dart';
 
@@ -17,8 +18,8 @@ class NutritionProvider extends ChangeNotifier {
   NutritionProvider({
     required NutritionRepository repository,
     NutritionStatusService? statusService,
-  })  : _repo = repository,
-        _statusService = statusService ?? NutritionStatusService();
+  }) : _repo = repository,
+       _statusService = statusService ?? NutritionStatusService();
 
   DateTime _selectedDate = nutritionStartOfDay(DateTime.now());
   NutritionGoal? _goal;
@@ -46,13 +47,31 @@ class NutritionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<NutritionGoal?> _resolveGoalForDate(String uid, String dateKey) async {
+    NutritionGoal? goal = (_goal != null && _goal!.dateKey == dateKey)
+        ? _goal
+        : await _repo.fetchGoal(uid, dateKey);
+    goal ??= await _repo.fetchDefaultGoal(uid);
+    if (goal != null && goal.dateKey != dateKey) {
+      goal = NutritionGoal(
+        dateKey: dateKey,
+        kcal: goal.kcal,
+        macros: goal.macros,
+        source: goal.source,
+        updatedAt: goal.updatedAt,
+      );
+    }
+    return goal;
+  }
+
   Future<void> loadDay(String uid, DateTime date) async {
     _isLoadingDay = true;
     _error = null;
     notifyListeners();
     try {
       final dateKey = toNutritionDateKey(date);
-      final goal = await _repo.fetchGoal(uid, dateKey) ??
+      final goal =
+          await _repo.fetchGoal(uid, dateKey) ??
           await _repo.fetchDefaultGoal(uid);
       if (goal != null && goal.dateKey != dateKey) {
         _goal = NutritionGoal(
@@ -146,49 +165,48 @@ class NutritionProvider extends ChangeNotifier {
     required DateTime date,
     required NutritionEntry entry,
   }) async {
+    await addEntries(uid: uid, date: date, entriesToAdd: [entry]);
+  }
+
+  Future<void> addEntries({
+    required String uid,
+    required DateTime date,
+    required List<NutritionEntry> entriesToAdd,
+  }) async {
+    if (entriesToAdd.isEmpty) return;
     _error = null;
     final previousLog = _log;
     final previousGoal = _goal;
     try {
       final dateKey = toNutritionDateKey(date);
-      final existingLog =
-          (_log != null && _log!.dateKey == dateKey)
-              ? _log
-              : await _repo.fetchLog(uid, dateKey);
+      final existingLog = (_log != null && _log!.dateKey == dateKey)
+          ? _log
+          : await _repo.fetchLog(uid, dateKey);
       final entries = <NutritionEntry>[
         ...(existingLog?.entries ?? const <NutritionEntry>[]),
-        entry,
+        ...entriesToAdd,
       ];
       if (entries.length > 50) {
         throw StateError('Too many entries for one day.');
       }
-      final totalKcal =
-          (existingLog?.total.kcal ?? 0) + entry.kcal;
-      final totalProtein =
-          (existingLog?.total.protein ?? 0) + entry.protein;
-      final totalCarbs =
-          (existingLog?.total.carbs ?? 0) + entry.carbs;
-      final totalFat = (existingLog?.total.fat ?? 0) + entry.fat;
+      final deltaKcal = entriesToAdd.fold<int>(0, (sum, e) => sum + e.kcal);
+      final deltaProtein = entriesToAdd.fold<int>(
+        0,
+        (sum, e) => sum + e.protein,
+      );
+      final deltaCarbs = entriesToAdd.fold<int>(0, (sum, e) => sum + e.carbs);
+      final deltaFat = entriesToAdd.fold<int>(0, (sum, e) => sum + e.fat);
+      final totalKcal = (existingLog?.total.kcal ?? 0) + deltaKcal;
+      final totalProtein = (existingLog?.total.protein ?? 0) + deltaProtein;
+      final totalCarbs = (existingLog?.total.carbs ?? 0) + deltaCarbs;
+      final totalFat = (existingLog?.total.fat ?? 0) + deltaFat;
       final totals = NutritionTotals(
         kcal: totalKcal,
         protein: totalProtein,
         carbs: totalCarbs,
         fat: totalFat,
       );
-      NutritionGoal? goal =
-          (_goal != null && _goal!.dateKey == dateKey)
-              ? _goal
-              : await _repo.fetchGoal(uid, dateKey);
-      goal ??= await _repo.fetchDefaultGoal(uid);
-      if (goal != null && goal.dateKey != dateKey) {
-        goal = NutritionGoal(
-          dateKey: dateKey,
-          kcal: goal.kcal,
-          macros: goal.macros,
-          source: goal.source,
-          updatedAt: goal.updatedAt,
-        );
-      }
+      final goal = await _resolveGoalForDate(uid, dateKey);
       final status = _statusService.statusFor(
         totalKcal: totalKcal,
         targetKcal: goal?.kcal ?? 0,
@@ -232,11 +250,12 @@ class NutritionProvider extends ChangeNotifier {
     final previousLog = _log;
     try {
       final dateKey = toNutritionDateKey(date);
-      final existingLog =
-          (_log != null && _log!.dateKey == dateKey)
-              ? _log
-              : await _repo.fetchLog(uid, dateKey);
-      if (existingLog == null || index < 0 || index >= existingLog.entries.length) {
+      final existingLog = (_log != null && _log!.dateKey == dateKey)
+          ? _log
+          : await _repo.fetchLog(uid, dateKey);
+      if (existingLog == null ||
+          index < 0 ||
+          index >= existingLog.entries.length) {
         return;
       }
       final entries = List<NutritionEntry>.from(existingLog.entries)
@@ -247,20 +266,7 @@ class NutritionProvider extends ChangeNotifier {
         carbs: entries.fold(0, (s, e) => s + e.carbs),
         fat: entries.fold(0, (s, e) => s + e.fat),
       );
-      NutritionGoal? goal =
-          (_goal != null && _goal!.dateKey == dateKey)
-              ? _goal
-              : await _repo.fetchGoal(uid, dateKey);
-      goal ??= await _repo.fetchDefaultGoal(uid);
-      if (goal != null && goal.dateKey != dateKey) {
-        goal = NutritionGoal(
-          dateKey: dateKey,
-          kcal: goal.kcal,
-          macros: goal.macros,
-          source: goal.source,
-          updatedAt: goal.updatedAt,
-        );
-      }
+      final goal = await _resolveGoalForDate(uid, dateKey);
       final status = _statusService.statusFor(
         totalKcal: totals.kcal,
         targetKcal: goal?.kcal ?? 0,
@@ -273,6 +279,7 @@ class NutritionProvider extends ChangeNotifier {
         updatedAt: DateTime.now(),
       );
       _log = log;
+      _goal = goal;
       notifyListeners();
       await _repo.upsertLog(uid, log);
       await _repo.updateYearDay(
@@ -312,10 +319,7 @@ class NutritionProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteRecipe({
-    required String uid,
-    required String id,
-  }) async {
+  Future<void> deleteRecipe({required String uid, required String id}) async {
     try {
       await _repo.deleteRecipe(uid, id);
       _recipes = _recipes.where((r) => r.id != id).toList();
@@ -333,22 +337,16 @@ class NutritionProvider extends ChangeNotifier {
     required String meal,
     double factor = 1.0,
   }) async {
-    final f = factor <= 0 ? 1.0 : factor;
-    for (final ing in recipe.ingredients) {
-      final grams = (ing.grams * f).clamp(1, 100000).toDouble();
-      int scale(int per100) => ((per100 * grams) / 100).round();
-      final entry = NutritionEntry(
-        name: ing.name,
-        kcal: scale(ing.kcalPer100),
-        protein: scale(ing.proteinPer100),
-        carbs: scale(ing.carbsPer100),
-        fat: scale(ing.fatPer100),
-        meal: meal,
-        barcode: ing.barcode,
-        qty: grams,
-      );
-      await addEntry(uid: uid, date: date, entry: entry);
-    }
+    if (recipe.ingredients.isEmpty) return;
+    final entries = buildRecipeIngredientEntries(
+      recipeName: recipe.name,
+      meal: meal,
+      ingredients: recipe.ingredients,
+      factor: factor,
+      recipeId: recipe.id.isEmpty ? null : recipe.id,
+    );
+    if (entries.isEmpty) return;
+    await addEntries(uid: uid, date: date, entriesToAdd: entries);
   }
 
   Future<void> updateEntry({
@@ -361,11 +359,12 @@ class NutritionProvider extends ChangeNotifier {
     final previousLog = _log;
     try {
       final dateKey = toNutritionDateKey(date);
-      final existingLog =
-          (_log != null && _log!.dateKey == dateKey)
-              ? _log
-              : await _repo.fetchLog(uid, dateKey);
-      if (existingLog == null || index < 0 || index >= existingLog.entries.length) {
+      final existingLog = (_log != null && _log!.dateKey == dateKey)
+          ? _log
+          : await _repo.fetchLog(uid, dateKey);
+      if (existingLog == null ||
+          index < 0 ||
+          index >= existingLog.entries.length) {
         return;
       }
       final entries = List<NutritionEntry>.from(existingLog.entries)
@@ -376,20 +375,7 @@ class NutritionProvider extends ChangeNotifier {
         carbs: entries.fold(0, (s, e) => s + e.carbs),
         fat: entries.fold(0, (s, e) => s + e.fat),
       );
-      NutritionGoal? goal =
-          (_goal != null && _goal!.dateKey == dateKey)
-              ? _goal
-              : await _repo.fetchGoal(uid, dateKey);
-      goal ??= await _repo.fetchDefaultGoal(uid);
-      if (goal != null && goal.dateKey != dateKey) {
-        goal = NutritionGoal(
-          dateKey: dateKey,
-          kcal: goal.kcal,
-          macros: goal.macros,
-          source: goal.source,
-          updatedAt: goal.updatedAt,
-        );
-      }
+      final goal = await _resolveGoalForDate(uid, dateKey);
       final status = _statusService.statusFor(
         totalKcal: totals.kcal,
         targetKcal: goal?.kcal ?? 0,
@@ -402,6 +388,7 @@ class NutritionProvider extends ChangeNotifier {
         updatedAt: DateTime.now(),
       );
       _log = log;
+      _goal = goal;
       notifyListeners();
       await _repo.upsertLog(uid, log);
       await _repo.updateYearDay(

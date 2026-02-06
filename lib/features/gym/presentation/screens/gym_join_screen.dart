@@ -8,9 +8,11 @@ import 'package:tapem/core/analytics/analytics_service.dart';
 import 'package:tapem/core/constants.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/shared_preferences_provider.dart';
+import 'package:tapem/core/widgets/network_circle_avatar.dart';
 import 'package:tapem/core/widgets/offline_banner.dart';
 import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 import 'package:tapem/features/auth/presentation/widgets/auth_background.dart';
+import 'package:tapem/features/auth/presentation/widgets/auth_keyboard_scroll_view.dart';
 import 'package:tapem/features/auth/presentation/widgets/glass_card.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_button.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_text_field.dart';
@@ -81,36 +83,39 @@ class _GymJoinScreenState extends ConsumerState<GymJoinScreen> {
     }
     final reader = ReadNfcCode(NfcService());
     _nfcSub?.cancel();
-    _nfcSub = reader.execute().listen((code) {
-      if (!mounted) return;
-      final normalized = code.trim().toUpperCase();
-      if (normalized.isEmpty) {
+    _nfcSub = reader.execute().listen(
+      (code) {
+        if (!mounted) return;
+        final normalized = code.trim().toUpperCase();
+        if (normalized.isEmpty) {
+          AnalyticsService.logGymNfcScan(
+            gymId: widget.gymId,
+            flow: 'join',
+            status: 'error',
+            reason: 'empty_code',
+          );
+          setState(() {
+            _isScanning = false;
+            _scanError = AppLocalizations.of(context)!.nfcInvalidCode;
+          });
+          return;
+        }
+        _resolveNfcToken(normalized);
+      },
+      onError: (_) {
         AnalyticsService.logGymNfcScan(
           gymId: widget.gymId,
           flow: 'join',
           status: 'error',
-          reason: 'empty_code',
+          reason: 'scan_failed',
         );
+        if (!mounted) return;
         setState(() {
           _isScanning = false;
-          _scanError = AppLocalizations.of(context)!.nfcInvalidCode;
+          _scanError = AppLocalizations.of(context)!.nfcScanFailed;
         });
-        return;
-      }
-      _resolveNfcToken(normalized);
-    }, onError: (_) {
-      AnalyticsService.logGymNfcScan(
-        gymId: widget.gymId,
-        flow: 'join',
-        status: 'error',
-        reason: 'scan_failed',
-      );
-      if (!mounted) return;
-      setState(() {
-        _isScanning = false;
-        _scanError = AppLocalizations.of(context)!.nfcScanFailed;
-      });
-    });
+      },
+    );
   }
 
   Future<void> _resolveNfcToken(String token) async {
@@ -220,17 +225,16 @@ class _GymJoinScreenState extends ConsumerState<GymJoinScreen> {
         final prefs = ref.read(sharedPreferencesProvider);
         await prefs.remove(StorageKeys.preAuthGymId);
         if (!mounted) return;
-        Navigator.of(context).pushReplacementNamed(
-          AppRouter.home,
-          arguments: 1,
-        );
+        Navigator.of(
+          context,
+        ).pushReplacementNamed(AppRouter.home, arguments: 1);
         return;
       }
       final loc = AppLocalizations.of(context)!;
       final message = result.errorCode ?? loc.membershipSyncError;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } on GymCodeNotFoundException {
       AnalyticsService.logGymCodeValidation(
         gymId: widget.gymId,
@@ -297,147 +301,148 @@ class _GymJoinScreenState extends ConsumerState<GymJoinScreen> {
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       body: AuthBackground(
-        child: gymAsync.when(
-          data: (gym) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const OfflineBanner(),
-                const SizedBox(height: 16),
-                Center(
-                  child: Hero(
-                    tag: 'gym-logo-${gym.id}',
-                    child: gym.logoUrl != null
-                        ? CircleAvatar(
-                            radius: 34,
-                            backgroundImage: NetworkImage(gym.logoUrl!),
-                            backgroundColor: Colors.white.withOpacity(0.1),
-                          )
-                        : const CircleAvatar(
-                            radius: 34,
-                            child: Icon(Icons.fitness_center_outlined),
+        child: AuthKeyboardScrollView(
+          child: gymAsync.when(
+            data: (gym) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const OfflineBanner(),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Hero(
+                      tag: 'gym-logo-${gym.id}',
+                      child: NetworkCircleAvatar(url: gym.logoUrl, radius: 34),
+                    ),
+                  ),
+                  const SizedBox(height: AuthTheme.spacingS),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                      onPressed: () async {
+                        final prefs = ref.read(sharedPreferencesProvider);
+                        await prefs.remove(StorageKeys.preAuthGymId);
+                        if (!mounted) return;
+                        Navigator.of(context).pushReplacementNamed(
+                          AppRouter.gymAccess,
+                          arguments: widget.gymId,
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    loc.gymJoinTitle(gym.name),
+                    textAlign: TextAlign.center,
+                    style: AuthTheme.headingStyle,
+                  ),
+                  const SizedBox(height: AuthTheme.spacingS),
+                  Text(
+                    loc.gymJoinSubtitle,
+                    textAlign: TextAlign.center,
+                    style: AuthTheme.bodyStyle.copyWith(
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: AuthTheme.spacingL),
+                  GlassCard(
+                    child: Form(
+                      key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          PremiumTextField(
+                            label: loc.gymCodeFieldLabel,
+                            controller: _codeController,
+                            prefixIcon: Icons.fitness_center_outlined,
+                            textInputAction: TextInputAction.done,
+                            onChanged: (val) {
+                              final upper = val.toUpperCase();
+                              if (val != upper) {
+                                _codeController.value = _codeController.value
+                                    .copyWith(
+                                      text: upper,
+                                      selection: TextSelection.collapsed(
+                                        offset: upper.length,
+                                      ),
+                                    );
+                              }
+                            },
+                            validator: (v) {
+                              if (v == null || v.length != 6) {
+                                return loc.gymCodeInvalid;
+                              }
+                              return _error;
+                            },
                           ),
+                          if (_error != null)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 8.0,
+                                left: 12.0,
+                              ),
+                              child: Text(
+                                _error!,
+                                style: const TextStyle(
+                                  color: Color(0xFFFF8A80),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          if (_scanError != null)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 8.0,
+                                left: 12.0,
+                              ),
+                              child: Text(
+                                _scanError!,
+                                style: const TextStyle(
+                                  color: Color(0xFFFF8A80),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: AuthTheme.spacingS),
+                          TextButton(
+                            onPressed: _isScanning ? null : _startNfcScan,
+                            child: Text(
+                              _isScanning
+                                  ? loc.nfcScanWaiting
+                                  : loc.nfcScanTitle,
+                              style: AuthTheme.labelStyle.copyWith(
+                                color: Colors.white70,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AuthTheme.spacingL),
+                          PremiumButton(
+                            text: loc.gymJoinCta,
+                            isLoading: _isLoading,
+                            onPressed: _isLoading ? null : _submit,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: AuthTheme.spacingS),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white70),
-                    onPressed: () async {
-                      final prefs = ref.read(sharedPreferencesProvider);
-                      await prefs.remove(StorageKeys.preAuthGymId);
-                      if (!mounted) return;
-                      Navigator.of(context).pushReplacementNamed(
-                        AppRouter.gymAccess,
-                        arguments: widget.gymId,
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  loc.gymJoinTitle(gym.name),
-                  textAlign: TextAlign.center,
-                  style: AuthTheme.headingStyle,
-                ),
-                const SizedBox(height: AuthTheme.spacingS),
-                Text(
-                  loc.gymJoinSubtitle,
+                ],
+              );
+            },
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: Colors.white70),
+            ),
+            error: (error, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  loc.authErrorGeneric(error),
                   textAlign: TextAlign.center,
                   style: AuthTheme.bodyStyle.copyWith(
                     color: Colors.white.withOpacity(0.7),
                   ),
-                ),
-                const SizedBox(height: AuthTheme.spacingL),
-                GlassCard(
-                  child: Form(
-                    key: _formKey,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        PremiumTextField(
-                          label: loc.gymCodeFieldLabel,
-                          controller: _codeController,
-                          prefixIcon: Icons.fitness_center_outlined,
-                          textInputAction: TextInputAction.done,
-                          onChanged: (val) {
-                            final upper = val.toUpperCase();
-                            if (val != upper) {
-                              _codeController.value =
-                                  _codeController.value.copyWith(
-                                text: upper,
-                                selection: TextSelection.collapsed(
-                                  offset: upper.length,
-                                ),
-                              );
-                            }
-                          },
-                          validator: (v) {
-                            if (v == null || v.length != 6) {
-                              return loc.gymCodeInvalid;
-                            }
-                            return _error;
-                          },
-                        ),
-                        if (_error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0, left: 12.0),
-                            child: Text(
-                              _error!,
-                              style: const TextStyle(
-                                color: Color(0xFFFF8A80),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        if (_scanError != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0, left: 12.0),
-                            child: Text(
-                              _scanError!,
-                              style: const TextStyle(
-                                color: Color(0xFFFF8A80),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: AuthTheme.spacingS),
-                        TextButton(
-                          onPressed: _isScanning ? null : _startNfcScan,
-                          child: Text(
-                            _isScanning ? loc.nfcScanWaiting : loc.nfcScanTitle,
-                            style: AuthTheme.labelStyle.copyWith(
-                              color: Colors.white70,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AuthTheme.spacingL),
-                        PremiumButton(
-                          text: loc.gymJoinCta,
-                          isLoading: _isLoading,
-                          onPressed: _isLoading ? null : _submit,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: Colors.white70),
-          ),
-          error: (error, _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                loc.authErrorGeneric(error),
-                textAlign: TextAlign.center,
-                style: AuthTheme.bodyStyle.copyWith(
-                  color: Colors.white.withOpacity(0.7),
                 ),
               ),
             ),

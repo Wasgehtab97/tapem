@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-const int kDeviceDraftTtlMs = 60 * 60 * 1000; // 1 hour
+const int kDeviceDraftTtlMs = 36 * 60 * 60 * 1000; // 36h: über Mitternacht hinaus sicher
+const int kDeviceAutoFinalizeInactivityMs = 60 * 60 * 1000; // 1h Inaktivität -> auto-save
 const int kDeviceDraftDebounceMs = 350;
 
 String buildDraftKey({
@@ -154,4 +155,3 @@ class SessionDraft {
   factory SessionDraft.decode(String source) =>
       SessionDraft.fromJson(jsonDecode(source) as Map<String, dynamic>);
 }
-

@@ -7,7 +7,6 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
-import 'dart:ui';
 
 class NutritionScanScreen extends StatefulWidget {
   final String initialMeal;
@@ -99,7 +98,7 @@ class _NutritionScanScreenState extends State<NutritionScanScreen>
             ),
           ),
           
-          // Bottom controls with glassmorphism
+          // Bottom controls
           Positioned(
             left: 0,
             right: 0,
@@ -109,45 +108,40 @@ class _NutritionScanScreenState extends State<NutritionScanScreen>
                 gradient: LinearGradient(
                   colors: [
                     Colors.black.withOpacity(0.0),
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withOpacity(0.72),
                     Colors.black.withOpacity(0.85),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
               ),
-              child: ClipRRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      AppSpacing.xl,
-                      AppSpacing.md,
-                      AppSpacing.lg,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.xl,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      loc.nutritionScanHint,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withOpacity(0.9),
+                      ),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          loc.nutritionScanHint,
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        SecondaryCTA(
-                          label: loc.nutritionScanManualCta,
-                          icon: Icons.edit_rounded,
-                          onPressed: () => Navigator.of(context).pushNamed(
-                            AppRouter.nutritionEntry,
-                            arguments: {'meal': _meal},
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: AppSpacing.md),
+                    SecondaryCTA(
+                      label: loc.nutritionScanManualCta,
+                      icon: Icons.edit_rounded,
+                      onPressed: () => Navigator.of(context).pushNamed(
+                        AppRouter.nutritionEntry,
+                        arguments: {'meal': _meal},
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),

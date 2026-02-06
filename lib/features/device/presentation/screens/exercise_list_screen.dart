@@ -108,15 +108,16 @@ class _ExerciseListScreenState
                 userId: userId,
               );
             } catch (_) {
-              // Fallback: Navigation erfolgt trotzdem.
+              // Fallback
             }
           }
-          Navigator.of(context).pushReplacementNamed(
+          Navigator.of(context).pushNamedAndRemoveUntil(
             AppRouter.home,
+            (route) => false,
             arguments: 2,
           );
         } else {
-          Navigator.of(context).pushReplacementNamed(
+          Navigator.of(context).pushNamed(
             AppRouter.workoutDay,
             arguments: {
               'gymId': widget.gymId,
@@ -331,11 +332,12 @@ class _ExerciseListScreenState
                         userId: userId,
                       );
                     } catch (_) {
-                      // Fallback: Navigation erfolgt trotzdem.
+                      // Fallback
                     }
                   }
-                  Navigator.of(context).pushNamed(
+                  Navigator.of(context).pushNamedAndRemoveUntil(
                     AppRouter.home,
+                    (route) => false,
                     arguments: 2,
                   );
                 } else {

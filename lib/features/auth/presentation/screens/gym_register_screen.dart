@@ -7,10 +7,12 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/analytics/analytics_service.dart';
 import 'package:tapem/core/constants.dart';
 import 'package:tapem/core/providers/shared_preferences_provider.dart';
+import 'package:tapem/core/widgets/network_circle_avatar.dart';
 import 'package:tapem/core/widgets/offline_banner.dart';
 import 'package:tapem/features/auth/presentation/screens/gym_register_method_screen.dart';
 import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 import 'package:tapem/features/auth/presentation/widgets/auth_background.dart';
+import 'package:tapem/features/auth/presentation/widgets/auth_keyboard_scroll_view.dart';
 import 'package:tapem/features/auth/presentation/widgets/glass_card.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_button.dart';
 import 'package:tapem/features/auth/presentation/widgets/registration_form.dart';
@@ -84,36 +86,39 @@ class _GymRegisterScreenState extends ConsumerState<GymRegisterScreen> {
     }
     final reader = ReadNfcCode(NfcService());
     _nfcSub?.cancel();
-    _nfcSub = reader.execute().listen((code) {
-      if (!mounted) return;
-      final normalized = code.trim().toUpperCase();
-      if (normalized.isEmpty) {
+    _nfcSub = reader.execute().listen(
+      (code) {
+        if (!mounted) return;
+        final normalized = code.trim().toUpperCase();
+        if (normalized.isEmpty) {
+          AnalyticsService.logGymNfcScan(
+            gymId: widget.args.gymId,
+            flow: 'register',
+            status: 'error',
+            reason: 'empty_code',
+          );
+          setState(() {
+            _isScanning = false;
+            _scanError = AppLocalizations.of(context)!.nfcInvalidCode;
+          });
+          return;
+        }
+        _resolveNfcToken(normalized);
+      },
+      onError: (_) {
         AnalyticsService.logGymNfcScan(
           gymId: widget.args.gymId,
           flow: 'register',
           status: 'error',
-          reason: 'empty_code',
+          reason: 'scan_failed',
         );
+        if (!mounted) return;
         setState(() {
           _isScanning = false;
-          _scanError = AppLocalizations.of(context)!.nfcInvalidCode;
+          _scanError = AppLocalizations.of(context)!.nfcScanFailed;
         });
-        return;
-      }
-      _resolveNfcToken(normalized);
-    }, onError: (_) {
-      AnalyticsService.logGymNfcScan(
-        gymId: widget.args.gymId,
-        flow: 'register',
-        status: 'error',
-        reason: 'scan_failed',
-      );
-      if (!mounted) return;
-      setState(() {
-        _isScanning = false;
-        _scanError = AppLocalizations.of(context)!.nfcScanFailed;
-      });
-    });
+      },
+    );
   }
 
   Future<void> _resolveNfcToken(String token) async {
@@ -195,132 +200,131 @@ class _GymRegisterScreenState extends ConsumerState<GymRegisterScreen> {
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       body: AuthBackground(
-        child: gymAsync.when(
-          data: (gym) {
-            final showScan = _isNfc && (_prefilledCode == null || _prefilledCode!.isEmpty);
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const OfflineBanner(),
-                const SizedBox(height: 16),
-                Center(
-                  child: Hero(
-                    tag: 'gym-logo-${gym.id}',
-                    child: gym.logoUrl != null
-                        ? CircleAvatar(
-                            radius: 34,
-                            backgroundImage: NetworkImage(gym.logoUrl!),
-                            backgroundColor: Colors.white.withOpacity(0.1),
-                          )
-                        : const CircleAvatar(
-                            radius: 34,
-                            child: Icon(Icons.fitness_center_outlined),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: AuthTheme.spacingS),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white70),
-                    onPressed: () => Navigator.of(context).pushReplacementNamed(
-                      AppRouter.gymRegisterMethod,
-                      arguments: widget.args.gymId,
+        child: AuthKeyboardScrollView(
+          child: gymAsync.when(
+            data: (gym) {
+              final showScan =
+                  _isNfc && (_prefilledCode == null || _prefilledCode!.isEmpty);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const OfflineBanner(),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Hero(
+                      tag: 'gym-logo-${gym.id}',
+                      child: NetworkCircleAvatar(url: gym.logoUrl, radius: 34),
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  loc.gymRegisterTitle(gym.name),
-                  textAlign: TextAlign.center,
-                  style: AuthTheme.headingStyle,
-                ),
-                if (_isNfc) ...[
                   const SizedBox(height: AuthTheme.spacingS),
-                  Text(
-                    loc.gymNfcHint,
-                    textAlign: TextAlign.center,
-                    style: AuthTheme.bodyStyle.copyWith(
-                      color: Colors.white.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: AuthTheme.spacingL),
-                if (showScan)
-                  GlassCard(
-                    child: Column(
-                      children: [
-                        Text(
-                          loc.nfcScanTitle,
-                          style: AuthTheme.headingStyle.copyWith(fontSize: 20),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: AuthTheme.spacingS),
-                        Text(
-                          loc.nfcScanSubtitle,
-                          textAlign: TextAlign.center,
-                          style: AuthTheme.bodyStyle.copyWith(
-                            color: Colors.white.withOpacity(0.7),
-                          ),
-                        ),
-                        if (_scanError != null) ...[
-                          const SizedBox(height: AuthTheme.spacingS),
-                          Text(
-                            _scanError!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Color(0xFFFF8A80),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: AuthTheme.spacingL),
-                        PremiumButton(
-                          text: _isScanning ? loc.nfcScanWaiting : loc.nfcScanRetry,
-                          isLoading: _isScanning,
-                          onPressed: _isScanning ? null : _startNfcScan,
-                        ),
-                        const SizedBox(height: AuthTheme.spacingS),
-                        TextButton(
-                          onPressed: () => Navigator.of(context)
-                              .pushReplacementNamed(
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                      onPressed: () =>
+                          Navigator.of(context).pushReplacementNamed(
                             AppRouter.gymRegisterMethod,
                             arguments: widget.args.gymId,
                           ),
-                          child: Text(
-                            loc.nfcScanManual,
-                            style: AuthTheme.labelStyle.copyWith(
-                              color: Colors.white70,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  GlassCard(
-                    child: RegistrationForm(
-                      initialGymCode: _prefilledCode,
-                      gymCodeReadOnly: _isNfc && _prefilledCode != null,
-                      expectedGymId: widget.args.gymId,
-                      gymValidator: widget.args.gymValidator,
                     ),
                   ),
-              ],
-            );
-          },
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: Colors.white70),
-          ),
-          error: (error, _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                loc.authErrorGeneric(error),
-                textAlign: TextAlign.center,
-                style: AuthTheme.bodyStyle.copyWith(
-                  color: Colors.white.withOpacity(0.7),
+                  const SizedBox(height: 8),
+                  Text(
+                    loc.gymRegisterTitle(gym.name),
+                    textAlign: TextAlign.center,
+                    style: AuthTheme.headingStyle,
+                  ),
+                  if (_isNfc) ...[
+                    const SizedBox(height: AuthTheme.spacingS),
+                    Text(
+                      loc.gymNfcHint,
+                      textAlign: TextAlign.center,
+                      style: AuthTheme.bodyStyle.copyWith(
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AuthTheme.spacingL),
+                  if (showScan)
+                    GlassCard(
+                      child: Column(
+                        children: [
+                          Text(
+                            loc.nfcScanTitle,
+                            style: AuthTheme.headingStyle.copyWith(
+                              fontSize: 20,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: AuthTheme.spacingS),
+                          Text(
+                            loc.nfcScanSubtitle,
+                            textAlign: TextAlign.center,
+                            style: AuthTheme.bodyStyle.copyWith(
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                          if (_scanError != null) ...[
+                            const SizedBox(height: AuthTheme.spacingS),
+                            Text(
+                              _scanError!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Color(0xFFFF8A80),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: AuthTheme.spacingL),
+                          PremiumButton(
+                            text: _isScanning
+                                ? loc.nfcScanWaiting
+                                : loc.nfcScanRetry,
+                            isLoading: _isScanning,
+                            onPressed: _isScanning ? null : _startNfcScan,
+                          ),
+                          const SizedBox(height: AuthTheme.spacingS),
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.of(context).pushReplacementNamed(
+                                  AppRouter.gymRegisterMethod,
+                                  arguments: widget.args.gymId,
+                                ),
+                            child: Text(
+                              loc.nfcScanManual,
+                              style: AuthTheme.labelStyle.copyWith(
+                                color: Colors.white70,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    GlassCard(
+                      child: RegistrationForm(
+                        initialGymCode: _prefilledCode,
+                        gymCodeReadOnly: _isNfc && _prefilledCode != null,
+                        expectedGymId: widget.args.gymId,
+                        gymValidator: widget.args.gymValidator,
+                      ),
+                    ),
+                ],
+              );
+            },
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: Colors.white70),
+            ),
+            error: (error, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  loc.authErrorGeneric(error),
+                  textAlign: TextAlign.center,
+                  style: AuthTheme.bodyStyle.copyWith(
+                    color: Colors.white.withOpacity(0.7),
+                  ),
                 ),
               ),
             ),

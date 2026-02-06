@@ -6,6 +6,7 @@ import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 import 'package:tapem/features/auth/presentation/widgets/auth_background.dart';
 import 'package:tapem/features/auth/presentation/widgets/glass_card.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_text_field.dart';
+import 'package:tapem/core/widgets/network_circle_avatar.dart';
 import 'package:tapem/features/gym/application/gym_directory_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -104,14 +105,9 @@ class _GymAddMembershipScreenState
                         final gym = gyms[index];
                         final alreadyMember = memberships.contains(gym.id);
                         return ListTile(
-                          leading: gym.logoUrl != null
-                              ? CircleAvatar(
-                                  backgroundImage: NetworkImage(gym.logoUrl!),
-                                  backgroundColor: Colors.white.withOpacity(0.1),
-                                )
-                              : const CircleAvatar(
-                                  child: Icon(Icons.fitness_center_outlined),
-                                ),
+                          leading: NetworkCircleAvatar(
+                            url: gym.logoUrl,
+                          ),
                           title: Text(
                             gym.name,
                             style: AuthTheme.bodyStyle,

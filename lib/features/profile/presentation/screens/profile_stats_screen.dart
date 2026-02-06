@@ -13,6 +13,7 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/features/nfc_stats/providers/nfc_scan_stats_providers.dart';
 
 class ProfileStatsScreen extends ConsumerStatefulWidget {
   const ProfileStatsScreen({super.key});
@@ -46,6 +47,7 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
   Widget build(BuildContext context) {
     final prov = ref.watch(profileProvider);
     final restStatsProv = ref.watch(restStatsProvider);
+    final nfcStatsProv = ref.watch(nfcScanStatsProvider);
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandColor =
@@ -62,6 +64,11 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
             restStatsProv.overallActualRestMs == null
         ? '…'
         : _formatRestDuration(restStatsProv.overallActualRestMs);
+    final nfcValue = nfcStatsProv.when(
+      data: (stats) => stats.totalScans.toString(),
+      loading: () => '…',
+      error: (_, __) => '—',
+    );
 
     String formatAverage(double value) {
       if (value == 0) {
@@ -151,6 +158,15 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
                          ),
                        ),
                      ],
+                   ),
+                   SizedBox(height: gap),
+                   _StatCard(
+                     label: loc.profileStatsNfcScans,
+                     value: nfcValue,
+                     icon: Icons.nfc,
+                     color: Colors.tealAccent,
+                     subtitle: loc.profileStatsNfcScansSubtitle,
+                     isWide: true,
                    ),
                    SizedBox(height: gap),
                    // Bottom: Powerlifting (Full Width or special)

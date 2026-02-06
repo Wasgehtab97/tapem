@@ -103,40 +103,48 @@ class _NutritionGoalsScreenState extends ConsumerState<NutritionGoalsScreen> {
             AppSpacing.lg,
           ),
           children: [
-            // Premium hero card with goal input
             HeroGradientCard(
-              enableBackdropBlur: true,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   BrandGradientText(
                     loc.nutritionGoalsTitle,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.3,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
+                  const SizedBox(height: 6),
                   Text(
                     loc.nutritionGoalsIntro,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  // Large animated calorie display
+                  const SizedBox(height: AppSpacing.md),
                   Center(
-                    child: AnimatedNutritionStat(
-                      value: _initialized ? _kcal : 0,
-                      label: 'kcal Tagesziel',
-                      enableFlicker: false,
+                    child: Column(
+                      children: [
+                        Text(
+                          (_initialized ? _kcal : 0).toString(),
+                          style: theme.textTheme.headlineLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: brandColor,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        Text(
+                          'kcal Tagesziel',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.65),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  // Text input
+                  const SizedBox(height: AppSpacing.sm),
                   Center(
                     child: SizedBox(
-                      width: 200,
+                      width: 180,
                       child: NutritionCard(
                         enableGlow: false,
                         padding: const EdgeInsets.symmetric(
@@ -164,35 +172,36 @@ class _NutritionGoalsScreenState extends ConsumerState<NutritionGoalsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  // Quick adjust buttons
+                  const SizedBox(height: AppSpacing.xs),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      SecondaryCTA(
-                        label: '-100',
-                        icon: Icons.remove_rounded,
-                        onPressed: () => _setKcal(_kcal - 100),
+                      Expanded(
+                        child: SecondaryCTA(
+                          label: '-100',
+                          icon: Icons.remove_rounded,
+                          onPressed: () => _setKcal(_kcal - 100),
+                        ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
-                      SecondaryCTA(
-                        label: '+100',
-                        icon: Icons.add_rounded,
-                        onPressed: () => _setKcal(_kcal + 100),
+                      Expanded(
+                        child: SecondaryCTA(
+                          label: '+100',
+                          icon: Icons.add_rounded,
+                          onPressed: () => _setKcal(_kcal + 100),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  // Brand gradient slider
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor: brandColor,
                       inactiveTrackColor: brandColor.withOpacity(0.2),
                       thumbColor: brandColor,
-                      overlayColor: brandColor.withOpacity(0.15),
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
-                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 22),
-                      trackHeight: 6,
+                      overlayColor: brandColor.withOpacity(0.08),
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                      trackHeight: 4,
                     ),
                     child: Slider(
                       value: _kcal.toDouble().clamp(0, 6000),

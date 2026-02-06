@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
@@ -29,7 +28,7 @@ class NutritionCard extends StatelessWidget {
     this.background,
     this.backgroundGradient,
     this.neutral = false,
-    this.enableGlow = true,
+    this.enableGlow = false,
   });
 
   @override
@@ -45,7 +44,7 @@ class NutritionCard extends StatelessWidget {
       backgroundColor: background ?? theme.scaffoldBackgroundColor,
       borderRadius: brand?.outlineRadius ?? BorderRadius.circular(AppRadius.cardLg),
       showShadow: enableGlow,
-      shadowColor: brandColor.withOpacity(0.15),
+      shadowColor: brandColor.withOpacity(0.08),
       enableScaleAnimation: onTap != null,
       child: child,
     );
@@ -116,33 +115,25 @@ class NutritionActionTile extends StatelessWidget {
         onTap: onTap,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
+          vertical: 10,
         ),
         child: Row(
           children: [
-            // Icon with brand gradient background
             Container(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    brandColor.withOpacity(0.25),
-                    brandColor.withOpacity(0.08),
+                    brandColor.withOpacity(0.18),
+                    brandColor.withOpacity(0.04),
                   ],
                   center: Alignment.topLeft,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: brandColor.withOpacity(0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
               child: Center(
-                child: BrandGradientIcon(icon, size: 22),
+                child: BrandGradientIcon(icon, size: 20),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -153,36 +144,28 @@ class NutritionActionTile extends StatelessWidget {
                   Text(
                     title,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.3,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                     ),
                   ),
                 ],
               ),
             ),
-            // Chevron with gradient
             Container(
-              width: 32,
-              height: 32,
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    brandColor.withOpacity(0.18),
-                    brandColor.withOpacity(0.02),
-                  ],
-                  center: Alignment.topLeft,
-                ),
+                color: theme.scaffoldBackgroundColor.withOpacity(0.35),
                 border: Border.all(
-                  color: brandColor.withOpacity(0.3),
-                  width: 1.2,
+                  color: brandColor.withOpacity(0.24),
+                  width: 1,
                 ),
               ),
               child: const Center(
@@ -219,14 +202,14 @@ class MacroPill extends StatelessWidget {
     
     final pill = Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 6,
-        vertical: 4,
+        horizontal: 8,
+        vertical: 5,
       ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            color.withOpacity(0.18),
-            color.withOpacity(0.08),
+            color.withOpacity(0.14),
+            color.withOpacity(0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -234,17 +217,8 @@ class MacroPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.chip),
         border: Border.all(
           color: color.withOpacity(0.35),
-          width: 1.2,
+          width: 1,
         ),
-        boxShadow: enableGlow
-            ? [
-                BoxShadow(
-                  color: color.withOpacity(0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : const [],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -256,7 +230,7 @@ class MacroPill extends StatelessWidget {
                 color: theme.colorScheme.onSurface.withOpacity(0.8),
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.2,
-                fontSize: 11,
+                fontSize: 10,
               ),
             ),
             const SizedBox(width: 4),
@@ -269,11 +243,11 @@ class MacroPill extends StatelessWidget {
                 color: color,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.3,
-                fontSize: 12,
+                fontSize: 11,
               ),
               maxLines: 1,
               softWrap: false,
-              overflow: TextOverflow.visible, // show full macro amount (no "...").
+              overflow: TextOverflow.fade,
             ),
           ),
         ],
@@ -289,7 +263,7 @@ class MacroPill extends StatelessWidget {
   }
 }
 
-/// Hero gradient card with glassmorphism effect
+/// Hero gradient card with compact premium surface styling.
 class HeroGradientCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -307,61 +281,30 @@ class HeroGradientCard extends StatelessWidget {
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
     final gradient = brand?.gradient ?? AppGradients.brandGradient;
+    final radius = brand?.outlineRadius ?? BorderRadius.circular(AppRadius.cardLg);
 
-    // Much darker gradient for nutrition cards - blend heavily with background
     final softenedGradient = LinearGradient(
       begin: gradient.begin,
       end: gradient.end,
       colors: gradient.colors
           .map(
-            (c) => Color.lerp(c, theme.scaffoldBackgroundColor, 0.85) ?? c,
+            (c) => Color.lerp(c, theme.scaffoldBackgroundColor, 0.9) ?? c,
           )
           .toList(growable: false),
     );
 
-    Widget content = Container(
+    return Container(
       padding: padding ?? const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         gradient: softenedGradient,
-        borderRadius: brand?.outlineRadius ?? BorderRadius.circular(AppRadius.cardLg),
+        borderRadius: radius,
         border: Border.all(
-          color: Colors.white.withOpacity(0.05),
-          width: 1.0,
+          color: Colors.white.withOpacity(0.07),
+          width: 0.8,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: gradient.colors.last.withOpacity(0.15),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
       ),
       child: child,
     );
-
-    if (enableBackdropBlur) {
-      content = ClipRRect(
-        borderRadius: brand?.outlineRadius as BorderRadius? ?? 
-            BorderRadius.circular(AppRadius.cardLg),
-        child: Stack(
-          children: [
-            content,
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                child: const SizedBox(),
-              ),
-            ),
-            Padding(
-              padding: padding ?? const EdgeInsets.all(AppSpacing.lg),
-              child: child,
-            ),
-          ],
-        ),
-      );
-    }
-
-    return content;
   }
 }
 
@@ -387,39 +330,34 @@ class PrimaryCTA extends StatelessWidget {
     final brandColor = brand?.outline ?? theme.colorScheme.secondary;
     final enabled = onPressed != null && !isLoading;
 
-    // Create gradient similar to WorkoutDayScreen save button
     final gradient = enabled
         ? LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: (brand?.gradient ?? AppGradients.brandGradient).colors.map((c) {
-              return Color.lerp(c, theme.scaffoldBackgroundColor, 0.35) ?? c;
+              return Color.lerp(c, theme.scaffoldBackgroundColor, 0.55) ?? c;
             }).toList(),
           )
         : null;
 
     return Container(
-      height: 56,
+      height: 52,
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(18),
         gradient: gradient,
-        color: enabled ? null : Colors.white.withOpacity(0.05),
-        boxShadow: enabled
-            ? [
-                BoxShadow(
-                  color: brandColor.withOpacity(0.25),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ]
-            : const [],
+        color: enabled ? null : Colors.white.withOpacity(0.04),
+        border: Border.all(
+          color: enabled
+              ? brandColor.withOpacity(0.28)
+              : theme.colorScheme.outline.withOpacity(0.2),
+        ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: enabled ? onPressed : null,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(18),
           child: Center(
             child: isLoading
                 ? const SizedBox(
@@ -442,8 +380,8 @@ class PrimaryCTA extends StatelessWidget {
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: enabled ? Colors.white : Colors.white.withOpacity(0.3),
                           fontWeight: FontWeight.bold,
-                          fontSize: 17,
-                          letterSpacing: 0.5,
+                          fontSize: 16,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ],

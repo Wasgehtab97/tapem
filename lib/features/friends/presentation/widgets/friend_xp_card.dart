@@ -85,12 +85,6 @@ class FriendXpCard extends ConsumerWidget {
     // If user has leveled up at least once, show Roman numeral.
     final roman = _toRoman(level);
 
-    // Use the first letter of the username as the background watermark
-    // If username is empty, fallback to '?'
-    final watermarkChar = profile.username.isNotEmpty 
-        ? profile.username.characters.first.toUpperCase() 
-        : '?';
-
     return LayoutBuilder(
       builder: (context, constraints) {
         return GestureDetector(

@@ -42,11 +42,9 @@ class _NutritionCalendarScreenState
     final state = ref.watch(nutritionProvider);
     final year = DateTime.now().year;
     final summary = state.yearSummary;
-    
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(loc.nutritionCalendarTitle),
-      ),
+      appBar: AppBar(title: Text(loc.nutritionCalendarTitle)),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.sm),
         children: [
@@ -60,8 +58,10 @@ class _NutritionCalendarScreenState
             child: Text(
               loc.nutritionCalendarIntro,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                  ),
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withOpacity(0.7),
+              ),
             ),
           ),
           if (state.isLoadingYear)
@@ -90,7 +90,7 @@ class _LegendRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Wrap(
@@ -98,10 +98,19 @@ class _LegendRow extends StatelessWidget {
         runSpacing: AppSpacing.xs,
         children: [
           _LegendChip(label: loc.nutritionLegendUnder, color: Colors.redAccent),
-          _LegendChip(label: loc.nutritionLegendOn, color: AppColors.accentMint),
-          _LegendChip(label: loc.nutritionLegendOver, color: AppColors.accentAmber),
+          _LegendChip(
+            label: loc.nutritionLegendOn,
+            color: AppColors.accentMint,
+          ),
+          _LegendChip(
+            label: loc.nutritionLegendOver,
+            color: AppColors.accentAmber,
+          ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xs,
+              vertical: 8,
+            ),
             child: Text(
               loc.nutritionLegendHint,
               style: theme.textTheme.labelSmall?.copyWith(
@@ -127,10 +136,7 @@ class _LegendChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            color.withOpacity(0.2),
-            color.withOpacity(0.1),
-          ],
+          colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
         ),
         borderRadius: BorderRadius.circular(AppRadius.chip),
         border: Border.all(color: color.withOpacity(0.35), width: 1.2),
@@ -144,20 +150,14 @@ class _LegendChip extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: color,
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.4),
-                  blurRadius: 4,
-                ),
-              ],
             ),
           ),
           const SizedBox(width: 6),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -183,10 +183,13 @@ class _MonthCard extends StatelessWidget {
     final daysInMonth = DateTime(year, month + 1, 0).day;
     final offset = (firstDay.weekday + 6) % 7; // Monday=0
     final totalCells = offset + daysInMonth;
-    final monthLabel = DateFormat.MMMM('de').format(firstDay);
+    final monthLabel = DateFormat.MMMM(
+      Localizations.localeOf(context).toLanguageTag(),
+    ).format(firstDay);
 
     return NutritionCard(
-      enableGlow: true,
+      enableGlow: false,
+      padding: const EdgeInsets.all(AppSpacing.sm),
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,9 +197,9 @@ class _MonthCard extends StatelessWidget {
           BrandGradientText(
             monthLabel,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           GridView.builder(
@@ -205,8 +208,8 @@ class _MonthCard extends StatelessWidget {
             itemCount: totalCells,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              mainAxisSpacing: 6,
-              crossAxisSpacing: 6,
+              mainAxisSpacing: 4,
+              crossAxisSpacing: 4,
               childAspectRatio: 1,
             ),
             itemBuilder: (context, index) {
@@ -216,10 +219,7 @@ class _MonthCard extends StatelessWidget {
               final day = index - offset + 1;
               final key = nutritionDateKeyFromParts(year, month, day);
               final summary = days[key];
-              return _DayCell(
-                day: day,
-                summary: summary,
-              );
+              return _DayCell(day: day, summary: summary);
             },
           ),
         ],
@@ -228,15 +228,12 @@ class _MonthCard extends StatelessWidget {
   }
 }
 
-/// Day cell with brand gradient fills and glow effects
+/// Day cell with compact progress fill styling.
 class _DayCell extends StatelessWidget {
   final int day;
   final NutritionYearDay? summary;
 
-  const _DayCell({
-    required this.day,
-    required this.summary,
-  });
+  const _DayCell({required this.day, required this.summary});
 
   @override
   Widget build(BuildContext context) {
@@ -245,7 +242,7 @@ class _DayCell extends StatelessWidget {
     final brandColor = brand?.outline ?? theme.colorScheme.secondary;
     final goal = summary?.goal ?? 0;
     final total = summary?.total ?? 0;
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight;
@@ -259,10 +256,7 @@ class _DayCell extends StatelessWidget {
 
         // Brand gradient colors
         final onTargetGradient = LinearGradient(
-          colors: [
-            AppColors.accentMint,
-            AppColors.accentTurquoise,
-          ],
+          colors: [AppColors.accentMint, AppColors.accentTurquoise],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );
@@ -271,10 +265,7 @@ class _DayCell extends StatelessWidget {
           decoration: BoxDecoration(
             color: theme.scaffoldBackgroundColor.withOpacity(0.3),
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: brandColor.withOpacity(0.15),
-              width: 1,
-            ),
+            border: Border.all(color: brandColor.withOpacity(0.15), width: 1),
           ),
           child: Stack(
             children: [
@@ -291,12 +282,6 @@ class _DayCell extends StatelessWidget {
                       borderRadius: const BorderRadius.vertical(
                         bottom: Radius.circular(6),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accentMint.withOpacity(0.3),
-                          blurRadius: 6,
-                        ),
-                      ],
                     ),
                   ),
                 ),
@@ -310,22 +295,13 @@ class _DayCell extends StatelessWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          AppColors.accentAmber,
-                          Colors.orange.shade700,
-                        ],
+                        colors: [AppColors.accentAmber, Colors.orange.shade700],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
                       borderRadius: const BorderRadius.vertical(
                         bottom: Radius.circular(6),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accentAmber.withOpacity(0.3),
-                          blurRadius: 6,
-                        ),
-                      ],
                     ),
                   ),
                 ),

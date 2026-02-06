@@ -39,6 +39,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   late int _currentIndex;
   _HomeTabId? _lastTabId;
+  final GlobalKey<NavigatorState> _nutritionNavigatorKey =
+      GlobalKey<NavigatorState>();
 
   List<_TabInfo> _buildTabs(BuildContext context) {
     final gymProv = ref.watch(gymProvider);
@@ -86,7 +88,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _TabInfo(
         id: _HomeTabId.nutrition,
         // Eigenes Navigator-Stack für Ernährung, damit BottomTab sichtbar bleibt
-        page: const NutritionTabNavigator(key: PageStorageKey('NutritionTab')),
+        page: NutritionTabNavigator(
+          key: const PageStorageKey('NutritionTab'),
+          navigatorKey: _nutritionNavigatorKey,
+        ),
         item: BottomNavigationBarItem(
           icon: const Icon(Icons.restaurant),
           label: loc.homeTabNutrition,

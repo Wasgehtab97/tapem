@@ -188,6 +188,13 @@ service cloud.firestore {
       return key.matches('^\\d{4}$');
     }
 
+    function isBarcodeKey(key) {
+      return key.matches('^\\d{8}$') ||
+        key.matches('^\\d{12}$') ||
+        key.matches('^\\d{13}$') ||
+        key.matches('^\\d{14}$');
+    }
+
     function isNutritionMacros(data) {
       return data is map &&
         data.keys().hasOnly(['protein', 'carbs', 'fat']) &&
@@ -656,6 +663,20 @@ service cloud.firestore {
             && request.resource.data.planId is string;
       }
 
+      // NFC Scan Statistiken (profilweit, gym-agnostisch)
+      match /nfc_scan_stats/{docId} {
+        allow read, get, list: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid) &&
+          request.resource.data.keys().hasOnly([
+            'totalScans',
+            'lastScanAt',
+            'lastGymId',
+            'lastDeviceId',
+            'lastExerciseId',
+            'updatedAt'
+          ]);
+      }
+
       match /{document=**} {
         allow read, write: if isOwner(uid);
       }
@@ -669,7 +690,7 @@ service cloud.firestore {
     match /nutrition_products/{barcode} {
       allow read: if isAuthed();
       allow create, update: if isAuthed() &&
-        barcode.size() <= 64 &&
+        isBarcodeKey(barcode) &&
         request.resource.data.keys().hasOnly([
           'name',
           'kcalPer100',
@@ -679,10 +700,20 @@ service cloud.firestore {
           'updatedAt'
         ]) &&
         request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 160 &&
         request.resource.data.kcalPer100 is int &&
+        request.resource.data.kcalPer100 >= 0 &&
+        request.resource.data.kcalPer100 <= 5000 &&
         request.resource.data.proteinPer100 is int &&
+        request.resource.data.proteinPer100 >= 0 &&
+        request.resource.data.proteinPer100 <= 500 &&
         request.resource.data.carbsPer100 is int &&
+        request.resource.data.carbsPer100 >= 0 &&
+        request.resource.data.carbsPer100 <= 500 &&
         request.resource.data.fatPer100 is int &&
+        request.resource.data.fatPer100 >= 0 &&
+        request.resource.data.fatPer100 <= 500 &&
         (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
       allow delete: if false;
     }

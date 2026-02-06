@@ -6,15 +6,20 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_entry.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_product.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_totals.dart';
+import 'package:tapem/features/nutrition/presentation/widgets/nutrition_overview_card.dart';
 import 'package:tapem/features/nutrition/presentation/widgets/nutrition_ui.dart';
 import 'package:tapem/features/nutrition/providers/nutrition_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
-import 'package:tapem/core/widgets/brand_gradient_text.dart';
-import 'dart:math' as math;
 import '../../domain/utils/nutrition_dates.dart';
+
+const double _colKcalWidth = 38;
+const double _colMacroWidth = 32;
+const double _colQtyWidth = 38;
+const double _colActionWidth = 44;
+const double _colCellGap = 2;
 
 class NutritionDayScreen extends ConsumerStatefulWidget {
   const NutritionDayScreen({super.key});
@@ -26,7 +31,7 @@ class NutritionDayScreen extends ConsumerStatefulWidget {
 class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
   late PageController _pageController;
   final int _initialPage = 10000;
-  DateTime _baseDate = nutritionStartOfDay(DateTime.now());
+  final DateTime _baseDate = nutritionStartOfDay(DateTime.now());
 
   @override
   void initState() {
@@ -69,9 +74,7 @@ class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
     if (!mounted) return;
     await Navigator.of(context).pushNamed(
       AppRouter.nutritionEntry,
-      arguments: {
-        'meal': meal ?? _deriveMealFromTime(),
-      },
+      arguments: {'meal': meal ?? _deriveMealFromTime()},
     );
   }
 
@@ -98,7 +101,6 @@ class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
       },
     );
   }
-
 
   NutritionProduct _productFromEntry(NutritionEntry entry) {
     final grams = (entry.qty ?? 100).clamp(1, 100000).toDouble();
@@ -141,7 +143,7 @@ class _NutritionDayScreenState extends ConsumerState<NutritionDayScreen> {
                 lastDate: DateTime(date.year + 5, 12, 31),
               );
               if (picked == null || !mounted) return;
-              
+
               _pageController.jumpToPage(_getPageForDate(picked));
               // _onPageChanged will be called by PageView
             },
@@ -203,6 +205,11 @@ class _DayContentView extends ConsumerWidget {
     required this.onOpenEdit,
   });
 
+  String _formatQty(double qty) {
+    if (qty % 1 == 0) return qty.toInt().toString();
+    return qty.toStringAsFixed(1);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context)!;
@@ -233,6 +240,7 @@ class _DayContentView extends ConsumerWidget {
         fat: (current?.fat ?? 0) + entry.fat,
       );
     }
+
     for (final e in entriesWithIndex) {
       addToMeal(e.$1.meal, e.$1);
     }
@@ -254,7 +262,7 @@ class _DayContentView extends ConsumerWidget {
           AppSpacing.lg,
         ),
         children: [
-          NutritionHeaderCard(
+          NutritionOverviewCard(
             date: date,
             goal: targetKcal,
             total: totalKcal,
@@ -262,30 +270,30 @@ class _DayContentView extends ConsumerWidget {
             carbs: state.log?.total.carbs ?? 0,
             fat: state.log?.total.fat ?? 0,
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _QuickIconButton(
+          const SizedBox(height: AppSpacing.xs),
+          _QuickActionStrip(
+            actions: [
+              _QuickActionData(
                 tooltip: loc.nutritionAddEntryCta,
-                icon: Icons.search,
+                icon: Icons.search_rounded,
+                label: 'Suche',
                 onTap: onOpenEntry,
               ),
-              const SizedBox(width: AppSpacing.md),
-              _QuickIconButton(
+              _QuickActionData(
                 tooltip: loc.nutritionScanCta,
-                icon: Icons.qr_code_scanner,
+                icon: Icons.qr_code_scanner_rounded,
+                label: 'Scan',
                 onTap: onOpenScan,
               ),
-              const SizedBox(width: AppSpacing.md),
-              _QuickIconButton(
+              _QuickActionData(
                 tooltip: 'Gerichte auswählen',
                 icon: Icons.restaurant_menu_rounded,
+                label: 'Gerichte',
                 onTap: onOpenRecipes,
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.xs),
           if (entriesWithIndex.isEmpty)
             Padding(
               padding: const EdgeInsets.all(AppSpacing.sm),
@@ -300,75 +308,26 @@ class _DayContentView extends ConsumerWidget {
                 _MealExpansion(
                   title: meal.$2,
                   totals: mealTotals[meal.$1],
+                  entryCount: entriesWithIndex
+                      .where((e) => e.$1.meal == meal.$1)
+                      .length,
                   children: entriesWithIndex
                       .where((e) => e.$1.meal == meal.$1)
                       .map(
-                        (e) => NutritionCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      e.$1.name,
-                                      style: theme.textTheme.titleMedium,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: () async {
-                                      final auth = ref.read(authControllerProvider);
-                                      final uid = auth.userId;
-                                      if (uid == null) return;
-                                      await ref.read(nutritionProvider).removeEntry(
-                                            uid: uid,
-                                            date: date,
-                                            index: e.$2,
-                                          );
-                                    },
-                                    icon: const Icon(Icons.delete_outline),
-                                  ),
-                                  IconButton(
-                                    onPressed: () => onOpenEdit(e.$1, e.$2),
-                                    icon: const Icon(Icons.edit_outlined),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                children: [
-                                  MacroPill(
-                                    label: 'Kcal',
-                                    value: '${e.$1.kcal}',
-                                    color: AppColors.accentTurquoise,
-                                  ),
-                                  MacroPill(
-                                    label: 'P',
-                                    value: '${e.$1.protein} g',
-                                    color: const Color(0xFFE53935),
-                                  ),
-                                  MacroPill(
-                                    label: 'C',
-                                    value: '${e.$1.carbs} g',
-                                    color: AppColors.accentMint,
-                                  ),
-                                  MacroPill(
-                                    label: 'F',
-                                    value: '${e.$1.fat} g',
-                                    color: AppColors.accentAmber,
-                                  ),
-                                  if ((e.$1.qty ?? 0) > 0)
-                                    MacroPill(
-                                      label: 'Menge',
-                                      value: '${(e.$1.qty ?? 0).toStringAsFixed(0)} g',
-                                      color: theme.colorScheme.outline,
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
+                        (e) => _MealEntryRow(
+                          entry: e.$1,
+                          qtyText: _formatQty(e.$1.qty ?? 0),
+                          onDelete: () async {
+                            final auth = ref.read(authControllerProvider);
+                            final uid = auth.userId;
+                            if (uid == null) return;
+                            await ref.read(nutritionProvider).removeEntry(
+                                  uid: uid,
+                                  date: date,
+                                  index: e.$2,
+                                );
+                          },
+                          onEdit: () => onOpenEdit(e.$1, e.$2),
                         ),
                       )
                       .toList(),
@@ -381,455 +340,118 @@ class _DayContentView extends ConsumerWidget {
   }
 }
 
-/// Premium calorie ring with brand gradient and glow
-class _CalorieRing extends StatelessWidget {
-  final double total;
-  final double goal;
-
-  const _CalorieRing({
-    required this.total,
-    required this.goal,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brand = theme.extension<AppBrandTheme>();
-    final gradient = brand?.gradient ?? AppGradients.brandGradient;
-    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
-
-    // Premium styling matching NutritionHomeScreen
-    final progress = goal > 0 ? (total / goal).clamp(0.0, 2.0) : 0.0;
-    final isOnTarget = progress >= 1.0;
-
-    // Use improved painter from home screen logic (inline here for simplicity or shared)
-    // We'll reimplement the painter here to ensure it matches the premium look exactly
-    return CustomPaint(
-      painter: _DayCalorieRingPainter(
-        progress: progress,
-        brandColor: brandColor,
-        isOnTarget: isOnTarget,
-      ),
-    );
-  }
-}
-
-class _DayCalorieRingPainter extends CustomPainter {
-  final double progress;
-  final Color brandColor;
-  final bool isOnTarget;
-
-  _DayCalorieRingPainter({
-    required this.progress,
-    required this.brandColor,
-    required this.isOnTarget,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - 4;
-    final strokeWidth = 14.0;
-
-    // 1. Background track (subtle)
-    final trackPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..color = brandColor.withOpacity(0.08)
-      ..strokeCap = StrokeCap.round;
-    canvas.drawCircle(center, radius, trackPaint);
-
-    if (progress <= 0) return;
-
-    // 2. Main progress arc
-    // Mint -> Turquoise -> Amber brand gradient
-    final gradientColors = [
-      AppColors.accentMint,
-      AppColors.accentTurquoise,
-      if (progress > 1.0) AppColors.accentAmber,
-    ];
-    
-    // Adjust colors based on progress overflow
-    final sweep = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..shader = SweepGradient(
-        colors: gradientColors,
-        stops: progress > 1.0 ? [0.0, 0.6, 1.0] : null,
-        transform: GradientRotation(-math.pi / 2),
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-
-    // Draw main arc
-    final sweepAngle = 2 * math.pi * progress.clamp(0.0, 1.0);
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2,
-      sweepAngle,
-      false,
-      sweep,
-    );
-
-    // 3. Overflow arc (if any)
-    if (progress > 1.0) {
-      final overflowAngle = 2 * math.pi * (progress - 1.0).clamp(0.0, 1.0);
-      final overflowPaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.round
-        ..color = AppColors.accentAmber
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -math.pi / 2,
-        overflowAngle,
-        false,
-        overflowPaint,
-      );
-      
-      // Draw overflow again without blur for sharpness
-      overflowPaint.maskFilter = null;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -math.pi / 2,
-        overflowAngle,
-        false,
-        overflowPaint,
-      );
-    }
-
-    // 4. Glow tip
-    if (isOnTarget || progress > 0) {
-      final angle = -math.pi / 2 + (2 * math.pi * progress).clamp(0.0, 2 * math.pi);
-      final tipCenter = Offset(
-        center.dx + radius * math.cos(angle),
-        center.dy + radius * math.sin(angle),
-      );
-      
-      canvas.drawCircle(
-        tipCenter,
-        strokeWidth / 1.5,
-        Paint()
-          ..color = (progress > 1.0 ? AppColors.accentAmber : AppColors.accentTurquoise).withOpacity(0.5)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-      );
-       canvas.drawCircle(
-        tipCenter,
-        strokeWidth / 2.5,
-        Paint()..color = Colors.white,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DayCalorieRingPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.brandColor != brandColor;
-  }
-}
-
-class NutritionHeaderCard extends StatelessWidget {
-  final DateTime date;
-  final int goal;
-  final int total;
-  final int protein;
-  final int carbs;
-  final int fat;
-
-  const NutritionHeaderCard({
-    super.key,
-    required this.date,
-    required this.goal,
-    required this.total,
-    required this.protein,
-    required this.carbs,
-    required this.fat,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final dateLabel = DateFormat.yMMMd().format(date);
-    final remaining = goal - total;
-    
-    // Premium Hero Card
-    return HeroGradientCard(
-      child: Row(
-        children: [
-          SizedBox(
-            height: 120,
-            width: 120,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final box = math.min(constraints.maxWidth, constraints.maxHeight);
-                final pctFontSize = (box * 0.18).clamp(12, 22).toDouble();
-                final pct = goal > 0 ? (total / goal * 100).clamp(0, 999) : 0;
-                final isOver = pct > 100;
-                final color = isOver ? AppColors.accentAmber : AppColors.accentMint;
-                final text = '${pct.round()}%';
-                
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Positioned.fill(
-                      child: _CalorieRing(
-                        total: total.toDouble(),
-                        goal: goal.toDouble(),
-                      ),
-                    ),
-                    BrandGradientText(
-                      text,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontSize: pctFontSize,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                BrandGradientText(
-                  dateLabel,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Ziel: $goal kcal',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                ),
-                Text(
-                  'Gesamt: $total kcal',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  'Freie kcal: $remaining',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: remaining >= 0 ? AppColors.accentMint : AppColors.accentAmber,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    MacroPill(
-                      label: 'P',
-                      value: '$protein g',
-                      color: const Color(0xFFE53935),
-                    ),
-                    MacroPill(
-                      label: 'C',
-                      value: '$carbs g',
-                      color: AppColors.accentMint,
-                    ),
-                    MacroPill(
-                      label: 'F',
-                      value: '$fat g',
-                      color: AppColors.accentAmber,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-
-class _ActionButton extends StatelessWidget {
-  final String label;
+class _QuickActionData {
+  final String tooltip;
   final IconData icon;
-  final VoidCallback? onPressed;
+  final String label;
+  final VoidCallback onTap;
 
-  const _ActionButton({
-    required this.label,
+  const _QuickActionData({
+    required this.tooltip,
     required this.icon,
-    required this.onPressed,
+    required this.label,
+    required this.onTap,
   });
+}
+
+class _QuickActionStrip extends StatelessWidget {
+  final List<_QuickActionData> actions;
+
+  const _QuickActionStrip({required this.actions});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
-    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
-    final scaffold = theme.scaffoldBackgroundColor;
-    final gradient = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [
-        Color.lerp(scaffold, brandColor, 0.08) ?? scaffold,
-        Color.lerp(scaffold, Colors.black, 0.02) ?? scaffold,
-      ],
-    );
-    final labelStyle = theme.textTheme.titleSmall?.copyWith(
-      fontWeight: FontWeight.w700,
-    );
+    final accent = brand?.outline ?? theme.colorScheme.primary;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(AppRadius.cardLg),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.cardLg),
-          onTap: onPressed,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.sm,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: brandColor.withOpacity(0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(icon, size: 18, color: theme.colorScheme.onSurface),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: true,
-                    textAlign: TextAlign.center,
-                    style: labelStyle?.copyWith(
-                      height: 1.1,
-                      letterSpacing: 0.1,
-                    ),
-                  ),
-                ),
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        brandColor.withOpacity(0.22),
-                        brandColor.withOpacity(0.02),
-                      ],
-                      center: Alignment.topLeft,
-                      radius: 1.0,
-                    ),
-                    border: Border.all(
-                      color: brandColor.withOpacity(0.4),
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.arrow_outward_rounded,
-                    size: 16,
-                    color: brandColor,
-                  ),
-                ),
-              ],
-            ),
+    return BrandInteractiveCard(
+      padding: EdgeInsets.zero,
+      showShadow: false,
+      enableScaleAnimation: false,
+      showPressedOverlay: false,
+      restingBorderColor: Colors.white.withOpacity(0.06),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              accent.withOpacity(0.10),
+              theme.colorScheme.surface.withOpacity(0.22),
+            ],
           ),
+        ),
+        child: Row(
+          children: [
+            for (var i = 0; i < actions.length; i++) ...[
+              Expanded(
+                child: _QuickActionButton(data: actions[i]),
+              ),
+              if (i < actions.length - 1)
+                Container(
+                  width: 1,
+                  height: 46,
+                  color: Colors.white.withOpacity(0.08),
+                ),
+            ],
+          ],
         ),
       ),
     );
   }
 }
 
-class _QuickIconButton extends StatelessWidget {
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onTap;
+class _QuickActionButton extends StatelessWidget {
+  final _QuickActionData data;
 
-  const _QuickIconButton({
-    required this.tooltip,
-    required this.icon,
-    required this.onTap,
-  });
+  const _QuickActionButton({required this.data});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final brand = theme.extension<AppBrandTheme>();
-    final outline = brand?.outline ?? theme.colorScheme.primary;
-    final bg = theme.colorScheme.surface.withOpacity(0.22);
-    final gradient = LinearGradient(
-      colors: [
-        outline.withOpacity(0.35),
-        outline.withOpacity(0.08),
-      ],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
-
+    final onSurface = theme.colorScheme.onSurface;
     return Tooltip(
-      message: tooltip,
+      message: data.tooltip,
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: gradient,
-            border: Border.all(color: outline.withOpacity(0.35), width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: outline.withOpacity(0.22),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+        onTap: data.onTap,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(data.icon, size: 18, color: onSurface.withOpacity(0.92)),
+              const SizedBox(height: 4),
+              Text(
+                data.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: onSurface.withOpacity(0.70),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                ),
               ),
             ],
           ),
-          child: Container(
-            margin: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              icon,
-              size: 22,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
         ),
       ),
     );
   }
 }
 
-/// Styled expansion tile for meals
 class _MealExpansion extends StatefulWidget {
   final String title;
   final NutritionTotals? totals;
+  final int entryCount;
   final List<Widget> children;
 
   const _MealExpansion({
     required this.title,
     required this.totals,
+    required this.entryCount,
     required this.children,
   });
 
@@ -838,40 +460,54 @@ class _MealExpansion extends StatefulWidget {
 }
 
 class _MealExpansionState extends State<_MealExpansion> {
-  bool _open = true; // Default open for better visibility
+  bool _open = true;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final accent = brand?.outline ?? theme.colorScheme.primary;
     final totals = widget.totals;
-    
-    // Premium glassmorphism card
+
+    final infoText = totals == null
+        ? '${widget.entryCount} Einträge'
+        : '${widget.entryCount} · ${totals.kcal} kcal · ${totals.protein}P · ${totals.carbs}C · ${totals.fat}F';
+
     return BrandInteractiveCard(
       padding: EdgeInsets.zero,
-      enableScaleAnimation: false, // Handle interactivity manually
+      enableScaleAnimation: false,
+      showShadow: false,
+      showPressedOverlay: false,
+      restingBorderColor: Colors.transparent,
+      activeBorderColor: Colors.transparent,
       child: Column(
         children: [
           InkWell(
             onTap: () => setState(() => _open = !_open),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(AppRadius.cardLg),
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: 10,
+              ),
               child: Row(
                 children: [
-                  // Meal icon/title
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 30,
+                    height: 30,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                      color: accent.withOpacity(0.12),
                       shape: BoxShape.circle,
+                      border: Border.all(color: accent.withOpacity(0.25)),
                     ),
                     child: Icon(
-                      _open ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded,
-                      color: theme.colorScheme.onSurface,
+                      _open
+                          ? Icons.keyboard_arrow_down_rounded
+                          : Icons.keyboard_arrow_right_rounded,
+                      color: theme.colorScheme.onSurface.withOpacity(0.9),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -879,37 +515,83 @@ class _MealExpansionState extends State<_MealExpansion> {
                         Text(
                           widget.title,
                           style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
+                            height: 1.1,
                           ),
                         ),
-                        if (totals != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            '${totals.kcal} kcal · ${totals.protein}g P · ${totals.carbs}g C · ${totals.fat}g F',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-                            ),
+                        const SizedBox(height: 2),
+                        Text(
+                          infoText,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.65),
+                            letterSpacing: 0.2,
                           ),
-                        ],
+                        ),
                       ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.chip),
+                      border: Border.all(color: accent.withOpacity(0.24)),
+                    ),
+                    child: Text(
+                      '${widget.entryCount}',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: accent,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          
-          // Content
           AnimatedCrossFade(
-            firstChild: Container(),
+            firstChild: const SizedBox.shrink(),
             secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.sm, 0, AppSpacing.sm, AppSpacing.sm),
-              child: Column(
-                children: widget.children,
+              padding: const EdgeInsets.fromLTRB(
+                10,
+                0,
+                10,
+                10,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface.withOpacity(0.20),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(color: Colors.white.withOpacity(0.06)),
+                ),
+                child: Column(
+                  children: [
+                    const _MealTableHeader(),
+                    Divider(
+                      height: 1,
+                      color: theme.colorScheme.onSurface.withOpacity(0.10),
+                    ),
+                    for (var i = 0; i < widget.children.length; i++) ...[
+                      widget.children[i],
+                      if (i < widget.children.length - 1)
+                        Divider(
+                          height: 1,
+                          indent: 8,
+                          endIndent: 8,
+                          color: theme.colorScheme.onSurface.withOpacity(0.08),
+                        ),
+                    ],
+                  ],
+                ),
               ),
             ),
-            crossFadeState: _open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 300),
+            crossFadeState: _open
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 220),
           ),
         ],
       ),
@@ -917,3 +599,270 @@ class _MealExpansionState extends State<_MealExpansion> {
   }
 }
 
+class _MealTableHeader extends StatelessWidget {
+  const _MealTableHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.onSurface.withOpacity(0.55);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Zutat',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          _HeaderCell('kcal', width: _colKcalWidth),
+          _HeaderCell('P', width: _colMacroWidth),
+          _HeaderCell('C', width: _colMacroWidth),
+          _HeaderCell('F', width: _colMacroWidth),
+          _HeaderCell('g', width: _colQtyWidth),
+          const SizedBox(width: _colActionWidth),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderCell extends StatelessWidget {
+  final String label;
+  final double width;
+
+  const _HeaderCell(this.label, {required this.width});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: width,
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurface.withOpacity(0.50),
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _MealEntryRow extends StatelessWidget {
+  final NutritionEntry entry;
+  final String qtyText;
+  final Future<void> Function() onDelete;
+  final VoidCallback onEdit;
+
+  const _MealEntryRow({
+    required this.entry,
+    required this.qtyText,
+    required this.onDelete,
+    required this.onEdit,
+  });
+
+  Future<void> _handleActionTap(BuildContext context) async {
+    final action = await showModalBottomSheet<_EntryAction>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          top: false,
+          child: Container(
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              border: Border.all(color: Colors.white.withOpacity(0.08)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined),
+                  title: const Text('Bearbeiten'),
+                  onTap: () => Navigator.of(sheetContext).pop(_EntryAction.edit),
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    color: theme.colorScheme.error,
+                  ),
+                  title: Text(
+                    'Löschen',
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(_EntryAction.delete),
+                ),
+                const SizedBox(height: 10),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (action == null || !context.mounted) return;
+    if (action == _EntryAction.edit) {
+      onEdit();
+      return;
+    }
+
+    final shouldDelete = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Zutat löschen?'),
+            content: Text('„${entry.name}“ wirklich entfernen?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Abbrechen'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Löschen'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!shouldDelete) return;
+    await onDelete();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              entry.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          _ValueCell(
+            width: _colKcalWidth,
+            value: '${entry.kcal}',
+            color: AppColors.accentTurquoise,
+          ),
+          _ValueCell(
+            width: _colMacroWidth,
+            value: '${entry.protein}',
+            color: const Color(0xFFE53935),
+          ),
+          _ValueCell(
+            width: _colMacroWidth,
+            value: '${entry.carbs}',
+            color: AppColors.accentMint,
+          ),
+          _ValueCell(
+            width: _colMacroWidth,
+            value: '${entry.fat}',
+            color: AppColors.accentAmber,
+          ),
+          _ValueCell(
+            width: _colQtyWidth,
+            value: (entry.qty ?? 0) > 0 ? qtyText : '-',
+            color: theme.colorScheme.onSurface.withOpacity(0.78),
+          ),
+          SizedBox(
+            width: _colActionWidth,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _RowActionMenuButton(
+                onTap: () => _handleActionTap(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ValueCell extends StatelessWidget {
+  final double width;
+  final String value;
+  final Color color;
+
+  const _ValueCell({
+    required this.width,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: width,
+      margin: const EdgeInsets.only(left: _colCellGap),
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.28), width: 1),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        value,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.1,
+        ),
+      ),
+    );
+  }
+}
+
+enum _EntryAction { edit, delete }
+
+class _RowActionMenuButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _RowActionMenuButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.onSurface.withOpacity(0.78);
+    return Tooltip(
+      message: 'Optionen',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Icon(Icons.more_horiz_rounded, size: 18, color: color),
+        ),
+      ),
+    );
+  }
+}

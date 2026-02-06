@@ -15,6 +15,7 @@ class PremiumTextField extends StatefulWidget {
   final IconData? prefixIcon;
   final Widget? suffixIcon;
   final bool readOnly;
+  final EdgeInsets scrollPadding;
 
   const PremiumTextField({
     Key? key,
@@ -30,6 +31,7 @@ class PremiumTextField extends StatefulWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.readOnly = false,
+    this.scrollPadding = const EdgeInsets.only(bottom: 180),
   }) : super(key: key);
 
   @override
@@ -44,7 +46,9 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
   void initState() {
     super.initState();
     _focusNode.addListener(() {
-      setState(() => _isFocused = _focusNode.hasFocus);
+      final isFocused = _focusNode.hasFocus;
+      if (isFocused == _isFocused) return;
+      setState(() => _isFocused = isFocused);
     });
   }
 
@@ -61,13 +65,13 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
     return AnimatedContainer(
       duration: AuthTheme.animationDurationFast,
       decoration: BoxDecoration(
-        color: _isFocused 
-            ? AuthTheme.glassColor.withOpacity(0.15) 
+        color: _isFocused
+            ? AuthTheme.glassColor.withOpacity(0.15)
             : AuthTheme.glassColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _isFocused 
-              ? focus.withOpacity(0.5) 
+          color: _isFocused
+              ? focus.withOpacity(0.5)
               : AuthTheme.glassBorderColor,
           width: 1.5,
         ),
@@ -95,6 +99,7 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
         cursorColor: Colors.white,
         textInputAction: widget.textInputAction,
         readOnly: widget.readOnly,
+        scrollPadding: widget.scrollPadding,
         decoration: InputDecoration(
           labelText: widget.label,
           labelStyle: AuthTheme.labelStyle,
@@ -103,8 +108,8 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
           focusedBorder: InputBorder.none,
           errorBorder: InputBorder.none,
           focusedErrorBorder: InputBorder.none,
-          prefixIcon: widget.prefixIcon != null 
-              ? Icon(widget.prefixIcon, color: Colors.white70) 
+          prefixIcon: widget.prefixIcon != null
+              ? Icon(widget.prefixIcon, color: Colors.white70)
               : null,
           suffixIcon: widget.suffixIcon,
           errorStyle: const TextStyle(height: 0.8, color: Color(0xFFFF8A80)),

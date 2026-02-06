@@ -490,6 +490,75 @@
     "description": "Semantik-Label für Sitzungs-Chart"
   },
 
+  "progressTitle": "Progress",
+  "@progressTitle": {
+    "description": "Titel der Progress-Seite"
+  },
+  "progressButtonTitle": "Progress",
+  "@progressButtonTitle": {
+    "description": "Button-Beschriftung für Progress auf dem Profil"
+  },
+  "progressButtonSubtitle": "Verlauf aller Übungen",
+  "@progressButtonSubtitle": {
+    "description": "Untertitel für den Progress-Button auf dem Profil"
+  },
+  "progressYearLabel": "Jahr",
+  "@progressYearLabel": {
+    "description": "Label für die Jahresauswahl auf der Progress-Seite"
+  },
+  "progressEmptyTitle": "Noch keine Progress-Daten",
+  "@progressEmptyTitle": {
+    "description": "Titel für den Empty-State ohne Progress-Daten"
+  },
+  "progressEmptySubtitle": "Trainiere, um deinen Jahresverlauf zu sehen.",
+  "@progressEmptySubtitle": {
+    "description": "Untertitel für den Empty-State ohne Progress-Daten"
+  },
+  "progressLoadMore": "Mehr anzeigen",
+  "@progressLoadMore": {
+    "description": "Button-Beschriftung zum Nachladen weiterer Charts"
+  },
+  "progressBackfillAction": "Progress laden",
+  "@progressBackfillAction": {
+    "description": "Tooltip für die Backfill-Aktion auf der Progress-Seite"
+  },
+  "progressBackfillTitle": "Progress-Daten erstellen",
+  "@progressBackfillTitle": {
+    "description": "Dialogtitel für den Progress-Backfill"
+  },
+  "progressBackfillBody": "Deine bisherigen Workouts werden analysiert und der Jahresverlauf erzeugt. Das kann einen Moment dauern und zusätzliche Reads verursachen.",
+  "@progressBackfillBody": {
+    "description": "Dialogtext für den Progress-Backfill"
+  },
+  "progressBackfillConfirm": "Starten",
+  "@progressBackfillConfirm": {
+    "description": "Bestätigungsbutton für den Progress-Backfill"
+  },
+  "progressBackfillCancel": "Abbrechen",
+  "@progressBackfillCancel": {
+    "description": "Abbrechen-Button für den Progress-Backfill"
+  },
+  "progressBackfillDone": "Backfill fertig: {sessions} Sessions, {exercises} Übungen.",
+  "@progressBackfillDone": {
+    "description": "Snackbar-Text nach dem Backfill",
+    "placeholders": {
+      "sessions": {},
+      "exercises": {}
+    }
+  },
+  "progressInfoAction": "So funktioniert’s",
+  "@progressInfoAction": {
+    "description": "Tooltip für die Progress-Info-Aktion"
+  },
+  "progressInfoTitle": "So funktioniert Progress",
+  "@progressInfoTitle": {
+    "description": "Titel des Progress-Info-Dialogs"
+  },
+  "progressInfoBody": "Charts erscheinen, sobald eine Übung im ausgewählten Jahr mindestens 3 gespeicherte Sessions hat. Trainiere und speichere deine Workouts, um Progress aufzubauen. Nutze den \"Progress-Daten erstellen\" Button oben rechts, um deine Daten zu aktualisieren.",
+  "@progressInfoBody": {
+    "description": "Text im Progress-Info-Dialog"
+  },
+
   "homeWelcome": "Willkommen, {user}",
   "@homeWelcome": {
     "description": "Begrüßung im Home-Screen",
@@ -630,6 +699,16 @@
   "profileStatsRestTimerLabel": "Satztimer",
   "@profileStatsRestTimerLabel": {
     "description": "Beschriftung der Satzpausen-Kachel in den Profilstatistiken"
+  },
+
+  "profileStatsNfcScans": "NFC-Scans",
+  "@profileStatsNfcScans": {
+    "description": "Label für die Anzahl der NFC-Scans auf der Profil-Statistikseite"
+  },
+
+  "profileStatsNfcScansSubtitle": "insgesamt",
+  "@profileStatsNfcScansSubtitle": {
+    "description": "Untertitel für die NFC-Scan-Anzahl auf der Profil-Statistikseite"
   },
 
   "profileStatsFavoriteExercise": "Lieblingsübung",

@@ -6,6 +6,7 @@ class NutritionEntry {
   final int fat;
   final String meal;
   final String? barcode;
+  final String? recipeId;
   final double? qty;
 
   const NutritionEntry({
@@ -16,6 +17,7 @@ class NutritionEntry {
     required this.fat,
     required this.meal,
     this.barcode,
+    this.recipeId,
     this.qty,
   });
 
@@ -28,6 +30,7 @@ class NutritionEntry {
       fat: (data['fat'] as num?)?.round() ?? 0,
       meal: data['meal'] as String? ?? 'unspecified',
       barcode: data['barcode'] as String?,
+      recipeId: data['recipeId'] as String?,
       qty: (data['qty'] as num?)?.toDouble(),
     );
   }
@@ -40,6 +43,7 @@ class NutritionEntry {
     'fat': fat,
     'meal': meal,
     if (barcode != null) 'barcode': barcode,
+    if (recipeId != null) 'recipeId': recipeId,
     if (qty != null) 'qty': qty,
   };
 }

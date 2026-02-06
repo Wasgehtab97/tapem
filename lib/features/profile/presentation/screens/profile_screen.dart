@@ -55,6 +55,8 @@ class ProfileScreen extends riverpod.ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
+  static const bool _showTrainingOrb = true;
+  static const bool _showTrainingStartCard = false;
 
   @override
   void initState() {
@@ -578,83 +580,32 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       }
     }
 
-    // Bottom-Sheet je nach Situation:
+    // Start-Dialog je nach Situation:
     // - mit geplantem Plan: "Plan (heute)", "Anderer Plan", "Freestyle"
     // - ohne geplanten Plan: "Plan auswählen", "Freestyle"
-    await showModalBottomSheet<void>(
+    final hasPlannedPlan =
+        planId != null && planName != null && selectedPlan != null;
+    await showDialog<void>(
       context: context,
-      builder: (ctx) {
-        final theme = Theme.of(ctx);
-        final accent = theme.colorScheme.primary;
-
-        final hasPlannedPlan =
-            planId != null && planName != null && selectedPlan != null;
-
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              if (hasPlannedPlan)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Card(
-                    color: accent.withOpacity(0.12),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: accent,
-                        foregroundColor: Colors.black,
-                        child: const Icon(Icons.play_arrow_rounded),
-                      ),
-                      title: Text(
-                        'Plan ($planName)',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: accent,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Geplanter Plan für heute',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withOpacity(0.7),
-                        ),
-                      ),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        startPlanned();
-                      },
-                    ),
-                  ),
-                ),
-              if (hasPlannedPlan) const SizedBox(height: 4),
-              ListTile(
-                leading: const Icon(Icons.fitness_center_outlined),
-                title: const Text('Freestyle'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  startFreestyle();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_list_rounded),
-                title: Text(
-                  hasPlannedPlan ? 'Anderer Plan' : 'Plan auswählen',
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  startOtherPlan();
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
+      barrierColor: Colors.black54,
+      builder: (ctx) => _TrainingStartDialog(
+        planName: planName ?? '',
+        hasPlannedPlan: hasPlannedPlan,
+        onPlanned: hasPlannedPlan
+            ? () {
+                Navigator.pop(ctx);
+                startPlanned();
+              }
+            : null,
+        onFreestyle: () {
+          Navigator.pop(ctx);
+          startFreestyle();
+        },
+        onOtherPlan: () {
+          Navigator.pop(ctx);
+          startOtherPlan();
+        },
+      ),
     );
   }
 
@@ -1025,7 +976,9 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     final auth = ref.watch(authControllerProvider);
     final xp = ref.watch(xpProvider);
     final userId = auth.userId ?? '';
-    const avatarSize = 44.0;
+    final isActiveTraining =
+        ref.watch(workoutSessionDurationServiceProvider).isRunning;
+    const avatarSize = 52.0;
 
     final theme = Theme.of(context);
     final brandColor =
@@ -1067,6 +1020,17 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
+            if (_showTrainingOrb)
+              Expanded(
+                child: Center(
+                  child: _TrainingStartOrb(
+                    brandColor: brandColor,
+                    isActive: isActiveTraining,
+                    onTap: _handleStartTraining,
+                  ),
+                ),
+              ),
+            if (_showTrainingOrb) const SizedBox(height: AppSpacing.sm),
           ],
         ),
       );
@@ -1074,6 +1038,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 64,
         foregroundColor: brandColor,
         automaticallyImplyLeading: false,
         leadingWidth: avatarSize + AppSpacing.md * 2,
@@ -1106,6 +1071,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                       size: avatarSize,
                       xp: xp.dailyLevelXp,
                       level: xp.dailyLevel,
+                      strokeWidth: 5.0,
                     );
                   }),
                 ),
@@ -1181,6 +1147,10 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                       onTap: _showCoachingSheet,
                     ),
                   ),
+                ProfileProgressButton(
+                  onTap: () => Navigator.pushNamed(context, AppRouter.progress),
+                ),
+                const SizedBox(height: AppSpacing.sm),
                 ProfileHubButton(
                   onStatsTap: () {
                     Navigator.push(
@@ -1209,26 +1179,23 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                   },
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                // Training starten / stoppen – immer ganz unten
-                Builder(
-                  builder: (context) {
-                    final timerService =
-                        ref.watch(workoutSessionDurationServiceProvider);
-                    final isActiveTraining = timerService.isRunning;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                      ),
-                      child: GestureDetector(
-                        onTap: _handleStartTraining,
-                        child: _TrainingStartCard(
-                          brandColor: brandColor,
-                          isActive: isActiveTraining,
+                if (_showTrainingStartCard)
+                  Builder(
+                    builder: (context) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
                         ),
-                      ),
-                    );
-                  },
-                ),
+                        child: GestureDetector(
+                          onTap: _handleStartTraining,
+                          child: _TrainingStartCard(
+                            brandColor: brandColor,
+                            isActive: isActiveTraining,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -1371,6 +1338,318 @@ class _TrainingStartCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TrainingStartDialog extends StatelessWidget {
+  const _TrainingStartDialog({
+    required this.planName,
+    required this.hasPlannedPlan,
+    required this.onFreestyle,
+    required this.onOtherPlan,
+    this.onPlanned,
+  });
+
+  final String planName;
+  final bool hasPlannedPlan;
+  final VoidCallback onFreestyle;
+  final VoidCallback onOtherPlan;
+  final VoidCallback? onPlanned;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final accent = brand?.outline ?? theme.colorScheme.secondary;
+    final onSurface = theme.colorScheme.onSurface;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF1E1E1E).withOpacity(0.92),
+              const Color(0xFF0F0F0F).withOpacity(0.96),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.cardLg),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.55),
+              blurRadius: 30,
+              offset: const Offset(0, 18),
+            ),
+          ],
+          border: Border.all(
+            color: Colors.white.withOpacity(0.08),
+            width: 1,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.cardLg),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: SweepGradient(
+                            colors: [
+                              accent.withOpacity(0.95),
+                              accent.withOpacity(0.4),
+                              accent.withOpacity(0.95),
+                            ],
+                            stops: const [0.0, 0.5, 1.0],
+                          ),
+                        ),
+                        child: Container(
+                          margin: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withOpacity(0.85),
+                          ),
+                          child: Icon(
+                            Icons.play_arrow_rounded,
+                            color: accent,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Was steht heute an?',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Wähle deinen Startmodus',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (hasPlannedPlan)
+                    _TrainingStartOptionCard(
+                      title: 'Plan ($planName)',
+                      subtitle: 'Geplanter Plan für heute',
+                      icon: Icons.play_arrow_rounded,
+                      accent: accent,
+                      onTap: onPlanned,
+                      highlighted: true,
+                    ),
+                  if (hasPlannedPlan) const SizedBox(height: 10),
+                  _TrainingStartOptionCard(
+                    title: 'Freestyle',
+                    subtitle: 'Ohne Plan starten',
+                    icon: Icons.fitness_center_outlined,
+                    accent: accent,
+                    onTap: onFreestyle,
+                  ),
+                  const SizedBox(height: 10),
+                  _TrainingStartOptionCard(
+                    title: hasPlannedPlan ? 'Anderer Plan' : 'Plan auswählen',
+                    subtitle: 'Trainingsplan auswählen',
+                    icon: Icons.view_list_rounded,
+                    accent: accent,
+                    onTap: onOtherPlan,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TrainingStartOptionCard extends StatelessWidget {
+  const _TrainingStartOptionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+    this.highlighted = false,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accent;
+  final VoidCallback? onTap;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final highlight = highlighted ? accent.withOpacity(0.18) : Colors.white.withOpacity(0.04);
+
+    return BrandInteractiveCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      borderRadius: BorderRadius.circular(18),
+      enableScaleAnimation: true,
+      showShadow: false,
+      backgroundColor: highlight,
+      restingBorderColor: onSurface.withOpacity(0.08),
+      activeBorderColor: accent.withOpacity(0.45),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  accent.withOpacity(0.85),
+                  accent.withOpacity(0.35),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.black, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: onSurface.withOpacity(0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.arrow_forward_rounded,
+            color: onSurface.withOpacity(0.6),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrainingStartOrb extends StatelessWidget {
+  const _TrainingStartOrb({
+    required this.brandColor,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  final Color brandColor;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size.width * 0.42;
+    final outerSize = size.clamp(128.0, 180.0);
+    final innerSize = outerSize - 14;
+
+    return Semantics(
+      button: true,
+      label: isActive ? 'Training stoppen' : 'Training starten',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: outerSize,
+          height: outerSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: SweepGradient(
+              colors: [
+                brandColor.withOpacity(0.95),
+                brandColor.withOpacity(0.4),
+                brandColor.withOpacity(0.95),
+              ],
+              stops: const [0.0, 0.5, 1.0],
+              center: Alignment.center,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: brandColor.withOpacity(0.28),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Container(
+              width: innerSize,
+              height: innerSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withOpacity(0.85),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.06),
+                  width: 1,
+                ),
+              ),
+              child: Center(
+                child: Icon(
+                  isActive ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                  size: outerSize * 0.32,
+                  color: brandColor,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

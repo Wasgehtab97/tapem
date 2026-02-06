@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/logging/app_logger.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
 import 'package:tapem/features/coaching/application/coaching_providers.dart';
 import 'package:tapem/features/coaching/domain/models/coach_client_relation.dart';
@@ -122,10 +123,10 @@ class _CoachingHomeScreenState extends ConsumerState<CoachingHomeScreen> {
       ),
       body: relationsAsync.when(
         data: (relations) {
-          // ignore: avoid_print
-          print(
-            '[CoachingHome] data loaded count=${relations.length} '
-            'search="$_searchQuery" statusFilter=$_statusFilter',
+          AppLogger.d(
+            'data loaded count=${relations.length} search="$_searchQuery" '
+            'statusFilter=$_statusFilter',
+            tag: 'CoachingHome',
           );
           if (relations.isEmpty) {
             return _EmptyState(color: brandColor);
@@ -161,13 +162,15 @@ class _CoachingHomeScreenState extends ConsumerState<CoachingHomeScreen> {
           );
         },
         loading: () {
-          // ignore: avoid_print
-          print('[CoachingHome] loading relations…');
+          AppLogger.d('loading relations…', tag: 'CoachingHome');
           return const Center(child: CircularProgressIndicator());
         },
         error: (err, _) {
-          // ignore: avoid_print
-          print('[CoachingHome] ERROR loading relations -> $err');
+          AppLogger.w(
+            'error loading relations',
+            tag: 'CoachingHome',
+            error: err,
+          );
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),

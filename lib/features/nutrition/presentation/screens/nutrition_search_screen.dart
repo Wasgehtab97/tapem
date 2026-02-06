@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
@@ -168,16 +167,15 @@ class _NutritionSearchScreenState
       itemBuilder: (context, index) {
         final product = _results[index];
         
-        // Staggered fade-in animation
         return TweenAnimationBuilder<double>(
           tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 200 + (index * 50).clamp(0, 400)),
+          duration: Duration(milliseconds: 140 + (index * 28).clamp(0, 220)),
           curve: Curves.easeOut,
           builder: (context, value, child) {
             return Opacity(
               opacity: value,
               child: Transform.translate(
-                offset: Offset(0, 20 * (1 - value)),
+                offset: Offset(0, 8 * (1 - value)),
                 child: child,
               ),
             );
@@ -185,52 +183,65 @@ class _NutritionSearchScreenState
           child: NutritionCard(
             onTap: () => Navigator.of(context).pop(product),
             margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  product.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 6),
                 Row(
                   children: [
-                    MacroPill(
-                      label: '',
-                      value: '${product.kcalPer100} kcal',
-                      color: Theme.of(context)
-                          .extension<AppBrandTheme>()
-                          ?.outline ??
-                          Theme.of(context).colorScheme.secondary,
+                    Expanded(
+                      child: Text(
+                        product.name,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'P:${product.proteinPer100}g C:${product.carbsPer100}g F:${product.fatPer100}g',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.color
-                                  ?.withOpacity(0.6),
-                            ),
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      loc.nutritionProductPer100g,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.color
+                                ?.withOpacity(0.55),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '(${loc.nutritionProductPer100g})',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context)
-                            .textTheme
-                            .labelSmall
-                            ?.color
-                            ?.withOpacity(0.5),
-                      ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    MacroPill(
+                      label: 'Kcal',
+                      value: '${product.kcalPer100}',
+                      color: Theme.of(context).extension<AppBrandTheme>()?.outline ??
+                          Theme.of(context).colorScheme.secondary,
+                    ),
+                    MacroPill(
+                      label: 'P',
+                      value: '${product.proteinPer100} g',
+                      color: const Color(0xFFE53935),
+                    ),
+                    MacroPill(
+                      label: 'C',
+                      value: '${product.carbsPer100} g',
+                      color: AppColors.accentMint,
+                    ),
+                    MacroPill(
+                      label: 'F',
+                      value: '${product.fatPer100} g',
+                      color: AppColors.accentAmber,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -254,7 +265,6 @@ class _NutritionSearchScreenState
       body: SafeArea(
         child: Column(
           children: [
-            // Premium search field with glassmorphism
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.sm,
@@ -262,9 +272,8 @@ class _NutritionSearchScreenState
                 AppSpacing.sm,
                 AppSpacing.xs,
               ),
-              child: HeroGradientCard(
-                enableBackdropBlur: true,
-                padding: const EdgeInsets.all(AppSpacing.md),
+              child: NutritionCard(
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -288,17 +297,17 @@ class _NutritionSearchScreenState
                       decoration: InputDecoration(
                         hintText: loc.nutritionSearchHint,
                         filled: true,
-                        fillColor: theme.scaffoldBackgroundColor.withOpacity(0.5),
+                        fillColor: theme.scaffoldBackgroundColor.withOpacity(0.35),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.card),
                           borderSide: BorderSide(
-                            color: brandColor.withOpacity(0.2),
+                            color: brandColor.withOpacity(0.15),
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.card),
                           borderSide: BorderSide(
-                            color: brandColor.withOpacity(0.2),
+                            color: brandColor.withOpacity(0.15),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(

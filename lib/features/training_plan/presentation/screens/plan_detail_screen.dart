@@ -34,6 +34,7 @@ class PlanDetailScreen extends ConsumerStatefulWidget {
 class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
   Map<String, String> _resolvedNames = {};
   bool _hydratingNames = false;
+  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -299,6 +300,59 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     return names;
   }
 
+  Future<void> _confirmAndDeletePlan({
+    required String planId,
+    required String ownerUserId,
+    required String planName,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Trainingsplan löschen'),
+        content: Text(
+          'Möchtest du den Plan "$planName" wirklich löschen?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    setState(() => _isDeleting = true);
+    try {
+      await ref.read(planBuilderProvider.notifier).deleteCurrentPlan(
+            planId: planId,
+            ownerUserId: ownerUserId,
+          );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Löschen fehlgeschlagen: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final draft = ref.watch(planBuilderProvider);
@@ -309,7 +363,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     final planId = widget.plan?.id ?? draft.originalId;
 
     final authState = ref.watch(authViewStateProvider);
-    final ownerUserId = widget.plan?.clientId ?? authState.userId;
+    final ownerUserId = widget.plan?.clientId ?? draft.targetUserId ?? authState.userId;
 
     final statsAsync = (planId != null && ownerUserId != null)
         ? ref.watch(
@@ -428,6 +482,24 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                   );
                 }
               },
+            ),
+          if (planId != null && ownerUserId != null)
+            IconButton(
+              icon: _isDeleting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_outline),
+              tooltip: 'Trainingsplan löschen',
+              onPressed: _isDeleting
+                  ? null
+                  : () => _confirmAndDeletePlan(
+                        planId: planId,
+                        ownerUserId: ownerUserId,
+                        planName: draft.name.isEmpty ? 'Trainingsplan' : draft.name,
+                      ),
             ),
           IconButton(
              icon: const Icon(Icons.add),

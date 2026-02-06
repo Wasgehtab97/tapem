@@ -133,11 +133,6 @@ class OverlayNumericKeypadController extends ChangeNotifier {
   TextEditingController? get target => _target;
   double get keypadContentHeight => _isOpen ? _contentHeight : 0.0;
 
-  void _setAlphaMode(bool value) {
-    alphaMode = value;
-    notifyListeners();
-  }
-
   void toggleShift() {
     shift = !shift;
     notifyListeners();

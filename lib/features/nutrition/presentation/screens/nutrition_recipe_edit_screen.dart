@@ -5,10 +5,10 @@ import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_product.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_recipe.dart';
-import 'package:tapem/features/nutrition/domain/models/nutrition_entry.dart';
 import 'package:tapem/features/nutrition/presentation/widgets/nutrition_ui.dart';
 import 'package:tapem/features/nutrition/providers/nutrition_provider.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_totals.dart';
+import 'package:tapem/features/nutrition/domain/utils/nutrition_recipe_math.dart';
 import 'package:tapem/features/nutrition/providers/nutrition_product_provider.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
@@ -55,19 +55,26 @@ class _NutritionRecipeEditScreenState
     super.dispose();
   }
 
-  NutritionTotals _sum() {
-    int scale(int per100, double grams) => ((per100 * grams) / 100).round();
-    int kcal = 0, protein = 0, carbs = 0, fat = 0;
-    for (final ing in _ingredients) {
-      kcal += scale(ing.kcalPer100, ing.grams);
-      protein += scale(ing.proteinPer100, ing.grams);
-      carbs += scale(ing.carbsPer100, ing.grams);
-      fat += scale(ing.fatPer100, ing.grams);
-    }
-    return NutritionTotals(kcal: kcal, protein: protein, carbs: carbs, fat: fat);
+  RecipeNutritionSummary _summary() {
+    return summarizeRecipeIngredients(_ingredients);
   }
 
-  Future<void> _save() async {
+  NutritionTotals _sum() {
+    return _summary().totals;
+  }
+
+  String _formatGrams(double grams) {
+    if (grams % 1 == 0) return grams.toInt().toString();
+    return grams.toStringAsFixed(1);
+  }
+
+  double _parseGramsInput(String raw, {required double fallback}) {
+    final parsed = double.tryParse(raw.trim().replaceAll(',', '.'));
+    if (parsed == null || parsed <= 0) return fallback;
+    return parsed;
+  }
+
+  Future<void> _saveRecipe({required bool closeAfterSave}) async {
     final name = _nameController.text.trim();
     if (name.isEmpty || _ingredients.isEmpty) return;
     final uid = ref.read(authControllerProvider).userId;
@@ -75,41 +82,58 @@ class _NutritionRecipeEditScreenState
     setState(() => _saving = true);
 
     try {
-      if (widget.isLogMode) {
-        // --- LOG MODE: Add Entry ---
-        final sum = _sum();
-        await ref.read(nutritionProvider).addEntry(
-              uid: uid,
-              date: widget.logDate ?? ref.read(nutritionProvider).selectedDate,
-              entry: NutritionEntry(
-                name: name,
-                meal: _selectedMeal, // Use selected meal from picker
-                kcal: sum.kcal,
-                protein: sum.protein,
-                carbs: sum.carbs,
-                fat: sum.fat,
-                qty: 100, // Normalized, we calculated totals
-              ),
-            );
-        if (!mounted) return;
-        Navigator.of(context).pop();
-        // Maybe pop back to home or stay? usually pop back.
-        // If we came from "Select Dish", we are now done.
-         // Pop one more time if needed? No, ListScreen will handle it.
-         // Actually, ListScreen is "Select Dish". We pop EditScreen -> ListScreen.
-         // If user wants to add more, they stay in ListScreen. Good.
-      } else {
-        // --- EDIT MODE: Save Recipe ---
-        final recipe = NutritionRecipe(
-          id: widget.recipe?.id ?? '',
-          name: name,
-          ingredients: List.of(_ingredients),
-          updatedAt: DateTime.now(),
-        );
-        await ref.read(nutritionProvider).saveRecipe(uid: uid, recipe: recipe);
-        if (!mounted) return;
+      final recipe = NutritionRecipe(
+        id: widget.recipe?.id ?? '',
+        name: name,
+        ingredients: List.of(_ingredients),
+        updatedAt: DateTime.now(),
+      );
+      await ref.read(nutritionProvider).saveRecipe(uid: uid, recipe: recipe);
+      if (!mounted) return;
+      if (closeAfterSave) {
         Navigator.of(context).pop(true);
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Gericht gespeichert.')));
       }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _saveRecipeAndClose() {
+    return _saveRecipe(closeAfterSave: true);
+  }
+
+  Future<void> _saveRecipeOnly() {
+    return _saveRecipe(closeAfterSave: false);
+  }
+
+  Future<void> _addToDay() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty || _ingredients.isEmpty) return;
+    final uid = ref.read(authControllerProvider).userId;
+    if (uid == null || uid.isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      final recipeId = (widget.recipe?.id ?? '').trim();
+      final draftRecipe = NutritionRecipe(
+        id: recipeId,
+        name: name,
+        ingredients: List.of(_ingredients),
+        updatedAt: DateTime.now(),
+      );
+      await ref
+          .read(nutritionProvider)
+          .addRecipeToMeal(
+            uid: uid,
+            date: widget.logDate ?? ref.read(nutritionProvider).selectedDate,
+            recipe: draftRecipe,
+            meal: _selectedMeal,
+          );
+      if (!mounted) return;
+      Navigator.of(context).pop();
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -120,7 +144,9 @@ class _NutritionRecipeEditScreenState
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Gericht löschen?'),
-        content: const Text('Möchtest du dieses Gericht wirklich unwiderruflich löschen?'),
+        content: const Text(
+          'Möchtest du dieses Gericht wirklich unwiderruflich löschen?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -142,7 +168,9 @@ class _NutritionRecipeEditScreenState
 
     setState(() => _saving = true);
     try {
-      await ref.read(nutritionProvider).deleteRecipe(uid: uid, id: widget.recipe!.id);
+      await ref
+          .read(nutritionProvider)
+          .deleteRecipe(uid: uid, id: widget.recipe!.id);
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } finally {
@@ -173,16 +201,18 @@ class _NutritionRecipeEditScreenState
                 ),
                 TextField(
                   controller: barcodeCtrl,
-                  decoration:
-                      const InputDecoration(labelText: 'Barcode (optional)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Barcode (optional)',
+                  ),
                 ),
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: kcalCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'kcal /100g'),
+                        decoration: const InputDecoration(
+                          labelText: 'kcal /100g',
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -190,10 +220,10 @@ class _NutritionRecipeEditScreenState
                     Expanded(
                       child: TextField(
                         controller: gramsCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'Gramm'),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(labelText: 'Gramm'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                       ),
                     ),
                   ],
@@ -203,8 +233,9 @@ class _NutritionRecipeEditScreenState
                     Expanded(
                       child: TextField(
                         controller: pCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'Protein /100g'),
+                        decoration: const InputDecoration(
+                          labelText: 'Protein /100g',
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -212,8 +243,9 @@ class _NutritionRecipeEditScreenState
                     Expanded(
                       child: TextField(
                         controller: cCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'Carbs /100g'),
+                        decoration: const InputDecoration(
+                          labelText: 'Carbs /100g',
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -221,8 +253,9 @@ class _NutritionRecipeEditScreenState
                     Expanded(
                       child: TextField(
                         controller: fCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'Fett /100g'),
+                        decoration: const InputDecoration(
+                          labelText: 'Fett /100g',
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -249,7 +282,7 @@ class _NutritionRecipeEditScreenState
                   proteinPer100: int.tryParse(pCtrl.text) ?? 0,
                   carbsPer100: int.tryParse(cCtrl.text) ?? 0,
                   fatPer100: int.tryParse(fCtrl.text) ?? 0,
-                  grams: double.tryParse(gramsCtrl.text) ?? 100,
+                  grams: _parseGramsInput(gramsCtrl.text, fallback: 100),
                 );
                 Navigator.of(ctx).pop(ing);
               },
@@ -266,10 +299,9 @@ class _NutritionRecipeEditScreenState
   }
 
   Future<void> _addFromProduct() async {
-    final result = await Navigator.of(context).pushNamed(
-      AppRouter.nutritionSearch,
-      arguments: {'query': ''},
-    );
+    final result = await Navigator.of(
+      context,
+    ).pushNamed(AppRouter.nutritionSearch, arguments: {'query': ''});
     if (result is! NutritionProduct) return;
     final gramsCtrl = TextEditingController(text: '100');
     await showDialog(
@@ -279,8 +311,7 @@ class _NutritionRecipeEditScreenState
           title: Text(result.name),
           content: TextField(
             controller: gramsCtrl,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(labelText: 'Gramm'),
           ),
           actions: [
@@ -290,7 +321,7 @@ class _NutritionRecipeEditScreenState
             ),
             TextButton(
               onPressed: () {
-                final grams = double.tryParse(gramsCtrl.text) ?? 100;
+                final grams = _parseGramsInput(gramsCtrl.text, fallback: 100);
                 final ing = RecipeIngredient(
                   name: result.name,
                   barcode: result.barcode,
@@ -315,10 +346,9 @@ class _NutritionRecipeEditScreenState
   }
 
   Future<void> _addFromScan() async {
-    final barcode = await Navigator.of(context).pushNamed(
-      AppRouter.nutritionScan,
-      arguments: {'returnBarcode': true},
-    );
+    final barcode = await Navigator.of(
+      context,
+    ).pushNamed(AppRouter.nutritionScan, arguments: {'returnBarcode': true});
     if (barcode is! String || barcode.isEmpty) return;
     final service = ref.read(nutritionProductServiceProvider);
     final product = await service.getByBarcode(barcode);
@@ -331,8 +361,7 @@ class _NutritionRecipeEditScreenState
           title: Text(product.name),
           content: TextField(
             controller: gramsCtrl,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(labelText: 'Gramm'),
           ),
           actions: [
@@ -342,7 +371,7 @@ class _NutritionRecipeEditScreenState
             ),
             TextButton(
               onPressed: () {
-                final grams = double.tryParse(gramsCtrl.text) ?? 100;
+                final grams = _parseGramsInput(gramsCtrl.text, fallback: 100);
                 final ing = RecipeIngredient(
                   name: product.name,
                   barcode: product.barcode,
@@ -367,9 +396,7 @@ class _NutritionRecipeEditScreenState
   }
 
   Future<void> _editGrams(RecipeIngredient ing) async {
-    final gramsCtrl = TextEditingController(
-      text: ing.grams.toStringAsFixed(0),
-    );
+    final gramsCtrl = TextEditingController(text: _formatGrams(ing.grams));
     await showDialog(
       context: context,
       builder: (ctx) {
@@ -377,8 +404,7 @@ class _NutritionRecipeEditScreenState
           title: Text(ing.name),
           content: TextField(
             controller: gramsCtrl,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(labelText: 'Gramm'),
           ),
           actions: [
@@ -388,7 +414,9 @@ class _NutritionRecipeEditScreenState
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(ctx).pop(double.tryParse(gramsCtrl.text) ?? ing.grams);
+                Navigator.of(
+                  ctx,
+                ).pop(_parseGramsInput(gramsCtrl.text, fallback: ing.grams));
               },
               child: const Text('Übernehmen'),
             ),
@@ -419,7 +447,7 @@ class _NutritionRecipeEditScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final sum = _sum();
-    
+
     // Title logic
     String title = 'Gericht erstellen';
     if (widget.isLogMode) {
@@ -436,13 +464,24 @@ class _NutritionRecipeEditScreenState
           if (widget.recipe != null && !widget.isLogMode)
             IconButton(
               onPressed: _saving ? null : _delete,
-              icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.redAccent,
+              ),
               tooltip: 'Gericht löschen',
             ),
-          IconButton(
-            onPressed: _saving ? null : _save,
-            icon: Icon(widget.isLogMode ? Icons.check_rounded : Icons.save_rounded),
-          ),
+          if (widget.isLogMode)
+            TextButton.icon(
+              onPressed: _saving ? null : _saveRecipeOnly,
+              icon: const Icon(Icons.save_rounded, size: 18),
+              label: const Text('Speichern'),
+            )
+          else
+            IconButton(
+              onPressed: _saving ? null : _saveRecipeAndClose,
+              icon: const Icon(Icons.save_rounded),
+              tooltip: 'Gericht speichern',
+            ),
         ],
       ),
       body: SafeArea(
@@ -545,7 +584,9 @@ class _NutritionRecipeEditScreenState
                 const SizedBox(width: 8),
                 Text(
                   'Zutaten',
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -563,12 +604,15 @@ class _NutritionRecipeEditScreenState
             else
               ..._ingredients.map((ing) {
                 final brand = theme.extension<AppBrandTheme>();
-                final brandColor = brand?.outline ?? theme.colorScheme.secondary;
-                
+                final brandColor =
+                    brand?.outline ?? theme.colorScheme.secondary;
+
                 return BrandInteractiveCard(
                   margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                   padding: const EdgeInsets.all(AppSpacing.sm),
-                  backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.35),
+                  backgroundColor: theme.scaffoldBackgroundColor.withOpacity(
+                    0.35,
+                  ),
                   showShadow: false,
                   enableScaleAnimation: false,
                   child: Column(
@@ -590,74 +634,88 @@ class _NutritionRecipeEditScreenState
                                   Text(
                                     ing.barcode!,
                                     style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.4),
                                     ),
                                   ),
                               ],
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
-                            color: Colors.redAccent.withOpacity(0.7),
-                            onPressed: () => setState(() => _ingredients.remove(ing)),
+                            icon: const Icon(Icons.more_horiz_rounded, size: 20),
+                            onPressed: () async {
+                              final action = await showModalBottomSheet<String>(
+                                context: context,
+                                showDragHandle: true,
+                                builder: (ctx) => SafeArea(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ListTile(
+                                        leading: const Icon(Icons.edit_rounded),
+                                        title: const Text('Menge bearbeiten'),
+                                        onTap: () => Navigator.of(ctx).pop('edit'),
+                                      ),
+                                      ListTile(
+                                        leading: const Icon(
+                                          Icons.delete_outline_rounded,
+                                          color: Colors.redAccent,
+                                        ),
+                                        title: const Text('Zutat entfernen'),
+                                        onTap: () => Navigator.of(ctx).pop('delete'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                              if (!mounted || action == null) return;
+                              if (action == 'edit') {
+                                await _editGrams(ing);
+                                return;
+                              }
+                              setState(() => _ingredients.remove(ing));
+                            },
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           Expanded(
                             child: Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
+                              spacing: 6,
+                              runSpacing: 6,
                               children: [
                                 _SmallMacroPill(
                                   label: 'kcal',
-                                  value: '${((ing.kcalPer100 * ing.grams) / 100).round()}',
+                                  value:
+                                      '${((ing.kcalPer100 * ing.grams) / 100).round()}',
                                   color: Colors.blueAccent,
                                 ),
                                 _SmallMacroPill(
                                   label: 'P',
-                                  value: '${((ing.proteinPer100 * ing.grams) / 100).round()}g',
+                                  value:
+                                      '${((ing.proteinPer100 * ing.grams) / 100).round()}g',
                                   color: Colors.redAccent,
                                 ),
                                 _SmallMacroPill(
                                   label: 'C',
-                                  value: '${((ing.carbsPer100 * ing.grams) / 100).round()}g',
+                                  value:
+                                      '${((ing.carbsPer100 * ing.grams) / 100).round()}g',
                                   color: Colors.greenAccent.shade400,
                                 ),
                                 _SmallMacroPill(
                                   label: 'F',
-                                  value: '${((ing.fatPer100 * ing.grams) / 100).round()}g',
+                                  value:
+                                      '${((ing.fatPer100 * ing.grams) / 100).round()}g',
                                   color: Colors.amber.shade700,
                                 ),
+                                _SmallMacroPill(
+                                  label: 'g',
+                                  value: _formatGrams(ing.grams),
+                                  color: brandColor,
+                                ),
                               ],
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => _editGrams(ing),
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: brandColor.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: brandColor.withOpacity(0.2)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '${ing.grams.toStringAsFixed(0)} g',
-                                    style: theme.textTheme.labelLarge?.copyWith(
-                                      color: brandColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(Icons.edit_rounded, size: 14, color: brandColor),
-                                ],
-                              ),
                             ),
                           ),
                         ],
@@ -670,7 +728,9 @@ class _NutritionRecipeEditScreenState
             PrimaryCTA(
               label: widget.isLogMode ? 'Hinzufügen' : 'Gericht speichern',
               icon: widget.isLogMode ? Icons.check : Icons.save,
-              onPressed: _saving ? null : _save,
+              onPressed: _saving
+                  ? null
+                  : (widget.isLogMode ? _addToDay : _saveRecipeAndClose),
             ),
           ],
         ),
@@ -694,33 +754,39 @@ class _MiniActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
-    final brandColor = brand?.outline ?? theme.colorScheme.secondary; 
-    
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceVariant.withOpacity(0.25),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: brandColor.withOpacity(0.15),
+    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceVariant.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: brandColor.withOpacity(0.16)),
           ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 24, color: brandColor),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.2,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: brandColor),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

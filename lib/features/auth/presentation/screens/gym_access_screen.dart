@@ -5,6 +5,7 @@ import 'package:tapem/core/analytics/analytics_service.dart';
 import 'package:tapem/core/constants.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/shared_preferences_provider.dart';
+import 'package:tapem/core/widgets/network_circle_avatar.dart';
 import 'package:tapem/core/widgets/offline_banner.dart';
 import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 import 'package:tapem/features/auth/presentation/widgets/auth_background.dart';
@@ -83,16 +84,10 @@ class _GymAccessScreenState extends ConsumerState<GymAccessScreen> {
                 Center(
                   child: Hero(
                     tag: 'gym-logo-${gym.id}',
-                    child: gym.logoUrl != null
-                        ? CircleAvatar(
-                            radius: 36,
-                            backgroundImage: NetworkImage(gym.logoUrl!),
-                            backgroundColor: Colors.white.withOpacity(0.1),
-                          )
-                        : const CircleAvatar(
-                            radius: 36,
-                            child: Icon(Icons.fitness_center_outlined),
-                          ),
+                    child: NetworkCircleAvatar(
+                      url: gym.logoUrl,
+                      radius: 36,
+                    ),
                   ),
                 ),
                 const SizedBox(height: AuthTheme.spacingS),

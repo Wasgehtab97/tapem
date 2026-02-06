@@ -413,6 +413,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historySessionsChartSemantics => 'Sessions over time chart';
 
   @override
+  String get progressTitle => 'Progress';
+
+  @override
+  String get progressButtonTitle => 'Progress';
+
+  @override
+  String get progressButtonSubtitle => 'Workout history overview';
+
+  @override
+  String get progressYearLabel => 'Year';
+
+  @override
+  String get progressEmptyTitle => 'No progress data yet';
+
+  @override
+  String get progressEmptySubtitle => 'Complete workouts to see your yearly progress.';
+
+  @override
+  String get progressLoadMore => 'Show more';
+
+  @override
+  String get progressBackfillAction => 'Backfill progress';
+
+  @override
+  String get progressBackfillTitle => 'Generate progress data';
+
+  @override
+  String get progressBackfillBody => 'This will scan your past workouts and generate yearly progress charts. It may take a moment and uses additional reads.';
+
+  @override
+  String get progressBackfillConfirm => 'Start';
+
+  @override
+  String get progressBackfillCancel => 'Cancel';
+
+  @override
+  String progressBackfillDone(Object sessions, Object exercises) {
+    return 'Backfill done: $sessions sessions, $exercises exercises.';
+  }
+
+  @override
+  String get progressInfoAction => 'How it works';
+
+  @override
+  String get progressInfoTitle => 'How progress works';
+
+  @override
+  String get progressInfoBody => 'Charts appear when an exercise has at least 3 saved sessions in the selected year. Train and save your workouts to build progress. Use the \"Generate progress data\" button in the top right to refresh your data.';
+
+  @override
   String homeWelcome(Object user) {
     return 'Welcome, $user';
   }
@@ -499,6 +549,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileStatsRestTimerLabel => 'Rest timer';
+
+  @override
+  String get profileStatsNfcScans => 'NFC scans';
+
+  @override
+  String get profileStatsNfcScansSubtitle => 'total scans';
 
   @override
   String get profileStatsFavoriteExercise => 'Favourite exercise';

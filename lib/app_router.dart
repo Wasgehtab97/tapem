@@ -13,6 +13,7 @@ import 'package:tapem/features/device/presentation/screens/workout_day_screen.da
 import 'package:tapem/features/device/presentation/widgets/workout_day_table_card.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/features/history/presentation/screens/history_screen.dart';
+import 'package:tapem/features/progress/presentation/screens/progress_screen.dart';
 import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_admin_screen.dart';
 import 'package:tapem/features/home/presentation/screens/home_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/branding_screen.dart';
@@ -84,6 +85,7 @@ class AppRouter {
   static const device = '/device';
   static const exerciseList = '/exercise_list';
   static const history = '/history';
+  static const progress = '/progress';
   static const report = '/report';
   static const admin = '/admin';
   static const adminDevices = '/admin_devices';
@@ -132,11 +134,7 @@ class AppRouter {
   static const nutritionRecipeEdit = '/nutrition/recipes/edit';
   static const adminDeals = '/admin/deals';
 
-  static const restrictedRoutesForMembers = {
-    report,
-    admin,
-    deals,
-  };
+  static const restrictedRoutesForMembers = {report, admin, deals};
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     final deepLink = _routeFromGymPath(settings);
@@ -144,7 +142,8 @@ class AppRouter {
       return deepLink;
     }
     final authState = _readAuthState();
-    final isRestricted = FF.limitTabsForMembers &&
+    final isRestricted =
+        FF.limitTabsForMembers &&
         !(authState?.isAdmin ?? false) &&
         restrictedRoutesForMembers.contains(settings.name);
     if (isRestricted) {
@@ -166,18 +165,14 @@ class AppRouter {
         if (gymId == null || gymId.isEmpty) {
           return MaterialPageRoute(builder: (_) => const GymEntryScreen());
         }
-        return MaterialPageRoute(
-          builder: (_) => GymAccessScreen(gymId: gymId),
-        );
+        return MaterialPageRoute(builder: (_) => GymAccessScreen(gymId: gymId));
 
       case gymLogin:
         final gymId = settings.arguments as String?;
         if (gymId == null || gymId.isEmpty) {
           return MaterialPageRoute(builder: (_) => const GymEntryScreen());
         }
-        return MaterialPageRoute(
-          builder: (_) => GymLoginScreen(gymId: gymId),
-        );
+        return MaterialPageRoute(builder: (_) => GymLoginScreen(gymId: gymId));
 
       case gymRegisterMethod:
         final gymId = settings.arguments as String?;
@@ -193,18 +188,14 @@ class AppRouter {
         if (args is! GymRegisterArgs) {
           return MaterialPageRoute(builder: (_) => const GymEntryScreen());
         }
-        return MaterialPageRoute(
-          builder: (_) => GymRegisterScreen(args: args),
-        );
+        return MaterialPageRoute(builder: (_) => GymRegisterScreen(args: args));
 
       case gymJoin:
         final gymId = settings.arguments as String?;
         if (gymId == null || gymId.isEmpty) {
           return MaterialPageRoute(builder: (_) => const GymEntryScreen());
         }
-        return MaterialPageRoute(
-          builder: (_) => GymJoinScreen(gymId: gymId),
-        );
+        return MaterialPageRoute(builder: (_) => GymJoinScreen(gymId: gymId));
 
       case gymAddMembership:
         return MaterialPageRoute(
@@ -220,17 +211,13 @@ class AppRouter {
           '🔀 [Router] home initialIndex=$initialIndex (name=${settings.name})',
         );
         return MaterialPageRoute(
-          builder: (_) => GymContextGuard(
-            child: HomeScreen(initialIndex: initialIndex),
-          ),
+          builder: (_) =>
+              GymContextGuard(child: HomeScreen(initialIndex: initialIndex)),
         );
 
       case device:
         return onGenerateRoute(
-          RouteSettings(
-            name: workoutDay,
-            arguments: settings.arguments,
-          ),
+          RouteSettings(name: workoutDay, arguments: settings.arguments),
         );
 
       case workoutDay:
@@ -248,10 +235,7 @@ class AppRouter {
           '🔀 [Router] workoutDay args gymId=$gymId deviceId=$deviceId exerciseId=$exerciseId planId=$planId planName=$planName',
         );
         return MaterialPageRoute(
-          settings: RouteSettings(
-            name: workoutDay,
-            arguments: rawArgs,
-          ),
+          settings: RouteSettings(name: workoutDay, arguments: rawArgs),
           builder: (_) => WorkoutDayScreen(
             gymId: gymId,
             deviceId: deviceId,
@@ -265,11 +249,10 @@ class AppRouter {
       case exerciseList:
         final args = settings.arguments as Map<String, String>;
         return MaterialPageRoute(
-          builder:
-              (_) => ExerciseListScreen(
-                gymId: args['gymId']!,
-                deviceId: args['deviceId']!,
-              ),
+          builder: (_) => ExerciseListScreen(
+            gymId: args['gymId']!,
+            deviceId: args['deviceId']!,
+          ),
         );
 
       case history:
@@ -285,6 +268,9 @@ class AppRouter {
             ownerUserId: args['userId'] as String?,
           ),
         );
+
+      case progress:
+        return MaterialPageRoute(builder: (_) => const ProgressScreen());
 
       case report:
         return MaterialPageRoute(
@@ -307,7 +293,9 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const NutritionGoalsScreen());
 
       case nutritionCalendar:
-        return MaterialPageRoute(builder: (_) => const NutritionCalendarScreen());
+        return MaterialPageRoute(
+          builder: (_) => const NutritionCalendarScreen(),
+        );
 
       case nutritionEntry:
         final args = settings.arguments as Map<String, dynamic>? ?? const {};
@@ -320,6 +308,7 @@ class AppRouter {
             initialQty: (args['qty'] as num?)?.toDouble(),
             entryIndex: args['index'] as int?,
             initialDate: args['date'] as DateTime?,
+            initialRecipe: args['recipe'] as NutritionRecipe?,
           ),
         );
 
@@ -344,9 +333,8 @@ class AppRouter {
       case nutritionSearch:
         final args = settings.arguments as Map<String, dynamic>? ?? const {};
         return MaterialPageRoute(
-          builder: (_) => NutritionSearchScreen(
-            initialQuery: args['query'] as String?,
-          ),
+          builder: (_) =>
+              NutritionSearchScreen(initialQuery: args['query'] as String?),
         );
       case nutritionRecipes:
         final args = settings.arguments as Map<String, dynamic>? ?? const {};
@@ -359,22 +347,29 @@ class AppRouter {
         );
       case nutritionRecipeEdit:
         final rawArgs = settings.arguments;
-        debugPrint('🔀 [Router] nutritionRecipeEdit rawArgs=$rawArgs');
         NutritionRecipe? recipe;
+        bool isLogMode = false;
+        String? logMeal;
+        DateTime? logDate;
+
         if (rawArgs is NutritionRecipe) {
           recipe = rawArgs;
         } else if (rawArgs is Map) {
-          debugPrint('🔀 [Router] rawArgs is Map. Keys: ${rawArgs.keys}');
           final val = rawArgs['recipe'];
           if (val is NutritionRecipe) {
             recipe = val;
-          } else {
-             debugPrint('🔀 [Router] rawArgs["recipe"] is $val (${val.runtimeType})');
           }
+          isLogMode = rawArgs['isLogMode'] as bool? ?? false;
+          logMeal = rawArgs['meal'] as String?;
+          logDate = rawArgs['date'] as DateTime?;
         }
-        debugPrint('🔀 [Router] Final recipe: ${recipe?.name} (id=${recipe?.id})');
         return MaterialPageRoute(
-          builder: (_) => NutritionRecipeEditScreen(recipe: recipe),
+          builder: (_) => NutritionRecipeEditScreen(
+            recipe: recipe,
+            isLogMode: isLogMode,
+            logMeal: logMeal,
+            logDate: logDate,
+          ),
         );
 
       case community:
@@ -393,52 +388,39 @@ class AppRouter {
 
       case admin:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(
-            child: AdminDashboardScreen(),
-          ),
+          builder: (_) => const GymContextGuard(child: AdminDashboardScreen()),
         );
 
       case adminDevices:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(
-            child: AdminDevicesScreen(),
-          ),
+          builder: (_) => const GymContextGuard(child: AdminDevicesScreen()),
         );
 
       case adminRemoveUsers:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(
-            child: AdminRemoveUsersScreen(),
-          ),
+          builder: (_) =>
+              const GymContextGuard(child: AdminRemoveUsersScreen()),
         );
 
       case manageChallenges:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(
-            child: ChallengeAdminScreen(),
-          ),
+          builder: (_) => const GymContextGuard(child: ChallengeAdminScreen()),
         );
 
       case adminSymbols:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(
-            child: AdminSymbolsScreen(),
-          ),
+          builder: (_) => const GymContextGuard(child: AdminSymbolsScreen()),
         );
 
       case userSymbols:
         final uid = settings.arguments as String? ?? '';
         return MaterialPageRoute(
-          builder: (_) => GymContextGuard(
-            child: UserSymbolsScreen(uid: uid),
-          ),
+          builder: (_) => GymContextGuard(child: UserSymbolsScreen(uid: uid)),
         );
 
       case adminDeals:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(
-            child: AdminDealsScreen(),
-          ),
+          builder: (_) => const GymContextGuard(child: AdminDealsScreen()),
         );
 
       case deals:
@@ -447,11 +429,10 @@ class AppRouter {
       case rank:
         final args = settings.arguments as Map<String, String>? ?? const {};
         return MaterialPageRoute(
-          builder:
-              (_) => RankScreen(
-                gymId: args['gymId'] ?? '',
-                deviceId: args['deviceId'] ?? '',
-              ),
+          builder: (_) => RankScreen(
+            gymId: args['gymId'] ?? '',
+            deviceId: args['deviceId'] ?? '',
+          ),
         );
 
       case selectGym:
@@ -469,24 +450,19 @@ class AppRouter {
 
       case planOverview:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(
-            child: PlanOverviewScreen(),
-          ),
+          builder: (_) => const GymContextGuard(child: PlanOverviewScreen()),
         );
 
       case trainingPlanDetail:
         final plan = settings.arguments as TrainingPlan?;
         return MaterialPageRoute(
-          builder: (_) => GymContextGuard(
-            child: PlanDetailScreen(plan: plan),
-          ),
+          builder: (_) => GymContextGuard(child: PlanDetailScreen(plan: plan)),
         );
 
       case trainingPlanPicker:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(
-            child: PlanExercisePickerScreen(),
-          ),
+          builder: (_) =>
+              const GymContextGuard(child: PlanExercisePickerScreen()),
         );
 
       case resetPassword:
@@ -522,11 +498,10 @@ class AppRouter {
       case surveyVote:
         final args = settings.arguments as Map<String, String>? ?? const {};
         return MaterialPageRoute(
-          builder:
-              (_) => SurveyVoteScreen(
-                gymId: args['gymId'] ?? '',
-                userId: args['userId'] ?? '',
-              ),
+          builder: (_) => SurveyVoteScreen(
+            gymId: args['gymId'] ?? '',
+            userId: args['userId'] ?? '',
+          ),
         );
 
       case friendsHome:

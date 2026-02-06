@@ -490,6 +490,75 @@
     "description": "Semantics label for sessions chart"
   },
 
+  "progressTitle": "Progress",
+  "@progressTitle": {
+    "description": "Title of the progress screen"
+  },
+  "progressButtonTitle": "Progress",
+  "@progressButtonTitle": {
+    "description": "Label for the Progress button on the profile screen"
+  },
+  "progressButtonSubtitle": "Workout history overview",
+  "@progressButtonSubtitle": {
+    "description": "Subtitle for the Progress button on the profile screen"
+  },
+  "progressYearLabel": "Year",
+  "@progressYearLabel": {
+    "description": "Label for the year selector on the progress screen"
+  },
+  "progressEmptyTitle": "No progress data yet",
+  "@progressEmptyTitle": {
+    "description": "Empty state title when no progress data is available"
+  },
+  "progressEmptySubtitle": "Complete workouts to see your yearly progress.",
+  "@progressEmptySubtitle": {
+    "description": "Empty state subtitle when no progress data is available"
+  },
+  "progressLoadMore": "Show more",
+  "@progressLoadMore": {
+    "description": "Button label to load more progress charts"
+  },
+  "progressBackfillAction": "Backfill progress",
+  "@progressBackfillAction": {
+    "description": "Tooltip for backfill action on the progress screen"
+  },
+  "progressBackfillTitle": "Generate progress data",
+  "@progressBackfillTitle": {
+    "description": "Dialog title for progress backfill"
+  },
+  "progressBackfillBody": "This will scan your past workouts and generate yearly progress charts. It may take a moment and uses additional reads.",
+  "@progressBackfillBody": {
+    "description": "Dialog body for progress backfill"
+  },
+  "progressBackfillConfirm": "Start",
+  "@progressBackfillConfirm": {
+    "description": "Confirm button for progress backfill"
+  },
+  "progressBackfillCancel": "Cancel",
+  "@progressBackfillCancel": {
+    "description": "Cancel button for progress backfill"
+  },
+  "progressBackfillDone": "Backfill done: {sessions} sessions, {exercises} exercises.",
+  "@progressBackfillDone": {
+    "description": "Snackbar message after backfill",
+    "placeholders": {
+      "sessions": {},
+      "exercises": {}
+    }
+  },
+  "progressInfoAction": "How it works",
+  "@progressInfoAction": {
+    "description": "Tooltip for the progress info action"
+  },
+  "progressInfoTitle": "How progress works",
+  "@progressInfoTitle": {
+    "description": "Title for the progress info dialog"
+  },
+  "progressInfoBody": "Charts appear when an exercise has at least 3 saved sessions in the selected year. Train and save your workouts to build progress. Use the \"Generate progress data\" button in the top right to refresh your data.",
+  "@progressInfoBody": {
+    "description": "Body text for the progress info dialog"
+  },
+
   "homeWelcome": "Welcome, {user}",
   "@homeWelcome": {
     "description": "Greeting on the Home screen",
@@ -630,6 +699,16 @@
   "profileStatsRestTimerLabel": "Rest timer",
   "@profileStatsRestTimerLabel": {
     "description": "Label for the rest timer tile in profile statistics"
+  },
+
+  "profileStatsNfcScans": "NFC scans",
+  "@profileStatsNfcScans": {
+    "description": "Label for the NFC scan count on the profile statistics page"
+  },
+
+  "profileStatsNfcScansSubtitle": "total scans",
+  "@profileStatsNfcScansSubtitle": {
+    "description": "Subtitle for the NFC scan count on the profile statistics page"
   },
 
   "profileStatsFavoriteExercise": "Favourite exercise",
