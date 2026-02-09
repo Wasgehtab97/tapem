@@ -24,9 +24,9 @@ class AvatarInventoryProvider extends ChangeNotifier {
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
     FirebaseFirestore Function()? firestoreBuilder,
-  })  : _firestoreBuilder =
-            firestoreBuilder ?? (() => firestore ?? FirebaseFirestore.instance),
-        _auth = auth;
+  }) : _firestoreBuilder =
+           firestoreBuilder ?? (() => firestore ?? FirebaseFirestore.instance),
+       _auth = auth;
 
   final FirebaseFirestore Function() _firestoreBuilder;
   FirebaseFirestore get _firestore => _firestoreBuilder();
@@ -46,26 +46,31 @@ class AvatarInventoryProvider extends ChangeNotifier {
   }
 
   /// Stream of normalised inventory entries for [uid].
-  Stream<List<AvatarInventoryEntry>> inventory(String uid,
-      {String? currentGymId}) {
+  Stream<List<AvatarInventoryEntry>> inventory(
+    String uid, {
+    String? currentGymId,
+  }) {
     if (uid.isEmpty) return const Stream<List<AvatarInventoryEntry>>.empty();
     return _firestore
         .collection('users')
         .doc(uid)
         .collection('avatarInventory')
         .snapshots()
-        .map((snap) => snap.docs.map((d) {
-              final data = d.data();
-              final rawKey =
-                  data['key'] as String? ?? d.id.replaceAll('__', '/');
-              final normalised =
-                  AvatarAssets.normalizeKey(rawKey, currentGymId: currentGymId);
-              return AvatarInventoryEntry(
-                key: normalised,
-                source: data['source'] as String? ?? '',
-                createdAt: data['createdAt'] as Timestamp?,
-              );
-            }).toList());
+        .map(
+          (snap) => snap.docs.map((d) {
+            final data = d.data();
+            final rawKey = data['key'] as String? ?? d.id.replaceAll('__', '/');
+            final normalised = AvatarAssets.normalizeKey(
+              rawKey,
+              currentGymId: currentGymId,
+            );
+            return AvatarInventoryEntry(
+              key: normalised,
+              source: data['source'] as String? ?? '',
+              createdAt: data['createdAt'] as Timestamp?,
+            );
+          }).toList(),
+        );
   }
 
   /// Stream only the keys, merged with default avatars and deduplicated.
@@ -88,15 +93,20 @@ class AvatarInventoryProvider extends ChangeNotifier {
         result.add(def);
       } else {
         result.add(
-            AvatarInventoryEntry(key: AvatarKeys.globalDefault, source: 'global'));
+          AvatarInventoryEntry(key: AvatarKeys.globalDefault, source: 'global'),
+        );
       }
 
       final def2 = map.remove(AvatarKeys.globalDefault2);
       if (def2 != null) {
         result.add(def2);
       } else {
-        result.add(AvatarInventoryEntry(
-            key: AvatarKeys.globalDefault2, source: 'global'));
+        result.add(
+          AvatarInventoryEntry(
+            key: AvatarKeys.globalDefault2,
+            source: 'global',
+          ),
+        );
       }
       final rest = map.values.toList()
         ..sort((a, b) {
@@ -119,29 +129,31 @@ class AvatarInventoryProvider extends ChangeNotifier {
     final batch = _firestore.batch();
     final now = FieldValue.serverTimestamp();
     for (final key in keys) {
-      final normalised =
-          AvatarAssets.normalizeKey(key, currentGymId: gymId);
+      final normalised = AvatarAssets.normalizeKey(key, currentGymId: gymId);
       final ref = _firestore
           .collection('users')
           .doc(uid)
           .collection('avatarInventory')
           .doc(_docId(normalised));
-      debugPrint('[AvatarInventory] add path=' + ref.path +
-          ' uid=' + uid +
-          ' key=' + normalised +
-          ' source=' + source +
-          ' gymId=' + (gymId ?? '')); 
-      final includeGymId = gymId != null && !normalised.startsWith('global/');
-      batch.set(
-        ref,
-        {
-          'key': normalised,
-          'source': source,
-          'createdAt': now,
-          if (includeGymId) 'gymId': gymId,
-        },
-        SetOptions(merge: true),
+      debugPrint(
+        '[AvatarInventory] add path=' +
+            ref.path +
+            ' uid=' +
+            uid +
+            ' key=' +
+            normalised +
+            ' source=' +
+            source +
+            ' gymId=' +
+            (gymId ?? ''),
       );
+      final includeGymId = gymId != null && !normalised.startsWith('global/');
+      batch.set(ref, {
+        'key': normalised,
+        'source': source,
+        'createdAt': now,
+        if (includeGymId) 'gymId': gymId,
+      }, SetOptions(merge: true));
     }
     await batch.commit();
   }
@@ -153,8 +165,14 @@ class AvatarInventoryProvider extends ChangeNotifier {
         .doc(uid)
         .collection('avatarInventory')
         .doc(_docId(key));
-    debugPrint('[AvatarInventory] remove path=' + ref.path +
-        ' uid=' + uid + ' key=' + key);
+    debugPrint(
+      '[AvatarInventory] remove path=' +
+          ref.path +
+          ' uid=' +
+          uid +
+          ' key=' +
+          key,
+    );
     return ref.delete();
   }
 
@@ -171,7 +189,19 @@ class AvatarInventoryProvider extends ChangeNotifier {
         .doc(uid)
         .collection('avatarInventory')
         .get();
-    _cache = snap.docs.map((d) => d.id).toSet();
+    _cache = snap.docs
+        .map((d) {
+          final data = d.data();
+          final rawKey = data['key'] as String? ?? d.id.replaceAll('__', '/');
+          final key = rawKey.trim();
+          if (key.isEmpty) {
+            return '';
+          }
+          final parts = key.split('/');
+          return parts.isEmpty ? '' : parts.last;
+        })
+        .where((id) => id.isNotEmpty)
+        .toSet();
     return _cache!;
   }
 
@@ -189,10 +219,10 @@ class AvatarInventoryProvider extends ChangeNotifier {
   }
 }
 
-final avatarInventoryProvider =
-    ChangeNotifierProvider<AvatarInventoryProvider>((ref) {
-  final provider = AvatarInventoryProvider();
-  ref.onDispose(provider.dispose);
-  return provider;
-});
-
+final avatarInventoryProvider = ChangeNotifierProvider<AvatarInventoryProvider>(
+  (ref) {
+    final provider = AvatarInventoryProvider();
+    ref.onDispose(provider.dispose);
+    return provider;
+  },
+);

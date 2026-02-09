@@ -38,28 +38,24 @@ class _GymLoginScreenState extends ConsumerState<GymLoginScreen> {
     final gymAsync = ref.watch(gymByIdProvider(widget.gymId));
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       body: AuthBackground(
         child: AuthKeyboardScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AuthTheme.spacingM),
           child: gymAsync.when(
             data: (gym) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const OfflineBanner(),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Hero(
-                      tag: 'gym-logo-${gym.id}',
-                      child: NetworkCircleAvatar(url: gym.logoUrl, radius: 34),
-                    ),
-                  ),
-                  const SizedBox(height: AuthTheme.spacingS),
+                  const SizedBox(height: 10),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AuthTheme.textMuted,
+                      ),
                       onPressed: () =>
                           Navigator.of(context).pushReplacementNamed(
                             AppRouter.gymAccess,
@@ -67,19 +63,33 @@ class _GymLoginScreenState extends ConsumerState<GymLoginScreen> {
                           ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
+                  Center(
+                    child: Hero(
+                      tag: 'gym-logo-${gym.id}',
+                      child: NetworkCircleAvatar(url: gym.logoUrl, radius: 34),
+                    ),
+                  ),
+                  const SizedBox(height: AuthTheme.spacingM),
                   Text(
                     loc.gymLoginTitle(gym.name),
                     textAlign: TextAlign.center,
-                    style: AuthTheme.headingStyle,
+                    style: AuthTheme.headingStyle.copyWith(fontSize: 28),
+                  ),
+                  const SizedBox(height: AuthTheme.spacingS),
+                  Text(
+                    loc.gymAccessSubtitle,
+                    textAlign: TextAlign.center,
+                    style: AuthTheme.bodyStyle,
                   ),
                   const SizedBox(height: AuthTheme.spacingL),
                   GlassCard(child: const LoginForm()),
+                  const SizedBox(height: 18),
                 ],
               );
             },
             loading: () => const Center(
-              child: CircularProgressIndicator(color: Colors.white70),
+              child: CircularProgressIndicator(color: Colors.white),
             ),
             error: (error, _) => Center(
               child: Padding(
@@ -87,9 +97,7 @@ class _GymLoginScreenState extends ConsumerState<GymLoginScreen> {
                 child: Text(
                   loc.authErrorGeneric(error),
                   textAlign: TextAlign.center,
-                  style: AuthTheme.bodyStyle.copyWith(
-                    color: Colors.white.withOpacity(0.7),
-                  ),
+                  style: AuthTheme.bodyStyle,
                 ),
               ),
             ),

@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/auth_theme.dart';
 
@@ -22,30 +21,35 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(
+      borderRadius ?? AuthTheme.cardBorderRadius,
+    );
+
     return Container(
       width: width,
       height: height,
       margin: margin,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AuthTheme.surfaceRaised, AuthTheme.surface],
+        ),
+        borderRadius: radius,
+        border: Border.all(color: AuthTheme.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.45),
+            blurRadius: 22,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius ?? AuthTheme.glassBorderRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: AuthTheme.glassBlur,
-            sigmaY: AuthTheme.glassBlur,
-          ),
-          child: Container(
-            padding: padding ?? const EdgeInsets.all(AuthTheme.spacingL),
-            decoration: BoxDecoration(
-              color: AuthTheme.glassColor,
-              borderRadius: BorderRadius.circular(borderRadius ?? AuthTheme.glassBorderRadius),
-              border: Border.all(
-                color: AuthTheme.glassBorderColor,
-                width: 1.0,
-              ),
-              boxShadow: [AuthTheme.softShadow],
-            ),
-            child: child,
-          ),
+        borderRadius: radius,
+        child: Padding(
+          padding: padding ?? const EdgeInsets.all(AuthTheme.spacingL),
+          child: child,
         ),
       ),
     );

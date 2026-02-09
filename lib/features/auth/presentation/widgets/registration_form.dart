@@ -157,7 +157,7 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
-            backgroundColor: Colors.red.withOpacity(0.8),
+            backgroundColor: AuthTheme.danger.withOpacity(0.9),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -182,9 +182,11 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
       if (requiresGymSelection) {
         Navigator.of(context).pushReplacementNamed(AppRouter.selectGym);
       } else {
-        Navigator.of(
-          context,
-        ).pushReplacementNamed(AppRouter.home, arguments: 1);
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRouter.home,
+          (route) => false,
+          arguments: 1,
+        );
       }
     } on GymCodeExpiredException {
       AnalyticsService.logGymCodeValidation(
@@ -273,11 +275,11 @@ class _RegistrationFormState extends ConsumerState<RegistrationForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context)!.gymCodeLockedMessage),
-          backgroundColor: Colors.red,
+          backgroundColor: AuthTheme.danger.withOpacity(0.9),
           behavior: SnackBarBehavior.floating,
           action: SnackBarAction(
             label: AppLocalizations.of(context)!.gymCodeHelpLabel,
-            textColor: Colors.white,
+            textColor: AuthTheme.textPrimary,
             onPressed: () {},
           ),
         ),
@@ -372,7 +374,10 @@ class _GymCodeOtpInput extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AuthTheme.labelStyle),
+        Text(
+          label,
+          style: AuthTheme.labelStyle.copyWith(color: AuthTheme.textMuted),
+        ),
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -393,22 +398,22 @@ class _GymCodeOtpInput extends StatelessWidget {
                     : TextInputAction.next,
                 maxLength: 1,
                 scrollPadding: const EdgeInsets.only(bottom: 180),
-                style: AuthTheme.bodyStyle.copyWith(color: Colors.white),
+                style: AuthTheme.bodyStyle.copyWith(
+                  color: AuthTheme.textPrimary,
+                ),
                 decoration: InputDecoration(
                   counterText: '',
                   filled: true,
-                  fillColor: AuthTheme.glassColor,
+                  fillColor: AuthTheme.surfaceRaised,
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Colors.white.withOpacity(0.2),
-                    ),
+                    borderSide: BorderSide(color: AuthTheme.border),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF8B5CF6),
-                      width: 1.5,
+                    borderSide: BorderSide(
+                      color: AuthTheme.borderStrong,
+                      width: 1.4,
                     ),
                   ),
                 ),
@@ -468,14 +473,14 @@ class _GymCodeOtpInput extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             errorText!,
-            style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 12),
+            style: const TextStyle(color: AuthTheme.danger, fontSize: 12),
           ),
         ] else ...[
           const SizedBox(height: 6),
           Text(
             loc.gymCodeInvalid,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
+              color: AuthTheme.textMuted.withOpacity(0.65),
               fontSize: 11,
             ),
           ),

@@ -23,10 +23,10 @@ class StoryXpComponent extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'code': code,
-        'amount': amount,
-        if (metadata.isNotEmpty) 'metadata': metadata,
-      };
+    'code': code,
+    'amount': amount,
+    if (metadata.isNotEmpty) 'metadata': metadata,
+  };
 
   StoryXpComponent copyWith({
     String? code,
@@ -82,12 +82,12 @@ class StoryXpPenalty extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type,
-        'xpDelta': delta,
-        'day': day,
-        if (metadata.isNotEmpty) 'metadata': metadata,
-      };
+    'id': id,
+    'type': type,
+    'xpDelta': delta,
+    'day': day,
+    if (metadata.isNotEmpty) 'metadata': metadata,
+  };
 
   StoryXpPenalty copyWith({
     String? id,
@@ -115,6 +115,8 @@ class StoryDailyXp extends Equatable {
   final int? totalXp;
   final int? computedTotalXp;
   final int? runningTotalXp;
+  final String? rulesetId;
+  final int? rulesetVersion;
   final Map<String, dynamic> metadata;
   final List<StoryXpComponent> components;
   final List<StoryXpPenalty> penalties;
@@ -124,19 +126,23 @@ class StoryDailyXp extends Equatable {
     this.totalXp,
     this.computedTotalXp,
     this.runningTotalXp,
+    this.rulesetId,
+    this.rulesetVersion,
     this.metadata = const {},
     this.components = const [],
     this.penalties = const [],
   });
 
   const StoryDailyXp.empty()
-      : xp = 0,
-        totalXp = null,
-        computedTotalXp = null,
-        runningTotalXp = null,
-        metadata = const {},
-        components = const [],
-        penalties = const [];
+    : xp = 0,
+      totalXp = null,
+      computedTotalXp = null,
+      runningTotalXp = null,
+      rulesetId = null,
+      rulesetVersion = null,
+      metadata = const {},
+      components = const [],
+      penalties = const [];
 
   bool get hasBreakdown => components.isNotEmpty || penalties.isNotEmpty;
 
@@ -157,8 +163,9 @@ class StoryDailyXp extends Equatable {
     if (total != null && previous != null) {
       return total - previous;
     }
-    final floorDelta =
-        totalXp != null && computedTotalXp != null ? totalXp! - computedTotalXp! : 0;
+    final floorDelta = totalXp != null && computedTotalXp != null
+        ? totalXp! - computedTotalXp!
+        : 0;
     return xp + penaltySum + floorDelta;
   }
 
@@ -173,6 +180,10 @@ class StoryDailyXp extends Equatable {
     bool unsetComputedTotalXp = false,
     int? runningTotalXp,
     bool unsetRunningTotalXp = false,
+    String? rulesetId,
+    bool unsetRulesetId = false,
+    int? rulesetVersion,
+    bool unsetRulesetVersion = false,
     Map<String, dynamic>? metadata,
     List<StoryXpComponent>? components,
     List<StoryXpPenalty>? penalties,
@@ -180,10 +191,16 @@ class StoryDailyXp extends Equatable {
     return StoryDailyXp(
       xp: xp ?? this.xp,
       totalXp: unsetTotalXp ? null : (totalXp ?? this.totalXp),
-      computedTotalXp:
-          unsetComputedTotalXp ? null : (computedTotalXp ?? this.computedTotalXp),
-      runningTotalXp:
-          unsetRunningTotalXp ? null : (runningTotalXp ?? this.runningTotalXp),
+      computedTotalXp: unsetComputedTotalXp
+          ? null
+          : (computedTotalXp ?? this.computedTotalXp),
+      runningTotalXp: unsetRunningTotalXp
+          ? null
+          : (runningTotalXp ?? this.runningTotalXp),
+      rulesetId: unsetRulesetId ? null : (rulesetId ?? this.rulesetId),
+      rulesetVersion: unsetRulesetVersion
+          ? null
+          : (rulesetVersion ?? this.rulesetVersion),
       metadata: metadata ?? this.metadata,
       components: components ?? this.components,
       penalties: penalties ?? this.penalties,
@@ -191,46 +208,58 @@ class StoryDailyXp extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'xp': xp,
-        if (totalXp != null) 'totalXp': totalXp,
-        if (computedTotalXp != null) 'computedTotalXp': computedTotalXp,
-        if (runningTotalXp != null) 'runningTotalXp': runningTotalXp,
-        if (metadata.isNotEmpty) 'metadata': metadata,
-        if (components.isNotEmpty)
-          'components': components.map((c) => c.toJson()).toList(),
-        if (penalties.isNotEmpty)
-          'penalties': penalties.map((p) => p.toJson()).toList(),
-      };
+    'xp': xp,
+    if (totalXp != null) 'totalXp': totalXp,
+    if (computedTotalXp != null) 'computedTotalXp': computedTotalXp,
+    if (runningTotalXp != null) 'runningTotalXp': runningTotalXp,
+    if (rulesetId != null) 'rulesetId': rulesetId,
+    if (rulesetVersion != null) 'rulesetVersion': rulesetVersion,
+    if (metadata.isNotEmpty) 'metadata': metadata,
+    if (components.isNotEmpty)
+      'components': components.map((c) => c.toJson()).toList(),
+    if (penalties.isNotEmpty)
+      'penalties': penalties.map((p) => p.toJson()).toList(),
+  };
 
   factory StoryDailyXp.fromJson(Map<String, dynamic> json) {
     final xp = (json['xp'] as num?)?.toInt() ?? 0;
     final totalXp = (json['totalXp'] as num?)?.toInt();
     final computedTotalXp = (json['computedTotalXp'] as num?)?.toInt();
     final runningTotalXp = (json['runningTotalXp'] as num?)?.toInt();
+    final rawRulesetId = json['rulesetId'] ?? json['xpRulesetId'];
+    final rulesetId = rawRulesetId is String ? rawRulesetId.trim() : null;
+    final rulesetVersion =
+        ((json['rulesetVersion'] ?? json['xpRulesetVersion']) as num?)?.toInt();
     final metadata = StoryXpComponent._readMetadata(json['metadata']);
     final rawComponents = json['components'];
     final components = rawComponents is List
         ? rawComponents
-            .whereType<Map>()
-            .map((raw) => StoryXpComponent.fromJson(
+              .whereType<Map>()
+              .map(
+                (raw) => StoryXpComponent.fromJson(
                   raw.map((key, value) => MapEntry('$key', value)),
-                ))
-            .toList()
+                ),
+              )
+              .toList()
         : const <StoryXpComponent>[];
     final rawPenalties = json['penalties'];
     final penalties = rawPenalties is List
         ? rawPenalties
-            .whereType<Map>()
-            .map((raw) => StoryXpPenalty.fromJson(
+              .whereType<Map>()
+              .map(
+                (raw) => StoryXpPenalty.fromJson(
                   raw.map((key, value) => MapEntry('$key', value)),
-                ))
-            .toList()
+                ),
+              )
+              .toList()
         : const <StoryXpPenalty>[];
     return StoryDailyXp(
       xp: xp,
       totalXp: totalXp,
       computedTotalXp: computedTotalXp,
       runningTotalXp: runningTotalXp,
+      rulesetId: rulesetId == null || rulesetId.isEmpty ? null : rulesetId,
+      rulesetVersion: rulesetVersion,
       metadata: metadata,
       components: components,
       penalties: penalties,
@@ -239,12 +268,14 @@ class StoryDailyXp extends Equatable {
 
   @override
   List<Object?> get props => [
-        xp,
-        totalXp,
-        computedTotalXp,
-        runningTotalXp,
-        metadata,
-        components,
-        penalties,
-      ];
+    xp,
+    totalXp,
+    computedTotalXp,
+    runningTotalXp,
+    rulesetId,
+    rulesetVersion,
+    metadata,
+    components,
+    penalties,
+  ];
 }

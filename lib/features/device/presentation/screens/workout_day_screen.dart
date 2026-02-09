@@ -3,16 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
+import 'package:tapem/core/widgets/premium_action_tile.dart';
 import 'package:tapem/app_router.dart';
 
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/presentation/workout_finish_flow.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
-import 'package:tapem/features/training_plan/data/sources/firestore_training_plan_source.dart';
-import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
-import 'package:tapem/features/training_details/data/session_meta_source.dart';
-import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/bootstrap/navigation.dart';
 
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
@@ -43,7 +41,7 @@ class WorkoutDayScreen extends riverpod.ConsumerStatefulWidget {
     WorkoutDaySession session,
     int displayIndex,
   )?
-      sessionBuilder;
+  sessionBuilder;
   final bool closeSessionOnDispose;
 
   @override
@@ -59,8 +57,6 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
   String? _planId;
   String? _planName;
 
-
-
   void _handleSelection(WorkoutDeviceSelection selection) {
     final auth = ref.read(authControllerProvider);
     final controller = ref.read(workoutDayControllerProvider);
@@ -72,12 +68,12 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
       userId: auth.userId!,
     );
     if (!mounted) return;
-    
+
     // Close keyboard before scrolling
     FocusManager.instance.primaryFocus?.unfocus();
     final keypad = ref.read(overlayNumericKeypadControllerProvider);
     keypad.close();
-    
+
     setState(() {});
     _scrollToLatest();
     _sessionKey ??= session.key;
@@ -127,7 +123,8 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
     _planId = widget.planId;
     _planName = widget.planName;
     debugPrint(
-        '🏋️ WorkoutDayScreen init gymId=${widget.gymId} deviceId=${widget.deviceId} exerciseId=${widget.exerciseId} planId=$_planId planName=$_planName');
+      '🏋️ WorkoutDayScreen init gymId=${widget.gymId} deviceId=${widget.deviceId} exerciseId=${widget.exerciseId} planId=$_planId planName=$_planName',
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _ensureSession());
   }
 
@@ -140,9 +137,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
       gymId: widget.gymId,
     );
     // Plan-Kontext ggf. im Controller hinterlegen oder von dort übernehmen
-    final existingPlan = controller.getPlanContext(
-      gymId: widget.gymId,
-    );
+    final existingPlan = controller.getPlanContext(gymId: widget.gymId);
     if (_planId != null) {
       controller.setPlanContext(
         gymId: widget.gymId,
@@ -153,7 +148,8 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
       _planId ??= existingPlan.$1;
       _planName ??= existingPlan.$2;
       debugPrint(
-          '📎 WorkoutDayScreen adopted existing plan context planId=$_planId planName=$_planName');
+        '📎 WorkoutDayScreen adopted existing plan context planId=$_planId planName=$_planName',
+      );
     }
     final contextKey = WorkoutDayController.contextKey(
       gymId: widget.gymId,
@@ -229,24 +225,24 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
         : controller.sessionsFor(userId: userId, gymId: activeGymId);
     _syncSessionKey(sessions);
 
-
     final loc = AppLocalizations.of(context)!;
 
     // LUX: Auto-scroll to top when a new session is added (e.g. via NFC)
-    ref.listen(workoutDayControllerProvider.select((c) {
-      final uid = auth.userId;
-      final gid = auth.gymCode ?? widget.gymId;
-      return c.sessionsFor(userId: uid ?? '', gymId: gid).length;
-    }), (prev, next) {
-      if (next > (prev ?? 0)) {
-        _scrollToLatest();
-      }
-    });
+    ref.listen(
+      workoutDayControllerProvider.select((c) {
+        final uid = auth.userId;
+        final gid = auth.gymCode ?? widget.gymId;
+        return c.sessionsFor(userId: uid ?? '', gymId: gid).length;
+      }),
+      (prev, next) {
+        if (next > (prev ?? 0)) {
+          _scrollToLatest();
+        }
+      },
+    );
 
     if (_isInitializing) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final theme = Theme.of(context);
@@ -267,13 +263,14 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
             // Robustly close keyboard and clear focus
             final dayController = ref.read(workoutDayControllerProvider);
             dayController.focusedProvider?.clearFocus();
-            
-            final keypadController =
-                ref.read(overlayNumericKeypadControllerProvider);
+
+            final keypadController = ref.read(
+              overlayNumericKeypadControllerProvider,
+            );
             if (keypadController.isOpen) {
               keypadController.close();
             }
-            
+
             FocusManager.instance.primaryFocus?.unfocus();
 
             // Immer zurück zur Gym-Page der Home-Tabs (Index 0).
@@ -286,7 +283,9 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
           borderRadius: BorderRadius.circular(12),
           child: Container(
             margin: const EdgeInsets.only(left: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 4), // Reduced padding
+            padding: const EdgeInsets.symmetric(
+              horizontal: 4,
+            ), // Reduced padding
             child: Row(
               children: [
                 Icon(Icons.chevron_left, color: brandColor, size: 20),
@@ -297,7 +296,8 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'Übungen',
-                      style: theme.textTheme.labelMedium?.copyWith( // Smaller text style
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        // Smaller text style
                         color: brandColor,
                         fontWeight: FontWeight.w600,
                       ),
@@ -314,7 +314,8 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
         title: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
-            mainAxisSize: MainAxisSize.min, // Keep min to allow centering if space permits
+            mainAxisSize: MainAxisSize
+                .min, // Keep min to allow centering if space permits
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Flexible(
@@ -360,9 +361,11 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
         child: SafeArea(
           child: riverpod.Consumer(
             builder: (context, ref, _) {
-              final keypadController =
-                  ref.watch(overlayNumericKeypadControllerProvider);
-              final bottomSpacerHeight = keypadController.keypadContentHeight +
+              final keypadController = ref.watch(
+                overlayNumericKeypadControllerProvider,
+              );
+              final bottomSpacerHeight =
+                  keypadController.keypadContentHeight +
                   MediaQuery.of(context).padding.bottom +
                   24;
 
@@ -387,10 +390,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
                 controller: _scrollController,
                 child: ReorderableListView.builder(
                   scrollController: _scrollController,
-                  padding: const EdgeInsets.only(
-                    top: 10,
-                    bottom: 14,
-                  ),
+                  padding: const EdgeInsets.only(top: 10, bottom: 14),
                   buildDefaultDragHandles: false,
                   proxyDecorator: (child, index, animation) {
                     // Deutlichere visuelle Rückmeldung während des Drag-Vorgangs.
@@ -400,11 +400,12 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
                       shadowColor: brandColor.withOpacity(0.6),
                       borderRadius: BorderRadius.circular(24),
                       child: ScaleTransition(
-                        scale: Tween<double>(begin: 1.0, end: 1.03)
-                            .animate(CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeOut,
-                        )),
+                        scale: Tween<double>(begin: 1.0, end: 1.03).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOut,
+                          ),
+                        ),
                         child: child,
                       ),
                     );
@@ -441,8 +442,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
                         child: _SaveAllButton(
                           isSaving: controller.isSaving,
                           canSave: controller.canSave,
-                          onPressed: () =>
-                              _handleSaveAllSessions(sessions),
+                          onPressed: () => _handleSaveAllSessions(sessions),
                         ),
                       );
                     }
@@ -456,11 +456,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
                     if (builder != null) {
                       child = Container(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: builder(
-                          context,
-                          session,
-                          displayIndex,
-                        ),
+                        child: builder(context, session, displayIndex),
                       );
                     } else {
                       child = Padding(
@@ -474,8 +470,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
                           userId: session.userId,
                           displayIndex: displayIndex,
                           sessionKey: session.key,
-                          onCloseRequested: () =>
-                              _handleCloseSession(session),
+                          onCloseRequested: () => _handleCloseSession(session),
                         ),
                       );
                     }
@@ -495,11 +490,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
     );
   }
 
-
-  Future<void> _handleSaveAllSessions(
-    List<WorkoutDaySession> sessions,
-  ) async {
-    final loc = AppLocalizations.of(context)!;
+  Future<void> _handleSaveAllSessions(List<WorkoutDaySession> sessions) async {
     final controller = ref.read(workoutDayControllerProvider);
     final auth = ref.read(authControllerProvider);
     final settings = ref.read(settingsProvider);
@@ -508,187 +499,21 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
     FocusManager.instance.primaryFocus?.unfocus();
     ref.read(overlayNumericKeypadControllerProvider).close();
 
-    final confirmFinish = await showDialog<bool>(
+    await WorkoutFinishFlow.saveAndFinish(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Trainingstag abschließen?'),
-        content: const Text(
-            'Möchtest du alle offenen Sessions speichern und den Trainingstag beenden?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(loc.cancelButton),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(loc.saveButton),
-          ),
-        ],
-      ),
+      navigatorKey: navigatorKey,
+      controller: controller,
+      auth: auth,
+      settings: settings,
+      sessions: sessions,
+      fallbackGymId: widget.gymId,
+      navigateToHomeProfileOnSuccess: true,
+      container: riverpod.ProviderScope.containerOf(context, listen: false),
+      planId: _planId,
+      planName: _planName,
     );
-
-    if (!mounted || confirmFinish != true) {
-      return;
-    }
-
-    final sessionsByKey = {
-      for (final session in sessions) session.key: session,
-    };
-    final sessionsWithPendingSets = <WorkoutDaySession>[
-      for (final session in sessions)
-        if (session.provider.getSetCounts().filledNotDone > 0) session,
-    ];
-
-    if (sessionsWithPendingSets.isNotEmpty) {
-      final confirmCompleteAll = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(loc.notAllSetsConfirmed),
-          content: const Text(
-            'Es wurden noch nicht alle Sätze abgehakt. Möchtest du alle offenen Sätze abhaken und fortfahren?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(loc.cancelButton),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(loc.confirmAllSets),
-            ),
-          ],
-        ),
-      );
-
-      if (!mounted || confirmCompleteAll != true) {
-        return;
-      }
-
-      for (final session in sessionsWithPendingSets) {
-        session.provider.completeAllFilledNotDone();
-      }
-    }
-
-    await settings.load(auth.userId!);
-
-    // Use the gymId from the current sessions if possible to ensure that
-    // session meta and XP are always written under the same gym that the
-    // TrainingDetails screen will later query.
-    final sessionGymId =
-        sessions.isNotEmpty ? sessions.first.gymId : null;
-    final activeGymId = sessionGymId ?? auth.gymCode ?? widget.gymId;
-
-    debugPrint(
-      '[WorkoutDay] navigate home index=1 role=${auth.role} gym=$activeGymId',
-    );
-
-    final result = await controller.saveAllSessions(
-      userId: auth.userId!,
-      gymId: activeGymId,
-      showInLeaderboard: auth.showInLeaderboard ?? true,
-      userName: auth.userName,
-      gender: settings.gender,
-      bodyWeightKg: settings.bodyWeightKg,
-
-    );
-
-    if (!mounted) return;
-
-    if (result.saved > 0) {
-      if (_planId != null) {
-        debugPrint(
-            '📊 Updating training plan stats for planId=$_planId gym=$activeGymId (saved=${result.saved}/${result.attempted})');
-        try {
-          await FirestoreTrainingPlanSource().incrementCompletion(
-            userId: auth.userId!,
-            planId: _planId!,
-          );
-          if (!mounted) return;
-          riverpod.ProviderScope.containerOf(context, listen: false)
-              .refresh(trainingPlanStatsProvider(_planId!));
-          final dayKey = logicDayKey(DateTime.now());
-          await SessionMetaSource().upsertMeta(
-            gymId: activeGymId,
-            uid: auth.userId!,
-            sessionId: dayKey,
-            meta: {
-              'dayKey': dayKey,
-              'planId': _planId,
-              if (_planName != null) 'planName': _planName,
-            },
-          );
-        } catch (e, st) {
-          debugPrint('❌ Failed to update training plan meta for planId=$_planId gym=$activeGymId: $e');
-          debugPrint('$st');
-        }
-      }
-
-      for (final key in result.savedSessionKeys) {
-        final session = sessionsByKey[key];
-        if (session == null) continue;
-        final closed = controller.closeSession(key);
-        if (closed && key == _sessionKey) {
-          _sessionKey = null;
-          _ownsSession = false;
-        }
-      }
-      final remaining = controller.sessionsFor(
-        userId: auth.userId!,
-        gymId: activeGymId,
-      );
-
-      // Wenn alle Sessions gespeichert wurden, gilt der Plan für diesen Tag als abgeschlossen.
-      if (_planId != null) {
-        controller.clearPlanContextForDay(gymId: activeGymId);
-      }
-
-      debugPrint(
-        '[WorkoutDay] saveAllSessions result.saved=${result.saved} remainingSessions=${remaining.length} → navigate to Home(Profile)',
-      );
-
-      if (!mounted) return;
-
-      // Nach dem Speichern immer zur Profil-Page (Home-Tab Index 1) navigieren,
-      // unabhängig davon, ob noch andere Sessions im Hintergrund existieren.
-      navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        AppRouter.home,
-        (route) => false,
-        arguments: 1,
-      );
-    }
-
-      final message = () {
-        if (result.attempted == 0) {
-          return loc.noCompletedSets;
-        }
-        if (result.saved == 0) {
-          final firstError = result.failedSessions.values.firstWhere(
-            (error) => error != null && error.isNotEmpty,
-            orElse: () => null,
-          );
-          return firstError ?? '${loc.errorPrefix}: ${result.failedSessions.length}';
-        }
-        final savedText = result.saved == result.attempted
-            ? loc.sessionSaved
-            : '${loc.sessionSaved} (${result.saved}/${result.attempted})';
-        if (!result.hasFailures) {
-          return savedText;
-        }
-        final firstError = result.failedSessions.values.firstWhere(
-          (error) => error != null && error.isNotEmpty,
-          orElse: () => null,
-        );
-        final failureText =
-            firstError ?? '${loc.errorPrefix}: ${result.failedSessions.length}';
-        return '$savedText\n$failureText';
-      }();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(message)));
-      }
-    }
   }
+}
 
 class _SaveAllButton extends StatelessWidget {
   const _SaveAllButton({
@@ -705,102 +530,41 @@ class _SaveAllButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
-    final brandColor = brandTheme?.outline ?? theme.colorScheme.primary;
-    final background = theme.scaffoldBackgroundColor;
-
-    LinearGradient? activeGradient;
-    Color? activeShadowColor;
-
-    if (canSave && !isSaving) {
-      final baseGradient = brandTheme?.gradient;
-      if (baseGradient != null && baseGradient.colors.isNotEmpty) {
-        // Etwas gedämpfter, weniger greller Button: wir mischen die
-        // Brand-Farben ein Stück weit mit dem Hintergrund.
-        final start = Color.lerp(
-              baseGradient.colors.first,
-              background,
-              0.28,
-            ) ??
-            baseGradient.colors.first;
-        final end = Color.lerp(
-              baseGradient.colors.last,
-              background,
-              0.45,
-            ) ??
-            baseGradient.colors.last;
-
-        activeGradient = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [start, end],
-        );
-
-        activeShadowColor = Color.lerp(
-              baseGradient.colors.last,
-              Colors.black,
-              0.5,
-            )!
-            .withOpacity(0.28);
-      } else {
-        activeGradient = LinearGradient(
-          colors: [
-            brandColor.withOpacity(0.85),
-            brandColor.withOpacity(0.65),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        );
-        activeShadowColor = brandColor.withOpacity(0.28);
-      }
-    }
+    final accent = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final isEnabled = canSave && !isSaving;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-      child: Container(
-        height: 56,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          gradient: activeGradient,
-          color: canSave ? null : Colors.white.withOpacity(0.05),
-          boxShadow: canSave && !isSaving && activeShadowColor != null
-              ? [
-                  BoxShadow(
-                    color: activeShadowColor,
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+      child: Opacity(
+        opacity: isEnabled || isSaving ? 1.0 : 0.55,
+        child: PremiumActionTile(
+          margin: EdgeInsets.zero,
+          borderRadius: BorderRadius.circular(26),
+          accentColor: accent,
+          trailingColor: accent,
+          onTap: isEnabled ? onPressed : null,
+          showArrow: !isSaving,
+          leading: isSaving
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    valueColor: AlwaysStoppedAnimation<Color>(accent),
                   ),
-                ]
-              : const [],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: !canSave || isSaving ? null : onPressed,
-            borderRadius: BorderRadius.circular(28),
-             child: Center(
-              child: isSaving
-                  ? SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Text(
-                      'Training speichern', // More engaging text
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: canSave 
-                          ? Colors.white 
-                          : Colors.white.withOpacity(0.3),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-            ),
-          ),
+                )
+              : const Icon(Icons.check_rounded),
+          title: 'Training speichern',
+          trailing: isSaving
+              ? SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    valueColor: AlwaysStoppedAnimation<Color>(accent),
+                  ),
+                )
+              : null,
         ),
       ),
     );

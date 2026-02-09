@@ -16,6 +16,8 @@ class SearchAndFilters extends StatefulWidget {
   final ValueChanged<String> onQuery;
   final SortOrder sort;
   final ValueChanged<SortOrder> onSort;
+  final bool favoritesOnly;
+  final ValueChanged<bool> onFavoritesOnlyChanged;
   final Set<String> muscleFilterIds;
   final ValueChanged<Set<String>> onMuscleFilter;
   const SearchAndFilters({
@@ -24,6 +26,8 @@ class SearchAndFilters extends StatefulWidget {
     required this.onQuery,
     required this.sort,
     required this.onSort,
+    required this.favoritesOnly,
+    required this.onFavoritesOnlyChanged,
     required this.muscleFilterIds,
     required this.onMuscleFilter,
   });
@@ -93,6 +97,14 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
     }
   }
 
+  String _favoritesLabel() {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    if (code == 'de') {
+      return 'Favoriten';
+    }
+    return 'Favorites';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -138,8 +150,10 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
                     ),
                     suffixIcon: value.text.isNotEmpty
                         ? IconButton(
-                            icon: Icon(Icons.clear,
-                                color: theme.iconTheme.color?.withOpacity(0.5)),
+                            icon: Icon(
+                              Icons.clear,
+                              color: theme.iconTheme.color?.withOpacity(0.5),
+                            ),
                             onPressed: () {
                               _controller.clear();
                               widget.onQuery('');
@@ -171,8 +185,18 @@ class _SearchAndFiltersState extends State<SearchAndFilters> {
               _FilterPill(
                 label: loc.filterRecentChip,
                 selected: widget.sort == SortOrder.recent,
+                onTap: () => widget.onSort(
+                  widget.sort == SortOrder.recent
+                      ? SortOrder.az
+                      : SortOrder.recent,
+                ),
+              ),
+              const SizedBox(width: 12),
+              _FilterPill(
+                label: _favoritesLabel(),
+                selected: widget.favoritesOnly,
                 onTap: () =>
-                    widget.onSort(widget.sort == SortOrder.recent ? SortOrder.az : SortOrder.recent),
+                    widget.onFavoritesOnlyChanged(!widget.favoritesOnly),
               ),
             ],
           ),
@@ -240,7 +264,7 @@ List<_MuscleFilterOption> _buildMuscleFilterOptions(List<MuscleGroup> groups) {
     }
     final canonical =
         regionGroups.firstWhereOrNull(isCanonicalMuscleGroupName) ??
-            regionGroups.first;
+        regionGroups.first;
     options.add(
       _MuscleFilterOption(
         id: canonical.id,
@@ -252,10 +276,7 @@ List<_MuscleFilterOption> _buildMuscleFilterOptions(List<MuscleGroup> groups) {
 }
 
 class _MuscleFilterOption {
-  const _MuscleFilterOption({
-    required this.id,
-    required this.label,
-  });
+  const _MuscleFilterOption({required this.id, required this.label});
 
   final String id;
   final String label;
@@ -384,8 +405,9 @@ class _MuscleFilterSheetState extends State<_MuscleFilterSheet> {
                     ),
                     const Spacer(),
                     ElevatedButton(
-                      onPressed: () =>
-                          Navigator.of(context).pop(Set<String>.from(_selection)),
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pop(Set<String>.from(_selection)),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
@@ -437,17 +459,12 @@ class _MuscleFilterChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           gradient: selected
               ? LinearGradient(
-                  colors: [
-                    colorScheme.primary,
-                    colorScheme.secondary,
-                  ],
+                  colors: [colorScheme.primary, colorScheme.secondary],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )
               : null,
-          color: selected
-              ? null
-              : colorScheme.surfaceVariant.withOpacity(0.75),
+          color: selected ? null : colorScheme.surfaceVariant.withOpacity(0.75),
           border: Border.all(
             color: selected
                 ? colorScheme.primary.withOpacity(0.8)

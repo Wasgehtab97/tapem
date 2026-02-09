@@ -39,77 +39,71 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      // Make scaffold transparent so background shows through
       backgroundColor: Colors.transparent,
       body: AuthBackground(
         child: Stack(
           children: [
-            Column(
-              children: [
-                const SizedBox(height: 20),
-                // Logo / Title Area
-                Center(
-                  child: Text(loc.authTitle, style: AuthTheme.headingStyle),
-                ),
-                const SizedBox(height: AuthTheme.spacingL),
-
-                // Content Area
-                Expanded(
-                  child: AuthKeyboardScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuthTheme.spacingM,
-                    ),
-                    child: Column(
-                      children: [
-                        // Custom Tab Bar
-                        AnimatedTabIndicator(
-                          controller: _tabController,
-                          tabs: [loc.loginButton, loc.registerButton],
-                        ),
-
-                        const SizedBox(height: AuthTheme.spacingL),
-
-                        // Forms Container
-                        GlassCard(
-                          child: AnimatedBuilder(
-                            animation: _tabController,
-                            builder: (context, _) {
-                              return AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 300),
-                                transitionBuilder: (child, animation) {
-                                  return FadeTransition(
-                                    opacity: animation,
-                                    child: SizeTransition(
-                                      sizeFactor: animation,
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                child: _tabController.index == 0
-                                    ? const LoginForm(key: ValueKey('login'))
-                                    : const RegistrationForm(
-                                        key: ValueKey('register'),
-                                      ),
-                              );
-                            },
-                          ),
-                        ),
-                        // Bottom spacing
-                        const SizedBox(height: 50),
-                      ],
+            AuthKeyboardScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuthTheme.spacingM,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 18),
+                  Text(
+                    loc.authTitle,
+                    textAlign: TextAlign.center,
+                    style: AuthTheme.headingStyle,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    loc.gymEntrySubtitle,
+                    textAlign: TextAlign.center,
+                    style: AuthTheme.bodyStyle,
+                  ),
+                  const SizedBox(height: AuthTheme.spacingL),
+                  AnimatedTabIndicator(
+                    controller: _tabController,
+                    tabs: [loc.loginButton, loc.registerButton],
+                  ),
+                  const SizedBox(height: AuthTheme.spacingL),
+                  GlassCard(
+                    child: AnimatedBuilder(
+                      animation: _tabController,
+                      builder: (context, _) {
+                        return AnimatedSwitcher(
+                          duration: AuthTheme.animationDurationMedium,
+                          transitionBuilder: (child, animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SizeTransition(
+                                sizeFactor: animation,
+                                axisAlignment: -1,
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _tabController.index == 0
+                              ? const LoginForm(key: ValueKey('login'))
+                              : const RegistrationForm(
+                                  key: ValueKey('register'),
+                                ),
+                        );
+                      },
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 36),
+                ],
+              ),
             ),
-
-            // Loading Overlay
             if (authProv.isLoading)
-              Container(
-                color: Colors.black.withOpacity(0.5),
-                child: const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF8B5CF6)),
+              Positioned.fill(
+                child: ColoredBox(
+                  color: Colors.black.withOpacity(0.48),
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
                 ),
               ),
           ],

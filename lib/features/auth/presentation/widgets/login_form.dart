@@ -68,7 +68,7 @@ class _LoginFormState extends ConsumerState<LoginForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: Colors.red.withOpacity(0.8),
+          backgroundColor: AuthTheme.danger.withOpacity(0.9),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -104,7 +104,11 @@ class _LoginFormState extends ConsumerState<LoginForm> {
     if (requiresGymSelection) {
       Navigator.of(context).pushReplacementNamed(AppRouter.selectGym);
     } else {
-      Navigator.of(context).pushReplacementNamed(AppRouter.home, arguments: 1);
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRouter.home,
+        (route) => false,
+        arguments: 1,
+      );
     }
   }
 
@@ -156,7 +160,7 @@ class _LoginFormState extends ConsumerState<LoginForm> {
               child: Text(
                 loc.forgotPassword,
                 style: AuthTheme.labelStyle.copyWith(
-                  color: Colors.white.withOpacity(0.6),
+                  color: AuthTheme.textMuted,
                   decoration: TextDecoration.underline,
                 ),
               ),

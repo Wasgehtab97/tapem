@@ -62,5 +62,23 @@ void main() {
       expect(dailyXp.netXpDelta, 0);
       expect(dailyXp.floorApplied, isTrue);
     });
+
+    test('preserves ruleset metadata in json conversion', () {
+      const original = StoryDailyXp(
+        xp: 120,
+        totalXp: 820,
+        computedTotalXp: 820,
+        runningTotalXp: 820,
+        rulesetId: 'xp_ruleset_v2',
+        rulesetVersion: 1,
+      );
+
+      final decoded = StoryDailyXp.fromJson(original.toJson());
+
+      expect(decoded.rulesetId, 'xp_ruleset_v2');
+      expect(decoded.rulesetVersion, 1);
+      expect(decoded.xp, 120);
+      expect(decoded.totalXp, 820);
+    });
   });
 }

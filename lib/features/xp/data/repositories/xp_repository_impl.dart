@@ -1,6 +1,7 @@
 import 'package:tapem/core/logging/elog.dart';
 
 import '../../domain/device_xp_result.dart';
+import '../../domain/day_xp_breakdown.dart';
 import '../../domain/session_xp_award.dart';
 import '../../domain/xp_repository.dart';
 import '../sources/firestore_xp_source.dart';
@@ -26,35 +27,43 @@ class XpRepositoryImpl implements XpRepository {
   }) {
     return _source
         .addSessionXp(
-      gymId: gymId,
-      userId: userId,
-      deviceId: deviceId,
-      sessionId: sessionId,
-      showInLeaderboard: showInLeaderboard,
-      isMulti: isMulti,
-      exerciseId: exerciseId,
-      traceId: traceId,
-      sessionDate: sessionDate,
-      timeZone: timeZone,
-      primaryMuscleGroupIds: primaryMuscleGroupIds,
-      secondaryMuscleGroupIds: secondaryMuscleGroupIds,
-    )
+          gymId: gymId,
+          userId: userId,
+          deviceId: deviceId,
+          sessionId: sessionId,
+          showInLeaderboard: showInLeaderboard,
+          isMulti: isMulti,
+          exerciseId: exerciseId,
+          traceId: traceId,
+          sessionDate: sessionDate,
+          timeZone: timeZone,
+          primaryMuscleGroupIds: primaryMuscleGroupIds,
+          secondaryMuscleGroupIds: secondaryMuscleGroupIds,
+        )
         .then((result) {
-        elogDeviceXp('REPO_RETURN', {
-          'result': result.result.name,
-          'uid': userId,
-          'gymId': gymId,
-          'deviceId': deviceId,
-          'sessionId': sessionId,
-          'traceId': traceId,
+          elogDeviceXp('REPO_RETURN', {
+            'result': result.result.name,
+            'uid': userId,
+            'gymId': gymId,
+            'deviceId': deviceId,
+            'sessionId': sessionId,
+            'traceId': traceId,
+          });
+          return result;
         });
-        return result;
-      });
   }
 
   @override
   Stream<int> watchDayXp({required String userId, required DateTime date}) {
     return _source.watchDayXp(userId: userId, date: date);
+  }
+
+  @override
+  Stream<DayXpBreakdown> watchDayBreakdown({
+    required String userId,
+    required DateTime date,
+  }) {
+    return _source.watchDayBreakdown(userId: userId, date: date);
   }
 
   @override

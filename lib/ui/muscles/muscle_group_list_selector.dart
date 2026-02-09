@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -100,7 +101,9 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
   void initState() {
     super.initState();
     _selected = [...widget.initialPrimary, ...widget.initialSecondary];
-    _primaryId = widget.initialPrimary.isNotEmpty ? widget.initialPrimary.first : null;
+    _primaryId = widget.initialPrimary.isNotEmpty
+        ? widget.initialPrimary.first
+        : null;
     _initialPrimary = List.of(widget.initialPrimary);
     _initialSecondary = List.of(widget.initialSecondary);
   }
@@ -108,14 +111,19 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
   @override
   void didUpdateWidget(covariant MuscleGroupListSelector oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final initialPrimaryChanged =
-        !listEquals(widget.initialPrimary, oldWidget.initialPrimary);
-    final initialSecondaryChanged =
-        !listEquals(widget.initialSecondary, oldWidget.initialSecondary);
+    final initialPrimaryChanged = !listEquals(
+      widget.initialPrimary,
+      oldWidget.initialPrimary,
+    );
+    final initialSecondaryChanged = !listEquals(
+      widget.initialSecondary,
+      oldWidget.initialSecondary,
+    );
     if (initialPrimaryChanged || initialSecondaryChanged) {
       _selected = [...widget.initialPrimary, ...widget.initialSecondary];
-      _primaryId =
-          widget.initialPrimary.isNotEmpty ? widget.initialPrimary.first : null;
+      _primaryId = widget.initialPrimary.isNotEmpty
+          ? widget.initialPrimary.first
+          : null;
       _initialPrimary = List.of(widget.initialPrimary);
       _initialSecondary = List.of(widget.initialSecondary);
     }
@@ -125,8 +133,10 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     MuscleRegion region,
     String idOrRegionKey,
   ) async {
-    final prov = riverpod.ProviderScope.containerOf(context, listen: false)
-        .read(muscleGroupProvider);
+    final prov = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(muscleGroupProvider);
     if (prov.groups.any((g) => g.id == idOrRegionKey)) {
       return idOrRegionKey;
     }
@@ -139,9 +149,9 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
   }
 
   void _emit() => widget.onChanged(
-        _primaryId == null ? [] : [_primaryId!],
-        _selected.where((x) => x != _primaryId).toList(),
-      );
+    _primaryId == null ? [] : [_primaryId!],
+    _selected.where((x) => x != _primaryId).toList(),
+  );
 
   void _toggleSelect(String idOrRegionKey, MuscleRegion region) async {
     final id = await _ensureIdForRegion(region, idOrRegionKey);
@@ -187,7 +197,7 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
 
   Map<MuscleRegion, MuscleGroup?> _buildCanonical(List<MuscleGroup> all) {
     final Map<MuscleRegion, MuscleGroup?> canonical = {
-      for (final r in _ordered) r: null
+      for (final r in _ordered) r: null,
     };
 
     for (final g in all) {
@@ -196,7 +206,9 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
         canonical[g.region] = g;
       } else if (!_isCanonical(current) && _isCanonical(g)) {
         canonical[g.region] = g;
-      } else if (!_isCanonical(current) && current.name.isEmpty && g.name.isNotEmpty) {
+      } else if (!_isCanonical(current) &&
+          current.name.isEmpty &&
+          g.name.isNotEmpty) {
         canonical[g.region] = g;
       }
     }
@@ -207,9 +219,12 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final prov = riverpod.ProviderScope.containerOf(context)
-        .read(muscleGroupProvider);
+    final prov = riverpod.ProviderScope.containerOf(
+      context,
+    ).read(muscleGroupProvider);
     final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final accent = brand?.outline ?? theme.colorScheme.secondary;
 
     if (prov.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -228,8 +243,9 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
       }
       if (name.toLowerCase().contains(widget.filter.toLowerCase())) {
         final key = g?.id ?? r.name;
-        byCat[_categoryFor(r)]!
-            .add(_Entry(region: r, group: g, displayName: name, key: key));
+        byCat[_categoryFor(r)]!.add(
+          _Entry(region: r, group: g, displayName: name, key: key),
+        );
       }
     }
 
@@ -237,9 +253,6 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
     if (!hasEntries) {
       return Center(child: Text(loc.exerciseNoMuscleGroups));
     }
-
-    final green = theme.colorScheme.primary;
-    final blue = theme.colorScheme.tertiary;
 
     return Column(
       children: [
@@ -261,7 +274,7 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
         ),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.fromLTRB(4, 6, 4, 10),
             children: [
               for (final c in _categories)
                 if (byCat[c]!.isNotEmpty) ...[
@@ -269,10 +282,13 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
                     header: true,
                     child: Text(
                       _categoryLabel(c, loc),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -281,42 +297,68 @@ class _MuscleGroupListSelectorState extends State<MuscleGroupListSelector> {
                         SizedBox(
                           height: 48,
                           child: Semantics(
-                            selected: entry.group?.id != null &&
+                            selected:
+                                entry.group?.id != null &&
                                 _selected.contains(entry.group!.id),
                             button: true,
                             label: entry.displayName,
                             child: GestureDetector(
                               onLongPress: () async {
                                 final id = await _ensureIdForRegion(
-                                    entry.region, entry.key);
+                                  entry.region,
+                                  entry.key,
+                                );
                                 _setPrimary(id);
                               },
                               child: FilterChip(
                                 materialTapTargetSize:
                                     MaterialTapTargetSize.shrinkWrap,
                                 avatar: CircleAvatar(
-                                  backgroundColor:
-                                      colorForRegion(entry.region),
+                                  backgroundColor: colorForRegion(entry.region),
                                   radius: 8,
                                 ),
-                                label: Text(entry.displayName,
-                                    softWrap: true, maxLines: 2),
-                                selected: entry.group?.id != null &&
+                                label: Text(
+                                  entry.displayName,
+                                  softWrap: true,
+                                  maxLines: 2,
+                                ),
+                                selected:
+                                    entry.group?.id != null &&
                                     _selected.contains(entry.group!.id),
                                 onSelected: (_) =>
                                     _toggleSelect(entry.key, entry.region),
-                                selectedColor: entry.group?.id != null &&
+                                showCheckmark: false,
+                                backgroundColor: Colors.white.withOpacity(0.04),
+                                side: BorderSide(
+                                  color:
+                                      entry.group?.id != null &&
+                                          _selected.contains(entry.group!.id)
+                                      ? accent.withOpacity(0.55)
+                                      : Colors.white.withOpacity(0.12),
+                                ),
+                                selectedColor:
+                                    entry.group?.id != null &&
                                         _primaryId == entry.group!.id
-                                    ? green
-                                    : blue,
-                                showCheckmark: true,
+                                    ? accent.withOpacity(0.30)
+                                    : accent.withOpacity(0.18),
+                                labelStyle: theme.textTheme.bodyMedium
+                                    ?.copyWith(
+                                      fontWeight:
+                                          entry.group?.id != null &&
+                                              _selected.contains(
+                                                entry.group!.id,
+                                              )
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      color: Colors.white.withOpacity(0.92),
+                                    ),
                               ),
                             ),
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                 ],
             ],
           ),

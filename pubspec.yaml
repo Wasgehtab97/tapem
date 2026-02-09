@@ -1,7 +1,7 @@
 name: tapem
 description: "Tap’em – NFC-basiertes Gym-Tracking und Gym-Management"
 publish_to: none
-version: 1.0.3+3
+version: 1.0.5+4
 
 environment:
   sdk: ">=3.8.0 <4.0.0" # passend zu Dart 3.8.1 (Flutter 3.32.8)
@@ -19,6 +19,7 @@ dependencies:
   flutter_sticky_header: ^0.7.0
   scroll_to_index: ^3.0.1
   google_fonts: ^6.1.0
+  salomon_bottom_bar: ^3.3.2
 
   # Lokalisierung
   flutter_localizations:

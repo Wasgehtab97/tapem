@@ -23,12 +23,12 @@ class StorySessionService {
     StorySessionHistoryStore? historyStore,
     StorySessionPrStore? prStore,
     DateTime Function()? now,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _dailyStatsCache = dailyStatsCache ?? const DailyStatsCacheStore(),
-        _summaryStore = summaryStore ?? const StorySessionSummaryStore(),
-        _historyStore = historyStore ?? const StorySessionHistoryStore(),
-        _prStore = prStore ?? const StorySessionPrStore(),
-        _now = now ?? DateTime.now;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _dailyStatsCache = dailyStatsCache ?? const DailyStatsCacheStore(),
+       _summaryStore = summaryStore ?? const StorySessionSummaryStore(),
+       _historyStore = historyStore ?? const StorySessionHistoryStore(),
+       _prStore = prStore ?? const StorySessionPrStore(),
+       _now = now ?? DateTime.now;
 
   final FirebaseFirestore _firestore;
   final DailyStatsCache _dailyStatsCache;
@@ -42,6 +42,7 @@ class StorySessionService {
     required String userId,
     required DateTime date,
     required List<Session> sessions,
+    int? fallbackDurationMs,
   }) async {
     final dayKey = logicDayKey(date);
     if (sessions.isEmpty) {
@@ -57,14 +58,19 @@ class StorySessionService {
       );
     }
 
-    final dayXp = await _resolveDayXp(
-      gymId: gymId,
-      userId: userId,
-      date: date,
-    );
+    final dayXp = await _resolveDayXp(gymId: gymId, userId: userId, date: date);
 
     final cached = await _summaryStore.read(gymId, userId, dayKey);
-    if (cached != null && !_needsStatsRebuild(cached, sessions)) {
+    if (!_isValidPositiveDuration(fallbackDurationMs)) {
+      fallbackDurationMs = null;
+    }
+
+    if (cached != null &&
+        !_needsStatsRebuild(
+          cached,
+          sessions,
+          fallbackDurationMs: fallbackDurationMs,
+        )) {
       return _finalizeSummary(
         summary: cached,
         gymId: gymId,
@@ -74,11 +80,17 @@ class StorySessionService {
         sessions: sessions,
         dayXp: dayXp,
         isCachedLocal: true,
+        fallbackDurationMs: fallbackDurationMs,
       );
     }
 
     final remote = await _loadRemoteSummary(gymId, userId, dayKey);
-    if (remote != null && !_needsStatsRebuild(remote, sessions)) {
+    if (remote != null &&
+        !_needsStatsRebuild(
+          remote,
+          sessions,
+          fallbackDurationMs: fallbackDurationMs,
+        )) {
       return _finalizeSummary(
         summary: remote,
         gymId: gymId,
@@ -88,6 +100,7 @@ class StorySessionService {
         sessions: sessions,
         dayXp: dayXp,
         isCachedLocal: false,
+        fallbackDurationMs: fallbackDurationMs,
       );
     }
 
@@ -98,6 +111,7 @@ class StorySessionService {
       dayKey: dayKey,
       sessions: sessions,
       dayXp: dayXp,
+      fallbackDurationMs: fallbackDurationMs,
     );
     if (summary != null) {
       return _finalizeSummary(
@@ -109,6 +123,7 @@ class StorySessionService {
         sessions: sessions,
         dayXp: dayXp,
         isCachedLocal: false,
+        fallbackDurationMs: fallbackDurationMs,
       );
     }
     return summary;
@@ -123,6 +138,7 @@ class StorySessionService {
     required List<Session> sessions,
     required StoryDailyXp dayXp,
     required bool isCachedLocal,
+    int? fallbackDurationMs,
   }) async {
     final normalized = _normalizeSummary(summary: summary, dayXp: dayXp);
     if (!isCachedLocal || normalized != summary) {
@@ -140,6 +156,7 @@ class StorySessionService {
       date: date,
       sessions: sessions,
       dayXp: dayXp,
+      fallbackDurationMs: fallbackDurationMs,
     );
     if (ensured != normalized) {
       await _summaryStore.write(ensured);
@@ -157,9 +174,11 @@ class StorySessionService {
     required DateTime date,
     required List<Session> sessions,
     required StoryDailyXp dayXp,
+    int? fallbackDurationMs,
   }) async {
-    final hasPrAchievement = summary.achievements
-        .any((achievement) => achievement.type == StoryAchievementType.personalRecord);
+    final hasPrAchievement = summary.achievements.any(
+      (achievement) => achievement.type == StoryAchievementType.personalRecord,
+    );
     final hasFirstTimeAchievement = summary.achievements.any(
       (achievement) =>
           achievement.type == StoryAchievementType.newDevice ||
@@ -188,6 +207,7 @@ class StorySessionService {
           dayKey: dayKey,
           sessions: sessions,
           dayXp: dayXp,
+          fallbackDurationMs: fallbackDurationMs,
         );
         if (rebuilt != null) {
           return _normalizeSummary(summary: rebuilt, dayXp: dayXp);
@@ -212,6 +232,7 @@ class StorySessionService {
       dayKey: dayKey,
       sessions: sessions,
       dayXp: dayXp,
+      fallbackDurationMs: fallbackDurationMs,
     );
     if (rebuilt == null) {
       return summary;
@@ -257,8 +278,11 @@ class StorySessionService {
     final dayKey = logicDayKey(date);
     for (final session in sessions) {
       if (!session.isMulti) {
-        final seenDevice =
-            await _historyStore.hasSeenDevice(gymId, userId, session.deviceId);
+        final seenDevice = await _historyStore.hasSeenDevice(
+          gymId,
+          userId,
+          session.deviceId,
+        );
         if (seenDevice) {
           continue;
         }
@@ -319,8 +343,9 @@ class StorySessionService {
   }
 
   bool _hasNonDailyAchievements(StorySessionSummary summary) {
-    return summary.achievements
-        .any((achievement) => achievement.type != StoryAchievementType.dailyXp);
+    return summary.achievements.any(
+      (achievement) => achievement.type != StoryAchievementType.dailyXp,
+    );
   }
 
   Future<StorySessionSummary?> _buildSummary({
@@ -330,6 +355,7 @@ class StorySessionService {
     required String dayKey,
     required List<Session> sessions,
     required StoryDailyXp dayXp,
+    int? fallbackDurationMs,
   }) async {
     if (sessions.isEmpty) return null;
     final generatedAt = _now();
@@ -344,8 +370,11 @@ class StorySessionService {
       final isMulti = session.isMulti;
 
       if (!isMulti && !newDevices.containsKey(deviceId)) {
-        final seenDevice =
-            await _historyStore.hasSeenDevice(gymId, userId, deviceId);
+        final seenDevice = await _historyStore.hasSeenDevice(
+          gymId,
+          userId,
+          deviceId,
+        );
         // If we've seen it before in our local history, skip it
         if (seenDevice) {
           continue;
@@ -367,8 +396,11 @@ class StorySessionService {
 
       if (isMulti && (exerciseId == null || exerciseId.isEmpty)) {
         if (!newDevices.containsKey(deviceId)) {
-          final seenDevice =
-              await _historyStore.hasSeenDevice(gymId, userId, deviceId);
+          final seenDevice = await _historyStore.hasSeenDevice(
+            gymId,
+            userId,
+            deviceId,
+          );
           if (!seenDevice) {
             final existedBefore = await _hasPriorUsage(
               gymId: gymId,
@@ -485,7 +517,10 @@ class StorySessionService {
         final exerciseName = candidate.session.exerciseName;
         if (exerciseName == null || exerciseName.trim().isEmpty) {
           nameRequests.add(
-            _ExerciseKey(deviceId: candidate.session.deviceId, exerciseId: exerciseId),
+            _ExerciseKey(
+              deviceId: candidate.session.deviceId,
+              exerciseId: exerciseId,
+            ),
           );
         }
       }
@@ -517,13 +552,17 @@ class StorySessionService {
       final session = entry.value;
       final exerciseId = session.exerciseId;
       final resolvedName = (exerciseId != null && exerciseId.isNotEmpty)
-          ? resolvedExerciseNames[_ExerciseKey(deviceId: session.deviceId, exerciseId: exerciseId)]
+          ? resolvedExerciseNames[_ExerciseKey(
+              deviceId: session.deviceId,
+              exerciseId: exerciseId,
+            )]
           : null;
       final displayName = (session.exerciseName?.trim().isNotEmpty ?? false)
           ? session.exerciseName!.trim()
           : (resolvedName ?? session.deviceName);
       final deviceName = session.deviceName.trim();
-      final isDuplicateDevice = newDevices.containsKey(session.deviceId) &&
+      final isDuplicateDevice =
+          newDevices.containsKey(session.deviceId) &&
           displayName.trim().toLowerCase() == deviceName.toLowerCase();
       if (isDuplicateDevice) {
         continue;
@@ -540,11 +579,13 @@ class StorySessionService {
     for (final candidate in newPrs.values) {
       final exerciseId = candidate.session.exerciseId;
       final resolvedName = (exerciseId != null && exerciseId.isNotEmpty)
-          ? resolvedExerciseNames[
-              _ExerciseKey(deviceId: candidate.session.deviceId, exerciseId: exerciseId)
-            ]
+          ? resolvedExerciseNames[_ExerciseKey(
+              deviceId: candidate.session.deviceId,
+              exerciseId: exerciseId,
+            )]
           : null;
-      final exerciseName = (candidate.session.exerciseName?.trim().isNotEmpty ?? false)
+      final exerciseName =
+          (candidate.session.exerciseName?.trim().isNotEmpty ?? false)
           ? candidate.session.exerciseName!.trim()
           : resolvedName;
       achievementsBuffer.add(
@@ -559,7 +600,10 @@ class StorySessionService {
       );
     }
 
-    final stats = _deriveStatsFromSessions(sessions);
+    final stats = _deriveStatsFromSessions(
+      sessions,
+      fallbackDurationMs: fallbackDurationMs,
+    );
 
     final summary = StorySessionSummary(
       gymId: gymId,
@@ -602,7 +646,10 @@ class StorySessionService {
     return null;
   }
 
-  StorySessionStats _deriveStatsFromSessions(List<Session> sessions) {
+  StorySessionStats _deriveStatsFromSessions(
+    List<Session> sessions, {
+    int? fallbackDurationMs,
+  }) {
     if (sessions.isEmpty) {
       return const StorySessionStats.empty();
     }
@@ -650,6 +697,10 @@ class StorySessionService {
         totalDurationMs = diff;
       }
     }
+    final fallback = fallbackDurationMs;
+    if (fallback != null && fallback > totalDurationMs) {
+      totalDurationMs = fallback;
+    }
 
     return StorySessionStats(
       exerciseCount: uniqueActivities.length,
@@ -670,9 +721,16 @@ class StorySessionService {
     return latest;
   }
 
-  bool _needsStatsRebuild(StorySessionSummary summary, List<Session> sessions) {
+  bool _needsStatsRebuild(
+    StorySessionSummary summary,
+    List<Session> sessions, {
+    int? fallbackDurationMs,
+  }) {
     if (sessions.isEmpty) return false;
-    final derivedStats = _deriveStatsFromSessions(sessions);
+    final derivedStats = _deriveStatsFromSessions(
+      sessions,
+      fallbackDurationMs: fallbackDurationMs,
+    );
     final stats = summary.stats;
     if (stats.exerciseCount != derivedStats.exerciseCount ||
         stats.setCount != derivedStats.setCount ||
@@ -680,7 +738,8 @@ class StorySessionService {
       return true;
     }
     final latestActivity = _latestActivityTimestamp(sessions);
-    if (latestActivity != null && summary.generatedAt.isBefore(latestActivity)) {
+    if (latestActivity != null &&
+        summary.generatedAt.isBefore(latestActivity)) {
       return true;
     }
     return false;
@@ -739,13 +798,9 @@ class StorySessionService {
       before: before,
     );
     if (value != null) {
-      await _prStore.write(
-        gymId,
-        userId,
-        {
-          key: StorySessionPrCacheEntry(value: value),
-        },
-      );
+      await _prStore.write(gymId, userId, {
+        key: StorySessionPrCacheEntry(value: value),
+      });
     }
     return value;
   }
@@ -936,6 +991,8 @@ class StorySessionService {
           xp: xpEntry.xp,
           totalXp: xpEntry.totalXp,
           computedTotalXp: xpEntry.computedTotalXp,
+          rulesetId: xpEntry.rulesetId,
+          rulesetVersion: xpEntry.rulesetVersion,
           components: _mapComponents(xpEntry.components),
           penalties: _mapPenalties(xpEntry.penalties),
         );
@@ -945,12 +1002,20 @@ class StorySessionService {
     }
 
     try {
-      final dayRef = _firestore.collection('users').doc(userId).collection('trainingDayXP');
+      final dayRef = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('trainingDayXP');
       final snap = await dayRef.doc(dayKey).get();
       final data = snap.data();
       if (snap.exists && data != null) {
-        final remote = _dailyXpFromDoc(data, fallbackPenalties: cacheDaily?.penalties);
-        return cacheDaily != null ? _mergeDailyXpDetails(remote, cacheDaily) : remote;
+        final remote = _dailyXpFromDoc(
+          data,
+          fallbackPenalties: cacheDaily?.penalties,
+        );
+        return cacheDaily != null
+            ? _mergeDailyXpDetails(remote, cacheDaily)
+            : remote;
       }
     } on FirebaseException {
       // Ignore remote read issues and fall back to cache/defaults.
@@ -970,7 +1035,9 @@ class StorySessionService {
     final merged = _mergeDailyXpDetails(dayXp, summary.dailyXp);
     final achievements = summary.achievements;
     List<StoryAchievement>? updatedAchievements;
-    final idx = achievements.indexWhere((a) => a.type == StoryAchievementType.dailyXp);
+    final idx = achievements.indexWhere(
+      (a) => a.type == StoryAchievementType.dailyXp,
+    );
     if (idx >= 0) {
       final daily = achievements[idx];
       final needsUpdate =
@@ -997,7 +1064,8 @@ class StorySessionService {
       ];
     }
 
-    if (summary.totalXp == merged.xp && summary.dailyXp == merged &&
+    if (summary.totalXp == merged.xp &&
+        summary.dailyXp == merged &&
         updatedAchievements == null) {
       return summary;
     }
@@ -1010,10 +1078,11 @@ class StorySessionService {
   }
 }
 
+bool _isValidPositiveDuration(int? durationMs) =>
+    durationMs != null && durationMs > 0;
+
 final storySessionServiceProvider = Provider<StorySessionService>((ref) {
-  return StorySessionService(
-    firestore: FirebaseFirestore.instance,
-  );
+  return StorySessionService(firestore: FirebaseFirestore.instance);
 });
 
 StoryDailyXp _dailyXpFromDoc(
@@ -1024,6 +1093,10 @@ StoryDailyXp _dailyXpFromDoc(
   final totalXp = (data['totalXp'] as num?)?.toInt();
   final computedTotal = (data['computedTotalXp'] as num?)?.toInt();
   final runningTotal = (data['runningTotalXp'] as num?)?.toInt();
+  final rawRulesetId = data['xpRulesetId'] ?? data['rulesetId'];
+  final rulesetId = rawRulesetId is String ? rawRulesetId.trim() : null;
+  final rulesetVersion =
+      ((data['xpRulesetVersion'] ?? data['rulesetVersion']) as num?)?.toInt();
   final metadata = _coerceMetadata(data['metadata']);
   final components = _mapComponents(data['components']);
   return StoryDailyXp(
@@ -1031,6 +1104,8 @@ StoryDailyXp _dailyXpFromDoc(
     totalXp: totalXp,
     computedTotalXp: computedTotal,
     runningTotalXp: runningTotal,
+    rulesetId: rulesetId == null || rulesetId.isEmpty ? null : rulesetId,
+    rulesetVersion: rulesetVersion,
     metadata: metadata,
     components: components,
     penalties: fallbackPenalties ?? const [],
@@ -1046,11 +1121,13 @@ Map<String, dynamic> _coerceMetadata(dynamic raw) {
 
 List<StoryXpComponent> _mapComponents(dynamic raw) {
   if (raw is List) {
-    return List.unmodifiable(raw.whereType<Map>().map((entry) {
-      return StoryXpComponent.fromJson(
-        entry.map((key, value) => MapEntry('$key', value)),
-      );
-    }));
+    return List.unmodifiable(
+      raw.whereType<Map>().map((entry) {
+        return StoryXpComponent.fromJson(
+          entry.map((key, value) => MapEntry('$key', value)),
+        );
+      }),
+    );
   }
   if (raw is List<Map<String, dynamic>>) {
     return List.unmodifiable(raw.map(StoryXpComponent.fromJson));
@@ -1060,11 +1137,13 @@ List<StoryXpComponent> _mapComponents(dynamic raw) {
 
 List<StoryXpPenalty> _mapPenalties(dynamic raw) {
   if (raw is List) {
-    return List.unmodifiable(raw.whereType<Map>().map((entry) {
-      return StoryXpPenalty.fromJson(
-        entry.map((key, value) => MapEntry('$key', value)),
-      );
-    }));
+    return List.unmodifiable(
+      raw.whereType<Map>().map((entry) {
+        return StoryXpPenalty.fromJson(
+          entry.map((key, value) => MapEntry('$key', value)),
+        );
+      }),
+    );
   }
   if (raw is List<Map<String, dynamic>>) {
     return List.unmodifiable(raw.map(StoryXpPenalty.fromJson));
@@ -1072,12 +1151,19 @@ List<StoryXpPenalty> _mapPenalties(dynamic raw) {
   return const [];
 }
 
-StoryDailyXp _mergeDailyXpDetails(StoryDailyXp incoming, StoryDailyXp existing) {
+StoryDailyXp _mergeDailyXpDetails(
+  StoryDailyXp incoming,
+  StoryDailyXp existing,
+) {
   final xp = incoming.xp != 0 || existing.xp == 0 ? incoming.xp : existing.xp;
   final totalXp = incoming.totalXp ?? existing.totalXp;
   final computedTotalXp = incoming.computedTotalXp ?? existing.computedTotalXp;
   final runningTotalXp = incoming.runningTotalXp ?? existing.runningTotalXp;
-  final metadata = incoming.metadata.isNotEmpty ? incoming.metadata : existing.metadata;
+  final rulesetId = incoming.rulesetId ?? existing.rulesetId;
+  final rulesetVersion = incoming.rulesetVersion ?? existing.rulesetVersion;
+  final metadata = incoming.metadata.isNotEmpty
+      ? incoming.metadata
+      : existing.metadata;
   final components = incoming.components.isNotEmpty
       ? incoming.components
       : existing.components;
@@ -1089,6 +1175,8 @@ StoryDailyXp _mergeDailyXpDetails(StoryDailyXp incoming, StoryDailyXp existing) 
     totalXp: totalXp,
     computedTotalXp: computedTotalXp,
     runningTotalXp: runningTotalXp,
+    rulesetId: rulesetId,
+    rulesetVersion: rulesetVersion,
     metadata: metadata,
     components: components,
     penalties: penalties,
@@ -1139,7 +1227,9 @@ class _ExerciseKey {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is _ExerciseKey && other.deviceId == deviceId && other.exerciseId == exerciseId;
+    return other is _ExerciseKey &&
+        other.deviceId == deviceId &&
+        other.exerciseId == exerciseId;
   }
 
   @override

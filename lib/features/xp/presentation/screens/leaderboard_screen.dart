@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -8,6 +9,7 @@ import 'package:tapem/features/friends/domain/models/public_profile.dart';
 import 'package:tapem/features/friends/presentation/widgets/friend_list_tile.dart';
 import 'package:tapem/features/friends/providers/friends_riverpod.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
+import 'package:tapem/features/rank/presentation/widgets/ranking_ui.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import '../../../../core/providers/auth_providers.dart';
 
@@ -15,19 +17,13 @@ class LeaderboardEntry {
   final PublicProfile profile;
   final _XpTotals totals;
 
-  const LeaderboardEntry({
-    required this.profile,
-    required this.totals,
-  });
+  const LeaderboardEntry({required this.profile, required this.totals});
 
   int xpForScope(LeaderboardScope scope) => totals.forScope(scope);
 }
 
 class _XpTotals {
-  const _XpTotals({
-    required this.overall,
-    required this.seasonXp,
-  });
+  const _XpTotals({required this.overall, required this.seasonXp});
 
   final int overall;
   final Map<String, int> seasonXp;
@@ -68,7 +64,8 @@ class LeaderboardScreen extends riverpod.ConsumerStatefulWidget {
       _LeaderboardScreenState();
 }
 
-class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> {
+class _LeaderboardScreenState
+    extends riverpod.ConsumerState<LeaderboardScreen> {
   _LeaderboardMode _mode = _LeaderboardMode.gym;
   LeaderboardScope _scope = LeaderboardScope.overall;
   List<LeaderboardEntry>? _gymEntries;
@@ -76,39 +73,46 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
   bool _loadingGym = false;
   bool _loadingFriends = false;
   int _selectedLevel = 1;
-  static const _XpTotals _zeroTotals =
-      _XpTotals(overall: 0, seasonXp: {'2025': 0, '2026': 0});
+  static const _XpTotals _zeroTotals = _XpTotals(
+    overall: 0,
+    seasonXp: {'2025': 0, '2026': 0},
+  );
 
-  Future<_XpTotals> _loadXpTotalsAcrossGyms(String uid, Set<String> gymIds) async {
+  Future<_XpTotals> _loadXpTotalsAcrossGyms(
+    String uid,
+    Set<String> gymIds,
+  ) async {
     if (gymIds.isEmpty) {
       return _zeroTotals;
     }
     final fs = FirebaseFirestore.instance;
-    final xpValues = await Future.wait(gymIds.map((gymId) async {
-      try {
-        final statsDoc = await fs
-            .collection('gyms')
-            .doc(gymId)
-            .collection('users')
-            .doc(uid)
-            .collection('rank')
-            .doc('stats')
-            .get();
-        return _parseXpTotals(statsDoc.data());
-      } on FirebaseException catch (error, stack) {
-        debugPrint(
-          'Failed to load rank stats for user=$uid gym=$gymId: ${error.message}',
-        );
-        debugPrint('$stack');
-        return _zeroTotals;
-      } catch (error, stack) {
-        debugPrint(
-          'Unexpected error loading rank stats for user=$uid gym=$gymId: $error',
-        );
-        debugPrint('$stack');
-        return _zeroTotals;
-      }
-    }));
+    final xpValues = await Future.wait(
+      gymIds.map((gymId) async {
+        try {
+          final statsDoc = await fs
+              .collection('gyms')
+              .doc(gymId)
+              .collection('users')
+              .doc(uid)
+              .collection('rank')
+              .doc('stats')
+              .get();
+          return _parseXpTotals(statsDoc.data());
+        } on FirebaseException catch (error, stack) {
+          debugPrint(
+            'Failed to load rank stats for user=$uid gym=$gymId: ${error.message}',
+          );
+          debugPrint('$stack');
+          return _zeroTotals;
+        } catch (error, stack) {
+          debugPrint(
+            'Unexpected error loading rank stats for user=$uid gym=$gymId: $error',
+          );
+          debugPrint('$stack');
+          return _zeroTotals;
+        }
+      }),
+    );
     return xpValues.fold<_XpTotals>(
       _zeroTotals,
       (total, value) => total + value,
@@ -166,7 +170,11 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
     }
     try {
       final fs = FirebaseFirestore.instance;
-      final snap = await fs.collection('gyms').doc(gymId).collection('users').get();
+      final snap = await fs
+          .collection('gyms')
+          .doc(gymId)
+          .collection('users')
+          .get();
       final futures = snap.docs.map((doc) async {
         final uid = doc.id;
         final userDoc = await fs.collection('users').doc(uid).get();
@@ -174,9 +182,7 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
         final showInLeaderboard =
             userData?['showInLeaderboard'] as bool? ?? true;
         final role = userData?['role'] as String?;
-        if (userData == null ||
-            !showInLeaderboard ||
-            role == 'admin') {
+        if (userData == null || !showInLeaderboard || role == 'admin') {
           return null;
         }
         final profile = PublicProfile.fromMap(uid, userData);
@@ -191,14 +197,13 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
         final totals = _parseXpTotals(statsDoc.data());
         return LeaderboardEntry(profile: profile, totals: totals);
       });
-      final entries = (await Future.wait(futures))
-          .whereType<LeaderboardEntry>()
-          .toList()
-        ..sort(
-          (a, b) => b
-              .xpForScope(LeaderboardScope.overall)
-              .compareTo(a.xpForScope(LeaderboardScope.overall)),
-        );
+      final entries =
+          (await Future.wait(futures)).whereType<LeaderboardEntry>().toList()
+            ..sort(
+              (a, b) => b
+                  .xpForScope(LeaderboardScope.overall)
+                  .compareTo(a.xpForScope(LeaderboardScope.overall)),
+            );
       if (!mounted) return;
       setState(() => _gymEntries = entries);
     } catch (error, stack) {
@@ -237,9 +242,7 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
         final showInLeaderboard =
             userData?['showInLeaderboard'] as bool? ?? true;
         final role = userData?['role'] as String?;
-        if (userData == null ||
-            !showInLeaderboard ||
-            role == 'admin') {
+        if (userData == null || !showInLeaderboard || role == 'admin') {
           return null;
         }
         final profile = PublicProfile.fromMap(uid, userData);
@@ -247,7 +250,8 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
             .whereType<String>()
             .where((code) => code.isNotEmpty);
         final candidateGyms = <String>{
-          if ((profile.primaryGymCode ?? '').isNotEmpty) profile.primaryGymCode!,
+          if ((profile.primaryGymCode ?? '').isNotEmpty)
+            profile.primaryGymCode!,
           ...gymCodes,
         };
         if (candidateGyms.isEmpty) {
@@ -259,14 +263,13 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
         final totals = await _loadXpTotalsAcrossGyms(uid, candidateGyms);
         return LeaderboardEntry(profile: profile, totals: totals);
       });
-      final entries = (await Future.wait(futures))
-          .whereType<LeaderboardEntry>()
-          .toList()
-        ..sort(
-          (a, b) => b
-              .xpForScope(LeaderboardScope.overall)
-              .compareTo(a.xpForScope(LeaderboardScope.overall)),
-        );
+      final entries =
+          (await Future.wait(futures)).whereType<LeaderboardEntry>().toList()
+            ..sort(
+              (a, b) => b
+                  .xpForScope(LeaderboardScope.overall)
+                  .compareTo(a.xpForScope(LeaderboardScope.overall)),
+            );
       if (!mounted) return;
       setState(() => _friendEntries = entries);
     } catch (error, stack) {
@@ -299,23 +302,17 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthViewState>(
-      authViewStateProvider,
-      (_, __) {
-        _refreshGym();
+    ref.listen<AuthViewState>(authViewStateProvider, (_, __) {
+      _refreshGym();
+      _refreshFriends();
+    });
+    ref.listen<FriendsState>(friendsProvider, (previous, next) {
+      final prevIds = previous?.friends.map((f) => f.friendUid).toSet();
+      final nextIds = next.friends.map((f) => f.friendUid).toSet();
+      if (prevIds != nextIds) {
         _refreshFriends();
-      },
-    );
-    ref.listen<FriendsState>(
-      friendsProvider,
-      (previous, next) {
-        final prevIds = previous?.friends.map((f) => f.friendUid).toSet();
-        final nextIds = next.friends.map((f) => f.friendUid).toSet();
-        if (prevIds != nextIds) {
-          _refreshFriends();
-        }
-      },
-    );
+      }
+    });
 
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
@@ -325,15 +322,36 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
     final isGym = _mode == _LeaderboardMode.gym;
     final sourceEntries = isGym ? _gymEntries : _friendEntries;
     final isLoading = isGym ? _loadingGym : _loadingFriends;
+    final currentUserId = ref.watch(authViewStateProvider).userId;
+    final sortedForScope = sourceEntries == null
+        ? const <LeaderboardEntry>[]
+        : _sortedEntriesForScope(sourceEntries, _scope);
 
     String scopeLabel(LeaderboardScope scope) {
       switch (scope) {
         case LeaderboardScope.overall:
-          return 'Overall';
+          return 'Gesamt';
         case LeaderboardScope.season2025:
           return 'Season 25';
         case LeaderboardScope.season2026:
           return 'Season 26';
+      }
+    }
+
+    int? currentRank;
+    int currentXp = 0;
+    int? xpToNextRank;
+    if (currentUserId != null && sortedForScope.isNotEmpty) {
+      final selfIndex = sortedForScope.indexWhere(
+        (entry) => entry.profile.uid == currentUserId,
+      );
+      if (selfIndex >= 0) {
+        currentRank = selfIndex + 1;
+        currentXp = sortedForScope[selfIndex].xpForScope(_scope);
+        if (selfIndex > 0) {
+          final aboveXp = sortedForScope[selfIndex - 1].xpForScope(_scope);
+          xpToNextRank = (aboveXp - currentXp).clamp(0, 1 << 31);
+        }
       }
     }
 
@@ -362,13 +380,13 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
         );
       }
       final entries = _sortedEntriesForScope(sourceEntries, _scope);
-      final currentUserId =
-          ref.watch(authViewStateProvider).userId;
       return _LevelLeaderboardList(
         entries: entries,
         scope: _scope,
         progressColor: progressColor,
-        title: isGym ? loc.leaderboardGymCardTitle : loc.leaderboardFriendsCardTitle,
+        title: isGym
+            ? loc.leaderboardGymCardTitle
+            : loc.leaderboardFriendsCardTitle,
         selectedLevel: _selectedLevel,
         onLevelChanged: _updateSelectedLevel,
         currentUserId: currentUserId,
@@ -376,78 +394,72 @@ class _LeaderboardScreenState extends riverpod.ConsumerState<LeaderboardScreen> 
     }
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: Text(widget.title)),
-      body: RefreshIndicator(
-        onRefresh: isGym ? _refreshGym : _refreshFriends,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.md,
-          ),
-          children: [
-            Center(
-              child: ToggleButtons(
-                borderRadius: BorderRadius.circular(AppRadius.button),
-                onPressed: (index) {
+      body: RankingGradientBackground(
+        child: RefreshIndicator(
+          color: progressColor,
+          onRefresh: isGym ? _refreshGym : _refreshFriends,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.md,
+            ),
+            children: [
+              _LeaderboardHeroCard(
+                modeLabel: isGym
+                    ? loc.leaderboardGymTabLabel
+                    : loc.leaderboardFriendsTabLabel,
+                scopeLabel: scopeLabel(_scope),
+                rank: currentRank,
+                xp: currentXp,
+                xpToNextRank: xpToNextRank,
+                accent: progressColor,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              RankingNextRankSignalCard(
+                accent: progressColor,
+                rank: currentRank,
+                xpToNextRank: xpToNextRank,
+                participantCount: sortedForScope.length,
+                loading: isLoading && sourceEntries == null,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _RankingToggleGroup(
+                labels: [
+                  loc.leaderboardGymTabLabel,
+                  loc.leaderboardFriendsTabLabel,
+                ],
+                selectedIndex: isGym ? 0 : 1,
+                onSelected: (index) {
                   setState(() {
                     _mode = index == 0
                         ? _LeaderboardMode.gym
                         : _LeaderboardMode.friends;
                   });
                 },
-                isSelected: [isGym, !isGym],
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                    ),
-                    child: Text(loc.leaderboardGymTabLabel),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                    ),
-                    child: Text(loc.leaderboardFriendsTabLabel),
-                  ),
-                ],
+                accent: progressColor,
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: AppSpacing.xs.toDouble(),
-              runSpacing: AppSpacing.xs.toDouble(),
-              children: LeaderboardScope.values.map((scope) {
-                final selected = _scope == scope;
-                return ChoiceChip(
-                  label: Text(scopeLabel(scope)),
-                  selected: selected,
-                  onSelected: (_) => setState(() => _scope = scope),
-                  selectedColor: progressColor,
-                  labelStyle: theme.textTheme.bodySmall?.copyWith(
-                    color: selected
-                        ? theme.colorScheme.onPrimary
-                        : theme.colorScheme.onSurface,
-                    fontWeight:
-                        selected ? FontWeight.w600 : FontWeight.normal,
-                  ),
-                  backgroundColor:
-                      theme.colorScheme.onSurface.withOpacity(0.04),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.chip - 4),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            buildContent(),
-          ],
+              const SizedBox(height: AppSpacing.sm),
+              _RankingToggleGroup(
+                labels: LeaderboardScope.values.map(scopeLabel).toList(),
+                selectedIndex: LeaderboardScope.values.indexOf(_scope),
+                onSelected: (index) {
+                  setState(() {
+                    _scope = LeaderboardScope.values[index];
+                  });
+                },
+                accent: progressColor,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              buildContent(),
+            ],
+          ),
         ),
       ),
     );
   }
-
 }
 
 class _LevelLeaderboardList extends StatelessWidget {
@@ -504,16 +516,21 @@ class _LevelLeaderboardList extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withOpacity(0.08),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.surface.withOpacity(0.95),
+            theme.colorScheme.surface.withOpacity(0.84),
+          ],
         ),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: progressColor.withOpacity(0.26)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 24,
-            offset: const Offset(0, 18),
+            color: Colors.black.withOpacity(0.36),
+            blurRadius: 28,
+            offset: const Offset(0, 16),
           ),
         ],
       ),
@@ -524,9 +541,11 @@ class _LevelLeaderboardList extends StatelessWidget {
           children: [
             Text(
               title,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: GoogleFonts.rajdhani(
+                textStyle: theme.textTheme.titleLarge,
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,
+                letterSpacing: 0.5,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -551,14 +570,15 @@ class _LevelLeaderboardList extends StatelessWidget {
                         color: isSelected
                             ? theme.colorScheme.onPrimary
                             : theme.colorScheme.onSurface,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
-                      backgroundColor:
-                          theme.colorScheme.onSurface.withOpacity(0.04),
+                      backgroundColor: theme.colorScheme.onSurface.withOpacity(
+                        0.04,
+                      ),
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.chip - 4),
+                        borderRadius: BorderRadius.circular(AppRadius.chip - 4),
                       ),
                     ),
                   );
@@ -568,7 +588,8 @@ class _LevelLeaderboardList extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Level $clampedSelectedLevel',
-              style: theme.textTheme.labelLarge?.copyWith(
+              style: GoogleFonts.orbitron(
+                textStyle: theme.textTheme.labelLarge,
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface.withOpacity(0.9),
               ),
@@ -591,8 +612,7 @@ class _LevelLeaderboardList extends StatelessWidget {
                 child: Text(
                   'Noch keine Ranglisten-Daten.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color:
-                        theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
               ),
@@ -602,6 +622,7 @@ class _LevelLeaderboardList extends StatelessWidget {
                 context: context,
                 entries: currentLevelEntries,
                 formatter: formatter,
+                xpPerLevel: xpPerLevel,
               ),
             ],
           ],
@@ -614,6 +635,7 @@ class _LevelLeaderboardList extends StatelessWidget {
     required BuildContext context,
     required List<_LevelledEntry> entries,
     required NumberFormat formatter,
+    required int xpPerLevel,
   }) {
     final theme = Theme.of(context);
     final widgets = <Widget>[];
@@ -662,7 +684,7 @@ class _LevelLeaderboardList extends StatelessWidget {
             boxShadow: isCurrentUser
                 ? [
                     BoxShadow(
-                      color: progressColor.withOpacity(0.45),
+                      color: progressColor.withOpacity(0.34),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -672,13 +694,39 @@ class _LevelLeaderboardList extends StatelessWidget {
           child: FriendListTile(
             profile: entry.profile,
             subtitle: isCurrentUser ? '#$rank · Du' : '#$rank',
-            trailing: Text(
-              '${formatter.format(entry.xpInLevel)} XP',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isCurrentUser
-                    ? theme.colorScheme.onPrimary
-                    : theme.colorScheme.onSurface,
+            trailing: SizedBox(
+              width: 112,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${formatter.format(entry.xpInLevel)} XP',
+                    style: GoogleFonts.rajdhani(
+                      textStyle: theme.textTheme.bodyLarge,
+                      fontWeight: FontWeight.w700,
+                      color: isCurrentUser
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      minHeight: 6,
+                      value: (entry.xpInLevel / xpPerLevel).clamp(0.0, 1.0),
+                      backgroundColor: theme.colorScheme.onSurface.withOpacity(
+                        0.12,
+                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isCurrentUser
+                            ? theme.colorScheme.onPrimary
+                            : progressColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -687,6 +735,135 @@ class _LevelLeaderboardList extends StatelessWidget {
     }
 
     return widgets;
+  }
+}
+
+class _LeaderboardHeroCard extends StatelessWidget {
+  const _LeaderboardHeroCard({
+    required this.modeLabel,
+    required this.scopeLabel,
+    required this.rank,
+    required this.xp,
+    required this.xpToNextRank,
+    required this.accent,
+  });
+
+  final String modeLabel;
+  final String scopeLabel;
+  final int? rank;
+  final int xp;
+  final int? xpToNextRank;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final locale = Localizations.localeOf(context).toString();
+    final formatter = NumberFormat.decimalPattern(locale);
+    final showRank = rank != null;
+    final showGap = xpToNextRank != null && xpToNextRank! > 0;
+
+    return RankingHeroCard(
+      accent: accent,
+      midColor: const Color(0xFF1A3051),
+      accentOpacity: 0.22,
+      borderOpacity: 0.5,
+      shadowOpacity: 0.2,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$modeLabel · $scopeLabel',
+            style: GoogleFonts.rajdhani(
+              textStyle: theme.textTheme.labelLarge,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.0,
+              color: Colors.white.withOpacity(0.82),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            showRank ? 'Rang #$rank' : 'Noch nicht platziert',
+            style: GoogleFonts.orbitron(
+              textStyle: theme.textTheme.headlineSmall,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: RankingHeroStatTile(
+                  label: 'XP',
+                  value: formatter.format(xp),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: RankingHeroStatTile(
+                  label: 'Nächstes Ziel',
+                  value: showGap
+                      ? '${formatter.format(xpToNextRank)} XP'
+                      : 'Top',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RankingToggleGroup extends StatelessWidget {
+  const _RankingToggleGroup({
+    required this.labels,
+    required this.selectedIndex,
+    required this.onSelected,
+    required this.accent,
+  });
+
+  final List<String> labels;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Wrap(
+      spacing: AppSpacing.xs.toDouble(),
+      runSpacing: AppSpacing.xs.toDouble(),
+      children: List.generate(labels.length, (index) {
+        final selected = index == selectedIndex;
+        return ChoiceChip(
+          label: Text(
+            labels[index],
+            style: GoogleFonts.rajdhani(
+              textStyle: theme.textTheme.bodySmall,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              color: selected
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.onSurface.withOpacity(0.84),
+            ),
+          ),
+          selected: selected,
+          onSelected: (_) => onSelected(index),
+          selectedColor: accent,
+          backgroundColor: theme.colorScheme.surface.withOpacity(0.86),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.chip - 4),
+            side: BorderSide(
+              color: selected
+                  ? accent.withOpacity(0.92)
+                  : theme.colorScheme.onSurface.withOpacity(0.12),
+            ),
+          ),
+        );
+      }),
+    );
   }
 }
 
@@ -726,9 +903,5 @@ _LevelProgress _resolveLevelProgress(int totalXp) {
     xpInLevel = 0;
   }
   final progress = level >= maxLevel ? 1.0 : xpInLevel / xpPerLevel;
-  return _LevelProgress(
-    level: level,
-    xpInLevel: xpInLevel,
-    progress: progress,
-  );
+  return _LevelProgress(level: level, xpInLevel: xpInLevel, progress: progress);
 }

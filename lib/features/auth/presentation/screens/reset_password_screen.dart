@@ -1,5 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/material.dart';
+import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
+import 'package:tapem/features/auth/presentation/widgets/auth_background.dart';
+import 'package:tapem/features/auth/presentation/widgets/auth_keyboard_scroll_view.dart';
+import 'package:tapem/features/auth/presentation/widgets/glass_card.dart';
+import 'package:tapem/features/auth/presentation/widgets/premium_button.dart';
+import 'package:tapem/features/auth/presentation/widgets/premium_text_field.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../../../app_router.dart';
@@ -15,13 +21,19 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  String _password = '';
+  final _passwordController = TextEditingController();
   bool _loading = false;
   String? _error;
 
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
+    final password = _passwordController.text.trim();
     setState(() {
       _loading = true;
       _error = null;
@@ -29,12 +41,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     try {
       await fb_auth.FirebaseAuth.instance.confirmPasswordReset(
         code: widget.oobCode,
-        newPassword: _password,
+        newPassword: password,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context)!.passwordResetSuccess),
+          backgroundColor: AuthTheme.surfaceRaised,
         ),
       );
       Navigator.of(context).pushReplacementNamed(AppRouter.auth);
@@ -53,56 +66,80 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(loc.resetPasswordTitle)),
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-            return SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: EdgeInsets.fromLTRB(16, 16, 16, keyboardInset + 16),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+      backgroundColor: Colors.transparent,
+      body: AuthBackground(
+        child: AuthKeyboardScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AuthTheme.spacingM),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: AuthTheme.textMuted,
+                  ),
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pushReplacementNamed(AppRouter.auth),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                loc.resetPasswordTitle,
+                textAlign: TextAlign.center,
+                style: AuthTheme.headingStyle.copyWith(fontSize: 28),
+              ),
+              const SizedBox(height: AuthTheme.spacingS),
+              Text(
+                loc.forgotPassword,
+                textAlign: TextAlign.center,
+                style: AuthTheme.bodyStyle,
+              ),
+              const SizedBox(height: AuthTheme.spacingL),
+              GlassCard(
                 child: Form(
                   key: _formKey,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText: loc.newPasswordFieldLabel,
-                          errorText: _error,
-                        ),
+                      PremiumTextField(
+                        label: loc.newPasswordFieldLabel,
+                        controller: _passwordController,
                         obscureText: true,
+                        textInputAction: TextInputAction.done,
                         validator: (v) {
                           return v != null && v.length >= 6
                               ? null
                               : loc.passwordTooShort;
                         },
-                        onSaved: (v) => _password = v ?? '',
                       ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
+                      if (_error != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _error!,
+                          style: const TextStyle(
+                            color: AuthTheme.danger,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: AuthTheme.spacingL),
+                      PremiumButton(
+                        text: loc.confirmPasswordButton,
+                        isLoading: _loading,
                         onPressed: _loading ? null : _submit,
-                        child: _loading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(loc.confirmPasswordButton),
                       ),
                     ],
                   ),
                 ),
               ),
-            );
-          },
+              const SizedBox(height: 18),
+            ],
+          ),
         ),
       ),
     );

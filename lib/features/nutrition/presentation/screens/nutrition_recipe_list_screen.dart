@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
-import 'package:tapem/core/widgets/brand_gradient_card.dart';
 import 'package:tapem/features/nutrition/presentation/widgets/nutrition_ui.dart';
 import 'package:tapem/features/nutrition/providers/nutrition_provider.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_recipe.dart';
@@ -76,6 +75,7 @@ class _NutritionRecipeListScreenState
   }
 
   Future<void> _openRecipeActions(NutritionRecipe recipe) async {
+    final isSelection = widget.isSelectionMode || widget.meal != null;
     final action = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -83,13 +83,22 @@ class _NutritionRecipeListScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (isSelection)
+              ListTile(
+                leading: const Icon(Icons.tune_rounded),
+                title: const Text('Anpassen'),
+                onTap: () => Navigator.of(ctx).pop('adjust'),
+              ),
             ListTile(
               leading: const Icon(Icons.edit_rounded),
               title: const Text('Bearbeiten'),
               onTap: () => Navigator.of(ctx).pop('edit'),
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+              leading: const Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.redAccent,
+              ),
               title: const Text('Löschen'),
               onTap: () => Navigator.of(ctx).pop('delete'),
             ),
@@ -99,11 +108,22 @@ class _NutritionRecipeListScreenState
     );
 
     if (!mounted || action == null) return;
-    if (action == 'edit') {
+    if (action == 'adjust') {
       Navigator.of(context).pushNamed(
         AppRouter.nutritionRecipeEdit,
-        arguments: {'recipe': recipe},
+        arguments: {
+          'recipe': recipe,
+          'isLogMode': true,
+          'meal': _selectedMeal,
+          'date': widget.date,
+        },
       );
+      return;
+    }
+    if (action == 'edit') {
+      Navigator.of(
+        context,
+      ).pushNamed(AppRouter.nutritionRecipeEdit, arguments: {'recipe': recipe});
       return;
     }
 
@@ -135,6 +155,121 @@ class _NutritionRecipeListScreenState
         await ref.read(nutritionProvider).deleteRecipe(uid: uid, id: recipe.id);
       }
     }
+  }
+
+  Future<double?> _pickQuickAddFactor({
+    required NutritionRecipe recipe,
+    required NutritionTotals totals,
+  }) async {
+    const presets = <double>[0.5, 0.75, 1.0, 1.5, 2.0];
+    double selected = 1.0;
+    final factorCtrl = TextEditingController(text: '1');
+
+    String formatFactor(double value) {
+      if (value == value.roundToDouble()) return value.toInt().toString();
+      return value.toStringAsFixed(
+        value * 10 == (value * 10).roundToDouble() ? 1 : 2,
+      );
+    }
+
+    int scaled(int value, double factor) => (value * factor).round();
+
+    final result = await showDialog<double>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final previewFactor = selected;
+            final scaledKcal = scaled(totals.kcal, previewFactor);
+            final scaledP = scaled(totals.protein, previewFactor);
+            final scaledC = scaled(totals.carbs, previewFactor);
+            final scaledF = scaled(totals.fat, previewFactor);
+            return AlertDialog(
+              title: const Text('Schnell Add Faktor'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recipe.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final preset in presets)
+                        ChoiceChip(
+                          label: Text('x${formatFactor(preset)}'),
+                          selected: (selected - preset).abs() < 0.0001,
+                          onSelected: (_) {
+                            setDialogState(() {
+                              selected = preset;
+                              factorCtrl.text = formatFactor(preset);
+                            });
+                          },
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: factorCtrl,
+                    autofocus: false,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Faktor',
+                      hintText: 'z.B. 0,5 oder 2',
+                    ),
+                    onChanged: (raw) {
+                      final parsed = double.tryParse(raw.replaceAll(',', '.'));
+                      if (parsed != null && parsed > 0) {
+                        setDialogState(
+                          () => selected = parsed.clamp(0.1, 10.0),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Vorschau: $scaledKcal kcal · ${scaledP}P · ${scaledC}C · ${scaledF}F',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Abbrechen'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final parsed = double.tryParse(
+                      factorCtrl.text.trim().replaceAll(',', '.'),
+                    );
+                    final factor = ((parsed ?? selected).clamp(
+                      0.1,
+                      10.0,
+                    )).toDouble();
+                    Navigator.of(dialogContext).pop(factor);
+                  },
+                  child: const Text('Hinzufügen'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    factorCtrl.dispose();
+    return result;
   }
 
   @override
@@ -322,79 +457,38 @@ class _NutritionRecipeListScreenState
                               ),
                               if (isSelection) ...[
                                 const SizedBox(height: AppSpacing.md),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: SecondaryCTA(
-                                        label: 'ANPASSEN',
-                                        icon: Icons.tune_rounded,
-                                        onPressed: () {
-                                          Navigator.of(context).pushNamed(
-                                            AppRouter.nutritionRecipeEdit,
-                                            arguments: {
-                                              'recipe': recipe,
-                                              'isLogMode': true,
-                                              'meal': _selectedMeal,
-                                              'date': widget.date,
-                                            },
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: AppSpacing.sm),
-                                    Expanded(
-                                      child: ElevatedButton(
-                                        onPressed: () async {
-                                          final auth = ref.read(
-                                            authControllerProvider,
-                                          );
-                                          final uid = auth.userId;
-                                          if (uid == null || uid.isEmpty) {
-                                            return;
-                                          }
+                                _RecipeActionButton(
+                                  label: 'Schnell Add',
+                                  icon: Icons.add_rounded,
+                                  emphasized: true,
+                                  onTap: () async {
+                                    final factor = await _pickQuickAddFactor(
+                                      recipe: recipe,
+                                      totals: totals,
+                                    );
+                                    if (factor == null) return;
+                                    final auth = ref.read(
+                                      authControllerProvider,
+                                    );
+                                    final uid = auth.userId;
+                                    if (uid == null || uid.isEmpty) {
+                                      return;
+                                    }
 
-                                          await ref
-                                              .read(nutritionProvider)
-                                              .addRecipeToMeal(
-                                                uid: uid,
-                                                date:
-                                                    widget.date ??
-                                                    state.selectedDate,
-                                                recipe: recipe,
-                                                meal: _selectedMeal,
-                                              );
-                                          if (mounted) {
-                                            Navigator.of(context).pop();
-                                          }
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              Theme.of(context)
-                                                  .extension<AppBrandTheme>()
-                                                  ?.outline ??
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.secondary,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 12,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          elevation: 0,
-                                        ),
-                                        child: const Text(
-                                          'SCHNELL ADD',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                    await ref
+                                        .read(nutritionProvider)
+                                        .addRecipeToMeal(
+                                          uid: uid,
+                                          date:
+                                              widget.date ?? state.selectedDate,
+                                          recipe: recipe,
+                                          meal: _selectedMeal,
+                                          factor: factor,
+                                        );
+                                    if (mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+                                  },
                                 ),
                               ],
                             ],
@@ -408,12 +502,94 @@ class _NutritionRecipeListScreenState
       ),
       floatingActionButton: recipes.isNotEmpty
           ? FloatingActionButton(
-              onPressed: () =>
-                  Navigator.of(context).pushNamed(AppRouter.nutritionRecipeEdit),
+              onPressed: () => Navigator.of(
+                context,
+              ).pushNamed(AppRouter.nutritionRecipeEdit),
               tooltip: 'Gericht erstellen',
               child: const BrandGradientIcon(Icons.add_rounded, size: 24),
             )
           : null,
+    );
+  }
+}
+
+class _RecipeActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool emphasized;
+  final VoidCallback onTap;
+
+  const _RecipeActionButton({
+    required this.label,
+    required this.icon,
+    required this.emphasized,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = nutritionBrandAccentColor(context);
+    final borderColor = emphasized
+        ? accent.withOpacity(0.45)
+        : Colors.white.withOpacity(0.10);
+    final background = emphasized
+        ? LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [accent.withOpacity(0.24), accent.withOpacity(0.10)],
+          )
+        : LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.scaffoldBackgroundColor.withOpacity(0.40),
+              theme.scaffoldBackgroundColor.withOpacity(0.26),
+            ],
+          );
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          height: 48,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: background,
+            border: Border.all(color: borderColor, width: 1),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: emphasized
+                    ? accent
+                    : theme.colorScheme.onSurface.withOpacity(0.88),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: emphasized
+                        ? accent
+                        : theme.colorScheme.onSurface.withOpacity(0.9),
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

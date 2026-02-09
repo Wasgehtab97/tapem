@@ -8,7 +8,6 @@ import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/shared_preferences_provider.dart';
 import 'package:tapem/core/widgets/network_circle_avatar.dart';
 import 'package:tapem/core/widgets/offline_banner.dart';
-import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 import 'package:tapem/features/auth/presentation/widgets/auth_background.dart';
 import 'package:tapem/features/auth/presentation/widgets/auth_keyboard_scroll_view.dart';
@@ -55,7 +54,6 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
     final loc = AppLocalizations.of(context)!;
     final gymsAsync = ref.watch(listGymsProvider);
     final gyms = ref.watch(filteredGymsProvider);
-    final brand = Theme.of(context).extension<AppBrandTheme>();
     final listMaxHeight = MediaQuery.of(context).size.height * 0.45;
     final query = ref.watch(gymSearchQueryProvider).trim();
     final auth = ref.watch(authControllerProvider);
@@ -65,10 +63,10 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
         : loc.gymMyTitleMultiple;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       body: AuthBackground(
         child: AuthKeyboardScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AuthTheme.spacingM),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -83,9 +81,7 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
               Text(
                 loc.gymEntrySubtitle,
                 textAlign: TextAlign.center,
-                style: AuthTheme.bodyStyle.copyWith(
-                  color: Colors.white.withOpacity(0.7),
-                ),
+                style: AuthTheme.bodyStyle,
               ),
               const SizedBox(height: AuthTheme.spacingM),
               if (auth.isLoggedIn && myGyms.isNotEmpty)
@@ -99,7 +95,7 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
                         Text(
                           myGymsLabel,
                           style: AuthTheme.labelStyle.copyWith(
-                            color: Colors.white.withOpacity(0.8),
+                            color: AuthTheme.textMuted,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -123,7 +119,7 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
                                   trailing: const Icon(
                                     Icons.arrow_forward_ios_rounded,
                                     size: 14,
-                                    color: Colors.white70,
+                                    color: AuthTheme.textMuted,
                                   ),
                                   onTap: () => _selectGym(gym.id),
                                 ),
@@ -134,7 +130,7 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
                                   child: Text(
                                     gymId,
                                     style: AuthTheme.labelStyle.copyWith(
-                                      color: Colors.white.withOpacity(0.6),
+                                      color: AuthTheme.textMuted,
                                     ),
                                   ),
                                 ),
@@ -158,7 +154,7 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
                       InkWell(
                         onTap: _toggleDropdown,
                         borderRadius: BorderRadius.circular(
-                          AuthTheme.glassBorderRadius,
+                          AuthTheme.cardBorderRadius,
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -169,7 +165,7 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
                             children: [
                               Icon(
                                 Icons.fitness_center_outlined,
-                                color: Colors.white.withOpacity(0.8),
+                                color: AuthTheme.textMuted,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -185,7 +181,7 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
                                 turns: _isDropdownOpen ? 0.5 : 0.0,
                                 child: const Icon(
                                   Icons.keyboard_arrow_down_rounded,
-                                  color: Colors.white70,
+                                  color: AuthTheme.textMuted,
                                 ),
                               ),
                             ],
@@ -218,7 +214,7 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
                                     loc.gymSearchMinChars,
                                     textAlign: TextAlign.center,
                                     style: AuthTheme.labelStyle.copyWith(
-                                      color: Colors.white.withOpacity(0.6),
+                                      color: AuthTheme.textMuted,
                                     ),
                                   ),
                                 ),
@@ -250,9 +246,7 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
                                     child: Text(
                                       loc.gymSearchEmpty,
                                       textAlign: TextAlign.center,
-                                      style: AuthTheme.bodyStyle.copyWith(
-                                        color: Colors.white.withOpacity(0.7),
-                                      ),
+                                      style: AuthTheme.bodyStyle,
                                     ),
                                   ),
                                 );
@@ -282,20 +276,21 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
                                           borderRadius: BorderRadius.circular(
                                             18,
                                           ),
-                                          border: isLastUsed && brand != null
+                                          border: isLastUsed
                                               ? Border.all(
-                                                  color: brand.outline
-                                                      .withOpacity(0.6),
+                                                  color: AuthTheme.borderStrong,
                                                   width: 1,
                                                 )
                                               : null,
-                                          gradient: isLastUsed && brand != null
+                                          gradient: isLastUsed
                                               ? LinearGradient(
                                                   colors: [
-                                                    brand.gradient.colors.first
-                                                        .withOpacity(0.18),
-                                                    brand.gradient.colors.last
-                                                        .withOpacity(0.12),
+                                                    Colors.white.withOpacity(
+                                                      0.13,
+                                                    ),
+                                                    Colors.white.withOpacity(
+                                                      0.05,
+                                                    ),
                                                   ],
                                                 )
                                               : null,
@@ -359,7 +354,7 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
                                           trailing: const Icon(
                                             Icons.arrow_forward_ios_rounded,
                                             size: 16,
-                                            color: Colors.white70,
+                                            color: AuthTheme.textMuted,
                                           ),
                                           onTap: () => _selectGym(gym.id),
                                         ),
@@ -372,7 +367,7 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
                             },
                             loading: () => const Center(
                               child: CircularProgressIndicator(
-                                color: Colors.white70,
+                                color: Colors.white,
                               ),
                             ),
                             error: (error, _) => Center(
@@ -381,9 +376,7 @@ class _GymEntryScreenState extends ConsumerState<GymEntryScreen> {
                                 child: Text(
                                   loc.authErrorGeneric(error),
                                   textAlign: TextAlign.center,
-                                  style: AuthTheme.bodyStyle.copyWith(
-                                    color: Colors.white.withOpacity(0.7),
-                                  ),
+                                  style: AuthTheme.bodyStyle,
                                 ),
                               ),
                             ),

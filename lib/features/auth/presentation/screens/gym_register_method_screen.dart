@@ -8,6 +8,7 @@ import 'package:tapem/core/widgets/network_circle_avatar.dart';
 import 'package:tapem/core/widgets/offline_banner.dart';
 import 'package:tapem/features/auth/presentation/theme/auth_theme.dart';
 import 'package:tapem/features/auth/presentation/widgets/auth_background.dart';
+import 'package:tapem/features/auth/presentation/widgets/auth_keyboard_scroll_view.dart';
 import 'package:tapem/features/auth/presentation/widgets/glass_card.dart';
 import 'package:tapem/features/auth/presentation/widgets/premium_button.dart';
 import 'package:tapem/features/gym/application/gym_directory_provider.dart';
@@ -41,95 +42,99 @@ class _GymRegisterMethodScreenState
     final gymAsync = ref.watch(gymByIdProvider(widget.gymId));
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       body: AuthBackground(
         child: gymAsync.when(
           data: (gym) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const OfflineBanner(),
-                const SizedBox(height: 16),
-                Center(
-                  child: Hero(
-                    tag: 'gym-logo-${gym.id}',
-                    child: NetworkCircleAvatar(
-                      url: gym.logoUrl,
-                      radius: 34,
+            return AuthKeyboardScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuthTheme.spacingM,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const OfflineBanner(),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AuthTheme.textMuted,
+                      ),
+                      onPressed: () =>
+                          Navigator.of(context).pushReplacementNamed(
+                            AppRouter.gymAccess,
+                            arguments: widget.gymId,
+                          ),
                     ),
                   ),
-                ),
-                const SizedBox(height: AuthTheme.spacingS),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white70),
-                    onPressed: () => Navigator.of(context).pushReplacementNamed(
-                      AppRouter.gymAccess,
-                      arguments: widget.gymId,
+                  const SizedBox(height: 6),
+                  Center(
+                    child: Hero(
+                      tag: 'gym-logo-${gym.id}',
+                      child: NetworkCircleAvatar(url: gym.logoUrl, radius: 34),
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  loc.gymRegisterMethodTitle,
-                  textAlign: TextAlign.center,
-                  style: AuthTheme.headingStyle,
-                ),
-                const SizedBox(height: AuthTheme.spacingS),
-                Text(
-                  loc.gymRegisterMethodSubtitle(gym.name),
-                  textAlign: TextAlign.center,
-                  style: AuthTheme.bodyStyle.copyWith(
-                    color: Colors.white.withOpacity(0.7),
+                  const SizedBox(height: AuthTheme.spacingM),
+                  Text(
+                    loc.gymRegisterMethodTitle,
+                    textAlign: TextAlign.center,
+                    style: AuthTheme.headingStyle.copyWith(fontSize: 28),
                   ),
-                ),
-                const SizedBox(height: AuthTheme.spacingL),
-                GlassCard(
-                  child: Column(
-                    children: [
-                      PremiumButton(
-                        text: loc.gymRegisterWithNfc,
-                        onPressed: () {
-                          AnalyticsService.logGymRegisterMethod(
-                            gymId: widget.gymId,
-                            method: 'nfc',
-                          );
-                          Navigator.of(context).pushNamed(
-                            AppRouter.gymRegister,
-                            arguments: GymRegisterArgs(
-                              gymId: widget.gymId,
-                              method: GymRegisterMethod.nfc,
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: AuthTheme.spacingM),
-                      PremiumButton(
-                        text: loc.gymRegisterWithCode,
-                        onPressed: () {
-                          AnalyticsService.logGymRegisterMethod(
-                            gymId: widget.gymId,
-                            method: 'code',
-                          );
-                          Navigator.of(context).pushNamed(
-                            AppRouter.gymRegister,
-                            arguments: GymRegisterArgs(
-                              gymId: widget.gymId,
-                              method: GymRegisterMethod.gymCode,
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                  const SizedBox(height: AuthTheme.spacingS),
+                  Text(
+                    loc.gymRegisterMethodSubtitle(gym.name),
+                    textAlign: TextAlign.center,
+                    style: AuthTheme.bodyStyle,
                   ),
-                ),
-              ],
+                  const SizedBox(height: AuthTheme.spacingL),
+                  GlassCard(
+                    child: Column(
+                      children: [
+                        PremiumButton(
+                          text: loc.gymRegisterWithNfc,
+                          onPressed: () {
+                            AnalyticsService.logGymRegisterMethod(
+                              gymId: widget.gymId,
+                              method: 'nfc',
+                            );
+                            Navigator.of(context).pushNamed(
+                              AppRouter.gymRegister,
+                              arguments: GymRegisterArgs(
+                                gymId: widget.gymId,
+                                method: GymRegisterMethod.nfc,
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: AuthTheme.spacingM),
+                        PremiumButton(
+                          text: loc.gymRegisterWithCode,
+                          onPressed: () {
+                            AnalyticsService.logGymRegisterMethod(
+                              gymId: widget.gymId,
+                              method: 'code',
+                            );
+                            Navigator.of(context).pushNamed(
+                              AppRouter.gymRegister,
+                              arguments: GymRegisterArgs(
+                                gymId: widget.gymId,
+                                method: GymRegisterMethod.gymCode,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                ],
+              ),
             );
           },
           loading: () => const Center(
-            child: CircularProgressIndicator(color: Colors.white70),
+            child: CircularProgressIndicator(color: Colors.white),
           ),
           error: (error, _) => Center(
             child: Padding(
@@ -137,9 +142,7 @@ class _GymRegisterMethodScreenState
               child: Text(
                 loc.authErrorGeneric(error),
                 textAlign: TextAlign.center,
-                style: AuthTheme.bodyStyle.copyWith(
-                  color: Colors.white.withOpacity(0.7),
-                ),
+                style: AuthTheme.bodyStyle,
               ),
             ),
           ),

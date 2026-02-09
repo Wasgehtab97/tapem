@@ -10,6 +10,7 @@ class BrandInteractiveCard extends StatefulWidget {
     super.key,
     required this.child,
     this.onTap,
+    this.onLongPress,
     this.padding = const EdgeInsets.symmetric(
       horizontal: AppSpacing.lg,
       vertical: AppSpacing.md,
@@ -32,6 +33,9 @@ class BrandInteractiveCard extends StatefulWidget {
 
   /// Callback executed when the card is tapped.
   final VoidCallback? onTap;
+
+  /// Callback executed when the card is long-pressed.
+  final VoidCallback? onLongPress;
 
   /// Padding applied to [child].
   final EdgeInsetsGeometry padding;
@@ -93,7 +97,8 @@ class _BrandInteractiveCardState extends State<BrandInteractiveCard>
   @override
   void didUpdateWidget(covariant BrandInteractiveCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.uiLogEvent != oldWidget.uiLogEvent && widget.uiLogEvent != null) {
+    if (widget.uiLogEvent != oldWidget.uiLogEvent &&
+        widget.uiLogEvent != null) {
       elogUi(widget.uiLogEvent!, {'label': widget.semanticLabel});
     }
   }
@@ -113,10 +118,11 @@ class _BrandInteractiveCardState extends State<BrandInteractiveCard>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
-    final radius = (widget.borderRadius ??
-            brandTheme?.radius ??
-            BorderRadius.circular(AppRadius.card))
-        as BorderRadius;
+    final radius =
+        (widget.borderRadius ??
+                brandTheme?.radius ??
+                BorderRadius.circular(AppRadius.card))
+            as BorderRadius;
     final onSurface = theme.colorScheme.onSurface;
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
     final overlay = brandTheme?.pressedOverlay ?? onSurface.withOpacity(0.08);
@@ -126,7 +132,7 @@ class _BrandInteractiveCardState extends State<BrandInteractiveCard>
         widget.restingBorderColor ?? onSurface.withOpacity(0.12);
     final activeBorder =
         widget.activeBorderColor ?? brandColor.withOpacity(0.45);
-    final canTap = widget.onTap != null;
+    final canTap = widget.onTap != null || widget.onLongPress != null;
     final flicker = brandTheme?.flickerIntensity ?? 0.0;
     final hasFlicker = flicker > 0;
 
@@ -134,19 +140,25 @@ class _BrandInteractiveCardState extends State<BrandInteractiveCard>
         ? (1 - flicker) + _controller.value * 2 * flicker
         : 1.0;
     final shadowOpacityBase = _isPressed ? 0.12 : 0.20;
-    final animatedShadowOpacity =
-        hasFlicker ? shadowOpacityBase * (0.7 + 0.3 * t) : shadowOpacityBase;
-    final shadowBase = (widget.shadowColor ?? theme.shadowColor)
-        .withOpacity(animatedShadowOpacity);
+    final animatedShadowOpacity = hasFlicker
+        ? shadowOpacityBase * (0.7 + 0.3 * t)
+        : shadowOpacityBase;
+    final shadowBase = (widget.shadowColor ?? theme.shadowColor).withOpacity(
+      animatedShadowOpacity,
+    );
 
     final blurBase = _isPressed ? 10.0 : 20.0;
     final blurRadius = hasFlicker ? blurBase * (0.9 + 0.25 * t) : blurBase;
 
     final baseBorderT = _isPressed ? 1.0 : 0.0;
-    final animatedBorderT =
-        hasFlicker ? (baseBorderT + 0.25 * flicker * _controller.value) : baseBorderT;
-    final borderColor =
-        Color.lerp(restingBorder, activeBorder, animatedBorderT.clamp(0.0, 1.0))!;
+    final animatedBorderT = hasFlicker
+        ? (baseBorderT + 0.25 * flicker * _controller.value)
+        : baseBorderT;
+    final borderColor = Color.lerp(
+      restingBorder,
+      activeBorder,
+      animatedBorderT.clamp(0.0, 1.0),
+    )!;
 
     final card = AnimatedContainer(
       duration: const Duration(milliseconds: 220),
@@ -183,21 +195,20 @@ class _BrandInteractiveCardState extends State<BrandInteractiveCard>
                   ),
                 ),
               ),
-            Padding(
-              padding: widget.padding,
-              child: widget.child,
-            ),
+            Padding(padding: widget.padding, child: widget.child),
           ],
         ),
       ),
     );
 
     final basePressedScale = _isPressed ? 0.985 : 1.0;
-    final flickerAmplitude =
-        hasFlicker ? (0.02 + 0.06 * flicker) : 0.0; // 2–8 % je nach Theme
+    final flickerAmplitude = hasFlicker
+        ? (0.02 + 0.06 * flicker)
+        : 0.0; // 2–8 % je nach Theme
     final flickerScale = hasFlicker
         ? 1.0 +
-            flickerAmplitude * ((_controller.value - 0.5) * 2) // -amp .. +amp
+              flickerAmplitude *
+                  ((_controller.value - 0.5) * 2) // -amp .. +amp
         : 1.0;
 
     final animated = widget.enableScaleAnimation
@@ -217,6 +228,7 @@ class _BrandInteractiveCardState extends State<BrandInteractiveCard>
         highlightColor: Colors.transparent,
         onHighlightChanged: canTap ? _handleHighlight : null,
         onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
         child: animated,
       ),
     );
@@ -228,9 +240,6 @@ class _BrandInteractiveCardState extends State<BrandInteractiveCard>
       child: ink,
     );
 
-    return Container(
-      margin: widget.margin,
-      child: semantics,
-    );
+    return Container(margin: widget.margin, child: semantics);
   }
 }

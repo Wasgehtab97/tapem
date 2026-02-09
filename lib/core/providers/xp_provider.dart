@@ -10,6 +10,7 @@ import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/xp/data/repositories/xp_repository_impl.dart';
 import 'package:tapem/features/xp/data/sources/firestore_xp_source.dart';
 import 'package:tapem/features/xp/domain/device_xp_result.dart';
+import 'package:tapem/features/xp/domain/day_xp_breakdown.dart';
 import 'package:tapem/features/xp/domain/xp_repository.dart';
 
 class XpProvider extends ChangeNotifier {
@@ -21,13 +22,15 @@ class XpProvider extends ChangeNotifier {
     XpRepository? repo,
     DailyStatsCache? statsCache,
     DateTime Function()? now,
-  })  : _repo = repo ?? XpRepositoryImpl(FirestoreXpSource()),
-        _statsCache = statsCache ?? const DailyStatsCacheStore(),
-        _now = now ?? DateTime.now;
+  }) : _repo = repo ?? XpRepositoryImpl(FirestoreXpSource()),
+       _statsCache = statsCache ?? const DailyStatsCacheStore(),
+       _now = now ?? DateTime.now;
 
   Map<String, int> _muscleXp = {};
   int _dayXp = 0;
   StreamSubscription<int>? _daySub;
+  StreamSubscription<DayXpBreakdown>? _dayBreakdownSub;
+  DayXpBreakdown _dayBreakdown = const DayXpBreakdown.empty();
   StreamSubscription<Map<String, int>>? _muscleSub;
   StreamSubscription<Map<String, Map<String, int>>>? _muscleDailySub;
   Map<String, int> _dayListXp = {};
@@ -48,16 +51,16 @@ class XpProvider extends ChangeNotifier {
 
   Map<String, int> get muscleXp => _muscleXp;
   int get dayXp => _dayXp;
+  DayXpBreakdown get dayBreakdown => _dayBreakdown;
   Map<String, int> get dayListXp => _dayListXp;
   Map<String, int> get deviceXp => _deviceXp;
   int get statsDailyXp => _statsDailyXp;
   int get dailyLevel => _dailyLevel;
   int get dailyLevelXp => _dailyLevelXp;
   Map<String, Map<String, int>> get muscleDailyXp => _muscleDailyXp;
-  double get dailyProgress =>
-      _dailyLevel >= LevelService.maxLevel
-          ? 1
-          : _dailyLevelXp / LevelService.xpPerLevel;
+  double get dailyProgress => _dailyLevel >= LevelService.maxLevel
+      ? 1
+      : _dailyLevelXp / LevelService.xpPerLevel;
 
   bool _isSameCalendarDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
@@ -71,17 +74,18 @@ class XpProvider extends ChangeNotifier {
     final previousDate = _statsDailyFetchedAt;
     final previousLevel = _dailyLevel;
     final previousLevelXp = _dailyLevelXp;
-    
+
     _statsDailyXp = totalXp;
     _statsDailyFetchedAt = fetchedAt;
     var level = (totalXp ~/ LevelService.xpPerLevel) + 1;
     if (level > LevelService.maxLevel) level = LevelService.maxLevel;
-    final xpInLevel =
-        level >= LevelService.maxLevel ? 0 : totalXp % LevelService.xpPerLevel;
-    
+    final xpInLevel = level >= LevelService.maxLevel
+        ? 0
+        : totalXp % LevelService.xpPerLevel;
+
     _dailyLevel = level;
     _dailyLevelXp = xpInLevel;
-    
+
     // Only notify if values actually changed
     final hasChanged =
         previousXp != totalXp ||
@@ -89,10 +93,11 @@ class XpProvider extends ChangeNotifier {
         previousLevelXp != xpInLevel ||
         previousDate == null ||
         !_isSameCalendarDay(previousDate, fetchedAt);
-    
+
     debugPrint(
-        '🔄 provider statsDailyXp=$totalXp level=$_dailyLevel xpInLevel=$_dailyLevelXp source=$source');
-    
+      '🔄 provider statsDailyXp=$totalXp level=$_dailyLevel xpInLevel=$_dailyLevelXp source=$source',
+    );
+
     if (hasChanged) {
       notifyListeners();
     }
@@ -124,10 +129,7 @@ class XpProvider extends ChangeNotifier {
       'traceId': traceId,
     });
     if (deviceId.isEmpty) {
-      XpTrace.log('SKIP', {
-        'reason': 'noDevice',
-        'traceId': traceId,
-      });
+      XpTrace.log('SKIP', {'reason': 'noDevice', 'traceId': traceId});
       return DeviceXpResult.skipNoDevice;
     }
     try {
@@ -150,8 +152,11 @@ class XpProvider extends ChangeNotifier {
         'result': result.name,
         'deltaXp': award.xpDelta,
         'dayXp': award.dayXp,
-        'updatedLocalCache': (result == DeviceXpResult.okAdded ||
-            result == DeviceXpResult.okAddedNoLeaderboard) &&
+        'rulesetId': award.rulesetId ?? '',
+        'rulesetVersion': award.rulesetVersion ?? 0,
+        'updatedLocalCache':
+            (result == DeviceXpResult.okAdded ||
+                result == DeviceXpResult.okAddedNoLeaderboard) &&
             (award.totalXp != null),
         'traceId': traceId,
       });
@@ -173,6 +178,8 @@ class XpProvider extends ChangeNotifier {
               award.totalXp!,
               _now(),
               dayXp: award.dayXp,
+              rulesetId: award.rulesetId,
+              rulesetVersion: award.rulesetVersion,
               components: award.components,
               penalties: award.penalties,
             );
@@ -216,6 +223,21 @@ class XpProvider extends ChangeNotifier {
     });
   }
 
+  void watchDayBreakdown(String userId, DateTime date) {
+    final dayKey = '${date.year}-${date.month}-${date.day}';
+    debugPrint('👀 provider watchDayBreakdown userId=$userId date=$dayKey');
+    _dayBreakdownSub?.cancel();
+    _dayBreakdownSub = _repo
+        .watchDayBreakdown(userId: userId, date: date)
+        .listen((value) {
+          _dayBreakdown = value;
+          if (_dayXp != value.dayXp) {
+            _dayXp = value.dayXp;
+          }
+          notifyListeners();
+        });
+  }
+
   void watchMuscleXp(String gymId, String userId) {
     debugPrint('👀 provider watchMuscleXp userId=$userId gymId=$gymId');
     _muscleSub?.cancel();
@@ -234,10 +256,10 @@ class XpProvider extends ChangeNotifier {
     _muscleDailySub = _repo
         .watchMuscleXpHistory(gymId: gymId, userId: userId)
         .listen((map) {
-      _muscleDailyXp = map;
-      debugPrint('🔄 provider muscleDailyXp=${map.length} days');
-      notifyListeners();
-    });
+          _muscleDailyXp = map;
+          debugPrint('🔄 provider muscleDailyXp=${map.length} days');
+          notifyListeners();
+        });
   }
 
   void watchTrainingDays(String userId) {
@@ -282,11 +304,7 @@ class XpProvider extends ChangeNotifier {
 
     if (_useBulkDeviceXp) {
       _deviceSub = _repo
-          .watchDeviceXpBulk(
-            gymId: gymId,
-            userId: userId,
-            deviceIds: deviceIds,
-          )
+          .watchDeviceXpBulk(gymId: gymId, userId: userId, deviceIds: deviceIds)
           .listen(
             (map) {
               _deviceXp
@@ -345,10 +363,7 @@ class XpProvider extends ChangeNotifier {
     }
     Future<void> fetchAndApply(String source) async {
       try {
-        final xp = await _repo.fetchStatsDailyXp(
-          gymId: gymId,
-          userId: userId,
-        );
+        final xp = await _repo.fetchStatsDailyXp(gymId: gymId, userId: userId);
         final saved = await _statsCache.writeTotal(gymId, userId, xp, _now());
         _applyDailyStats(
           totalXp: saved.totalXp,
@@ -367,38 +382,48 @@ class XpProvider extends ChangeNotifier {
     var hasInitialStreamValue = false;
     _statsDailySub = _repo
         .watchStatsDailyXp(gymId: gymId, userId: userId)
-        .listen((xp) async {
-      try {
-        final saved = await _statsCache.writeTotal(gymId, userId, xp, _now());
-        _applyDailyStats(
-          totalXp: saved.totalXp,
-          fetchedAt: saved.cachedAt,
-          source: 'stream',
+        .listen(
+          (xp) async {
+            try {
+              final saved = await _statsCache.writeTotal(
+                gymId,
+                userId,
+                xp,
+                _now(),
+              );
+              _applyDailyStats(
+                totalXp: saved.totalXp,
+                fetchedAt: saved.cachedAt,
+                source: 'stream',
+              );
+            } catch (e, st) {
+              elogError('XP_STATS_CACHE_WRITE_FAILED', e, st, {
+                'gymId': gymId,
+                'uid': userId,
+              });
+            } finally {
+              if (!hasInitialStreamValue) {
+                hasInitialStreamValue = true;
+                if (!initialCompleter.isCompleted) {
+                  initialCompleter.complete();
+                }
+              }
+            }
+          },
+          onError: (Object error, StackTrace st) {
+            elogError('XP_STATS_STREAM_FAILED', error, st, {
+              'gymId': gymId,
+              'uid': userId,
+            });
+            if (!initialCompleter.isCompleted) {
+              initialCompleter.completeError(error, st);
+            }
+          },
         );
-      } catch (e, st) {
-        elogError('XP_STATS_CACHE_WRITE_FAILED', e, st, {
-          'gymId': gymId,
-          'uid': userId,
-        });
-      } finally {
-        if (!hasInitialStreamValue) {
-          hasInitialStreamValue = true;
-          if (!initialCompleter.isCompleted) {
-            initialCompleter.complete();
-          }
-        }
-      }
-    }, onError: (Object error, StackTrace st) {
-      elogError('XP_STATS_STREAM_FAILED', error, st, {
-        'gymId': gymId,
-        'uid': userId,
-      });
-      if (!initialCompleter.isCompleted) {
-        initialCompleter.completeError(error, st);
-      }
-    });
 
-    if (!forceRefresh && cacheEntry != null && cacheEntry.isSameCalendarDay(now)) {
+    if (!forceRefresh &&
+        cacheEntry != null &&
+        cacheEntry.isSameCalendarDay(now)) {
       _applyDailyStats(
         totalXp: cacheEntry.totalXp,
         fetchedAt: cacheEntry.cachedAt,
@@ -421,6 +446,7 @@ class XpProvider extends ChangeNotifier {
   @override
   void dispose() {
     _daySub?.cancel();
+    _dayBreakdownSub?.cancel();
     _muscleSub?.cancel();
     _muscleDailySub?.cancel();
     _dayListSub?.cancel();

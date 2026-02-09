@@ -47,11 +47,7 @@ class TrainingDetailsProvider extends ChangeNotifier {
     DatabaseService databaseService,
     SyncService syncService,
   ) {
-    final repo = SessionRepositoryImpl(
-      databaseService,
-      syncService,
-      _meta,
-    );
+    final repo = SessionRepositoryImpl(databaseService, syncService, _meta);
     _getSessions = GetSessionsForDate(repo);
     _deleteSession = DeleteSession(repo);
   }
@@ -63,7 +59,8 @@ class TrainingDetailsProvider extends ChangeNotifier {
     String? gymId,
   }) async {
     debugPrint(
-        '📆 loadSessions user=$userId date=$date gym=${gymId ?? 'auto'}');
+      '📆 loadSessions user=$userId date=$date gym=${gymId ?? 'auto'}',
+    );
     _userId = userId;
     _date = date;
     _canAccessMeta = _isCurrentUser(userId);
@@ -183,10 +180,11 @@ class TrainingDetailsProvider extends ChangeNotifier {
   }) async {
     _sessions = sessions;
     await _hydrateExerciseNamesIfNeeded();
+    final sessionsDurationMs = _deriveDurationFromSessions(_sessions);
     if (_sessions.isNotEmpty) {
       final sessionGymId = _sessions.first.gymId;
       await _updateGymId(sessionGymId);
-      _dayDurationMs = _sessions.first.durationMs;
+      _dayDurationMs = sessionsDurationMs;
       if (_canAccessMeta) {
         final dayKey = logicDayKey(date);
         final meta = await _meta.getMetaByDayKey(
@@ -196,7 +194,10 @@ class TrainingDetailsProvider extends ChangeNotifier {
           fromCacheOnly: fromCacheOnly,
         );
         debugPrint(
-            '📌 TrainingDetails meta (sessions>0) gym=$sessionGymId dayKey=$dayKey meta=$meta');
+          '📌 TrainingDetails meta (sessions>0) gym=$sessionGymId dayKey=$dayKey meta=$meta',
+        );
+        final metaDurationMs = (meta?['durationMs'] as num?)?.toInt();
+        _dayDurationMs = _preferDuration(_dayDurationMs, metaDurationMs);
         _planName = meta?['planName'] as String?;
         _planId = meta?['planId'] as String?;
         final newSignature = _buildMetaSignature(meta);
@@ -220,7 +221,10 @@ class TrainingDetailsProvider extends ChangeNotifier {
             dayKey: dayKey,
             fromCacheOnly: fromCacheOnly,
           );
-          _dayDurationMs = (meta?['durationMs'] as num?)?.toInt();
+          _dayDurationMs = _preferDuration(
+            sessionsDurationMs,
+            (meta?['durationMs'] as num?)?.toInt(),
+          );
           _planName = meta?['planName'] as String?;
           _planId = meta?['planId'] as String?;
         } else {
@@ -244,6 +248,53 @@ class TrainingDetailsProvider extends ChangeNotifier {
     }
   }
 
+  int? _deriveDurationFromSessions(List<Session> sessions) {
+    if (sessions.isEmpty) return null;
+
+    var totalKnownDurationMs = 0;
+    DateTime? earliestStart;
+    DateTime? latestEnd;
+    for (final session in sessions) {
+      final sessionDuration = session.durationMs;
+      if (sessionDuration != null && sessionDuration > 0) {
+        totalKnownDurationMs += sessionDuration;
+      }
+
+      final start = session.startTime ?? session.timestamp;
+      final end = session.endTime ?? session.timestamp;
+      if (earliestStart == null || start.isBefore(earliestStart)) {
+        earliestStart = start;
+      }
+      if (latestEnd == null || end.isAfter(latestEnd)) {
+        latestEnd = end;
+      }
+    }
+
+    if (totalKnownDurationMs > 0) {
+      return totalKnownDurationMs;
+    }
+
+    if (earliestStart != null && latestEnd != null) {
+      final diff = latestEnd.difference(earliestStart).inMilliseconds;
+      if (diff > 0) {
+        return diff;
+      }
+    }
+    return null;
+  }
+
+  int? _preferDuration(int? primary, int? fallback) {
+    final normalizedPrimary = primary != null && primary > 0 ? primary : null;
+    final normalizedFallback = fallback != null && fallback > 0
+        ? fallback
+        : null;
+    if (normalizedPrimary == null) return normalizedFallback;
+    if (normalizedFallback == null) return normalizedPrimary;
+    return normalizedPrimary >= normalizedFallback
+        ? normalizedPrimary
+        : normalizedFallback;
+  }
+
   Future<void> _hydrateExerciseNamesIfNeeded() async {
     final gymId = _gymId;
     if (gymId == null || gymId.isEmpty) {
@@ -252,7 +303,8 @@ class TrainingDetailsProvider extends ChangeNotifier {
 
     final pending = _sessions.where((s) {
       final hasExerciseId = s.exerciseId != null && s.exerciseId!.isNotEmpty;
-      final hasName = s.exerciseName != null && s.exerciseName!.trim().isNotEmpty;
+      final hasName =
+          s.exerciseName != null && s.exerciseName!.trim().isNotEmpty;
       return s.isMulti && hasExerciseId && !hasName;
     }).toList();
 
@@ -274,8 +326,10 @@ class TrainingDetailsProvider extends ChangeNotifier {
             .doc(gymId)
             .collection('devices')
             .doc(session.deviceId);
-        final exerciseSnap =
-            await deviceRef.collection('exercises').doc(exerciseId).get();
+        final exerciseSnap = await deviceRef
+            .collection('exercises')
+            .doc(exerciseId)
+            .get();
         final data = exerciseSnap.data();
         final name = data != null ? data['name'] as String? : null;
         if (name != null && name.trim().isNotEmpty) {
@@ -331,18 +385,18 @@ class TrainingDetailsProvider extends ChangeNotifier {
     _dayMetaSubscription = _meta
         .watchMetaByDayKey(gymId: gymId, uid: userId, dayKey: dayKey)
         .listen((event) async {
-      if (_disposed) return;
-      final signature = _buildMetaSignature(event.data);
-      if (event.isFromCache) {
-        _lastMetaSignature = signature;
-        return;
-      }
-      if (signature == _lastMetaSignature) {
-        return;
-      }
-      _lastMetaSignature = signature;
-      await _refreshSessions(showLoading: false, refreshFromServer: true);
-    });
+          if (_disposed) return;
+          final signature = _buildMetaSignature(event.data);
+          if (event.isFromCache) {
+            _lastMetaSignature = signature;
+            return;
+          }
+          if (signature == _lastMetaSignature) {
+            return;
+          }
+          _lastMetaSignature = signature;
+          await _refreshSessions(showLoading: false, refreshFromServer: true);
+        });
   }
 
   String? _buildMetaSignature(Map<String, dynamic>? meta) {
@@ -369,8 +423,8 @@ class TrainingDetailsProvider extends ChangeNotifier {
       if (session.isMulti) {
         final exerciseId = session.exerciseId?.trim();
         final exerciseName = session.exerciseName?.trim() ?? '';
-        if ((exerciseName.isEmpty || (exerciseId != null &&
-                exerciseName == exerciseId)) &&
+        if ((exerciseName.isEmpty ||
+                (exerciseId != null && exerciseName == exerciseId)) &&
             (exerciseId != null && exerciseId.isNotEmpty)) {
           return true;
         }
@@ -413,21 +467,17 @@ class TrainingDetailsRequest {
   final DateTime date;
   final String? gymId;
 
-   @override
-   bool operator ==(Object other) {
-     if (identical(this, other)) return true;
-     return other is TrainingDetailsRequest &&
-         other.userId == userId &&
-         other.gymId == gymId &&
-         other.date == date;
-   }
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TrainingDetailsRequest &&
+        other.userId == userId &&
+        other.gymId == gymId &&
+        other.date == date;
+  }
 
-   @override
-   int get hashCode => Object.hash(
-         userId,
-         gymId,
-         date.millisecondsSinceEpoch,
-       );
+  @override
+  int get hashCode => Object.hash(userId, gymId, date.millisecondsSinceEpoch);
 }
 
 /// Riverpod-Provider für TrainingDetailsScreen.
@@ -436,13 +486,13 @@ class TrainingDetailsRequest {
 /// angegebene Kombination aus User, Datum und Gym.
 final trainingDetailsStateProvider = ChangeNotifierProvider.autoDispose
     .family<TrainingDetailsProvider, TrainingDetailsRequest>((ref, request) {
-  final databaseService = ref.watch(databaseServiceProvider);
-  final syncService = ref.watch(syncServiceProvider);
-  final provider = TrainingDetailsProvider(databaseService, syncService);
-  provider.loadSessions(
-    userId: request.userId,
-    date: request.date,
-    gymId: request.gymId,
-  );
-  return provider;
-});
+      final databaseService = ref.watch(databaseServiceProvider);
+      final syncService = ref.watch(syncServiceProvider);
+      final provider = TrainingDetailsProvider(databaseService, syncService);
+      provider.loadSessions(
+        userId: request.userId,
+        date: request.date,
+        gymId: request.gymId,
+      );
+      return provider;
+    });

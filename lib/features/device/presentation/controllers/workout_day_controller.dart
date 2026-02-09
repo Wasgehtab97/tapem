@@ -1,3 +1,6 @@
+import 'dart:collection';
+import 'dart:math' as math;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -162,6 +165,7 @@ class WorkoutDayController extends ChangeNotifier
   String? _activeUserId;
   String? _focusedSessionKey;
   bool _isSavingAll = false;
+  static const int _maxParallelSaveWorkers = 3;
 
   // Optional Plan-Kontext für den aktuellen Trainingstag eines Users.
   String? _activePlanId;
@@ -622,6 +626,7 @@ class WorkoutDayController extends ChangeNotifier
     final failures = <String, String?>{};
     final savedKeys = <String>[];
     final staleKeys = <String>[];
+    final saveEntries = <_SessionEntry>[];
 
     _isSavingAll = true;
     notifyListeners();
@@ -636,23 +641,46 @@ class WorkoutDayController extends ChangeNotifier
         if (!snapshot.canShowSaveAction) {
           continue;
         }
-        attempted++;
-        final provider = entry.provider;
-        final ok = await provider.saveWorkoutSession(
-          gymId: entry.gymId,
-          userId: userId,
-          showInLeaderboard: showInLeaderboard,
-          userName: userName,
-          gender: gender,
-          bodyWeightKg: bodyWeightKg,
-          plannedRestSeconds: plannedRestSecondsBySession[entry.key],
-        );
-        if (ok) {
-          saved++;
-          savedKeys.add(entry.key);
-        } else {
-          failures[entry.key] = provider.error;
-        }
+        saveEntries.add(entry);
+      }
+
+      attempted = saveEntries.length;
+      if (saveEntries.isNotEmpty) {
+        final queue = ListQueue<_SessionEntry>.from(saveEntries);
+        final workerCount = math.min(_maxParallelSaveWorkers, queue.length);
+        final workers = List<Future<void>>.generate(workerCount, (_) async {
+          while (queue.isNotEmpty) {
+            final entry = queue.removeFirst();
+            final provider = entry.provider;
+            var ok = false;
+            String? error;
+            try {
+              ok = await provider.saveWorkoutSession(
+                gymId: entry.gymId,
+                userId: userId,
+                showInLeaderboard: showInLeaderboard,
+                userName: userName,
+                gender: gender,
+                bodyWeightKg: bodyWeightKg,
+                plannedRestSeconds: plannedRestSecondsBySession[entry.key],
+              );
+              error = provider.error;
+            } catch (e, st) {
+              error = e.toString();
+              debugPrint(
+                '[WorkoutDayController] saveWorkoutSession failed for key=${entry.key}: $e',
+              );
+              debugPrintStack(stackTrace: st);
+            }
+            if (ok) {
+              savedKeys.add(entry.key);
+            } else {
+              failures[entry.key] = error;
+            }
+          }
+        });
+        await Future.wait(workers);
+        saved = savedKeys.length;
       }
     } finally {
       _isSavingAll = false;

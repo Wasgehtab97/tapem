@@ -11,7 +11,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 
 class NutritionHomeScreen extends ConsumerStatefulWidget {
-  const NutritionHomeScreen({super.key});
+  const NutritionHomeScreen({super.key, this.onExitToProfile});
+
+  final VoidCallback? onExitToProfile;
 
   @override
   ConsumerState<NutritionHomeScreen> createState() =>
@@ -19,6 +21,26 @@ class NutritionHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen> {
+  void _handleBackPressed() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    widget.onExitToProfile?.call();
+  }
+
+  Widget? _buildLeadingBackButton() {
+    final canPop = Navigator.of(context).canPop();
+    if (!canPop && widget.onExitToProfile == null) {
+      return null;
+    }
+    return IconButton(
+      onPressed: _handleBackPressed,
+      icon: const Icon(Icons.chevron_left_rounded),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +58,9 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final accent =
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
     final state = ref.watch(nutritionProvider);
     final goal = state.goal?.kcal ?? 0;
     final total = state.log?.total.kcal ?? 0;
@@ -45,7 +70,15 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen> {
     final fat = state.log?.total.fat ?? 0;
 
     return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: _buildLeadingBackButton(),
+        title: Text(loc.homeTabNutrition),
+        centerTitle: true,
+        foregroundColor: accent,
+      ),
       body: SafeArea(
+        top: false,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.sm,

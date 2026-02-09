@@ -750,6 +750,7 @@ class _MealEntryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final macroAccentColor = nutritionBrandAccentColor(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
       child: Row(
@@ -767,22 +768,22 @@ class _MealEntryRow extends StatelessWidget {
           _ValueCell(
             width: _colKcalWidth,
             value: '${entry.kcal}',
-            color: AppColors.accentTurquoise,
+            color: macroAccentColor,
           ),
           _ValueCell(
             width: _colMacroWidth,
             value: '${entry.protein}',
-            color: const Color(0xFFE53935),
+            color: macroAccentColor,
           ),
           _ValueCell(
             width: _colMacroWidth,
             value: '${entry.carbs}',
-            color: AppColors.accentMint,
+            color: macroAccentColor,
           ),
           _ValueCell(
             width: _colMacroWidth,
             value: '${entry.fat}',
-            color: AppColors.accentAmber,
+            color: macroAccentColor,
           ),
           _ValueCell(
             width: _colQtyWidth,
@@ -822,11 +823,6 @@ class _ValueCell extends StatelessWidget {
       width: width,
       margin: const EdgeInsets.only(left: _colCellGap),
       padding: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.28), width: 1),
-      ),
       alignment: Alignment.center,
       child: Text(
         value,

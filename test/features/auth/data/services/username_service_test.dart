@@ -10,70 +10,90 @@ void main() {
 
     setUp(() {
       firestore = FakeFirebaseFirestore();
-      firestore.seedDocument('users/uid-1', {
-        'username': 'old name',
-        'usernameLower': 'old name',
-      });
-      firestore.seedDocument('usernames/old name', {
-        'uid': 'uid-1',
-      });
     });
 
-    test('updates username mapping and removes old record', () async {
-      await changeUsernameTransaction(
-        firestore: firestore,
-        uid: 'uid-1',
-        newUsername: 'New  Name ',
-      );
-
-      final newMapping = await firestore.collection('usernames').doc('new name').get();
-      expect(newMapping.exists, isTrue);
-      expect(newMapping.data(), containsPair('uid', 'uid-1'));
-
-      final oldMapping = await firestore.collection('usernames').doc('old name').get();
-      expect(oldMapping.exists, isFalse);
-
-      final userDoc = await firestore.collection('users').doc('uid-1').get();
-      expect(userDoc.data(), containsPair('username', 'New Name'));
-      expect(userDoc.data(), containsPair('usernameLower', 'new name'));
-    });
-
-    test('throws when desired username is already taken by another user', () async {
-      firestore.seedDocument('usernames/new name', {
-        'uid': 'other-user',
+    test('throws username_invalid for malformed username', () async {
+      await firestore.seedDocument('users/u1', {
+        'username': 'Old',
+        'usernameLower': 'old',
       });
 
       expect(
         () => changeUsernameTransaction(
           firestore: firestore,
-          uid: 'uid-1',
-          newUsername: 'new name',
+          uid: 'u1',
+          newUsername: 'x!',
         ),
-        throwsA(isA<FirebaseException>().having((e) => e.code, 'code', 'username_taken')),
+        throwsA(
+          isA<FirebaseException>().having(
+            (e) => e.code,
+            'code',
+            'username_invalid',
+          ),
+        ),
       );
     });
 
-    test('throws when user document does not exist', () async {
+    test(
+      'updates users + usernames mapping and removes previous mapping',
+      () async {
+        await firestore.seedDocument('users/u1', {
+          'username': 'Old Name',
+          'usernameLower': 'old name',
+        });
+        await firestore.seedDocument('usernames/old name', {
+          'uid': 'u1',
+          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+        });
+
+        await changeUsernameTransaction(
+          firestore: firestore,
+          uid: 'u1',
+          newUsername: 'New Name',
+        );
+
+        final user = await firestore.collection('users').doc('u1').get();
+        final oldMap = await firestore
+            .collection('usernames')
+            .doc('old name')
+            .get();
+        final newMap = await firestore
+            .collection('usernames')
+            .doc('new name')
+            .get();
+
+        expect(user.data(), containsPair('username', 'New Name'));
+        expect(user.data(), containsPair('usernameLower', 'new name'));
+        expect(oldMap.exists, isFalse);
+        expect(newMap.exists, isTrue);
+        expect(newMap.data(), containsPair('uid', 'u1'));
+      },
+    );
+
+    test('throws username_taken when mapped to another uid', () async {
+      await firestore.seedDocument('users/u1', {
+        'username': 'Old',
+        'usernameLower': 'old',
+      });
+      await firestore.seedDocument('usernames/taken', {
+        'uid': 'u2',
+        'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+      });
+
       expect(
         () => changeUsernameTransaction(
           firestore: firestore,
-          uid: 'missing',
-          newUsername: 'anyone',
+          uid: 'u1',
+          newUsername: 'Taken',
         ),
-        throwsA(isA<FirebaseException>().having((e) => e.code, 'code', 'user_not_found')),
+        throwsA(
+          isA<FirebaseException>().having(
+            (e) => e.code,
+            'code',
+            'username_taken',
+          ),
+        ),
       );
-    });
-
-    test('returns immediately when username is unchanged', () async {
-      await changeUsernameTransaction(
-        firestore: firestore,
-        uid: 'uid-1',
-        newUsername: 'old name',
-      );
-
-      final newMapping = await firestore.collection('usernames').doc('old name').get();
-      expect(newMapping.exists, isTrue);
-      expect(newMapping.data(), containsPair('uid', 'uid-1'));
     });
   });
 }

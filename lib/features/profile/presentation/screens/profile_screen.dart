@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
+import 'package:tapem/core/widgets/brand_modal.dart';
 import 'package:tapem/core/utils/avatar_assets.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
@@ -43,12 +45,31 @@ import 'package:tapem/features/training_plan/presentation/widgets/plan_color_pal
 import 'package:tapem/features/profile/presentation/screens/profile_stats_screen.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/presentation/workout_finish_flow.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
+import 'package:tapem/bootstrap/navigation.dart';
 
 const bool enableFriends = true;
 
+enum _ActiveTrainingAction { save, discard }
+
 class ProfileScreen extends riverpod.ConsumerStatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({
+    Key? key,
+    this.onOpenProgress,
+    this.onOpenNutrition,
+    this.onOpenPlan,
+    this.onOpenDiscoverStats,
+    this.onOpenDiscoverCommunity,
+    this.onOpenDiscoverSurveys,
+  }) : super(key: key);
+
+  final VoidCallback? onOpenProgress;
+  final VoidCallback? onOpenNutrition;
+  final VoidCallback? onOpenPlan;
+  final VoidCallback? onOpenDiscoverStats;
+  final VoidCallback? onOpenDiscoverCommunity;
+  final VoidCallback? onOpenDiscoverSurveys;
 
   @override
   riverpod.ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -63,17 +84,22 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final profile = riverpod.ProviderScope.containerOf(context, listen: false)
-          .read(profileProvider);
+      final profile = riverpod.ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(profileProvider);
       profile.loadTrainingDates(context);
 
-      final auth =
-          riverpod.ProviderScope.containerOf(context, listen: false)
-              .read(authControllerProvider);
+      final auth = riverpod.ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(authControllerProvider);
       final uid = auth.userId;
       if (uid != null) {
-        final container =
-            riverpod.ProviderScope.containerOf(context, listen: false);
+        final container = riverpod.ProviderScope.containerOf(
+          context,
+          listen: false,
+        );
         container.read(settingsProvider).load(uid);
         final gymId = auth.gymCode ?? '';
         container.read(xpProvider).watchStatsDailyXp(gymId, uid);
@@ -102,9 +128,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
           year: DateTime.now().year,
         );
         final plans = await planRepo.getPlans(gymId: gymId, userId: uid);
-        final plansById = {
-          for (final p in plans) p.id: p,
-        };
+        final plansById = {for (final p in plans) p.id: p};
         final colors = <String, Color>{};
         final dateKeys = <String>[];
         for (final a in assignments) {
@@ -154,8 +178,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     String? assignedPlanName;
     String? assignedPlanId;
     try {
-      final scheduleRepo =
-          ref.read(trainingScheduleRepositoryProvider);
+      final scheduleRepo = ref.read(trainingScheduleRepositoryProvider);
       final assignment = await scheduleRepo.getAssignment(
         userId: uid,
         dateKey: dateKey,
@@ -179,23 +202,20 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
 
     if (!mounted) return;
 
-    showModalBottomSheet<void>(
+    showDialog<void>(
       context: context,
+      barrierColor: Colors.black54,
       builder: (_) => TrainingDayActionSheet(
         date: selected,
         assignedPlanName: assignedPlanName,
         onOpenDetails: () {
-          final args = <String, dynamic>{
-            'userId': userId,
-            'date': selected,
-          };
+          final args = <String, dynamic>{'userId': userId, 'date': selected};
           if (gymId.isNotEmpty) {
             args['gymId'] = gymId;
           }
-          Navigator.of(context).pushNamed(
-            AppRouter.trainingDetails,
-            arguments: args,
-          );
+          Navigator.of(
+            context,
+          ).pushNamed(AppRouter.trainingDetails, arguments: args);
         },
         onOpenPlanSelection: () async {
           if (gymId.isEmpty) {
@@ -203,10 +223,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
           }
           try {
             final planRepo = ref.read(trainingPlanRepositoryProvider);
-            final plans = await planRepo.getPlans(
-              gymId: gymId,
-              userId: uid,
-            );
+            final plans = await planRepo.getPlans(gymId: gymId, userId: uid);
             if (!mounted) return;
             showModalBottomSheet<void>(
               context: context,
@@ -217,8 +234,9 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                 onClear: assignedPlanId == null
                     ? null
                     : () async {
-                        final scheduleRepo =
-                            ref.read(trainingScheduleRepositoryProvider);
+                        final scheduleRepo = ref.read(
+                          trainingScheduleRepositoryProvider,
+                        );
                         await scheduleRepo.clearAssignment(
                           userId: uid,
                           dateKey: dateKey,
@@ -226,14 +244,16 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content:
-                                Text('Plan-Zuweisung für diesen Tag entfernt.'),
+                            content: Text(
+                              'Plan-Zuweisung für diesen Tag entfernt.',
+                            ),
                           ),
                         );
                       },
                 onSelect: (plan) async {
-                  final scheduleRepo =
-                      ref.read(trainingScheduleRepositoryProvider);
+                  final scheduleRepo = ref.read(
+                    trainingScheduleRepositoryProvider,
+                  );
                   await scheduleRepo.setAssignment(
                     userId: uid,
                     dateKey: dateKey,
@@ -253,9 +273,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
           } catch (e) {
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Fehler beim Laden der Pläne: $e'),
-              ),
+              SnackBar(content: Text('Fehler beim Laden der Pläne: $e')),
             );
           }
         },
@@ -271,57 +289,79 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       return;
     }
 
-    final timerService =
-        ref.read(workoutSessionDurationServiceProvider);
+    final timerService = ref.read(workoutSessionDurationServiceProvider);
     final isTimerRunning = timerService.isRunning;
-    WorkoutDayController workoutController =
-        ref.read(workoutDayControllerProvider);
+    WorkoutDayController workoutController = ref.read(
+      workoutDayControllerProvider,
+    );
 
-    // Wenn Timer läuft, biete explizites Stoppen / Abbrechen an.
+    // Wenn Timer läuft, biete Speichern oder Verwerfen an.
     if (isTimerRunning) {
-      final theme = Theme.of(context);
-      final confirm = await showDialog<bool>(
+      final sessions = workoutController.sessionsFor(userId: uid, gymId: gymId);
+      final canSave = sessions.any((session) => session.canShowSaveAction);
+      final action = await showDialog<_ActiveTrainingAction>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Trainingstag abbrechen?'),
-          content: const Text(
-            'Der aktuelle Trainingstag wird verworfen. '
-            'Alle noch nicht gespeicherten Trainingsdaten gehen verloren.',
+          title: const Text('Aktives Training'),
+          content: Text(
+            canSave
+                ? 'Du kannst den Trainingstag jetzt speichern oder komplett verwerfen.'
+                : 'Es gibt aktuell nichts zum Speichern. Du kannst den Trainingstag nur verwerfen oder zurückgehen.',
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
+              onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('Zurück'),
             ),
             TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
+              onPressed: () =>
+                  Navigator.of(ctx).pop(_ActiveTrainingAction.discard),
               style: TextButton.styleFrom(
-                foregroundColor: theme.colorScheme.error,
+                foregroundColor: Theme.of(ctx).colorScheme.error,
               ),
-              child: const Text('Training stoppen'),
+              child: const Text('Verwerfen'),
+            ),
+            FilledButton(
+              onPressed: canSave
+                  ? () => Navigator.of(ctx).pop(_ActiveTrainingAction.save)
+                  : null,
+              child: const Text('Speichern'),
             ),
           ],
         ),
       );
 
-      if (confirm != true) {
+      if (!mounted || action == null) {
         return;
       }
 
-      // 1) Timer verwerfen
-      await timerService.discard();
+      if (action == _ActiveTrainingAction.save) {
+        // Für identisches Verhalten zur WorkoutDay-Page:
+        // derselbe Finish-Flow (Bestätigung, offene Sätze, Save, Overlay, Highlights),
+        // aber ohne zusätzliche Navigation zurück zur Profilseite.
+        final planContext = workoutController.getPlanContext(gymId: gymId);
+        await WorkoutFinishFlow.saveAndFinish(
+          context: context,
+          navigatorKey: navigatorKey,
+          controller: workoutController,
+          auth: auth,
+          settings: ref.read(settingsProvider),
+          sessions: sessions,
+          fallbackGymId: gymId,
+          navigateToHomeProfileOnSuccess: false,
+          planId: planContext?.$1,
+          planName: planContext?.$2,
+        );
+        return;
+      }
 
-      // 2) Alle offenen Sessions für diesen User/Gym schließen
-      workoutController.cancelActivePlan(
-        userId: uid,
-        gymId: gymId,
-      );
+      // Verwerfen: Timer + offene Sessions verwerfen.
+      await timerService.discard();
+      workoutController.cancelActivePlan(userId: uid, gymId: gymId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Trainingstag wurde abgebrochen.'),
-          ),
+          const SnackBar(content: Text('Trainingstag wurde abgebrochen.')),
         );
       }
       return;
@@ -343,12 +383,8 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
         dateKey: dateKey,
       );
       if (assignment != null) {
-        final planRepo =
-            ref.read(trainingPlanRepositoryProvider);
-        final plans = await planRepo.getPlans(
-          gymId: gymId,
-          userId: uid,
-        );
+        final planRepo = ref.read(trainingPlanRepositoryProvider);
+        final plans = await planRepo.getPlans(gymId: gymId, userId: uid);
         for (final p in plans) {
           if (p.id == assignment.planId) {
             selectedPlan = p;
@@ -368,10 +404,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       // beim Wechsel auf Freestyle entfernt, damit der Trainingstage-
       // Kalender den Tag nicht länger als "geplant" markiert.
       try {
-        await scheduleRepo.clearAssignment(
-          userId: uid,
-          dateKey: dateKey,
-        );
+        await scheduleRepo.clearAssignment(userId: uid, dateKey: dateKey);
       } catch (_) {
         // Bei Fehlern Freestyle trotzdem starten; Kalendersync ist sekundär.
       }
@@ -389,8 +422,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
 
       if (plan.exercises.isNotEmpty) {
         for (final item in plan.exercises) {
-          final exerciseName =
-              item.name?.isNotEmpty == true ? item.name : null;
+          final exerciseName = item.name?.isNotEmpty == true ? item.name : null;
           controller.addOrFocusSession(
             gymId: gymId,
             deviceId: item.deviceId,
@@ -445,139 +477,9 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       await startPlan(selectedPlan);
     }
 
-    Future<void> startOtherPlan() async {
-      try {
-        final planRepo = ref.read(trainingPlanRepositoryProvider);
-        final plans = await planRepo.getPlans(
-          gymId: gymId,
-          userId: uid,
-        );
-        if (!mounted) return;
-        if (plans.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:
-                  Text('Du hast aktuell keine Trainingspläne.'),
-            ),
-          );
-          return;
-        }
-
-        final theme = Theme.of(context);
-        final chosen = await showModalBottomSheet<TrainingPlan>(
-          context: context,
-          builder: (bottomCtx) => SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding:
-                      const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Text(
-                    'Anderen Plan auswählen',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                for (final p in plans)
-                  Builder(
-                    builder: (_) {
-                      final color = PlanColorPalette.colorForIndex(
-                        p.colorIndex,
-                        theme,
-                      );
-                      final isCoachPlan = p.coachId != null;
-                      final exerciseCount = p.exercises.length;
-                      final subtitle =
-                          '$exerciseCount ${exerciseCount == 1 ? 'Übung' : 'Übungen'}';
-                      return ListTile(
-                        leading: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                color,
-                                color.withOpacity(0.7),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.view_list_rounded,
-                            color: Colors.black,
-                            size: 18,
-                          ),
-                        ),
-                        title: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                p.name,
-                                style: theme.textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                            if (isCoachPlan)
-                              Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: color.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  'Coach-Plan',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: color.withOpacity(0.9),
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        subtitle: Text(
-                          subtitle,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withOpacity(0.7),
-                          ),
-                        ),
-                        onTap: () => Navigator.pop(bottomCtx, p),
-                      );
-                    },
-                  ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        );
-
-        if (!mounted || chosen == null) {
-          return;
-        }
-
-        // Wenn der Nutzer explizit einen anderen Plan (B) für heute startet,
-        // überschreiben wir damit auch direkt die bestehende Tageszuweisung,
-        // sodass der Kalender unmittelbar Plan B (inkl. Farbe) zeigt.
-        await startPlan(chosen);
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Fehler beim Laden der Pläne: $e',
-            ),
-          ),
-        );
-      }
+    Future<List<TrainingPlan>> loadAvailablePlans() async {
+      final planRepo = ref.read(trainingPlanRepositoryProvider);
+      return planRepo.getPlans(gymId: gymId, userId: uid);
     }
 
     // Start-Dialog je nach Situation:
@@ -585,28 +487,37 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     // - ohne geplanten Plan: "Plan auswählen", "Freestyle"
     final hasPlannedPlan =
         planId != null && planName != null && selectedPlan != null;
-    await showDialog<void>(
+    final result = await showDialog<_TrainingStartDialogResult>(
       context: context,
       barrierColor: Colors.black54,
       builder: (ctx) => _TrainingStartDialog(
         planName: planName ?? '',
         hasPlannedPlan: hasPlannedPlan,
-        onPlanned: hasPlannedPlan
-            ? () {
-                Navigator.pop(ctx);
-                startPlanned();
-              }
-            : null,
-        onFreestyle: () {
-          Navigator.pop(ctx);
-          startFreestyle();
-        },
-        onOtherPlan: () {
-          Navigator.pop(ctx);
-          startOtherPlan();
-        },
+        loadPlans: loadAvailablePlans,
       ),
     );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    switch (result.action) {
+      case _TrainingStartAction.startFreestyle:
+        await startFreestyle();
+        return;
+      case _TrainingStartAction.startPlanned:
+        await startPlanned();
+        return;
+      case _TrainingStartAction.startSelectedPlan:
+        final plan = result.selectedPlan;
+        if (plan == null) {
+          return;
+        }
+        // Explizite Auswahl überschreibt die Tageszuweisung, damit der
+        // Kalender sofort den gewählten Plan + Farbe anzeigt.
+        await startPlan(plan);
+        return;
+    }
   }
 
   void _showAvatarPicker() {
@@ -696,7 +607,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                     // Let's close the XP Card dialog? OR open Fullscreen on top.
                     // If we open on top, when we close fullscreen we are back to XP Card. That seems nice.
                     _showFullAvatarWithEdit(
-                      profile.avatarKey ?? 'default', 
+                      profile.avatarKey ?? 'default',
                       profile.primaryGymCode,
                     );
                   },
@@ -717,7 +628,10 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
         // Use StatefulBuilder if we need to update the image after change without closing
         return StatefulBuilder(
           builder: (context, setState) {
-            final path = AvatarCatalog.instance.resolvePathOrFallback(currentKey, gymId: gymId);
+            final path = AvatarCatalog.instance.resolvePathOrFallback(
+              currentKey,
+              gymId: gymId,
+            );
             return Stack(
               alignment: Alignment.center,
               children: [
@@ -726,10 +640,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                   boundaryMargin: const EdgeInsets.all(20),
                   minScale: 0.5,
                   maxScale: 4,
-                  child: Image.asset(
-                    path,
-                    fit: BoxFit.contain,
-                  ),
+                  child: Image.asset(path, fit: BoxFit.contain),
                 ),
                 Positioned(
                   top: 40,
@@ -737,7 +648,11 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                   child: Material(
                     color: Colors.transparent,
                     child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 30,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -749,22 +664,25 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () {
-                         // Open Avatar Picker
-                         // When user selects, we need to update 'currentKey' here to show new image immediately?
-                         // The Profile Screen state updates via riverpod, but this local dialog state needs update too.
-                         // Or we just rely on parent rebuild? But we are in a dialog on top of a dialog.
-                         // Let's close this Fullscreen dialog, open picker?
-                         // User said: "wenn ich den anklicke werden mir erst alle meine verfügbaren angezeigt"
-                         
-                         // Better flow: Open picker on top. If selected, update state.
-                         Navigator.pop(context); // Close fullscreen
-                         _showAvatarPicker(); // Open picker
-                         // Note: After picking, the user is back to ProfileScreen (XP Card dialog is underneath).
-                         // The XP Card dialog will rebuild with new avatar if provider updates.
+                        // Open Avatar Picker
+                        // When user selects, we need to update 'currentKey' here to show new image immediately?
+                        // The Profile Screen state updates via riverpod, but this local dialog state needs update too.
+                        // Or we just rely on parent rebuild? But we are in a dialog on top of a dialog.
+                        // Let's close this Fullscreen dialog, open picker?
+                        // User said: "wenn ich den anklicke werden mir erst alle meine verfügbaren angezeigt"
+
+                        // Better flow: Open picker on top. If selected, update state.
+                        Navigator.pop(context); // Close fullscreen
+                        _showAvatarPicker(); // Open picker
+                        // Note: After picking, the user is back to ProfileScreen (XP Card dialog is underneath).
+                        // The XP Card dialog will rebuild with new avatar if provider updates.
                       },
                       borderRadius: BorderRadius.circular(30),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primary,
                           borderRadius: BorderRadius.circular(30),
@@ -779,14 +697,19 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.edit, color: Colors.white, size: 18),
+                            const Icon(
+                              Icons.edit,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'Ändern',
-                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
                           ],
                         ),
@@ -812,8 +735,9 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
             padding: const EdgeInsets.all(AppSpacing.md),
             child: riverpod.Consumer(
               builder: (context, ref, _) {
-                final relationsAsync =
-                    ref.watch(coaching.clientRelationsProvider);
+                final relationsAsync = ref.watch(
+                  coaching.clientRelationsProvider,
+                );
                 return relationsAsync.maybeWhen(
                   data: (relations) {
                     final active = relations
@@ -839,135 +763,72 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
 
   void _showLogoutConfirmation() {
     final theme = Theme.of(context);
-    final brandTheme = theme.extension<AppBrandTheme>();
-    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final errorColor = theme.colorScheme.error;
+    final neutralAccent =
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
 
-    showModalBottomSheet(
+    showDialog<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor.withOpacity(0.8),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      barrierColor: Colors.black54,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
           ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      brandColor.withOpacity(0.1),
-                      brandColor.withOpacity(0.02),
-                    ],
-                  ),
-                  border: Border(
-                    top: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 1,
-                    ),
-                  ),
+          child: BrandModalSurface(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                BrandModalHeader(
+                  icon: Icons.logout_rounded,
+                  accent: errorColor,
+                  title: 'Abmelden?',
+                  subtitle: 'Möchtest du dich wirklich abmelden?',
+                  onClose: () => Navigator.pop(dialogContext),
                 ),
-                padding: const EdgeInsets.fromLTRB(32, 32, 32, 48),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.red.withOpacity(0.1),
-                      ),
-                      child: const Icon(
-                        Icons.logout_rounded,
-                        color: Colors.red,
-                        size: 32,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Abmelden?',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Möchtest du dich wirklich abmelden?',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          await ref.read(authControllerProvider).logout();
-                          if (!mounted) return;
-                          Navigator.of(context).pushNamedAndRemoveUntil(
-                            AppRouter.auth,
-                            (route) => false,
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.withOpacity(0.1),
-                          foregroundColor: Colors.red,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            side: BorderSide(
-                              color: Colors.red.withOpacity(0.2),
-                              width: 1,
-                            ),
-                          ),
-                        ),
-                        child: const Text(
-                          'Abmelden',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          foregroundColor: theme.colorScheme.onSurface,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        child: const Text(
-                          'Abbrechen',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: MediaQuery.of(context).padding.bottom),
-                  ],
+                const SizedBox(height: 16),
+                BrandModalOptionCard(
+                  title: 'Abmelden',
+                  subtitle: 'Sitzung beenden und zum Login wechseln',
+                  icon: Icons.logout_rounded,
+                  accent: errorColor,
+                  highlighted: true,
+                  trailing: Icon(
+                    Icons.warning_amber_rounded,
+                    color: errorColor.withOpacity(0.9),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(dialogContext);
+                    await ref.read(authControllerProvider).logout();
+                    if (!mounted) return;
+                    Navigator.of(
+                      context,
+                    ).pushNamedAndRemoveUntil(AppRouter.auth, (route) => false);
+                  },
                 ),
-              ),
+                const SizedBox(height: 10),
+                BrandModalOptionCard(
+                  title: 'Abbrechen',
+                  subtitle: 'Im Profil bleiben',
+                  icon: Icons.close_rounded,
+                  accent: neutralAccent,
+                  trailing: Icon(
+                    Icons.arrow_back_rounded,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                  onTap: () => Navigator.pop(dialogContext),
+                ),
+              ],
             ),
           ),
         );
       },
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -976,13 +837,15 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     final auth = ref.watch(authControllerProvider);
     final xp = ref.watch(xpProvider);
     final userId = auth.userId ?? '';
-    final isActiveTraining =
-        ref.watch(workoutSessionDurationServiceProvider).isRunning;
+    final isActiveTraining = ref
+        .watch(workoutSessionDurationServiceProvider)
+        .isRunning;
     const avatarSize = 52.0;
 
     final theme = Theme.of(context);
     final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
 
     Widget buildBody() {
       if (prov.isLoading) {
@@ -999,17 +862,15 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
             Text(
               loc.profileTrainingDaysHeading,
               textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style:
+                  theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: brandColor,
                   ) ??
-                  TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: brandColor,
-                  ),
+                  TextStyle(fontWeight: FontWeight.bold, color: brandColor),
             ),
             const SizedBox(height: AppSpacing.sm),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.xs),
             GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => _openCalendarPopup(userId, prov.trainingDates),
@@ -1054,26 +915,31 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                 label: loc.profileChangeAvatar,
                 child: GestureDetector(
                   onTap: () => _showProfileXpSheet(auth),
-                  child: Builder(builder: (context) {
-                    final gymId = auth.gymCode;
-                    final path = AvatarCatalog.instance
-                        .resolvePathOrFallback(auth.avatarKey,
-                            gymId: gymId);
-                    final image =
-                        Image.asset(path, errorBuilder: (_, __, ___) {
-                      if (kDebugMode) {
-                        debugPrint('[Avatar] failed to load $path');
-                      }
-                      return const Icon(Icons.person);
-                    });
-                    return DailyXpAvatar(
-                      image: image.image,
-                      size: avatarSize,
-                      xp: xp.dailyLevelXp,
-                      level: xp.dailyLevel,
-                      strokeWidth: 5.0,
-                    );
-                  }),
+                  child: Builder(
+                    builder: (context) {
+                      final gymId = auth.gymCode;
+                      final path = AvatarCatalog.instance.resolvePathOrFallback(
+                        auth.avatarKey,
+                        gymId: gymId,
+                      );
+                      final image = Image.asset(
+                        path,
+                        errorBuilder: (_, __, ___) {
+                          if (kDebugMode) {
+                            debugPrint('[Avatar] failed to load $path');
+                          }
+                          return const Icon(Icons.person);
+                        },
+                      );
+                      return DailyXpAvatar(
+                        image: image.image,
+                        size: avatarSize,
+                        xp: xp.dailyLevelXp,
+                        level: xp.dailyLevel,
+                        strokeWidth: 5.0,
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -1094,8 +960,10 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
                         const Positioned(
                           right: 0,
                           top: 0,
-                          child:
-                              CircleAvatar(radius: 4, backgroundColor: Colors.red),
+                          child: CircleAvatar(
+                            radius: 4,
+                            backgroundColor: Colors.red,
+                          ),
                         ),
                     ],
                   ),
@@ -1137,46 +1005,139 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
           style: TextStyle(color: brandColor),
           child: Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 if (ref.watch(settingsProvider).coachingProfileEnabled)
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: ProfileCoachingButton(
-                      onTap: _showCoachingSheet,
-                    ),
+                    child: ProfileCoachingButton(onTap: _showCoachingSheet),
                   ),
-                ProfileProgressButton(
-                  onTap: () => Navigator.pushNamed(context, AppRouter.progress),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                ProfileHubButton(
-                  onStatsTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ProfileStatsScreen(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ProfileProgressButton(
+                              compact: true,
+                              compactTitle: 'Prog',
+                              onTap: () {
+                                final cb = widget.onOpenProgress;
+                                if (cb != null) {
+                                  cb();
+                                } else {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRouter.progress,
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: ProfileHubButton(
+                              compact: true,
+                              compactTitle: 'Hub',
+                              onStatsTap: () {
+                                final cb = widget.onOpenDiscoverStats;
+                                if (cb != null) {
+                                  cb();
+                                } else {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const ProfileStatsScreen(),
+                                    ),
+                                  );
+                                }
+                              },
+                              onCommunityTap: () {
+                                final cb = widget.onOpenDiscoverCommunity;
+                                if (cb != null) {
+                                  cb();
+                                } else {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRouter.community,
+                                  );
+                                }
+                              },
+                              onSurveysTap: () {
+                                final cb = widget.onOpenDiscoverSurveys;
+                                if (cb != null) {
+                                  cb();
+                                } else {
+                                  final gymId = ref
+                                      .read(gymProvider)
+                                      .currentGymId;
+                                  final userId =
+                                      ref.read(authControllerProvider).userId ??
+                                      '';
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => SurveyVoteScreen(
+                                        gymId: gymId,
+                                        userId: userId,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                  onCommunityTap: () {
-                    Navigator.pushNamed(context, AppRouter.community);
-                  },
-                  onSurveysTap: () {
-                    final gymId = ref.read(gymProvider).currentGymId;
-                    final userId =
-                        ref.read(authControllerProvider).userId ?? '';
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SurveyVoteScreen(
-                          gymId: gymId,
-                          userId: userId,
-                        ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ProfileShortcutButton(
+                              compact: true,
+                              icon: Icons.restaurant_rounded,
+                              title: 'Food',
+                              onTap: () {
+                                final cb = widget.onOpenNutrition;
+                                if (cb != null) {
+                                  cb();
+                                } else {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRouter.nutrition,
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: ProfileShortcutButton(
+                              compact: true,
+                              icon: Icons.event_note_rounded,
+                              title: 'Plan',
+                              onTap: () {
+                                final cb = widget.onOpenPlan;
+                                if (cb != null) {
+                                  cb();
+                                } else {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRouter.planOverview,
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  },
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 if (_showTrainingStartCard)
@@ -1206,10 +1167,7 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
 }
 
 class _TrainingStartCard extends StatelessWidget {
-  const _TrainingStartCard({
-    required this.brandColor,
-    required this.isActive,
-  });
+  const _TrainingStartCard({required this.brandColor, required this.isActive});
 
   final Color brandColor;
   final bool isActive;
@@ -1218,27 +1176,21 @@ class _TrainingStartCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final title = isActive ? 'Training stoppen' : 'Training starten';
+    final title = isActive ? 'Training beenden' : 'Training starten';
     final subtitle = isActive
-        ? 'Aktiven Trainingstag abbrechen'
+        ? 'Speichern oder verwerfen'
         : 'Plan oder Freestyle-Training starten';
 
     return Container(
       height: 72,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            brandColor.withOpacity(0.10),
-            brandColor.withOpacity(0.03),
-          ],
+          colors: [brandColor.withOpacity(0.10), brandColor.withOpacity(0.03)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.05),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.05), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1274,7 +1226,7 @@ class _TrainingStartCard extends StatelessWidget {
                 ),
                 child: Center(
                   child: Icon(
-                    isActive ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                    isActive ? Icons.pause_rounded : Icons.play_arrow_rounded,
                     size: 22,
                     color: brandColor,
                   ),
@@ -1344,155 +1296,389 @@ class _TrainingStartCard extends StatelessWidget {
   }
 }
 
-class _TrainingStartDialog extends StatelessWidget {
+enum _TrainingStartAction { startFreestyle, startPlanned, startSelectedPlan }
+
+class _TrainingStartDialogResult {
+  const _TrainingStartDialogResult._(this.action, [this.selectedPlan]);
+
+  const _TrainingStartDialogResult.freestyle()
+    : this._(_TrainingStartAction.startFreestyle);
+
+  const _TrainingStartDialogResult.planned()
+    : this._(_TrainingStartAction.startPlanned);
+
+  const _TrainingStartDialogResult.selectedPlan(TrainingPlan plan)
+    : this._(_TrainingStartAction.startSelectedPlan, plan);
+
+  final _TrainingStartAction action;
+  final TrainingPlan? selectedPlan;
+}
+
+enum _TrainingStartDialogMode { startOptions, planPicker }
+
+class _TrainingStartDialog extends StatefulWidget {
   const _TrainingStartDialog({
     required this.planName,
     required this.hasPlannedPlan,
-    required this.onFreestyle,
-    required this.onOtherPlan,
-    this.onPlanned,
+    required this.loadPlans,
   });
 
   final String planName;
   final bool hasPlannedPlan;
-  final VoidCallback onFreestyle;
-  final VoidCallback onOtherPlan;
-  final VoidCallback? onPlanned;
+  final Future<List<TrainingPlan>> Function() loadPlans;
+
+  @override
+  State<_TrainingStartDialog> createState() => _TrainingStartDialogState();
+}
+
+class _TrainingStartDialogState extends State<_TrainingStartDialog> {
+  _TrainingStartDialogMode _mode = _TrainingStartDialogMode.startOptions;
+  bool _isLoadingPlans = false;
+  List<TrainingPlan>? _plans;
+  String? _plansError;
+
+  Future<void> _openPlanPicker() async {
+    setState(() => _mode = _TrainingStartDialogMode.planPicker);
+    if (_plans != null || _isLoadingPlans) {
+      return;
+    }
+    await _loadPlans();
+  }
+
+  Future<void> _loadPlans() async {
+    setState(() {
+      _isLoadingPlans = true;
+      _plansError = null;
+    });
+    try {
+      final loaded = await widget.loadPlans();
+      if (!mounted) return;
+      setState(() => _plans = loaded);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _plansError = 'Fehler beim Laden der Pläne.');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingPlans = false);
+      }
+    }
+  }
+
+  void _backToStartOptions() {
+    setState(() => _mode = _TrainingStartDialogMode.startOptions);
+  }
+
+  double _resolveDialogWidth(double maxDialogWidth) {
+    if (_mode != _TrainingStartDialogMode.planPicker) {
+      return maxDialogWidth;
+    }
+
+    final count = math.max(1, _plans?.length ?? 1);
+    final visibleSlots = math.min(5, count);
+    const baseWidth = 132.0;
+    const perPlanWidth = 88.0;
+    final desired = baseWidth + (visibleSlots * perPlanWidth);
+    return desired.clamp(280.0, maxDialogWidth);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
     final accent = brand?.outline ?? theme.colorScheme.secondary;
-    final onSurface = theme.colorScheme.onSurface;
+    final maxDialogWidth = (MediaQuery.of(context).size.width - 48).clamp(
+      280.0,
+      640.0,
+    );
+    final dialogWidth = _resolveDialogWidth(maxDialogWidth);
+    final isPlanPicker = _mode == _TrainingStartDialogMode.planPicker;
 
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF1E1E1E).withOpacity(0.92),
-              const Color(0xFF0F0F0F).withOpacity(0.96),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(AppRadius.cardLg),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.55),
-              blurRadius: 30,
-              offset: const Offset(0, 18),
-            ),
-          ],
-          border: Border.all(
-            color: Colors.white.withOpacity(0.08),
-            width: 1,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.cardLg),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: SweepGradient(
-                            colors: [
-                              accent.withOpacity(0.95),
-                              accent.withOpacity(0.4),
-                              accent.withOpacity(0.95),
-                            ],
-                            stops: const [0.0, 0.5, 1.0],
-                          ),
-                        ),
-                        child: Container(
-                          margin: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.black.withOpacity(0.85),
-                          ),
-                          child: Icon(
-                            Icons.play_arrow_rounded,
-                            color: accent,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Was steht heute an?',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Wähle deinen Startmodus',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: onSurface.withOpacity(0.6),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: onSurface.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (hasPlannedPlan)
-                    _TrainingStartOptionCard(
-                      title: 'Plan ($planName)',
-                      subtitle: 'Geplanter Plan für heute',
-                      icon: Icons.play_arrow_rounded,
-                      accent: accent,
-                      onTap: onPlanned,
-                      highlighted: true,
-                    ),
-                  if (hasPlannedPlan) const SizedBox(height: 10),
-                  _TrainingStartOptionCard(
-                    title: 'Freestyle',
-                    subtitle: 'Ohne Plan starten',
-                    icon: Icons.fitness_center_outlined,
-                    accent: accent,
-                    onTap: onFreestyle,
-                  ),
-                  const SizedBox(height: 10),
-                  _TrainingStartOptionCard(
-                    title: hasPlannedPlan ? 'Anderer Plan' : 'Plan auswählen',
-                    subtitle: 'Trainingsplan auswählen',
-                    icon: Icons.view_list_rounded,
-                    accent: accent,
-                    onTap: onOtherPlan,
-                  ),
-                ],
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+        width: dialogWidth,
+        child: BrandModalSurface(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BrandModalHeader(
+                icon: isPlanPicker
+                    ? Icons.view_list_rounded
+                    : Icons.play_arrow_rounded,
+                accent: accent,
+                title: isPlanPicker
+                    ? (widget.hasPlannedPlan
+                          ? 'Anderen Plan auswählen'
+                          : 'Plan auswählen')
+                    : 'Was steht heute an?',
+                subtitle: isPlanPicker
+                    ? 'Wähle einen Trainingsplan'
+                    : 'Wähle deinen Startmodus',
+                onClose: () => Navigator.pop(context),
               ),
-            ),
+              const SizedBox(height: 16),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeOutCubic,
+                child: isPlanPicker
+                    ? _TrainingPlanPickerContent(
+                        key: const ValueKey('plan-picker'),
+                        plans: _plans,
+                        isLoading: _isLoadingPlans,
+                        errorText: _plansError,
+                        accent: accent,
+                        onRetry: _loadPlans,
+                        onBack: _backToStartOptions,
+                        onSelectPlan: (plan) {
+                          Navigator.pop(
+                            context,
+                            _TrainingStartDialogResult.selectedPlan(plan),
+                          );
+                        },
+                      )
+                    : _TrainingStartOptionsContent(
+                        key: const ValueKey('start-options'),
+                        hasPlannedPlan: widget.hasPlannedPlan,
+                        planName: widget.planName,
+                        accent: accent,
+                        onStartPlanned: widget.hasPlannedPlan
+                            ? () {
+                                Navigator.pop(
+                                  context,
+                                  const _TrainingStartDialogResult.planned(),
+                                );
+                              }
+                            : null,
+                        onStartFreestyle: () {
+                          Navigator.pop(
+                            context,
+                            const _TrainingStartDialogResult.freestyle(),
+                          );
+                        },
+                        onOpenPlanPicker: _openPlanPicker,
+                      ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TrainingStartOptionsContent extends StatelessWidget {
+  const _TrainingStartOptionsContent({
+    super.key,
+    required this.hasPlannedPlan,
+    required this.planName,
+    required this.accent,
+    required this.onStartFreestyle,
+    required this.onOpenPlanPicker,
+    this.onStartPlanned,
+  });
+
+  final bool hasPlannedPlan;
+  final String planName;
+  final Color accent;
+  final VoidCallback onStartFreestyle;
+  final VoidCallback onOpenPlanPicker;
+  final VoidCallback? onStartPlanned;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasPlannedPlan)
+          _TrainingStartOptionCard(
+            title: 'Plan ($planName)',
+            subtitle: 'Geplanter Plan für heute',
+            icon: Icons.play_arrow_rounded,
+            accent: accent,
+            onTap: onStartPlanned,
+            highlighted: true,
+          ),
+        if (hasPlannedPlan) const SizedBox(height: 10),
+        _TrainingStartOptionCard(
+          title: 'Freestyle',
+          subtitle: 'Ohne Plan starten',
+          icon: Icons.fitness_center_outlined,
+          accent: accent,
+          onTap: onStartFreestyle,
+        ),
+        const SizedBox(height: 10),
+        _TrainingStartOptionCard(
+          title: hasPlannedPlan ? 'Anderer Plan' : 'Plan auswählen',
+          subtitle: 'Trainingsplan auswählen',
+          icon: Icons.view_list_rounded,
+          accent: accent,
+          onTap: onOpenPlanPicker,
+        ),
+      ],
+    );
+  }
+}
+
+class _TrainingPlanPickerContent extends StatelessWidget {
+  const _TrainingPlanPickerContent({
+    super.key,
+    required this.plans,
+    required this.isLoading,
+    required this.errorText,
+    required this.accent,
+    required this.onRetry,
+    required this.onBack,
+    required this.onSelectPlan,
+  });
+
+  final List<TrainingPlan>? plans;
+  final bool isLoading;
+  final String? errorText;
+  final Color accent;
+  final VoidCallback onRetry;
+  final VoidCallback onBack;
+  final ValueChanged<TrainingPlan> onSelectPlan;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (isLoading) {
+      return const SizedBox(
+        height: 120,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (errorText != null) {
+      return Column(
+        key: const ValueKey('plans-error'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            errorText!,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.error.withOpacity(0.9),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: onBack,
+                icon: const Icon(Icons.arrow_back_rounded),
+                label: const Text('Zurück'),
+              ),
+              const SizedBox(width: 6),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Erneut laden'),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    final availablePlans = plans ?? const <TrainingPlan>[];
+    if (availablePlans.isEmpty) {
+      return Column(
+        key: const ValueKey('plans-empty'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Du hast aktuell keine Trainingspläne.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.72),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextButton.icon(
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back_rounded),
+            label: const Text('Zurück'),
+          ),
+        ],
+      );
+    }
+
+    final visibleCards = math.min(5, availablePlans.length);
+    const spacing = 10.0;
+    final isCupertinoLike =
+        theme.platform == TargetPlatform.iOS ||
+        theme.platform == TargetPlatform.macOS;
+    final scrollPhysics = isCupertinoLike
+        ? const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics())
+        : const ClampingScrollPhysics();
+    final showScrollHint = availablePlans.length > visibleCards;
+
+    return LayoutBuilder(
+      key: const ValueKey('plans-list'),
+      builder: (context, constraints) {
+        final widthForCards = constraints.maxWidth;
+        final rawCardWidth =
+            (widthForCards - spacing * (visibleCards - 1)) / visibleCards;
+        final minCardWidth = isCupertinoLike ? 72.0 : 76.0;
+        final maxCardWidth = isCupertinoLike ? 156.0 : 168.0;
+        final cardWidth = rawCardWidth.clamp(minCardWidth, maxCardWidth);
+        final compactCards = cardWidth < 92.0;
+        final cardHeight = compactCards ? 120.0 : 132.0;
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextButton.icon(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back_rounded),
+              label: const Text('Zurück'),
+            ),
+            const SizedBox(height: 6),
+            if (showScrollHint)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  'Weitere Pläne per Wischen',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.62),
+                    fontSize: 11.5,
+                  ),
+                ),
+              ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: scrollPhysics,
+              child: Row(
+                children: [
+                  for (var i = 0; i < availablePlans.length; i++) ...[
+                    SizedBox(
+                      width: cardWidth,
+                      height: cardHeight,
+                      child: _TrainingPlanQuickPickCard(
+                        plan: availablePlans[i],
+                        accent: accent,
+                        compact: compactCards,
+                        onTap: () => onSelectPlan(availablePlans[i]),
+                      ),
+                    ),
+                    if (i != availablePlans.length - 1)
+                      const SizedBox(width: spacing),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -1516,69 +1702,115 @@ class _TrainingStartOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return BrandModalOptionCard(
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      onTap: onTap,
+      accent: accent,
+      highlighted: highlighted,
+    );
+  }
+}
+
+class _TrainingPlanQuickPickCard extends StatelessWidget {
+  const _TrainingPlanQuickPickCard({
+    required this.plan,
+    required this.accent,
+    required this.compact,
+    required this.onTap,
+  });
+
+  final TrainingPlan plan;
+  final Color accent;
+  final bool compact;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final onSurface = theme.colorScheme.onSurface;
-    final highlight = highlighted ? accent.withOpacity(0.18) : Colors.white.withOpacity(0.04);
+    final planColor = PlanColorPalette.colorForIndex(plan.colorIndex, theme);
+    final exerciseCount = plan.exercises.length;
+    final subtitle =
+        '$exerciseCount ${exerciseCount == 1 ? 'Übung' : 'Übungen'}';
+    final isCoachPlan = plan.coachId != null && plan.coachId!.isNotEmpty;
 
     return BrandInteractiveCard(
       onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      borderRadius: BorderRadius.circular(18),
-      enableScaleAnimation: true,
+      padding: compact
+          ? const EdgeInsets.fromLTRB(8, 8, 8, 8)
+          : const EdgeInsets.fromLTRB(10, 10, 10, 10),
+      borderRadius: BorderRadius.circular(compact ? 14 : 16),
       showShadow: false,
-      backgroundColor: highlight,
-      restingBorderColor: onSurface.withOpacity(0.08),
+      enableScaleAnimation: true,
+      backgroundColor: Colors.white.withOpacity(0.04),
+      restingBorderColor: theme.colorScheme.onSurface.withOpacity(0.09),
       activeBorderColor: accent.withOpacity(0.45),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: compact ? 28 : 32,
+            height: compact ? 28 : 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [
-                  accent.withOpacity(0.85),
-                  accent.withOpacity(0.35),
-                ],
+                colors: [planColor, planColor.withOpacity(0.5)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: accent.withOpacity(0.2),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
             ),
-            child: Icon(icon, color: Colors.black, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ],
+            child: Icon(
+              Icons.view_list_rounded,
+              color: Colors.black,
+              size: compact ? 14 : 16,
             ),
           ),
-          Icon(
-            Icons.arrow_forward_rounded,
-            color: onSurface.withOpacity(0.6),
+          SizedBox(height: compact ? 7 : 9),
+          Text(
+            plan.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: compact ? 12.5 : 13.5,
+              height: 1.15,
+            ),
           ),
+          SizedBox(height: compact ? 3 : 4),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.65),
+              fontSize: compact ? 10.3 : 11.2,
+              height: 1.1,
+            ),
+          ),
+          if (isCoachPlan) ...[
+            SizedBox(height: compact ? 5 : 6),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 5 : 6,
+                vertical: compact ? 1.5 : 2,
+              ),
+              decoration: BoxDecoration(
+                color: planColor.withOpacity(0.16),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                'Coach',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: planColor.withOpacity(0.95),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1604,7 +1836,7 @@ class _TrainingStartOrb extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: isActive ? 'Training stoppen' : 'Training starten',
+      label: isActive ? 'Training beenden' : 'Training starten',
       child: GestureDetector(
         onTap: onTap,
         child: Container(
@@ -1643,7 +1875,7 @@ class _TrainingStartOrb extends StatelessWidget {
               ),
               child: Center(
                 child: Icon(
-                  isActive ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                  isActive ? Icons.pause_rounded : Icons.play_arrow_rounded,
                   size: outerSize * 0.32,
                   color: brandColor,
                 ),
@@ -1673,17 +1905,14 @@ class _ProfileCoachingSection extends riverpod.ConsumerWidget {
     final loc = AppLocalizations.of(context)!;
 
     final active = activeRelations.isNotEmpty ? activeRelations.first : null;
-    final invitesAsync =
-        ref.watch(coach_invites.clientCoachInvitesProvider);
+    final invitesAsync = ref.watch(coach_invites.clientCoachInvitesProvider);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.cardColor.withOpacity(0.4),
         borderRadius: BorderRadius.circular(AppRadius.cardLg),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.08),
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1700,18 +1929,14 @@ class _ProfileCoachingSection extends riverpod.ConsumerWidget {
             FutureBuilder<String>(
               future: ref
                   .read(
-                    coaching.coachDisplayNameProvider(active.coachId)
-                        .future,
+                    coaching.coachDisplayNameProvider(active.coachId).future,
                   )
                   .catchError((_) => 'Coach'),
               builder: (context, snapshot) {
                 final name = snapshot.data ?? 'Coach';
                 return Row(
                   children: [
-                    Icon(
-                      Icons.school,
-                      color: brandColor,
-                    ),
+                    Icon(Icons.school, color: brandColor),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Column(
@@ -1724,10 +1949,7 @@ class _ProfileCoachingSection extends riverpod.ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            name,
-                            style: theme.textTheme.bodyMedium,
-                          ),
+                          Text(name, style: theme.textTheme.bodyMedium),
                         ],
                       ),
                     ),
@@ -1747,8 +1969,7 @@ class _ProfileCoachingSection extends riverpod.ConsumerWidget {
                   child: Text(
                     'Du hast aktuell keinen Coach.',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color:
-                          theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                 ),
@@ -1790,8 +2011,7 @@ class _ProfileCoachingSection extends riverpod.ConsumerWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) =>
-                              const InviteExternalCoachScreen(),
+                          builder: (_) => const InviteExternalCoachScreen(),
                         ),
                       );
                     },
@@ -1805,12 +2025,12 @@ class _ProfileCoachingSection extends riverpod.ConsumerWidget {
           const SizedBox(height: AppSpacing.xs),
           invitesAsync.when(
             data: (invites) {
-              final pendingInvites =
-                  invites.where((i) => i.isPending).toList();
+              final pendingInvites = invites.where((i) => i.isPending).toList();
               if (pendingInvites.isEmpty) {
                 return Text(
                   loc.profileTrainingDaysHeading,
-                  style: theme.textTheme.bodySmall?.copyWith(
+                  style:
+                      theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.5),
                       ) ??
                       TextStyle(
@@ -1827,20 +2047,18 @@ class _ProfileCoachingSection extends riverpod.ConsumerWidget {
                         ? '1 offene Einladung an einen externen Coach'
                         : '${pendingInvites.length} offene Einladungen an externe Coaches',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color:
-                          theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     loc.profileTrainingDaysHeading,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withOpacity(0.5),
+                    style:
+                        theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
                         ) ??
                         TextStyle(
-                          color: theme.colorScheme.onSurface
-                              .withOpacity(0.5),
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
                           fontSize: 12,
                         ),
                   ),
@@ -1849,25 +2067,23 @@ class _ProfileCoachingSection extends riverpod.ConsumerWidget {
             },
             loading: () => Text(
               loc.profileTrainingDaysHeading,
-              style: theme.textTheme.bodySmall?.copyWith(
-                    color:
-                        theme.colorScheme.onSurface.withOpacity(0.5),
+              style:
+                  theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
                   ) ??
                   TextStyle(
-                    color:
-                        theme.colorScheme.onSurface.withOpacity(0.5),
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
                     fontSize: 12,
                   ),
             ),
             error: (_, __) => Text(
               loc.profileTrainingDaysHeading,
-              style: theme.textTheme.bodySmall?.copyWith(
-                    color:
-                        theme.colorScheme.onSurface.withOpacity(0.5),
+              style:
+                  theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
                   ) ??
                   TextStyle(
-                    color:
-                        theme.colorScheme.onSurface.withOpacity(0.5),
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
                     fontSize: 12,
                   ),
             ),
@@ -1890,11 +2106,14 @@ class AvatarPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = riverpod.ProviderScope.containerOf(context, listen: false)
-        .read(authControllerProvider);
-    final inventory =
-        riverpod.ProviderScope.containerOf(context, listen: false)
-            .read(avatarInventoryProvider);
+    final auth = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(authControllerProvider);
+    final inventory = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(avatarInventoryProvider);
     final theme = Theme.of(context);
     return StreamBuilder<List<AvatarInventoryEntry>>(
       stream: inventory.inventory(auth.userId ?? ''),
@@ -1915,20 +2134,22 @@ class AvatarPicker extends StatelessWidget {
         }
         for (final d in [
           AvatarInventoryEntry(
-              key: AvatarKeys.globalDefault, source: 'global_default'),
+            key: AvatarKeys.globalDefault,
+            source: 'global_default',
+          ),
           AvatarInventoryEntry(
-              key: AvatarKeys.globalDefault2, source: 'global_default'),
+            key: AvatarKeys.globalDefault2,
+            source: 'global_default',
+          ),
         ]) {
           map.putIfAbsent(d.key, () => d);
         }
         final entries = map.values.toList()
           ..sort((a, b) {
-            if (a.source == 'global_default' &&
-                b.source != 'global_default') {
+            if (a.source == 'global_default' && b.source != 'global_default') {
               return -1;
             }
-            if (a.source != 'global_default' &&
-                b.source == 'global_default') {
+            if (a.source != 'global_default' && b.source == 'global_default') {
               return 1;
             }
             final aTime = a.createdAt?.toDate() ?? DateTime(1970);
@@ -1962,24 +2183,26 @@ class AvatarPicker extends StatelessWidget {
                         width: 2,
                       ),
                     ),
-                    child: Builder(builder: (context) {
-                      final gymId = auth.gymCode;
-                      final path = AvatarCatalog.instance.resolvePathOrFallback(
-                        key,
-                        gymId: gymId,
-                      );
-                      final image = Image.asset(path, errorBuilder:
-                          (_, __, ___) {
-                        if (kDebugMode) {
-                          debugPrint('[Avatar] failed to load $path');
-                        }
-                        return const Icon(Icons.person);
-                      });
-                      return CircleAvatar(
-                        radius: 40,
-                        backgroundImage: image.image,
-                      );
-                    }),
+                    child: Builder(
+                      builder: (context) {
+                        final gymId = auth.gymCode;
+                        final path = AvatarCatalog.instance
+                            .resolvePathOrFallback(key, gymId: gymId);
+                        final image = Image.asset(
+                          path,
+                          errorBuilder: (_, __, ___) {
+                            if (kDebugMode) {
+                              debugPrint('[Avatar] failed to load $path');
+                            }
+                            return const Icon(Icons.person);
+                          },
+                        );
+                        return CircleAvatar(
+                          radius: 40,
+                          backgroundImage: image.image,
+                        );
+                      },
+                    ),
                   ),
                   if (selected)
                     Positioned(

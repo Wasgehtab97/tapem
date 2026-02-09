@@ -20,15 +20,15 @@ void main() {
 
     test('login converts dto to model', () async {
       source.loginHandler = (_, __) async => UserDataDto(
-            userId: 'user-1',
-            email: 'user@example.com',
-            emailLower: 'user@example.com',
-            gymCodes: const [],
-            showInLeaderboard: true,
-            publicProfile: false,
-            role: 'member',
-            createdAt: DateTime(2023, 1, 1),
-          );
+        userId: 'user-1',
+        email: 'user@example.com',
+        emailLower: 'user@example.com',
+        gymCodes: const [],
+        showInLeaderboard: true,
+        publicProfile: false,
+        role: 'member',
+        createdAt: DateTime(2023, 1, 1),
+      );
 
       final user = await repository.login('user@example.com', 'secret');
       expect(user, isA<UserData>().having((u) => u.id, 'id', 'user-1'));
@@ -36,17 +36,21 @@ void main() {
 
     test('register converts dto to model', () async {
       source.registerHandler = (_, __, ___) async => UserDataDto(
-            userId: 'user-2',
-            email: 'user2@example.com',
-            emailLower: 'user2@example.com',
-            gymCodes: const ['gym'],
-            showInLeaderboard: true,
-            publicProfile: false,
-            role: 'member',
-            createdAt: DateTime(2023, 2, 1),
-          );
+        userId: 'user-2',
+        email: 'user2@example.com',
+        emailLower: 'user2@example.com',
+        gymCodes: const ['gym'],
+        showInLeaderboard: true,
+        publicProfile: false,
+        role: 'member',
+        createdAt: DateTime(2023, 2, 1),
+      );
 
-      final user = await repository.register('user2@example.com', 'secret', 'gym');
+      final user = await repository.register(
+        'user2@example.com',
+        'secret',
+        'gym',
+      );
       expect(user.id, 'user-2');
       expect(user.gymCodes, ['gym']);
     });
@@ -67,53 +71,72 @@ void main() {
       expect(result, isNull);
     });
 
-    test('setUsername, setShowInLeaderboard, setPublicProfile, setAvatarKey delegate to source', () async {
-      String? username;
-      bool? leaderboard;
-      bool? publicProfile;
-      String? avatar;
+    test(
+      'setUsername, setShowInLeaderboard, setPublicProfile, setProfileVisibility, setAvatarKey delegate to source',
+      () async {
+        String? username;
+        bool? leaderboard;
+        bool? publicProfile;
+        bool? visibility;
+        String? avatar;
 
-      source.setUsernameHandler = (id, value) async {
-        username = value;
-      };
-      source.setShowInLeaderboardHandler = (id, value) async {
-        leaderboard = value;
-      };
-      source.setPublicProfileHandler = (id, value) async {
-        publicProfile = value;
-      };
-      source.setAvatarKeyHandler = (id, value) async {
-        avatar = value;
-      };
+        source.setUsernameHandler = (id, value) async {
+          username = value;
+        };
+        source.setShowInLeaderboardHandler = (id, value) async {
+          leaderboard = value;
+        };
+        source.setPublicProfileHandler = (id, value) async {
+          publicProfile = value;
+        };
+        source.setProfileVisibilityHandler = (id, value) async {
+          visibility = value;
+        };
+        source.setAvatarKeyHandler = (id, value) async {
+          avatar = value;
+        };
 
-      await repository.setUsername('user', 'new');
-      await repository.setShowInLeaderboard('user', false);
-      await repository.setPublicProfile('user', true);
-      await repository.setAvatarKey('user', 'avatar');
+        await repository.setUsername('user', 'new');
+        await repository.setShowInLeaderboard('user', false);
+        await repository.setPublicProfile('user', true);
+        await repository.setProfileVisibility('user', false);
+        await repository.setAvatarKey('user', 'avatar');
 
-      expect(username, 'new');
-      expect(leaderboard, isFalse);
-      expect(publicProfile, isTrue);
-      expect(avatar, 'avatar');
-    });
+        expect(username, 'new');
+        expect(leaderboard, isFalse);
+        expect(publicProfile, isTrue);
+        expect(visibility, isFalse);
+        expect(avatar, 'avatar');
+      },
+    );
 
-    test('isUsernameAvailable and sendPasswordResetEmail delegate to source', () async {
-      source.isUsernameAvailableHandler = (_) async => true;
-      source.sendPasswordResetEmailHandler = (email) async => calledEmails.add(email);
+    test(
+      'isUsernameAvailable and sendPasswordResetEmail delegate to source',
+      () async {
+        source.isUsernameAvailableHandler = (_) async => true;
+        source.sendPasswordResetEmailHandler = (email) async =>
+            calledEmails.add(email);
 
-      final available = await repository.isUsernameAvailable('name');
-      await repository.sendPasswordResetEmail('mail@example.com');
+        final available = await repository.isUsernameAvailable('name');
+        await repository.sendPasswordResetEmail('mail@example.com');
 
-      expect(available, isTrue);
-      expect(calledEmails, ['mail@example.com']);
-    });
+        expect(available, isTrue);
+        expect(calledEmails, ['mail@example.com']);
+      },
+    );
 
     test('propagates errors from source', () async {
       source.loginHandler = (_, __) async => throw Exception('failure');
 
       expect(
         () => repository.login('a', 'b'),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('failure'))),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('failure'),
+          ),
+        ),
       );
     });
   });
@@ -123,20 +146,22 @@ final List<String> calledEmails = <String>[];
 
 class _StubFirestoreAuthSource extends FirestoreAuthSource {
   _StubFirestoreAuthSource()
-      : super(
-          auth: FakeFirebaseAuth(),
-          firestore: FakeFirebaseFirestore(),
-          changeUsername: ({required firestore, required uid, required newUsername}) async {},
-        );
+    : super(
+        auth: FakeFirebaseAuth(),
+        firestore: FakeFirebaseFirestore(),
+        changeUsername:
+            ({required firestore, required uid, required newUsername}) async {},
+      );
 
   Future<UserDataDto> Function(String email, String password)? loginHandler;
   Future<UserDataDto> Function(String email, String password, String gymId)?
-      registerHandler;
+  registerHandler;
   Future<void> Function()? logoutHandler;
   Future<UserDataDto?> Function()? getCurrentUserHandler;
   Future<void> Function(String id, String username)? setUsernameHandler;
   Future<void> Function(String id, bool value)? setShowInLeaderboardHandler;
   Future<void> Function(String id, bool value)? setPublicProfileHandler;
+  Future<void> Function(String id, bool value)? setProfileVisibilityHandler;
   Future<void> Function(String id, String avatarKey)? setAvatarKeyHandler;
   Future<bool> Function(String username)? isUsernameAvailableHandler;
   Future<void> Function(String email)? sendPasswordResetEmailHandler;
@@ -195,6 +220,14 @@ class _StubFirestoreAuthSource extends FirestoreAuthSource {
       return setPublicProfileHandler!(userId, value);
     }
     return super.setPublicProfile(userId, value);
+  }
+
+  @override
+  Future<void> setProfileVisibility(String userId, bool value) {
+    if (setProfileVisibilityHandler != null) {
+      return setProfileVisibilityHandler!(userId, value);
+    }
+    return super.setProfileVisibility(userId, value);
   }
 
   @override

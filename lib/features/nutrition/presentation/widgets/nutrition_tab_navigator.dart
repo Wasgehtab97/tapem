@@ -53,14 +53,21 @@ class _OverlayCloseObserver extends NavigatorObserver {
 
 class NutritionTabNavigator extends ConsumerWidget {
   final GlobalKey<NavigatorState>? navigatorKey;
+  final VoidCallback? onExitToProfile;
 
-  const NutritionTabNavigator({super.key, this.navigatorKey});
+  const NutritionTabNavigator({
+    super.key,
+    this.navigatorKey,
+    this.onExitToProfile,
+  });
 
   Route<dynamic> _onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case AppRouter.nutrition:
       case AppRouter.nutritionHome:
-        return MaterialPageRoute(builder: (_) => const NutritionHomeScreen());
+        return MaterialPageRoute(
+          builder: (_) => NutritionHomeScreen(onExitToProfile: onExitToProfile),
+        );
       case AppRouter.nutritionDay:
         return MaterialPageRoute(builder: (_) => const NutritionDayScreen());
       case AppRouter.nutritionGoals:
@@ -141,7 +148,9 @@ class NutritionTabNavigator extends ConsumerWidget {
           ),
         );
       default:
-        return MaterialPageRoute(builder: (_) => const NutritionHomeScreen());
+        return MaterialPageRoute(
+          builder: (_) => NutritionHomeScreen(onExitToProfile: onExitToProfile),
+        );
     }
   }
 
@@ -150,7 +159,9 @@ class NutritionTabNavigator extends ConsumerWidget {
     final keypad = ref.watch(overlayNumericKeypadControllerProvider);
     return Navigator(
       key: navigatorKey,
-      initialRoute: AppRouter.nutritionHome,
+      onGenerateInitialRoutes: (_, __) => <Route<dynamic>>[
+        _onGenerateRoute(const RouteSettings(name: AppRouter.nutritionHome)),
+      ],
       onGenerateRoute: _onGenerateRoute,
       observers: [_OverlayCloseObserver(keypad)],
     );

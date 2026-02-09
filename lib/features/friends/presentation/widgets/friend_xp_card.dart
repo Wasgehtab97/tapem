@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
@@ -10,7 +9,6 @@ import 'package:tapem/features/friends/data/friend_stats_repository.dart'; // Im
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
 import 'package:tapem/features/friends/providers/friend_presence_provider.dart';
-import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class FriendXpCard extends ConsumerWidget {
@@ -76,12 +74,7 @@ class FriendXpCard extends ConsumerWidget {
     final currentStats = stats ?? FriendStats.zero();
     final level = currentStats.level;
     final progress = currentStats.progress;
-    
-    // Formatting XP remaining
-    final xpPerLevel = LevelService.xpPerLevel;
-    final xpRemaining = xpPerLevel - currentStats.xpInLevel;
-    final format = NumberFormat.decimalPattern(Localizations.localeOf(context).toString());
-    
+
     // If user has leveled up at least once, show Roman numeral.
     final roman = _toRoman(level);
 
@@ -217,15 +210,7 @@ class FriendXpCard extends ConsumerWidget {
                                     ],
                                     Expanded(
                                       child: Text(
-                                        // Combine Status and XP Text cleanly
-                                        // E.g. "Online · 900 XP bis Level 6"
-                                        // Or just "900 XP bis Level 6" and status is indicated by the dot?
-                                        // User said: "only addition ... is offline/online marker".
-                                        // Let's emulate the profile card subtitle "XP bis Level"
-                                        // And prepend the status.
-                                        level >= LevelService.maxLevel
-                                            ? '$statusText · Max Level'
-                                            : '$statusText · ${format.format(xpRemaining)} XP bis Lvl ${level + 1}',
+                                        statusText,
                                         style: subtitleStyle,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,

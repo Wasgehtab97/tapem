@@ -7,6 +7,7 @@ import 'package:tapem/core/providers/database_provider.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/story_session/presentation/widgets/story_session_dialog.dart';
+import 'package:tapem/features/story_session/presentation/widgets/training_done_overlay.dart';
 import 'package:tapem/features/story_session/story_session_service.dart';
 import 'package:tapem/features/training_details/data/repositories/session_repository_impl.dart';
 import 'package:tapem/features/training_details/data/session_meta_source.dart';
@@ -14,7 +15,9 @@ import 'package:tapem/features/training_details/data/sources/firestore_session_s
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/domain/usecases/get_sessions_for_date.dart';
 import 'package:tapem/features/story_session/domain/models/story_session_summary.dart';
-import 'package:tapem/app_router.dart';
+
+const _navigationSettleDelay = Duration(milliseconds: 350);
+const _trainingDoneMinimumVisible = Duration(milliseconds: 900);
 
 class StorySessionHighlightsListener extends ConsumerStatefulWidget {
   final Widget child;
@@ -38,6 +41,7 @@ class _StorySessionHighlightsListenerState
   WorkoutSessionDurationService? _durationService;
   final Queue<StorySessionSummary> _pendingSummaries = Queue();
   bool _isShowingDialog = false;
+  bool _didPrecacheTrainingDoneAsset = false;
 
   @override
   void initState() {
@@ -55,6 +59,10 @@ class _StorySessionHighlightsListenerState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!_didPrecacheTrainingDoneAsset) {
+      _didPrecacheTrainingDoneAsset = true;
+      unawaited(TrainingDoneOverlay.precache(context).catchError((_) {}));
+    }
     final service = ref.read(workoutSessionDurationServiceProvider);
     if (!identical(service, _durationService)) {
       _subscription?.cancel();
@@ -71,6 +79,11 @@ class _StorySessionHighlightsListenerState
     if (event.userId.isEmpty || auth.userId != event.userId) {
       return;
     }
+    final shouldShowTrainingDoneOverlay =
+        !_isShowingDialog && _pendingSummaries.isEmpty;
+    if (shouldShowTrainingDoneOverlay) {
+      TrainingDoneOverlay.show(widget.navigatorKey);
+    }
 
     final storyService = ref.read(storySessionServiceProvider);
 
@@ -82,7 +95,8 @@ class _StorySessionHighlightsListenerState
       );
     } catch (error, stackTrace) {
       debugPrint(
-          'StorySessionHighlightsListener: failed to load sessions: $error');
+        'StorySessionHighlightsListener: failed to load sessions: $error',
+      );
       debugPrintStack(stackTrace: stackTrace);
     }
 
@@ -95,33 +109,20 @@ class _StorySessionHighlightsListenerState
         userId: event.userId,
         date: event.start,
         sessions: sessions,
+        fallbackDurationMs: event.durationMs,
       );
     } catch (error, stackTrace) {
       debugPrint(
-          'StorySessionHighlightsListener: failed to build summary: $error');
+        'StorySessionHighlightsListener: failed to build summary: $error',
+      );
       debugPrintStack(stackTrace: stackTrace);
+      await TrainingDoneOverlay.hide();
       return;
     }
 
     if (!mounted || summary == null) {
+      await TrainingDoneOverlay.hide();
       return;
-    }
-
-    // Wenn der globale Workout-Timer eine Dauer gemessen hat, verwenden wir
-    // diese als Obergrenze für die angezeigte Dauer in den Session Highlights.
-    // So spiegelt die „Dauer“ möglichst genau das erlebte Training wider,
-    // selbst wenn einzelne Sessions noch keine start/end-Timestamps besitzen.
-    if (event.durationMs > 0) {
-      final currentStats = summary.stats;
-      final resolvedDurationMs =
-          currentStats.durationMs > 0 && currentStats.durationMs > event.durationMs
-              ? currentStats.durationMs
-              : event.durationMs;
-      if (resolvedDurationMs != currentStats.durationMs) {
-        summary = summary.copyWith(
-          stats: currentStats.copyWith(durationMs: resolvedDurationMs),
-        );
-      }
     }
 
     _enqueueSummary(summary);
@@ -141,6 +142,7 @@ class _StorySessionHighlightsListenerState
     if (navigator == null || !navigator.mounted) {
       _isShowingDialog = false;
       _pendingSummaries.clear();
+      await TrainingDoneOverlay.hide();
       return;
     }
 
@@ -149,7 +151,14 @@ class _StorySessionHighlightsListenerState
       // (z.B. zur Profilseite) zuerst sauber abgeschlossen wird.
       // Dadurch erscheinen die Session Highlights stabil auf der
       // Zielseite und nicht kurz auf der vorherigen Workout-Page.
-      await Future<void>.delayed(const Duration(milliseconds: 350));
+      await Future<void>.delayed(_navigationSettleDelay);
+      if (!navigator.mounted) {
+        _isShowingDialog = false;
+        _pendingSummaries.clear();
+        await TrainingDoneOverlay.hide();
+        return;
+      }
+      await TrainingDoneOverlay.hide(minVisible: _trainingDoneMinimumVisible);
       if (!navigator.mounted) {
         _isShowingDialog = false;
         _pendingSummaries.clear();
@@ -158,13 +167,16 @@ class _StorySessionHighlightsListenerState
 
       await showDialog<void>(
         context: navigator.context,
+        barrierDismissible: true,
         builder: (_) => StorySessionDialog(summary: summary),
       );
     } catch (error, stackTrace) {
       debugPrint(
-          'StorySessionHighlightsListener: failed to show dialog: $error');
+        'StorySessionHighlightsListener: failed to show dialog: $error',
+      );
       debugPrintStack(stackTrace: stackTrace);
     } finally {
+      await TrainingDoneOverlay.hide();
       if (!mounted) {
         _isShowingDialog = false;
         _pendingSummaries.clear();
@@ -186,6 +198,7 @@ class _StorySessionHighlightsListenerState
   void dispose() {
     _subscription?.cancel();
     _pendingSummaries.clear();
+    TrainingDoneOverlay.clear();
     super.dispose();
   }
 }

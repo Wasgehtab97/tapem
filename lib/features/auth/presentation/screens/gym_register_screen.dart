@@ -197,10 +197,10 @@ class _GymRegisterScreenState extends ConsumerState<GymRegisterScreen> {
     final gymAsync = ref.watch(gymByIdProvider(widget.args.gymId));
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       body: AuthBackground(
         child: AuthKeyboardScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AuthTheme.spacingM),
           child: gymAsync.when(
             data: (gym) {
               final showScan =
@@ -209,18 +209,14 @@ class _GymRegisterScreenState extends ConsumerState<GymRegisterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const OfflineBanner(),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Hero(
-                      tag: 'gym-logo-${gym.id}',
-                      child: NetworkCircleAvatar(url: gym.logoUrl, radius: 34),
-                    ),
-                  ),
-                  const SizedBox(height: AuthTheme.spacingS),
+                  const SizedBox(height: 10),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AuthTheme.textMuted,
+                      ),
                       onPressed: () =>
                           Navigator.of(context).pushReplacementNamed(
                             AppRouter.gymRegisterMethod,
@@ -228,20 +224,25 @@ class _GymRegisterScreenState extends ConsumerState<GymRegisterScreen> {
                           ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
+                  Center(
+                    child: Hero(
+                      tag: 'gym-logo-${gym.id}',
+                      child: NetworkCircleAvatar(url: gym.logoUrl, radius: 34),
+                    ),
+                  ),
+                  const SizedBox(height: AuthTheme.spacingM),
                   Text(
                     loc.gymRegisterTitle(gym.name),
                     textAlign: TextAlign.center,
-                    style: AuthTheme.headingStyle,
+                    style: AuthTheme.headingStyle.copyWith(fontSize: 28),
                   ),
                   if (_isNfc) ...[
                     const SizedBox(height: AuthTheme.spacingS),
                     Text(
                       loc.gymNfcHint,
                       textAlign: TextAlign.center,
-                      style: AuthTheme.bodyStyle.copyWith(
-                        color: Colors.white.withOpacity(0.7),
-                      ),
+                      style: AuthTheme.bodyStyle,
                     ),
                   ],
                   const SizedBox(height: AuthTheme.spacingL),
@@ -260,9 +261,7 @@ class _GymRegisterScreenState extends ConsumerState<GymRegisterScreen> {
                           Text(
                             loc.nfcScanSubtitle,
                             textAlign: TextAlign.center,
-                            style: AuthTheme.bodyStyle.copyWith(
-                              color: Colors.white.withOpacity(0.7),
-                            ),
+                            style: AuthTheme.bodyStyle,
                           ),
                           if (_scanError != null) ...[
                             const SizedBox(height: AuthTheme.spacingS),
@@ -270,7 +269,7 @@ class _GymRegisterScreenState extends ConsumerState<GymRegisterScreen> {
                               _scanError!,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
-                                color: Color(0xFFFF8A80),
+                                color: AuthTheme.danger,
                                 fontSize: 12,
                               ),
                             ),
@@ -293,7 +292,7 @@ class _GymRegisterScreenState extends ConsumerState<GymRegisterScreen> {
                             child: Text(
                               loc.nfcScanManual,
                               style: AuthTheme.labelStyle.copyWith(
-                                color: Colors.white70,
+                                color: AuthTheme.textMuted,
                                 decoration: TextDecoration.underline,
                               ),
                             ),
@@ -310,11 +309,12 @@ class _GymRegisterScreenState extends ConsumerState<GymRegisterScreen> {
                         gymValidator: widget.args.gymValidator,
                       ),
                     ),
+                  const SizedBox(height: 18),
                 ],
               );
             },
             loading: () => const Center(
-              child: CircularProgressIndicator(color: Colors.white70),
+              child: CircularProgressIndicator(color: Colors.white),
             ),
             error: (error, _) => Center(
               child: Padding(
@@ -322,9 +322,7 @@ class _GymRegisterScreenState extends ConsumerState<GymRegisterScreen> {
                 child: Text(
                   loc.authErrorGeneric(error),
                   textAlign: TextAlign.center,
-                  style: AuthTheme.bodyStyle.copyWith(
-                    color: Colors.white.withOpacity(0.7),
-                  ),
+                  style: AuthTheme.bodyStyle,
                 ),
               ),
             ),

@@ -7,12 +7,11 @@ import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
-import 'package:tapem/core/widgets/brand_outline_button.dart';
+import 'package:tapem/core/widgets/brand_modal.dart';
 import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/muscles/muscle_group_list_selector.dart';
-import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
 
 class ExerciseBottomSheet extends StatefulWidget {
@@ -41,6 +40,13 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
   String _filter = '';
   bool _isSaving = false;
 
+  String get _title {
+    final loc = AppLocalizations.of(context)!;
+    return widget.exercise == null
+        ? loc.multiDeviceAddExerciseTitle
+        : loc.multiDeviceEditExerciseTitle;
+  }
+
   bool get _hasChanges =>
       _nameCtr.text.trim() != (widget.exercise?.name ?? '') ||
       !listEquals(_primaryIds, _initialPrimary) ||
@@ -49,21 +55,48 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
   Future<bool> _confirmDiscard() async {
     if (!_hasChanges) return true;
     final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
     final res = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.exerciseEdit_discardChangesTitle),
-        content: Text(loc.exerciseEdit_discardChangesMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(loc.exerciseEdit_keepEditing),
+      barrierColor: Colors.black54,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: BrandModalSurface(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BrandModalHeader(
+                icon: Icons.warning_amber_rounded,
+                accent: brandColor,
+                title: loc.exerciseEdit_discardChangesTitle,
+                subtitle: loc.exerciseEdit_discardChangesMessage,
+                onClose: () => Navigator.pop(ctx, false),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(loc.exerciseEdit_keepEditing),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: BrandPrimaryButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(loc.exerciseEdit_discard),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(loc.exerciseEdit_discard),
-          ),
-        ],
+        ),
       ),
     );
     return res ?? false;
@@ -81,8 +114,10 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
     _initialPrimary = List.of(_primaryIds);
     _initialSecondary = List.of(_secondaryIds);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final prov = riverpod.ProviderScope.containerOf(context, listen: false)
-          .read(muscleGroupProvider);
+      final prov = riverpod.ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(muscleGroupProvider);
       await prov.loadGroups(context);
       if (!mounted) return;
       final normalizedPrimary = prov.canonicalizeGroupIds(_primaryIds);
@@ -101,6 +136,14 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
     });
   }
 
+  Future<void> _requestClose() async {
+    if (await _confirmDiscard()) {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _nameCtr.dispose();
@@ -115,7 +158,10 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
     FocusScope.of(context).unfocus();
     setState(() => _isSaving = true);
 
-    final container = riverpod.ProviderScope.containerOf(context, listen: false);
+    final container = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
     final auth = container.read(authControllerProvider);
     final userId = auth.userId!;
     final exProv = container.read(exerciseProvider);
@@ -130,7 +176,8 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
         .canonicalizeGroupIds(_secondaryIds)
         .where((id) => !primaryIds.contains(id))
         .toList();
-    final shouldReassign = widget.exercise != null &&
+    final shouldReassign =
+        widget.exercise != null &&
         (!listEquals(primaryIds, _initialPrimary) ||
             !listEquals(secondaryIds, _initialSecondary));
 
@@ -186,14 +233,14 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
       final message = e.code == 'permission-denied'
           ? loc.commonSaveError
           : (e.message ?? loc.commonSaveError);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.commonSaveError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(loc.commonSaveError)));
     } finally {
       if (!shouldClose && mounted) {
         setState(() => _isSaving = false);
@@ -205,8 +252,13 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
     final canSave =
-        _nameCtr.text.trim().isNotEmpty && (widget.exercise == null || _hasChanges);
+        _nameCtr.text.trim().isNotEmpty &&
+        (widget.exercise == null || _hasChanges);
+    final height = MediaQuery.of(context).size.height;
+    final selectorHeight = (height * 0.28).clamp(220.0, 340.0);
 
     return WillPopScope(
       onWillPop: _confirmDiscard,
@@ -216,146 +268,146 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: SafeArea(
-          top: false,
-          child: Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 24,
-                  offset: const Offset(0, -8),
-                ),
-              ],
-            ),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 20,
+          ),
+          child: BrandModalSurface(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Center(
                     child: Container(
-                      width: 48,
+                      width: 40,
                       height: 4,
+                      margin: const EdgeInsets.only(bottom: 10),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.onSurface.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(2),
+                        color: Colors.white.withOpacity(0.24),
+                        borderRadius: BorderRadius.circular(99),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    widget.exercise == null
-                        ? loc.exerciseAddTitle
-                        : loc.exerciseEditTitle,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: theme.extension<AppBrandTheme>()?.outline ??
-                          theme.colorScheme.secondary,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  BrandModalHeader(
+                    icon: widget.exercise == null
+                        ? Icons.add_circle_outline_rounded
+                        : Icons.edit_note_rounded,
+                    accent: brandColor,
+                    title: _title,
+                    subtitle: 'Name und Muskelgruppen festlegen',
+                    onClose: _isSaving ? null : _requestClose,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   TextField(
                     controller: _nameCtr,
                     decoration: InputDecoration(
                       labelText: loc.exerciseNameLabel,
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.04),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: brandColor.withOpacity(0.4),
+                          width: 1.2,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: Colors.white.withOpacity(0.08),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: brandColor.withOpacity(0.9),
+                          width: 1.4,
+                        ),
                       ),
                     ),
                     autofocus: true,
                     onChanged: (_) => setState(() {}),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 18),
                   Text(
                     loc.exerciseMuscleGroupsLabel,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: _searchCtr,
                     decoration: InputDecoration(
                       hintText: loc.exerciseSearchMuscleGroupsHint,
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: brandColor.withOpacity(0.9),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.03),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: Colors.white.withOpacity(0.18),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: Colors.white.withOpacity(0.18),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: brandColor.withOpacity(0.75),
+                          width: 1.2,
+                        ),
                       ),
                     ),
                     onChanged: (v) => setState(() => _filter = v),
                   ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 320,
-                    child: MuscleGroupListSelector(
-                      initialPrimary: _initialPrimary,
-                      initialSecondary: _initialSecondary,
-                      onChanged: (p, s) => setState(() {
-                        _primaryIds = p;
-                        _secondaryIds = s;
-                      }),
-                      filter: _filter,
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.03),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    ),
+                    child: SizedBox(
+                      height: selectorHeight,
+                      child: MuscleGroupListSelector(
+                        initialPrimary: _initialPrimary,
+                        initialSecondary: _initialSecondary,
+                        onChanged: (p, s) => setState(() {
+                          _primaryIds = p;
+                          _secondaryIds = s;
+                        }),
+                        filter: _filter,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  if (_primaryIds.isNotEmpty || _secondaryIds.isNotEmpty) ...[
-                    Text(
-                      loc.exerciseSelectedMuscleGroups,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: MuscleChips(
-                        primaryIds: _primaryIds,
-                        secondaryIds: _secondaryIds,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                  const SizedBox(height: 18),
                   Row(
                     children: [
                       Expanded(
-                        child: BrandOutlineButton(
-                          onPressed: _isSaving
-                              ? null
-                              : () async {
-                                  if (await _confirmDiscard()) {
-                                    if (mounted) Navigator.pop(context);
-                                  }
-                                },
+                        child: TextButton(
+                          onPressed: _isSaving ? null : _requestClose,
                           child: Text(loc.commonCancel),
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.md),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: BrandPrimaryButton(
+                        child: TextButton(
                           onPressed: canSave && !_isSaving ? _save : null,
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: _isSaving
-                                ? const SizedBox(
-                                    key: ValueKey('saving'),
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : Row(
-                                    key: const ValueKey('label'),
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.check),
-                                      const SizedBox(width: 8),
-                                      Text(loc.commonSave),
-                                    ],
-                                  ),
-                          ),
+                          child: Text(loc.commonSave),
                         ),
                       ),
                     ],

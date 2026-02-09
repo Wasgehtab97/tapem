@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/core/providers/muscle_group_provider.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/widgets/brand_modal.dart';
+import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'search_and_filters.dart' show SortOrder;
 
@@ -21,18 +24,39 @@ class FilterChipsRow extends StatelessWidget {
   });
 
   Future<void> _showSortSheet(BuildContext context) async {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
     final res = await showModalBottomSheet<SortOrder>(
       context: context,
-      builder: (ctx) => SafeArea(
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => BrandModalSheet(
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ListTile(
-              title: Text('A→Z'),
+            BrandModalHeader(
+              icon: Icons.sort_by_alpha_rounded,
+              accent: brandColor,
+              title: 'Sortierung',
+              subtitle: 'Wähle die Reihenfolge',
+              onClose: () => Navigator.pop(ctx),
+            ),
+            const SizedBox(height: 12),
+            BrandModalOptionCard(
+              title: 'A→Z',
+              subtitle: 'Alphabetisch aufsteigend',
+              icon: Icons.arrow_downward_rounded,
+              accent: brandColor,
               onTap: () => Navigator.pop(ctx, SortOrder.az),
             ),
-            ListTile(
-              title: Text('Z→A'),
+            const SizedBox(height: 10),
+            BrandModalOptionCard(
+              title: 'Z→A',
+              subtitle: 'Alphabetisch absteigend',
+              icon: Icons.arrow_upward_rounded,
+              accent: brandColor,
               onTap: () => Navigator.pop(ctx, SortOrder.za),
             ),
           ],
@@ -43,49 +67,83 @@ class FilterChipsRow extends StatelessWidget {
   }
 
   Future<void> _showMuscleSheet(BuildContext context) async {
-    final container = riverpod.ProviderScope.containerOf(context, listen: false);
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+    final loc = AppLocalizations.of(context)!;
+    final container = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
     final groups = container.read(muscleGroupProvider).groups;
     final selected = Set<String>.from(muscleFilterIds);
     await showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final g in groups)
-                      FilterChip(
-                        label: Text(g.name),
-                        selected: selected.contains(g.id),
-                        onSelected: (v) {
-                          setSt(() {
-                            if (v) {
-                              selected.add(g.id);
-                            } else {
-                              selected.remove(g.id);
-                            }
-                          });
-                        },
+        builder: (ctx, setSt) => BrandModalSheet(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BrandModalHeader(
+                icon: Icons.fitness_center_rounded,
+                accent: brandColor,
+                title: loc.filterMuscleChip,
+                subtitle: loc.multiDeviceMuscleGroupFilter,
+                onClose: () => Navigator.pop(ctx),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final g in groups)
+                    FilterChip(
+                      label: Text(g.name),
+                      selected: selected.contains(g.id),
+                      showCheckmark: false,
+                      backgroundColor: Colors.white.withOpacity(0.04),
+                      selectedColor: brandColor.withOpacity(0.22),
+                      shape: StadiumBorder(
+                        side: BorderSide(
+                          color: selected.contains(g.id)
+                              ? brandColor.withOpacity(0.5)
+                              : Colors.white.withOpacity(0.1),
+                        ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('OK'),
+                      onSelected: (v) {
+                        setSt(() {
+                          if (v) {
+                            selected.add(g.id);
+                          } else {
+                            selected.remove(g.id);
+                          }
+                        });
+                      },
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  if (selected.isNotEmpty)
+                    TextButton(
+                      onPressed: () => setSt(() => selected.clear()),
+                      child: Text(loc.resetFilters),
+                    ),
+                  const Spacer(),
+                  SizedBox(
+                    width: 108,
+                    child: BrandPrimaryButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(loc.commonOk),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -117,10 +175,7 @@ class FilterChipsRow extends StatelessWidget {
         const Spacer(),
         SizedBox(
           height: 48,
-          child: TextButton(
-            onPressed: onReset,
-            child: Text(loc.resetFilters),
-          ),
+          child: TextButton(onPressed: onReset, child: Text(loc.resetFilters)),
         ),
       ],
     );

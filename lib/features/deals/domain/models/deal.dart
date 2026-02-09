@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/core/utils/remote_url_utils.dart';
 
 class Deal {
   final String id;
@@ -36,14 +37,14 @@ class Deal {
   factory Deal.fromMap(String id, Map<String, dynamic> data) {
     return Deal(
       id: id,
-      title: data['title'] as String? ?? '',
-      description: data['description'] as String? ?? '',
-      partnerName: data['partnerName'] as String? ?? '',
-      partnerLogoUrl: data['partnerLogoUrl'] as String? ?? '',
-      imageUrl: data['imageUrl'] as String? ?? '',
-      code: data['code'] as String? ?? '',
-      link: data['link'] as String? ?? '',
-      category: data['category'] as String? ?? '',
+      title: _readString(data, 'title'),
+      description: _readString(data, 'description'),
+      partnerName: _readString(data, 'partnerName'),
+      partnerLogoUrl: normalizeRemoteUrl(_readString(data, 'partnerLogoUrl')),
+      imageUrl: normalizeRemoteUrl(_readString(data, 'imageUrl')),
+      code: _readString(data, 'code'),
+      link: normalizeRemoteUrl(_readString(data, 'link')),
+      category: _readString(data, 'category'),
       isActive: data['isActive'] as bool? ?? false,
       priority: (data['priority'] as num?)?.toInt() ?? 999,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -54,14 +55,14 @@ class Deal {
 
   Map<String, dynamic> toMap() {
     return {
-      'title': title,
-      'description': description,
-      'partnerName': partnerName,
-      'partnerLogoUrl': partnerLogoUrl,
-      'imageUrl': imageUrl,
-      'code': code,
-      'link': link,
-      'category': category,
+      'title': title.trim(),
+      'description': description.trim(),
+      'partnerName': partnerName.trim(),
+      'partnerLogoUrl': normalizeRemoteUrl(partnerLogoUrl),
+      'imageUrl': normalizeRemoteUrl(imageUrl),
+      'code': code.trim(),
+      'link': normalizeRemoteUrl(link),
+      'category': category.trim(),
       'isActive': isActive,
       'priority': priority,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -102,5 +103,9 @@ class Deal {
       validUntil: validUntil ?? this.validUntil,
       clickCount: clickCount ?? this.clickCount,
     );
+  }
+
+  static String _readString(Map<String, dynamic> data, String key) {
+    return (data[key] as String? ?? '').trim();
   }
 }

@@ -19,8 +19,7 @@ import 'package:tapem/features/auth/domain/usecases/logout.dart';
 import 'package:tapem/features/auth/domain/usecases/register.dart';
 import 'package:tapem/features/auth/domain/usecases/reset_password.dart';
 import 'package:tapem/features/auth/domain/usecases/set_avatar_key.dart';
-import 'package:tapem/features/auth/domain/usecases/set_public_profile.dart';
-import 'package:tapem/features/auth/domain/usecases/set_show_in_leaderboard.dart';
+import 'package:tapem/features/auth/domain/usecases/set_profile_visibility.dart';
 import 'package:tapem/features/auth/domain/usecases/set_username.dart';
 import 'package:tapem/features/auth/domain/usecases/set_coach_enabled.dart';
 import 'package:tapem/features/auth/domain/usecases/set_public_key.dart';
@@ -28,18 +27,10 @@ import 'package:tapem/features/security/domain/services/encryption_service.dart'
 import 'package:tapem/services/membership_service.dart';
 
 typedef ActiveGymSetter = Future<void> Function(String gymId);
-typedef AuthErrorLogger = void Function(
-  Object error,
-  StackTrace stackTrace, {
-  String? context,
-});
+typedef AuthErrorLogger =
+    void Function(Object error, StackTrace stackTrace, {String? context});
 
-enum GymContextStatus {
-  unknown,
-  loading,
-  missingSelection,
-  ready,
-}
+enum GymContextStatus { unknown, loading, missingSelection, ready }
 
 abstract class GymContextState {
   GymContextStatus get gymContextStatus;
@@ -67,17 +58,18 @@ class AuthResult {
     bool missingMembership = false,
     GymContextStatus? gymContextStatus,
   }) : this(
-          success: true,
-          requiresGymSelection: requiresGymSelection,
-          missingMembership: missingMembership,
-          gymContextStatus: gymContextStatus ??
-              (requiresGymSelection
-                  ? GymContextStatus.missingSelection
-                  : GymContextStatus.ready),
-        );
+         success: true,
+         requiresGymSelection: requiresGymSelection,
+         missingMembership: missingMembership,
+         gymContextStatus:
+             gymContextStatus ??
+             (requiresGymSelection
+                 ? GymContextStatus.missingSelection
+                 : GymContextStatus.ready),
+       );
 
   const AuthResult.failure({String? error})
-      : this(success: false, error: error);
+    : this(success: false, error: error);
 }
 
 class GymSwitchResult {
@@ -100,11 +92,11 @@ class GymSwitchResult {
     bool requiresReauthentication = false,
     bool requiresMembershipAction = false,
   }) : this._(
-          success: false,
-          errorCode: errorCode,
-          requiresReauthentication: requiresReauthentication,
-          requiresMembershipAction: requiresMembershipAction,
-        );
+         success: false,
+         errorCode: errorCode,
+         requiresReauthentication: requiresReauthentication,
+         requiresMembershipAction: requiresMembershipAction,
+       );
 }
 
 class AuthProvider extends ChangeNotifier implements GymContextState {
@@ -113,8 +105,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   final LogoutUseCase _logoutUC;
   final GetCurrentUserUseCase _currentUC;
   final SetUsernameUseCase _setUsernameUC;
-  final SetShowInLeaderboardUseCase _setShowInLbUC;
-  final SetPublicProfileUseCase _setPublicProfileUC;
+  final SetProfileVisibilityUseCase _setProfileVisibilityUC;
   final SetAvatarKeyUseCase _setAvatarKeyUC;
   final CheckUsernameAvailable _checkUsernameUC;
   final SetPublicKeyUseCase _setPublicKeyUC;
@@ -139,8 +130,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     required LogoutUseCase logoutUseCase,
     required GetCurrentUserUseCase currentUserUseCase,
     required SetUsernameUseCase setUsernameUseCase,
-    required SetShowInLeaderboardUseCase setShowInLeaderboardUseCase,
-    required SetPublicProfileUseCase setPublicProfileUseCase,
+    required SetProfileVisibilityUseCase setProfileVisibilityUseCase,
     required SetAvatarKeyUseCase setAvatarKeyUseCase,
     required SetPublicKeyUseCase setPublicKeyUseCase,
     required CheckUsernameAvailable checkUsernameUseCase,
@@ -152,24 +142,23 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     GymScopedStateController? gymScopedStateController,
     FirebaseFirestore? firestore,
     AuthErrorLogger? errorLogger,
-  })  : _loginUC = loginUseCase,
-        _registerUC = registerUseCase,
-        _logoutUC = logoutUseCase,
-        _currentUC = currentUserUseCase,
-        _setUsernameUC = setUsernameUseCase,
-        _setShowInLbUC = setShowInLeaderboardUseCase,
-        _setPublicProfileUC = setPublicProfileUseCase,
-        _setAvatarKeyUC = setAvatarKeyUseCase,
-        _setPublicKeyUC = setPublicKeyUseCase,
-        _checkUsernameUC = checkUsernameUseCase,
-        _resetPasswordUC = resetPasswordUseCase,
-        _authManager = authManager,
-        _sessionDraftRepository = sessionDraftRepository,
-        _membershipService = membershipService,
-        _setActiveGym = setActiveGym,
-        _gymScopedStateController = gymScopedStateController,
-        _firestore = firestore ?? FirebaseFirestore.instance,
-        _errorLogger = errorLogger {
+  }) : _loginUC = loginUseCase,
+       _registerUC = registerUseCase,
+       _logoutUC = logoutUseCase,
+       _currentUC = currentUserUseCase,
+       _setUsernameUC = setUsernameUseCase,
+       _setProfileVisibilityUC = setProfileVisibilityUseCase,
+       _setAvatarKeyUC = setAvatarKeyUseCase,
+       _setPublicKeyUC = setPublicKeyUseCase,
+       _checkUsernameUC = checkUsernameUseCase,
+       _resetPasswordUC = resetPasswordUseCase,
+       _authManager = authManager,
+       _sessionDraftRepository = sessionDraftRepository,
+       _membershipService = membershipService,
+       _setActiveGym = setActiveGym,
+       _gymScopedStateController = gymScopedStateController,
+       _firestore = firestore ?? FirebaseFirestore.instance,
+       _errorLogger = errorLogger {
     _loadCurrentUser();
   }
 
@@ -186,20 +175,21 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     final resolvedAuthManager = authManager ?? DefaultFirebaseAuthManager();
     final resolvedSessionDraftRepo =
         sessionDraftRepository ?? SessionDraftRepositoryImpl();
-    final resolvedMembership = membershipService ?? FirestoreMembershipService();
-    final resolvedSetActiveGym = setActiveGym ?? UserProfileService.setActiveGym;
-    
+    final resolvedMembership =
+        membershipService ?? FirestoreMembershipService();
+    final resolvedSetActiveGym =
+        setActiveGym ?? UserProfileService.setActiveGym;
+
     return AuthProvider._(
-      loginUseCase:
-          LoginUseCase(repo: repo, authManager: resolvedAuthManager),
-      registerUseCase:
-          RegisterUseCase(repo: repo, authManager: resolvedAuthManager),
+      loginUseCase: LoginUseCase(repo: repo, authManager: resolvedAuthManager),
+      registerUseCase: RegisterUseCase(
+        repo: repo,
+        authManager: resolvedAuthManager,
+      ),
       logoutUseCase: LogoutUseCase(repo),
       currentUserUseCase: GetCurrentUserUseCase(repo),
       setUsernameUseCase: SetUsernameUseCase(repo),
-      setShowInLeaderboardUseCase:
-          SetShowInLeaderboardUseCase(repo),
-      setPublicProfileUseCase: SetPublicProfileUseCase(repo),
+      setProfileVisibilityUseCase: SetProfileVisibilityUseCase(repo),
       setAvatarKeyUseCase: SetAvatarKeyUseCase(repo),
       setPublicKeyUseCase: SetPublicKeyUseCase(repo),
       checkUsernameUseCase: CheckUsernameAvailable(repo),
@@ -286,10 +276,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
           final prefs = await SharedPreferences.getInstance();
           final demoGymId = prefs.getString(StorageKeys.demoGymId);
           if (demoGymId != null && demoGymId.isNotEmpty) {
-            _setGuestState(
-              gymId: demoGymId,
-              uid: fbUser.uid,
-            );
+            _setGuestState(gymId: demoGymId, uid: fbUser.uid);
             return;
           }
         }
@@ -309,9 +296,12 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
           var currentUser = fetchedUser;
           if (currentUser.publicProfile != currentUser.showInLeaderboard) {
             try {
-              await _setPublicProfileUC.execute(
-                  currentUser.id, currentUser.showInLeaderboard);
+              await _setProfileVisibilityUC.execute(
+                currentUser.id,
+                currentUser.showInLeaderboard,
+              );
               currentUser = currentUser.copyWith(
+                showInLeaderboard: currentUser.showInLeaderboard,
                 publicProfile: currentUser.showInLeaderboard,
               );
             } catch (e, st) {
@@ -332,7 +322,8 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
               if (kDebugMode) {
                 debugPrint('[AuthProvider] Generating new E2EE keys for user');
               }
-              final publicKey = await encryptionService.generateAndStoreKeyPair();
+              final publicKey = await encryptionService
+                  .generateAndStoreKeyPair();
               await _setPublicKeyUC.execute(currentUser.id, publicKey);
             }
           } catch (e) {
@@ -406,8 +397,11 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     _error = null;
     try {
       await _clearDemoState();
-      final registeredUser =
-          await _registerUC.execute(email, password, initialGymCode);
+      final registeredUser = await _registerUC.execute(
+        email,
+        password,
+        initialGymCode,
+      );
       await _loadCurrentUser();
       if (_user == null) {
         _user = registeredUser;
@@ -450,8 +444,8 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     _setLoading(true);
     _error = null;
     try {
-      final credential =
-          await fb_auth.FirebaseAuth.instance.signInAnonymously();
+      final credential = await fb_auth.FirebaseAuth.instance
+          .signInAnonymously();
       final fbUser = credential.user;
       if (fbUser == null) {
         throw StateError('demo_auth_failed');
@@ -509,28 +503,32 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   }
 
   Future<void> setShowInLeaderboard(bool value) async {
-    if (_user == null) return;
-    _setLoading(true);
-    _error = null;
-    try {
-      await _setShowInLbUC.execute(_user!.id, value);
-      _user = _user!.copyWith(showInLeaderboard: value);
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      _setLoading(false);
-    }
+    await setProfileVisibility(value);
   }
 
   Future<void> setPublicProfile(bool value) async {
-    if (_user == null) return;
+    await setProfileVisibility(value);
+  }
+
+  Future<bool> setProfileVisibility(bool value) async {
+    if (_user == null) return false;
     _setLoading(true);
     _error = null;
+    final previousShow = _user!.showInLeaderboard;
+    final previousPublic = _user!.publicProfile;
+    _user = _user!.copyWith(showInLeaderboard: value, publicProfile: value);
+    notifyListeners();
     try {
-      await _setPublicProfileUC.execute(_user!.id, value);
-      _user = _user!.copyWith(publicProfile: value);
+      await _setProfileVisibilityUC.execute(_user!.id, value);
+      return true;
     } catch (e) {
       _error = e.toString();
+      _user = _user!.copyWith(
+        showInLeaderboard: previousShow,
+        publicProfile: previousPublic,
+      );
+      notifyListeners();
+      return false;
     } finally {
       _setLoading(false);
     }
@@ -645,11 +643,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
           }
           _selectedGymCode = previousGymCode;
         } catch (restoreError, restoreStack) {
-          _logError(
-            restoreError,
-            restoreStack,
-            context: 'switchGym.restore',
-          );
+          _logError(restoreError, restoreStack, context: 'switchGym.restore');
         }
       }
       _logError(e, st, context: 'switchGym');
@@ -697,9 +691,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('selectedGymCode', gymId);
       _selectedGymCode = gymId;
-      _user = _user!.copyWith(
-        gymCodes: [..._user!.gymCodes, gymId],
-      );
+      _user = _user!.copyWith(gymCodes: [..._user!.gymCodes, gymId]);
       _gymScopedStateController?.resetGymScopedState();
       return const GymSwitchResult.success();
     } catch (e, st) {
@@ -736,8 +728,9 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     _setLoading(true);
     _error = null;
     try {
-      final updatedGyms =
-          _user!.gymCodes.where((code) => code != gymId).toList();
+      final updatedGyms = _user!.gymCodes
+          .where((code) => code != gymId)
+          .toList();
       await _firestore.collection('users').doc(_user!.id).update({
         'gymCodes': updatedGyms,
       });
@@ -819,28 +812,30 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     try {
       final prefs = await SharedPreferences.getInstance();
       final stored = prefs.getString('selectedGymCode');
-      final doc = await _firestore.collection('users').doc(currentUser.id).get();
+      final doc = await _firestore
+          .collection('users')
+          .doc(currentUser.id)
+          .get();
       final data = doc.data();
       final firestoreActiveGym = data?['activeGymId'];
       String? normalizedFirestoreGym =
           (firestoreActiveGym is String &&
-                  currentUser.gymCodes.contains(firestoreActiveGym))
-              ? firestoreActiveGym
-              : null;
+              currentUser.gymCodes.contains(firestoreActiveGym))
+          ? firestoreActiveGym
+          : null;
       final normalizedStoredGym =
           (stored != null && currentUser.gymCodes.contains(stored))
-              ? stored
-              : null;
+          ? stored
+          : null;
       final claimGym = claims['gymId'];
       final normalizedClaimGym =
           (claimGym is String && currentUser.gymCodes.contains(claimGym))
-              ? claimGym
-              : null;
+          ? claimGym
+          : null;
 
       final hasMultipleGyms = currentUser.gymCodes.length > 1;
-      String? resolvedGym = normalizedFirestoreGym ??
-          normalizedStoredGym ??
-          normalizedClaimGym;
+      String? resolvedGym =
+          normalizedFirestoreGym ?? normalizedStoredGym ?? normalizedClaimGym;
 
       if (resolvedGym == null && currentUser.gymCodes.isNotEmpty) {
         resolvedGym = hasMultipleGyms ? null : currentUser.gymCodes.first;
@@ -858,11 +853,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
         _error = 'membership_sync_failed';
         _selectedGymCode = null;
         await prefs.remove('selectedGymCode');
-        _logError(
-          error,
-          stackTrace,
-          context: 'activeGymSync.ensureMembership',
-        );
+        _logError(error, stackTrace, context: 'activeGymSync.ensureMembership');
         return;
       }
 
@@ -871,8 +862,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
           normalizedFirestoreGym != resolvedGym) {
         inconsistencies['firestore'] = normalizedFirestoreGym;
       }
-      if (normalizedStoredGym != null &&
-          normalizedStoredGym != resolvedGym) {
+      if (normalizedStoredGym != null && normalizedStoredGym != resolvedGym) {
         inconsistencies['sharedPreferences'] = normalizedStoredGym;
       }
       if (normalizedClaimGym != null && normalizedClaimGym != resolvedGym) {

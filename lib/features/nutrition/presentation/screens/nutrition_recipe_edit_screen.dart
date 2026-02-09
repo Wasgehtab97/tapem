@@ -642,7 +642,10 @@ class _NutritionRecipeEditScreenState
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.more_horiz_rounded, size: 20),
+                            icon: const Icon(
+                              Icons.more_horiz_rounded,
+                              size: 20,
+                            ),
                             onPressed: () async {
                               final action = await showModalBottomSheet<String>(
                                 context: context,
@@ -654,7 +657,8 @@ class _NutritionRecipeEditScreenState
                                       ListTile(
                                         leading: const Icon(Icons.edit_rounded),
                                         title: const Text('Menge bearbeiten'),
-                                        onTap: () => Navigator.of(ctx).pop('edit'),
+                                        onTap: () =>
+                                            Navigator.of(ctx).pop('edit'),
                                       ),
                                       ListTile(
                                         leading: const Icon(
@@ -662,7 +666,8 @@ class _NutritionRecipeEditScreenState
                                           color: Colors.redAccent,
                                         ),
                                         title: const Text('Zutat entfernen'),
-                                        onTap: () => Navigator.of(ctx).pop('delete'),
+                                        onTap: () =>
+                                            Navigator.of(ctx).pop('delete'),
                                       ),
                                     ],
                                   ),
@@ -725,12 +730,34 @@ class _NutritionRecipeEditScreenState
                 );
               }),
             const SizedBox(height: AppSpacing.lg),
-            PrimaryCTA(
-              label: widget.isLogMode ? 'Hinzufügen' : 'Gericht speichern',
-              icon: widget.isLogMode ? Icons.check : Icons.save,
+            BrandPrimaryButton(
               onPressed: _saving
                   ? null
                   : (widget.isLogMode ? _addToDay : _saveRecipeAndClose),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_saving)
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else ...[
+                    Icon(
+                      widget.isLogMode
+                          ? Icons.check_rounded
+                          : Icons.save_rounded,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.isLogMode ? 'Hinzufügen' : 'Gericht speichern',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ],
         ),
@@ -807,20 +834,16 @@ class _SmallMacroPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
-      ),
+    final accentColor = nutritionBrandAccentColor(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: color,
+              color: accentColor,
               fontWeight: FontWeight.bold,
               fontSize: 9,
             ),

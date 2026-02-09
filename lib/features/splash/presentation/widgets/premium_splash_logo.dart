@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 import '../../../../core/theme/design_tokens.dart';
 
 class PremiumSplashLogo extends StatefulWidget {
@@ -60,6 +59,9 @@ class _PremiumSplashLogoState extends State<PremiumSplashLogo>
 
   @override
   Widget build(BuildContext context) {
+    final logoWidth =
+        (MediaQuery.of(context).size.width * 0.72).clamp(280.0, 420.0).toDouble();
+
     return AnimatedBuilder(
       animation: Listenable.merge([_entryController, _pulseController]),
       builder: (context, child) {
@@ -74,53 +76,18 @@ class _PremiumSplashLogoState extends State<PremiumSplashLogo>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Background Glow
-          Container(
-            width: 140,
-            height: 140,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.accentMint.withOpacity(0.25),
-                  blurRadius: 60,
-                  spreadRadius: 10,
-                ),
-              ],
-            ),
-          ),
-          // Logo
-          // Image Container with styling
-          Container(
-            width: 180,
-            height: 120, // Adjusted to match the aspect ratio seen in the screenshot
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.1),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(26),
-              child: Image.asset(
-                'assets/images/splash.png',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
-                    Icons.fitness_center_rounded,
-                    size: 80,
-                    color: AppColors.accentMint,
-                  );
-                },
-              ),
+          SizedBox(
+            width: logoWidth,
+            child: Image.asset(
+              'assets/images/splash.png',
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(
+                  Icons.fitness_center_rounded,
+                  size: 80,
+                  color: AppColors.accentMint,
+                );
+              },
             ),
           ),
         ],

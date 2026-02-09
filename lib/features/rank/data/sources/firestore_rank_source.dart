@@ -15,126 +15,119 @@ class FirestoreRankSource {
   FirestoreRankSource({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
-      Future<DeviceXpResult> addXp({
-        required String gymId,
-        required String userId,
-        required String deviceId,
-        required String sessionId,
-        required bool showInLeaderboard,
-        required bool isMulti,
-        String? exerciseId,
-        required String traceId,
-      }) async {
-        assert(LevelService.xpPerSession == 50);
-        assert(deviceId.isNotEmpty);
-        final dayKey = logicDayKey(DateTime.now());
-        final lbUser = _firestore
-            .collection('gyms')
-            .doc(gymId)
-            .collection('devices')
-            .doc(deviceId)
-            .collection('leaderboard')
-            .doc(userId);
-        final lbSess = lbUser.collection('sessions').doc(sessionId);
-        final lbDay = lbUser.collection('days').doc(dayKey);
-        try {
-          final result = await _runTransactionWithRetry<DeviceXpResult>(
-            (tx) async {
-              final userSnap = await tx.get(lbUser);
-              final sessSnap = await tx.get(lbSess);
-              XpTrace.log('TXN_READ', {
-                'existsSessionDoc': sessSnap.exists,
-                'xpCurrent': (userSnap.data()?['xp'] as int?) ?? 0,
-              'levelCurrent': (userSnap.data()?['level'] as int?) ?? 1,
-              'traceId': traceId,
-            });
+  Future<DeviceXpResult> addXp({
+    required String gymId,
+    required String userId,
+    required String deviceId,
+    required String sessionId,
+    required bool showInLeaderboard,
+    required bool isMulti,
+    String? exerciseId,
+    required String traceId,
+  }) async {
+    assert(LevelService.xpPerSession == 50);
+    assert(deviceId.isNotEmpty);
+    final dayKey = logicDayKey(DateTime.now());
+    final lbUser = _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(deviceId)
+        .collection('leaderboard')
+        .doc(userId);
+    final lbSess = lbUser.collection('sessions').doc(sessionId);
+    final lbDay = lbUser.collection('days').doc(dayKey);
+    try {
+      final result = await _runTransactionWithRetry<DeviceXpResult>((tx) async {
+        final userSnap = await tx.get(lbUser);
+        final sessSnap = await tx.get(lbSess);
+        XpTrace.log('TXN_READ', {
+          'existsSessionDoc': sessSnap.exists,
+          'xpCurrent': (userSnap.data()?['xp'] as int?) ?? 0,
+          'levelCurrent': (userSnap.data()?['level'] as int?) ?? 1,
+          'traceId': traceId,
+        });
 
-            if (sessSnap.exists) {
-              XpTrace.log('TXN_DECISION', {
-                'result': 'alreadySession',
-                'showInLeaderboard': showInLeaderboard,
-                'isMulti': isMulti,
-                'exerciseId': exerciseId ?? '',
-                'traceId': traceId,
-              });
-              return DeviceXpResult.idempotentHit;
-            }
-
-            const xpDelta = LevelService.xpPerSession;
-            var info = LevelInfo.fromMap(userSnap.data());
-            info = LevelService().addXp(info, xpDelta);
-            final xpAfter = info.xp;
-
-            if (!userSnap.exists) {
-              tx.set(lbUser, {
-                ...info.toMap(),
-                'userId': userId,
-                'showInLeaderboard': showInLeaderboard,
-                'updatedAt': FieldValue.serverTimestamp(),
-              });
-            } else {
-              tx.update(lbUser, {
-                'xp': info.xp,
-                'level': info.level,
-                'updatedAt': FieldValue.serverTimestamp(),
-                if (!(userSnap.data()?.containsKey('userId') ?? false))
-                  'userId': userId,
-                if (!(userSnap.data()?.containsKey('showInLeaderboard') ?? false))
-                  'showInLeaderboard': showInLeaderboard,
-              });
-            }
-
-            tx.set(lbDay, {
-              'creditedAt': FieldValue.serverTimestamp(),
-              'sessionCount': FieldValue.increment(1),
-            }, SetOptions(merge: true));
-            tx.set(lbSess, {
-              'sessionId': sessionId,
-              'creditedAt': FieldValue.serverTimestamp(),
-            });
-
-            XpTrace.log('TXN_WRITE', {
-              'deltaXp': xpDelta,
-              'newXp': xpAfter,
-              'newLevel': info.level,
-              'wroteSessionMarker': true,
-              'wroteDayMarker': true,
-              'traceId': traceId,
-            });
-
-            return DeviceXpResult.okAdded;
-            },
-            traceId: traceId,
-          );
-
-          XpTrace.log('TXN_COMMIT', {
-            'result': result.name,
+        if (sessSnap.exists) {
+          XpTrace.log('TXN_DECISION', {
+            'result': 'alreadySession',
+            'showInLeaderboard': showInLeaderboard,
+            'isMulti': isMulti,
+            'exerciseId': exerciseId ?? '',
             'traceId': traceId,
           });
-          return result;
-        } on FirebaseException catch (e, st) {
-          XpTrace.log('TXN_ERROR', {
-            'code': e.code,
-            'path': lbUser.path,
-            'traceId': traceId,
-          });
-          if (e.code == 'permission-denied') {
-            elogRank('SECURITY_DENIED', {
-              'action': 'leaderboard write',
-              'gymId': gymId,
-              'deviceId': deviceId,
-              'uid': userId,
-              'reason': 'rules-path',
-            });
-            return DeviceXpResult.okAddedNoLeaderboard;
-          }
-          elogError('TXN_FIREBASE_ERROR', e, st, {
-            'userPath': lbUser.path,
-            'dayKey': dayKey,
-          });
-          return DeviceXpResult.error;
+          return DeviceXpResult.idempotentHit;
         }
+
+        const xpDelta = LevelService.xpPerSession;
+        var info = LevelInfo.fromMap(userSnap.data());
+        info = LevelService().addXp(info, xpDelta);
+        final xpAfter = info.xp;
+
+        if (!userSnap.exists) {
+          tx.set(lbUser, {
+            ...info.toMap(),
+            'userId': userId,
+            'showInLeaderboard': showInLeaderboard,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } else {
+          tx.update(lbUser, {
+            'xp': info.xp,
+            'level': info.level,
+            'showInLeaderboard': showInLeaderboard,
+            'updatedAt': FieldValue.serverTimestamp(),
+            if (!(userSnap.data()?.containsKey('userId') ?? false))
+              'userId': userId,
+          });
+        }
+
+        tx.set(lbDay, {
+          'creditedAt': FieldValue.serverTimestamp(),
+          'sessionCount': FieldValue.increment(1),
+        }, SetOptions(merge: true));
+        tx.set(lbSess, {
+          'sessionId': sessionId,
+          'creditedAt': FieldValue.serverTimestamp(),
+        });
+
+        XpTrace.log('TXN_WRITE', {
+          'deltaXp': xpDelta,
+          'newXp': xpAfter,
+          'newLevel': info.level,
+          'wroteSessionMarker': true,
+          'wroteDayMarker': true,
+          'traceId': traceId,
+        });
+
+        return DeviceXpResult.okAdded;
+      }, traceId: traceId);
+
+      XpTrace.log('TXN_COMMIT', {'result': result.name, 'traceId': traceId});
+      return result;
+    } on FirebaseException catch (e, st) {
+      XpTrace.log('TXN_ERROR', {
+        'code': e.code,
+        'path': lbUser.path,
+        'traceId': traceId,
+      });
+      if (e.code == 'permission-denied') {
+        elogRank('SECURITY_DENIED', {
+          'action': 'leaderboard write',
+          'gymId': gymId,
+          'deviceId': deviceId,
+          'uid': userId,
+          'reason': 'rules-path',
+        });
+        return DeviceXpResult.okAddedNoLeaderboard;
       }
+      elogError('TXN_FIREBASE_ERROR', e, st, {
+        'userPath': lbUser.path,
+        'dayKey': dayKey,
+      });
+      return DeviceXpResult.error;
+    }
+  }
 
   Future<T> _runTransactionWithRetry<T>(
     Future<T> Function(Transaction tx) body, {

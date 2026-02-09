@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:tapem/core/theme/app_brand_theme.dart';
-import 'package:tapem/core/theme/brand_on_colors.dart';
 import '../theme/auth_theme.dart';
 
 class PremiumButton extends StatefulWidget {
@@ -47,71 +44,72 @@ class _PremiumButtonState extends State<PremiumButton> {
 
   @override
   Widget build(BuildContext context) {
-    final isDisabled = widget.onPressed == null;
-    final brand = Theme.of(context).extension<AppBrandTheme>();
-    final onColors = Theme.of(context).extension<BrandOnColors>();
-    final gradient = brand?.gradient ?? AuthTheme.primaryGradient;
-    final focus = brand?.focusRing ?? const Color(0xFF8B5CF6);
-    final textColor = onColors?.onCta ?? Colors.white;
-    final outlineColor =
-        brand?.outline.withOpacity(0.65) ?? Colors.white.withOpacity(0.5);
-    
-    return GestureDetector(
-      onTapDown: _handleTapDown,
-      onTapUp: _handleTapUp,
-      onTapCancel: _handleTapCancel,
-      child: AnimatedContainer(
-        duration: AuthTheme.animationDurationFast,
-        transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
-        height: 56,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AuthTheme.glassBorderRadius),
-          gradient: widget.isOutlined || isDisabled
-              ? null
-              : gradient,
-          color: isDisabled 
-            ? AuthTheme.glassColor 
-            : (widget.isOutlined ? Colors.transparent : null),
-          border: widget.isOutlined
-              ? Border.all(color: outlineColor, width: 2)
-              : null,
-          boxShadow: isDisabled || widget.isOutlined
-              ? []
-              : [
-                  BoxShadow(
-                    color: focus.withOpacity(_isPressed ? 0.6 : 0.4),
-                    blurRadius: _isPressed ? 10 : 20,
-                    offset: Offset(0, _isPressed ? 2 : 8),
-                  )
-                ],
-        ),
-        child: Center(
-          child: widget.isLoading
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (widget.icon != null) ...[
-                      Icon(widget.icon, color: Colors.white, size: 20),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(
-                      widget.text,
-                      style: AuthTheme.buttonTextStyle.copyWith(
-                        color: isDisabled
-                            ? Colors.white.withOpacity(0.5)
-                            : textColor,
-                      ),
+    final isDisabled = widget.onPressed == null || widget.isLoading;
+    final isOutlined = widget.isOutlined;
+    final foregroundColor = isOutlined
+        ? AuthTheme.textPrimary
+        : AuthTheme.actionPrimaryForeground;
+
+    return Opacity(
+      opacity: isDisabled ? 0.45 : 1.0,
+      child: GestureDetector(
+        onTapDown: _handleTapDown,
+        onTapUp: _handleTapUp,
+        onTapCancel: _handleTapCancel,
+        child: AnimatedContainer(
+          duration: AuthTheme.animationDurationFast,
+          transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
+          curve: Curves.easeOutCubic,
+          height: 54,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: isOutlined
+                ? (_isPressed ? AuthTheme.surfacePressed : Colors.transparent)
+                : (_isPressed
+                      ? const Color(0xFFDCDCDC)
+                      : AuthTheme.actionPrimaryBackground),
+            border: Border.all(
+              color: isOutlined ? AuthTheme.borderStrong : Colors.white,
+              width: isOutlined ? 1.4 : 1.0,
+            ),
+            boxShadow: isDisabled
+                ? []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isOutlined ? 0.25 : 0.35),
+                      blurRadius: isOutlined ? 10 : 16,
+                      offset: Offset(0, _isPressed ? 4 : 8),
                     ),
                   ],
-                ),
+          ),
+          child: Center(
+            child: widget.isLoading
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        foregroundColor,
+                      ),
+                    ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.icon != null) ...[
+                        Icon(widget.icon, color: foregroundColor, size: 20),
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        widget.text,
+                        style: AuthTheme.buttonTextStyle.copyWith(
+                          color: foregroundColor,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );

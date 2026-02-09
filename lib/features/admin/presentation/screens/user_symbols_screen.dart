@@ -29,10 +29,26 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
   bool _loading = true;
   Set<String> _keys = <String>{};
 
+  String _avatarPathFromKey(String key) {
+    final parts = key.split('/');
+    if (parts.length != 2) {
+      return key;
+    }
+    final scope = parts[0];
+    final avatarId = parts[1];
+    if (scope == 'global') {
+      return 'catalogAvatarsGlobal/$avatarId';
+    }
+    return 'gyms/$scope/avatarCatalog/$avatarId';
+  }
+
   @override
   void initState() {
     super.initState();
-    final container = riverpod.ProviderScope.containerOf(context, listen: false);
+    final container = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
     _inventory = container.read(avatarInventoryProvider);
     final auth = container.read(authControllerProvider);
     _gymId = auth.gymCode ?? '';
@@ -53,9 +69,10 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
     } catch (e) {
       debugPrint('[UserSymbols] membership fetch error: $e');
     }
-    _permitted = riverpod.ProviderScope.containerOf(context, listen: false)
-        .read(authControllerProvider)
-        .isAdmin;
+    _permitted = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(authControllerProvider).isAdmin;
     if (_permitted) {
       try {
         final inv = await _inventory
@@ -81,16 +98,23 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       }
     });
     try {
-      final adminFlag = riverpod.ProviderScope.containerOf(context, listen: false)
-          .read(authControllerProvider)
-          .isAdmin;
-      debugPrint('[UserSymbols] toggle path=users/${widget.uid}/avatarInventory '
-          'gymId=$_gymId uid=${widget.uid} key=$key has=$has isAdmin=$adminFlag');
+      final adminFlag = riverpod.ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(authControllerProvider).isAdmin;
+      debugPrint(
+        '[UserSymbols] toggle path=users/${widget.uid}/avatarInventory '
+        'gymId=$_gymId uid=${widget.uid} key=$key has=$has isAdmin=$adminFlag',
+      );
       if (has) {
         await _inventory.removeKey(widget.uid, key);
       } else {
-        await _inventory.addKeys(widget.uid, [key],
-            source: source, gymId: _gymId);
+        await _inventory.addKeys(
+          widget.uid,
+          [key],
+          source: source,
+          gymId: _gymId,
+        );
       }
       await _inventory.refresh();
     } on FirebaseException catch (e) {
@@ -105,30 +129,35 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       final messenger = ScaffoldMessenger.of(context);
       if (e.code == 'permission-denied') {
         messenger.showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.no_permission_symbols)),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.no_permission_symbols),
+          ),
         );
       } else {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Keine Verbindung – später erneut versuchen.')),
+          const SnackBar(
+            content: Text('Keine Verbindung – später erneut versuchen.'),
+          ),
         );
       }
     }
   }
 
-    Future<void> _openAddDialog() async {
-      final catalog = AvatarCatalog.instance;
-      final global = catalog
-          .availableGlobalKeys()
-          .where((k) => !_keys.contains(k))
-          .toList()
-        ..sort();
-      final gym = catalog
-          .availableGymKeys(_gymId)
-          .where((k) => !_keys.contains(k))
-          .toList()
-        ..sort();
-      debugPrint('[UserSymbols] add_open gymId=$_gymId uid=${widget.uid} + Counts: catalog_global='
-          '${catalog.globalCount}, catalog_gym=${catalog.gymCount(_gymId)}, available_global=${global.length}, available_gym=${gym.length}');
+  Future<void> _openAddDialog() async {
+    final catalog = AvatarCatalog.instance;
+    final global =
+        catalog.availableGlobalKeys().where((k) => !_keys.contains(k)).toList()
+          ..sort();
+    final gym =
+        catalog
+            .availableGymKeys(_gymId)
+            .where((k) => !_keys.contains(k))
+            .toList()
+          ..sort();
+    debugPrint(
+      '[UserSymbols] add_open gymId=$_gymId uid=${widget.uid} + Counts: catalog_global='
+      '${catalog.globalCount}, catalog_gym=${catalog.gymCount(_gymId)}, available_global=${global.length}, available_gym=${gym.length}',
+    );
 
     final loc = AppLocalizations.of(context)!;
     final selected = await showModalBottomSheet<List<String>>(
@@ -136,180 +165,219 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       isScrollControlled: true,
       builder: (context) {
         final picks = <String>{};
-        return StatefulBuilder(builder: (context, setState) {
+        return StatefulBuilder(
+          builder: (context, setState) {
             Widget buildSection(
-                String title, List<String> keys, int catalogCount) {
+              String title,
+              List<String> keys,
+              int catalogCount,
+            ) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                        '$title (${keys.length}/$catalogCount)',
-                        style: Theme.of(context).textTheme.titleMedium),
+                      '$title (${keys.length}/$catalogCount)',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                   ),
-                if (keys.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      catalogCount == 0
-                          ? (title == 'Global'
-                              ? loc.adminSymbolsNoGlobalAssets
-                              : loc.adminSymbolsNoAssetsForTitle(title))
-                          : (title == 'Global'
-                              ? loc.adminSymbolsAllGlobalAssigned
-                              : loc.adminSymbolsAllTitleAssigned(title)),
-                    ),
-                  )
-                else
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 100,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                    ),
-                    itemCount: keys.length,
-                    itemBuilder: (context, index) {
-                      final key = keys[index];
-                      final selected = picks.contains(key);
-                      final path =
-                          catalog.resolvePathOrFallback(key);
-                      final image = Image.asset(path, errorBuilder: (_, __, ___) {
-                        if (kDebugMode) {
-                          debugPrint('[Avatar] failed to load $path');
-                        }
-                        return const Icon(Icons.person);
-                      });
-                      final ns = key.split('/').first;
-                      return GestureDetector(
-                        onTap: () {
-                          debugPrint(
-                              '[UserSymbols] add_select key=$key source=$ns');
-                          setState(() {
-                            if (selected) {
-                              picks.remove(key);
-                            } else {
-                              picks.add(key);
+                  if (keys.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        catalogCount == 0
+                            ? (title == 'Global'
+                                  ? loc.adminSymbolsNoGlobalAssets
+                                  : loc.adminSymbolsNoAssetsForTitle(title))
+                            : (title == 'Global'
+                                  ? loc.adminSymbolsAllGlobalAssigned
+                                  : loc.adminSymbolsAllTitleAssigned(title)),
+                      ),
+                    )
+                  else
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 100,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                          ),
+                      itemCount: keys.length,
+                      itemBuilder: (context, index) {
+                        final key = keys[index];
+                        final selected = picks.contains(key);
+                        final path = catalog.resolvePathOrFallback(key);
+                        final image = Image.asset(
+                          path,
+                          errorBuilder: (_, __, ___) {
+                            if (kDebugMode) {
+                              debugPrint('[Avatar] failed to load $path');
                             }
-                          });
-                        },
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CircleAvatar(
-                              backgroundImage: image.image,
-                              radius: 40,
-                            ),
-                            Positioned(
-                              left: 4,
-                              top: 4,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(ns,
+                            return const Icon(Icons.person);
+                          },
+                        );
+                        final ns = key.split('/').first;
+                        return GestureDetector(
+                          onTap: () {
+                            debugPrint(
+                              '[UserSymbols] add_select key=$key source=$ns',
+                            );
+                            setState(() {
+                              if (selected) {
+                                picks.remove(key);
+                              } else {
+                                picks.add(key);
+                              }
+                            });
+                          },
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              CircleAvatar(
+                                backgroundImage: image.image,
+                                radius: 40,
+                              ),
+                              Positioned(
+                                left: 4,
+                                top: 4,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    ns,
                                     style: const TextStyle(
-                                        color: Colors.white, fontSize: 10)),
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                            if (selected)
-                              const Positioned(
-                                right: 4,
-                                bottom: 4,
-                                child:
-                                    Icon(Icons.check_circle, color: Colors.green),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            );
-          }
+                              if (selected)
+                                const Positioned(
+                                  right: 4,
+                                  bottom: 4,
+                                  child: Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              );
+            }
 
-          return SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          buildSection('Global', global, catalog.globalCount),
+                          buildSection(_gymId, gym, catalog.gymCount(_gymId)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
                       children: [
-                        buildSection('Global', global, catalog.globalCount),
-                        buildSection(_gymId, gym, catalog.gymCount(_gymId)),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(loc.commonCancel),
+                        ),
+                        const Spacer(),
+                        ElevatedButton(
+                          onPressed: picks.isEmpty
+                              ? null
+                              : () => Navigator.pop(context, picks.toList()),
+                          child: Text(loc.adminSymbolsAddButton(picks.length)),
+                        ),
                       ],
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(loc.commonCancel),
-                      ),
-                      const Spacer(),
-                      ElevatedButton(
-                        onPressed: picks.isEmpty
-                            ? null
-                            : () => Navigator.pop(context, picks.toList()),
-                        child: Text(loc.adminSymbolsAddButton(picks.length)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        });
+                ],
+              ),
+            );
+          },
+        );
       },
     );
 
     if (selected != null && selected.isNotEmpty) {
       setState(() => _keys.addAll(selected));
       try {
-        await _inventory.addKeys(widget.uid, selected,
-            source: 'admin/manual', gymId: _gymId);
+        await _inventory.addKeys(
+          widget.uid,
+          selected,
+          source: 'admin/manual',
+          gymId: _gymId,
+        );
         await _inventory.refresh();
         if (RC.avatarsV2Enabled && RC.avatarsV2GrantsEnabled) {
-          final fn = FirebaseFunctions.instance.httpsCallable('adminGrantAvatar');
+          final fn = FirebaseFunctions.instance.httpsCallable(
+            'adminGrantAvatar',
+          );
           for (final k in selected) {
-            unawaited(fn.call({'uid': widget.uid, 'key': k, 'gymId': _gymId}));
+            final avatarPath = _avatarPathFromKey(k);
+            unawaited(
+              fn.call({'uid': widget.uid, 'avatarPath': avatarPath}).catchError(
+                (Object e, StackTrace st) {
+                  debugPrint('[UserSymbols] adminGrantAvatar failed: $e');
+                },
+              ),
+            );
           }
         }
-        final adminFlag =
-            riverpod.ProviderScope.containerOf(context, listen: false)
-                .read(authControllerProvider)
-                .isAdmin;
-        debugPrint('[UserSymbols] add_commit path=users/${widget.uid}/avatarInventory '
-            'gymId=$_gymId uid=${widget.uid} keys=${selected.join(',')} '
-            'isAdmin=$adminFlag success=true');
+        final adminFlag = riverpod.ProviderScope.containerOf(
+          context,
+          listen: false,
+        ).read(authControllerProvider).isAdmin;
+        debugPrint(
+          '[UserSymbols] add_commit path=users/${widget.uid}/avatarInventory '
+          'gymId=$_gymId uid=${widget.uid} keys=${selected.join(',')} '
+          'isAdmin=$adminFlag success=true',
+        );
         // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(loc.adminSymbolsAddSuccess(selected.length))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.adminSymbolsAddSuccess(selected.length))),
+        );
       } on FirebaseException catch (e) {
         setState(() => _keys.removeAll(selected));
-        final adminFlag =
-            riverpod.ProviderScope.containerOf(context, listen: false)
-                .read(authControllerProvider)
-                .isAdmin;
-        debugPrint('[UserSymbols] add_commit path=users/${widget.uid}/avatarInventory '
-            'gymId=$_gymId uid=${widget.uid} keys=${selected.join(',')} '
-            'isAdmin=$adminFlag success=false e=$e');
+        final adminFlag = riverpod.ProviderScope.containerOf(
+          context,
+          listen: false,
+        ).read(authControllerProvider).isAdmin;
+        debugPrint(
+          '[UserSymbols] add_commit path=users/${widget.uid}/avatarInventory '
+          'gymId=$_gymId uid=${widget.uid} keys=${selected.join(',')} '
+          'isAdmin=$adminFlag success=false e=$e',
+        );
         // ignore: use_build_context_synchronously
         final messenger = ScaffoldMessenger.of(context);
         if (e.code == 'permission-denied') {
           messenger.showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.no_permission_symbols)),
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.no_permission_symbols,
+              ),
+            ),
           );
         } else {
           messenger.showSnackBar(
@@ -336,21 +404,27 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       );
     }
     final catalog = AvatarCatalog.instance;
-    final inventoryItems = _keys
-        .map((k) => (key: k, path: catalog.resolvePathOrFallback(k)))
-        .toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
+    final inventoryItems =
+        _keys
+            .map((k) => (key: k, path: catalog.resolvePathOrFallback(k)))
+            .toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
 
-    Widget buildSection(String title, List<({String key, String path})> items,
-        {bool allowRemove = false}) {
+    Widget buildSection(
+      String title,
+      List<({String key, String path})> items, {
+      bool allowRemove = false,
+    }) {
       if (items.isEmpty) return const SizedBox.shrink();
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text('$title (${items.length})',
-                style: Theme.of(context).textTheme.titleMedium),
+            child: Text(
+              '$title (${items.length})',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           ),
           GridView.builder(
             shrinkWrap: true,
@@ -365,12 +439,15 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
             itemBuilder: (context, index) {
               final item = items[index];
               final selected = _keys.contains(item.key);
-              final image = Image.asset(item.path, errorBuilder: (_, __, ___) {
-                if (kDebugMode) {
-                  debugPrint('[Avatar] failed to load ${item.path}');
-                }
-                return const Icon(Icons.person);
-              });
+              final image = Image.asset(
+                item.path,
+                errorBuilder: (_, __, ___) {
+                  if (kDebugMode) {
+                    debugPrint('[Avatar] failed to load ${item.path}');
+                  }
+                  return const Icon(Icons.person);
+                },
+              );
               final ns = item.key.split('/').first;
               return GestureDetector(
                 onTap: allowRemove
@@ -382,23 +459,26 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    CircleAvatar(
-                      backgroundImage: image.image,
-                      radius: 40,
-                    ),
+                    CircleAvatar(backgroundImage: image.image, radius: 40),
                     Positioned(
                       left: 4,
                       top: 4,
                       child: Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black54,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(ns,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 10)),
+                        child: Text(
+                          ns,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
                       ),
                     ),
                     if (selected)
@@ -432,8 +512,11 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
           body: SingleChildScrollView(
             child: Column(
               children: [
-                buildSection('Inventar von $name', inventoryItems,
-                    allowRemove: true),
+                buildSection(
+                  'Inventar von $name',
+                  inventoryItems,
+                  allowRemove: true,
+                ),
               ],
             ),
           ),

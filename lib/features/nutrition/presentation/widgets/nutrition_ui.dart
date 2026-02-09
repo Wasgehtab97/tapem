@@ -6,7 +6,14 @@ import 'package:tapem/core/widgets/brand_outline_button.dart';
 import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
+import 'package:tapem/core/widgets/premium_action_tile.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
+
+Color nutritionBrandAccentColor(BuildContext context) {
+  final theme = Theme.of(context);
+  final brand = theme.extension<AppBrandTheme>();
+  return brand?.outline ?? theme.colorScheme.secondary;
+}
 
 /// Premium nutrition card with brand interactive styling
 class NutritionCard extends StatelessWidget {
@@ -108,73 +115,12 @@ class NutritionActionTile extends StatelessWidget {
     final theme = Theme.of(context);
     final brand = theme.extension<AppBrandTheme>();
     final brandColor = brand?.outline ?? theme.colorScheme.secondary;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: BrandInteractiveCard(
-        onTap: onTap,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: 10,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    brandColor.withOpacity(0.18),
-                    brandColor.withOpacity(0.04),
-                  ],
-                  center: Alignment.topLeft,
-                ),
-              ),
-              child: Center(
-                child: BrandGradientIcon(icon, size: 20),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.scaffoldBackgroundColor.withOpacity(0.35),
-                border: Border.all(
-                  color: brandColor.withOpacity(0.24),
-                  width: 1,
-                ),
-              ),
-              child: const Center(
-                child: BrandGradientIcon(Icons.arrow_outward_rounded, size: 16),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return PremiumActionTile(
+      leading: Icon(icon, size: 20),
+      title: title,
+      subtitle: subtitle,
+      onTap: onTap,
+      accentColor: brandColor,
     );
   }
 }
@@ -199,27 +145,10 @@ class MacroPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    final pill = Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 5,
-      ),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color.withOpacity(0.14),
-            color.withOpacity(0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.chip),
-        border: Border.all(
-          color: color.withOpacity(0.35),
-          width: 1,
-        ),
-      ),
+    final accentColor = nutritionBrandAccentColor(context);
+
+    final pill = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -240,7 +169,7 @@ class MacroPill extends StatelessWidget {
             child: Text(
               value,
               style: theme.textTheme.labelMedium?.copyWith(
-                color: color,
+                color: accentColor,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.3,
                 fontSize: 11,

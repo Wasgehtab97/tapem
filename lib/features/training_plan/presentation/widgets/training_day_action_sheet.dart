@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/widgets/brand_modal.dart';
 
 class TrainingDayActionSheet extends StatelessWidget {
   const TrainingDayActionSheet({
@@ -18,66 +20,58 @@ class TrainingDayActionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final formattedDate =
-        DateFormat('EEEE, dd.MM.yyyy', Localizations.localeOf(context).toString())
-            .format(date);
+    final brand = theme.extension<AppBrandTheme>();
+    final accent = brand?.outline ?? theme.colorScheme.secondary;
+    final formattedDate = DateFormat(
+      'EEEE, dd.MM.yyyy',
+      Localizations.localeOf(context).toString(),
+    ).format(date);
+    final titleDate = toBeginningOfSentenceCase(formattedDate);
+    final planSubtitle =
+        assignedPlanName != null && assignedPlanName!.isNotEmpty
+        ? 'Aktueller Plan: $assignedPlanName'
+        : 'Plan für diesen Tag auswählen';
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: BrandModalSurface(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+            BrandModalHeader(
+              icon: Icons.calendar_today_rounded,
+              accent: accent,
+              title: titleDate,
+              subtitle: 'Aktion für diesen Trainingstag',
+              onClose: () => Navigator.pop(context),
             ),
-            Text(
-              formattedDate,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (assignedPlanName != null && assignedPlanName!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  'Aktueller Plan: $assignedPlanName',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                ),
-              ),
             const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.calendar_today_outlined),
-              title: const Text('Trainingdetailspage'),
+            BrandModalOptionCard(
+              title: 'Trainingdetailspage',
+              subtitle: 'Sätze und Verlauf für den Tag öffnen',
+              icon: Icons.calendar_today_outlined,
+              accent: accent,
               onTap: () {
                 Navigator.pop(context);
                 onOpenDetails();
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.view_list_rounded),
-              title: const Text('Plan'),
+            const SizedBox(height: 10),
+            BrandModalOptionCard(
+              title: 'Plan',
+              subtitle: planSubtitle,
+              icon: Icons.view_list_rounded,
+              accent: accent,
               onTap: () {
                 Navigator.pop(context);
                 onOpenPlanSelection();
               },
             ),
-            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
 }
-

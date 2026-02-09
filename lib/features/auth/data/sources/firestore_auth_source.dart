@@ -7,11 +7,12 @@ import 'package:tapem/features/auth/data/services/username_service.dart';
 import 'package:tapem/features/gym/domain/services/gym_code_service.dart';
 import 'package:tapem/services/member_number_utils.dart';
 
-typedef ChangeUsernameRunner = Future<void> Function({
-  required FirebaseFirestore firestore,
-  required String uid,
-  required String newUsername,
-});
+typedef ChangeUsernameRunner =
+    Future<void> Function({
+      required FirebaseFirestore firestore,
+      required String uid,
+      required String newUsername,
+    });
 
 class FirestoreAuthSource {
   final FirebaseAuth _auth;
@@ -24,11 +25,12 @@ class FirestoreAuthSource {
     FirebaseFirestore? firestore,
     ChangeUsernameRunner? changeUsername,
     GymCodeService? gymCodeService,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance,
-        _changeUsername = changeUsername ?? changeUsernameTransaction,
-        _gymCodeService = gymCodeService ??
-            GymCodeService(firestore: firestore ?? FirebaseFirestore.instance);
+  }) : _auth = auth ?? FirebaseAuth.instance,
+       _firestore = firestore ?? FirebaseFirestore.instance,
+       _changeUsername = changeUsername ?? changeUsernameTransaction,
+       _gymCodeService =
+           gymCodeService ??
+           GymCodeService(firestore: firestore ?? FirebaseFirestore.instance);
 
   Future<UserDataDto> login(String email, String password) async {
     final cred = await _auth.signInWithEmailAndPassword(
@@ -64,7 +66,7 @@ class FirestoreAuthSource {
       emailLower: email.toLowerCase(),
       userName: null,
       userNameLower: null,
-      gymCodes: [gymId],  // Store gym ID, not the code!
+      gymCodes: [gymId], // Store gym ID, not the code!
       showInLeaderboard: true,
       publicProfile: false,
       role: 'member',
@@ -81,15 +83,11 @@ class FirestoreAuthSource {
       final memberNumber = formatMemberNumber(nextNumber);
 
       updateMemberNumberCounter(tx, gymRef, nextNumber);
-      tx.set(
-        membershipRef,
-        {
-          'role': 'member',
-          'createdAt': now,
-          'memberNumber': memberNumber,
-        },
-        SetOptions(merge: true),
-      );
+      tx.set(membershipRef, {
+        'role': 'member',
+        'createdAt': now,
+        'memberNumber': memberNumber,
+      }, SetOptions(merge: true));
     });
 
     return dto;
@@ -140,6 +138,13 @@ class FirestoreAuthSource {
 
   Future<void> setPublicProfile(String userId, bool value) async {
     await _firestore.collection('users').doc(userId).update({
+      'publicProfile': value,
+    });
+  }
+
+  Future<void> setProfileVisibility(String userId, bool value) async {
+    await _firestore.collection('users').doc(userId).update({
+      'showInLeaderboard': value,
       'publicProfile': value,
     });
   }

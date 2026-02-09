@@ -16,126 +16,261 @@ function computeE1rm(weight, reps) {
   return weight * (1 + reps / 30);
 }
 
-/**
- * Firestore trigger that keeps per-user powerlifting stats up to date.
- *
- * Whenever a new log is written for a device, we look up whether that
- * (gym, device, exercise) triple is linked to one of the powerlifting
- * disciplines for the user by checking the powerlifting_sources mapping.
- *
- * If so, we update the user's per-discipline heaviest set and E1RM and
- * recompute a combined totalE1rmKg used for leaderboard ranking:
- *
- *   gyms/{gymId}/users/{uid}/rank/powerlifting
- */
+function toNumber(value) {
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (typeof value === 'string' && value.trim().length) {
+    return Number(value);
+  }
+  return Number(value || 0);
+}
+
+function isTimestamp(value) {
+  return value instanceof admin.firestore.Timestamp;
+}
+
+function isLaterTimestamp(candidate, current) {
+  if (!isTimestamp(candidate)) {
+    return false;
+  }
+  if (!isTimestamp(current)) {
+    return true;
+  }
+  return candidate.toMillis() > current.toMillis();
+}
+
+async function fetchBestForAssignment({ db, gymId, uid, deviceId, exerciseId }) {
+  const logsSnap = await db
+    .collection('gyms')
+    .doc(gymId)
+    .collection('devices')
+    .doc(deviceId)
+    .collection('logs')
+    .where('userId', '==', uid)
+    .where('exerciseId', '==', exerciseId)
+    .get();
+
+  let heaviestKg = 0;
+  let heaviestReps = 0;
+  let heaviestAt = null;
+  let e1rmKg = 0;
+  let e1rmAt = null;
+
+  for (const doc of logsSnap.docs) {
+    const data = doc.data() || {};
+    const weight = toNumber(data.weight);
+    const reps = Math.trunc(toNumber(data.reps));
+    if (!Number.isFinite(weight) || !Number.isFinite(reps) || weight <= 0 || reps <= 0) {
+      continue;
+    }
+
+    const ts = isTimestamp(data.timestamp) ? data.timestamp : null;
+    const e1rm = computeE1rm(weight, reps);
+
+    if (
+      weight > heaviestKg ||
+      (weight === heaviestKg && isLaterTimestamp(ts, heaviestAt))
+    ) {
+      heaviestKg = weight;
+      heaviestReps = reps;
+      heaviestAt = ts;
+    }
+
+    if (
+      e1rm > e1rmKg ||
+      (e1rm === e1rmKg && isLaterTimestamp(ts, e1rmAt))
+    ) {
+      e1rmKg = e1rm;
+      e1rmAt = ts;
+    }
+  }
+
+  return {
+    heaviestKg,
+    heaviestReps,
+    heaviestAt,
+    e1rmKg,
+    e1rmAt,
+  };
+}
+
+async function recomputePowerliftingForUserGym({ db, uid, gymId }) {
+  if (!uid || !gymId) {
+    return;
+  }
+
+  const assignmentsSnap = await db
+    .collection('users')
+    .doc(uid)
+    .collection('powerlifting_sources')
+    .where('gymId', '==', gymId)
+    .get();
+
+  const assignmentsByDiscipline = new Map();
+  for (const disc of DISCIPLINES) {
+    assignmentsByDiscipline.set(disc.id, []);
+  }
+
+  for (const doc of assignmentsSnap.docs) {
+    const data = doc.data() || {};
+    const disciplineId = data.discipline;
+    const deviceId = data.deviceId;
+    const exerciseId = data.exerciseId;
+    if (
+      !assignmentsByDiscipline.has(disciplineId) ||
+      typeof deviceId !== 'string' ||
+      !deviceId ||
+      typeof exerciseId !== 'string' ||
+      !exerciseId
+    ) {
+      continue;
+    }
+    assignmentsByDiscipline.get(disciplineId).push({
+      deviceId,
+      exerciseId,
+    });
+  }
+
+  const statsRef = db
+    .collection('gyms')
+    .doc(gymId)
+    .collection('users')
+    .doc(uid)
+    .collection('rank')
+    .doc('powerlifting');
+
+  const update = {};
+  let totalE1rmKg = 0;
+  let hasAnyMetric = false;
+
+  for (const disc of DISCIPLINES) {
+    const prefix = disc.prefix;
+    const heaviestKey = `${prefix}HeaviestKg`;
+    const heaviestRepsKey = `${prefix}HeaviestReps`;
+    const heaviestAtKey = `${prefix}HeaviestAt`;
+    const e1rmKey = `${prefix}E1rmKg`;
+    const e1rmAtKey = `${prefix}E1rmAt`;
+
+    const assignments = assignmentsByDiscipline.get(disc.id) || [];
+    let bestHeaviestKg = 0;
+    let bestHeaviestReps = 0;
+    let bestHeaviestAt = null;
+    let bestE1rmKg = 0;
+    let bestE1rmAt = null;
+
+    for (const assignment of assignments) {
+      const best = await fetchBestForAssignment({
+        db,
+        gymId,
+        uid,
+        deviceId: assignment.deviceId,
+        exerciseId: assignment.exerciseId,
+      });
+
+      if (
+        best.heaviestKg > bestHeaviestKg ||
+        (best.heaviestKg === bestHeaviestKg &&
+          isLaterTimestamp(best.heaviestAt, bestHeaviestAt))
+      ) {
+        bestHeaviestKg = best.heaviestKg;
+        bestHeaviestReps = best.heaviestReps;
+        bestHeaviestAt = best.heaviestAt;
+      }
+
+      if (
+        best.e1rmKg > bestE1rmKg ||
+        (best.e1rmKg === bestE1rmKg &&
+          isLaterTimestamp(best.e1rmAt, bestE1rmAt))
+      ) {
+        bestE1rmKg = best.e1rmKg;
+        bestE1rmAt = best.e1rmAt;
+      }
+    }
+
+    if (bestHeaviestKg > 0) {
+      update[heaviestKey] = bestHeaviestKg;
+      update[heaviestRepsKey] = bestHeaviestReps;
+      update[heaviestAtKey] = bestHeaviestAt || admin.firestore.FieldValue.serverTimestamp();
+      hasAnyMetric = true;
+    } else {
+      update[heaviestKey] = admin.firestore.FieldValue.delete();
+      update[heaviestRepsKey] = admin.firestore.FieldValue.delete();
+      update[heaviestAtKey] = admin.firestore.FieldValue.delete();
+    }
+
+    if (bestE1rmKg > 0) {
+      update[e1rmKey] = bestE1rmKg;
+      update[e1rmAtKey] = bestE1rmAt || admin.firestore.FieldValue.serverTimestamp();
+      totalE1rmKg += bestE1rmKg;
+      hasAnyMetric = true;
+    } else {
+      update[e1rmKey] = admin.firestore.FieldValue.delete();
+      update[e1rmAtKey] = admin.firestore.FieldValue.delete();
+    }
+  }
+
+  if (!hasAnyMetric) {
+    const existing = await statsRef.get();
+    if (existing.exists) {
+      await statsRef.delete();
+    }
+    return;
+  }
+
+  update.totalE1rmKg = totalE1rmKg;
+  update.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+  await statsRef.set(update, { merge: true });
+}
+
+async function handleLogMutation(snap, context) {
+  const { gymId } = context.params;
+  const data = snap.data() || {};
+  const uid = typeof data.userId === 'string' ? data.userId : '';
+  if (!gymId || !uid) {
+    return null;
+  }
+
+  const db = admin.firestore();
+  await recomputePowerliftingForUserGym({ db, uid, gymId });
+  return null;
+}
+
+// Keep exported name for backwards compatibility.
 exports.updatePowerliftingRankOnLog = functions.firestore
   .document('gyms/{gymId}/devices/{deviceId}/logs/{logId}')
-  .onCreate(async (snap, context) => {
-    const { gymId, deviceId } = context.params;
-    const data = snap.data() || {};
+  .onCreate((snap, context) => handleLogMutation(snap, context));
 
-    const uid = data.userId;
-    const exerciseId = data.exerciseId || deviceId;
+exports.updatePowerliftingRankOnLogDelete = functions.firestore
+  .document('gyms/{gymId}/devices/{deviceId}/logs/{logId}')
+  .onDelete((snap, context) => handleLogMutation(snap, context));
 
-    if (!uid || !gymId || !deviceId || !exerciseId) {
+exports.updatePowerliftingRankOnAssignmentWrite = functions.firestore
+  .document('users/{uid}/powerlifting_sources/{assignmentId}')
+  .onWrite(async (change, context) => {
+    const uid = context.params.uid;
+    if (!uid) {
       return null;
     }
 
-    const rawWeight = data.weight;
-    const rawReps = data.reps;
-    const weight = typeof rawWeight === 'number' ? rawWeight : Number(rawWeight || 0);
-    const reps = typeof rawReps === 'number' ? rawReps : Number(rawReps || 0);
+    const before = change.before.exists ? change.before.data() || {} : {};
+    const after = change.after.exists ? change.after.data() || {} : {};
 
-    if (!Number.isFinite(weight) || !Number.isFinite(reps) || weight <= 0 || reps <= 0) {
+    const gymIds = new Set();
+    if (typeof before.gymId === 'string' && before.gymId) {
+      gymIds.add(before.gymId);
+    }
+    if (typeof after.gymId === 'string' && after.gymId) {
+      gymIds.add(after.gymId);
+    }
+
+    if (!gymIds.size) {
       return null;
     }
 
     const db = admin.firestore();
-    const assignmentsCol = db.collection('users').doc(uid).collection('powerlifting_sources');
-
-    const disciplinesForLog = [];
-
-    // Check for each discipline whether a matching assignment exists for this
-    // (gym, device, exercise) triple. The assignment document ID is constructed
-    // as `${disciplineId}|${gymId}|${deviceId}|${exerciseId}` on the client.
-    await Promise.all(
-      DISCIPLINES.map(async (disc) => {
-        const assignmentId = `${disc.id}|${gymId}|${deviceId}|${exerciseId}`;
-        const assignmentSnap = await assignmentsCol.doc(assignmentId).get();
-        if (assignmentSnap.exists) {
-          disciplinesForLog.push(disc);
-        }
-      }),
-    );
-
-    if (!disciplinesForLog.length) {
-      // This log does not contribute to any powerlifting discipline.
-      return null;
+    for (const gymId of gymIds) {
+      await recomputePowerliftingForUserGym({ db, uid, gymId });
     }
-
-    const e1rm = computeE1rm(weight, reps);
-    if (e1rm <= 0) {
-      return null;
-    }
-
-    const statsRef = db
-      .collection('gyms')
-      .doc(gymId)
-      .collection('users')
-      .doc(uid)
-      .collection('rank')
-      .doc('powerlifting');
-
-    const logTimestamp =
-      data.timestamp instanceof admin.firestore.Timestamp
-        ? data.timestamp
-        : admin.firestore.FieldValue.serverTimestamp();
-
-    await db.runTransaction(async (tx) => {
-      const statsSnap = await tx.get(statsRef);
-      const existing = statsSnap.exists ? statsSnap.data() || {} : {};
-      const update = {};
-
-      for (const disc of disciplinesForLog) {
-        const prefix = disc.prefix;
-        const heaviestKey = `${prefix}HeaviestKg`;
-        const heaviestRepsKey = `${prefix}HeaviestReps`;
-        const heaviestAtKey = `${prefix}HeaviestAt`;
-        const e1rmKey = `${prefix}E1rmKg`;
-        const e1rmAtKey = `${prefix}E1rmAt`;
-
-        const prevHeaviest =
-          typeof existing[heaviestKey] === 'number' ? existing[heaviestKey] : 0;
-        const prevE1rm =
-          typeof existing[e1rmKey] === 'number' ? existing[e1rmKey] : 0;
-
-        if (weight > prevHeaviest) {
-          update[heaviestKey] = weight;
-          update[heaviestRepsKey] = reps;
-          update[heaviestAtKey] = logTimestamp;
-        }
-
-        if (e1rm > prevE1rm) {
-          update[e1rmKey] = e1rm;
-          update[e1rmAtKey] = logTimestamp;
-        }
-      }
-
-      const merged = { ...existing, ...update };
-      let totalE1rm = 0;
-      for (const disc of DISCIPLINES) {
-        const v = merged[`${disc.prefix}E1rmKg`];
-        if (typeof v === 'number' && v > 0) {
-          totalE1rm += v;
-        }
-      }
-
-      update.totalE1rmKg = totalE1rm;
-      update.updatedAt = admin.firestore.FieldValue.serverTimestamp();
-
-      tx.set(statsRef, update, { merge: true });
-    });
-
     return null;
   });
-

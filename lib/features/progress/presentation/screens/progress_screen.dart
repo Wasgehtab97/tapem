@@ -13,7 +13,9 @@ import 'package:tapem/features/progress/providers/progress_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
-  const ProgressScreen({Key? key}) : super(key: key);
+  const ProgressScreen({Key? key, this.onExitToProfile}) : super(key: key);
+
+  final VoidCallback? onExitToProfile;
 
   @override
   ConsumerState<ProgressScreen> createState() => _ProgressScreenState();
@@ -21,6 +23,26 @@ class ProgressScreen extends ConsumerStatefulWidget {
 
 class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   int _selectedYear = DateTime.now().year;
+
+  void _handleBackPressed() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    widget.onExitToProfile?.call();
+  }
+
+  Widget? _buildLeadingBackButton() {
+    final canPop = Navigator.of(context).canPop();
+    if (!canPop && widget.onExitToProfile == null) {
+      return null;
+    }
+    return IconButton(
+      onPressed: _handleBackPressed,
+      icon: const Icon(Icons.chevron_left_rounded),
+    );
+  }
 
   @override
   void initState() {
@@ -35,11 +57,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final gymId = auth.gymCode;
     final userId = auth.userId;
     if (gymId == null || userId == null) return;
-    ref.read(progressProvider).loadYear(
-          gymId: gymId,
-          userId: userId,
-          year: year,
-        );
+    ref
+        .read(progressProvider)
+        .loadYear(gymId: gymId, userId: userId, year: year);
   }
 
   Future<void> _loadMore() async {
@@ -77,9 +97,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
     final auth = ref.read(authViewStateProvider);
@@ -89,11 +107,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       if (context.mounted) Navigator.pop(context);
       return;
     }
-    final result = await ref.read(progressProvider).backfillYear(
-          gymId: gymId,
-          userId: userId,
-          year: _selectedYear,
-        );
+    final result = await ref
+        .read(progressProvider)
+        .backfillYear(gymId: gymId, userId: userId, year: _selectedYear);
 
     if (!context.mounted) return;
     Navigator.pop(context);
@@ -119,13 +135,16 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
     final prov = ref.watch(progressProvider);
 
     final years = _yearOptions();
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: _buildLeadingBackButton(),
         title: BrandGradientText(
           loc.progressTitle,
           style: theme.textTheme.titleLarge,
@@ -145,7 +164,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: Text(MaterialLocalizations.of(context).okButtonLabel),
+                        child: Text(
+                          MaterialLocalizations.of(context).okButtonLabel,
+                        ),
                       ),
                     ],
                   );
@@ -213,12 +234,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     );
                   }
 
-                  final localeString = Localizations.localeOf(context).toString();
+                  final localeString = Localizations.localeOf(
+                    context,
+                  ).toString();
 
                   return ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    itemCount: prov.visibleItems.length +
-                        (prov.canLoadMore ? 1 : 0),
+                    itemCount:
+                        prov.visibleItems.length + (prov.canLoadMore ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index >= prov.visibleItems.length) {
                         return Padding(
@@ -297,10 +320,7 @@ class _EmptyState extends StatelessWidget {
             ),
             if (actionLabel != null) ...[
               const SizedBox(height: 12),
-              FilledButton(
-                onPressed: onAction,
-                child: Text(actionLabel!),
-              ),
+              FilledButton(onPressed: onAction, child: Text(actionLabel!)),
             ],
           ],
         ),
@@ -333,18 +353,12 @@ class _YearSelectorCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            accent.withOpacity(0.10),
-            accent.withOpacity(0.04),
-          ],
+          colors: [accent.withOpacity(0.10), accent.withOpacity(0.04)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: onSurface.withOpacity(0.08),
-          width: 1,
-        ),
+        border: Border.all(color: onSurface.withOpacity(0.08), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -447,10 +461,11 @@ class _ProgressChartCard extends StatelessWidget {
     final looksLikeId = _looksLikeId(resolvedTitle);
     final displayTitle =
         (resolvedIsMulti && looksLikeId && resolvedSubtitle.isNotEmpty)
-            ? resolvedSubtitle
-            : resolvedTitle;
-    final displaySubtitle =
-        (resolvedIsMulti && looksLikeId) ? '' : resolvedSubtitle;
+        ? resolvedSubtitle
+        : resolvedTitle;
+    final displaySubtitle = (resolvedIsMulti && looksLikeId)
+        ? ''
+        : resolvedSubtitle;
 
     return BrandInteractiveCard(
       padding: const EdgeInsets.all(16),
@@ -491,15 +506,14 @@ class _ProgressChartCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: accent.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: accent.withOpacity(0.25),
-                    width: 1,
-                  ),
+                  border: Border.all(color: accent.withOpacity(0.25), width: 1),
                 ),
                 child: Text(
                   '${item.sessionCount} ${loc.historyWorkouts}',
@@ -537,8 +551,10 @@ class _ProgressChartCard extends StatelessWidget {
                   borderData: FlBorderData(show: false),
                   titlesData: FlTitlesData(
                     bottomTitles: AxisTitles(
-                      axisNameWidget:
-                          Text(loc.historyAxisDate, style: smallStyle),
+                      axisNameWidget: Text(
+                        loc.historyAxisDate,
+                        style: smallStyle,
+                      ),
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 28,
@@ -560,16 +576,16 @@ class _ProgressChartCard extends StatelessWidget {
                       ),
                     ),
                     leftTitles: AxisTitles(
-                      axisNameWidget:
-                          Text(loc.historyAxisE1rm, style: smallStyle),
+                      axisNameWidget: Text(
+                        loc.historyAxisE1rm,
+                        style: smallStyle,
+                      ),
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 40,
                         interval: e1rmScale.tickSpacing,
-                        getTitlesWidget: (value, meta) => Text(
-                          value.toStringAsFixed(0),
-                          style: smallStyle,
-                        ),
+                        getTitlesWidget: (value, meta) =>
+                            Text(value.toStringAsFixed(0), style: smallStyle),
                       ),
                     ),
                     topTitles: AxisTitles(

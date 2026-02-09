@@ -9,7 +9,8 @@ import 'package:tapem/features/report/presentation/screens/report_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/deals/presentation/screens/deals_screen.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
-import 'package:tapem/features/training_plan/presentation/screens/plan_overview_screen.dart';
+import 'package:tapem/features/home/presentation/widgets/overlay_feature_navigators.dart';
+import 'package:tapem/features/training_plan/presentation/widgets/training_plan_tab_navigator.dart';
 import 'package:tapem/features/coaching/presentation/screens/coaching_home_screen.dart';
 import 'package:tapem/features/nutrition/presentation/widgets/nutrition_tab_navigator.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
@@ -41,6 +42,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   _HomeTabId? _lastTabId;
   final GlobalKey<NavigatorState> _nutritionNavigatorKey =
       GlobalKey<NavigatorState>();
+  final GlobalKey<NavigatorState> _planNavigatorKey =
+      GlobalKey<NavigatorState>();
+  final GlobalKey<NavigatorState> _nutritionOverlayNavigatorKey =
+      GlobalKey<NavigatorState>();
+  final GlobalKey<NavigatorState> _planOverlayNavigatorKey =
+      GlobalKey<NavigatorState>();
+  final GlobalKey<NavigatorState> _progressOverlayNavigatorKey =
+      GlobalKey<NavigatorState>();
+  final GlobalKey<NavigatorState> _discoverOverlayNavigatorKey =
+      GlobalKey<NavigatorState>();
+  _HomeOverlayFeature? _overlayFeature;
+  DiscoverInitialPage _discoverInitialPage = DiscoverInitialPage.stats;
+
+  void _switchToProfileTab() {
+    if (!mounted) return;
+    setState(() {
+      _overlayFeature = null;
+      _currentIndex = 1;
+    });
+  }
 
   List<_TabInfo> _buildTabs(BuildContext context) {
     final gymProv = ref.watch(gymProvider);
@@ -49,10 +70,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final deviceId = devices.isNotEmpty ? devices.first.uid : '';
     final loc = AppLocalizations.of(context)!;
     final auth = ref.watch(authControllerProvider);
-    final wsds.WorkoutSessionDurationService timerService =
-        ref.watch(workoutSessionDurationServiceProvider);
-    final WorkoutDayController workoutController =
-        ref.read(workoutDayControllerProvider);
+    final wsds.WorkoutSessionDurationService timerService = ref.watch(
+      workoutSessionDurationServiceProvider,
+    );
+    final WorkoutDayController workoutController = ref.read(
+      workoutDayControllerProvider,
+    );
 
     WorkoutDaySession? activeWorkoutSession;
     if (auth.userId != null) {
@@ -72,17 +95,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _TabInfo(
         id: _HomeTabId.gym,
         page: const GymScreen(key: PageStorageKey('Gym')),
-        item: BottomNavigationBarItem(
-          icon: const Icon(Icons.fitness_center),
+        item: _HomeTabBarItem(
+          icon: Icons.fitness_center_outlined,
+          activeIcon: Icons.fitness_center,
           label: loc.gymTitle,
+          barLabel: 'Gym',
         ),
       ),
       _TabInfo(
         id: _HomeTabId.profile,
-        page: const ProfileScreen(key: PageStorageKey('Profile')),
-        item: BottomNavigationBarItem(
-          icon: const Icon(Icons.person),
+        page: ProfileScreen(
+          key: const PageStorageKey('Profile'),
+          onOpenProgress: () =>
+              _openOverlayFeature(_HomeOverlayFeature.progress),
+          onOpenNutrition: () =>
+              _openOverlayFeature(_HomeOverlayFeature.nutrition),
+          onOpenPlan: () => _openOverlayFeature(_HomeOverlayFeature.plan),
+          onOpenDiscoverStats: () => _openOverlayFeature(
+            _HomeOverlayFeature.discover,
+            discoverInitialPage: DiscoverInitialPage.stats,
+          ),
+          onOpenDiscoverCommunity: () => _openOverlayFeature(
+            _HomeOverlayFeature.discover,
+            discoverInitialPage: DiscoverInitialPage.community,
+          ),
+          onOpenDiscoverSurveys: () => _openOverlayFeature(
+            _HomeOverlayFeature.discover,
+            discoverInitialPage: DiscoverInitialPage.surveys,
+          ),
+        ),
+        item: _HomeTabBarItem(
+          icon: Icons.person_outline,
+          activeIcon: Icons.person,
           label: loc.profileTitle,
+          barLabel: 'Profil',
         ),
       ),
       _TabInfo(
@@ -91,53 +137,72 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         page: NutritionTabNavigator(
           key: const PageStorageKey('NutritionTab'),
           navigatorKey: _nutritionNavigatorKey,
+          onExitToProfile: _switchToProfileTab,
         ),
-        item: BottomNavigationBarItem(
-          icon: const Icon(Icons.restaurant),
+        item: _HomeTabBarItem(
+          icon: Icons.restaurant_outlined,
+          activeIcon: Icons.restaurant,
           label: loc.homeTabNutrition,
+          barLabel: 'Food',
         ),
       ),
       _TabInfo(
         id: _HomeTabId.report,
         page: const ReportScreen(key: PageStorageKey('Report')),
-        item: BottomNavigationBarItem(
-          icon: const Icon(Icons.insert_chart),
+        item: _HomeTabBarItem(
+          icon: Icons.insert_chart_outlined,
+          activeIcon: Icons.insert_chart,
           label: loc.reportTitle,
+          barLabel: 'Report',
         ),
       ),
       _TabInfo(
         id: _HomeTabId.admin,
         page: const AdminDashboardScreen(key: PageStorageKey('Admin')),
-        item: BottomNavigationBarItem(
-          icon: const Icon(Icons.admin_panel_settings),
+        item: _HomeTabBarItem(
+          icon: Icons.admin_panel_settings_outlined,
+          activeIcon: Icons.admin_panel_settings,
           label: loc.homeTabAdmin,
+          barLabel: 'Admin',
         ),
       ),
       _TabInfo(
         id: _HomeTabId.rank,
         page: RankScreen(
-            key: const PageStorageKey('Rank'),
-            gymId: gymId,
-            deviceId: deviceId),
-        item: BottomNavigationBarItem(
-          icon: const Icon(Icons.leaderboard),
+          key: const PageStorageKey('Rank'),
+          gymId: gymId,
+          deviceId: deviceId,
+          isPrimaryTab: true,
+        ),
+        item: _HomeTabBarItem(
+          icon: Icons.leaderboard_outlined,
+          activeIcon: Icons.leaderboard,
           label: loc.homeTabRank,
+          barLabel: 'Rank',
         ),
       ),
       _TabInfo(
         id: _HomeTabId.deals,
         page: const DealsScreen(key: PageStorageKey('Deals')),
-        item: BottomNavigationBarItem(
-          icon: const Icon(Icons.local_offer),
+        item: _HomeTabBarItem(
+          icon: Icons.local_offer_outlined,
+          activeIcon: Icons.local_offer,
           label: loc.homeTabDeals,
+          barLabel: 'Deals',
         ),
       ),
       _TabInfo(
         id: _HomeTabId.plan,
-        page: const PlanOverviewScreen(key: PageStorageKey('Plaene')),
-        item: BottomNavigationBarItem(
-          icon: const Icon(Icons.event_note),
+        page: TrainingPlanTabNavigator(
+          key: const PageStorageKey('PlaeneTab'),
+          navigatorKey: _planNavigatorKey,
+          onExitToProfile: _switchToProfileTab,
+        ),
+        item: _HomeTabBarItem(
+          icon: Icons.event_note_outlined,
+          activeIcon: Icons.event_note,
           label: loc.homeTabPlans,
+          barLabel: 'Plan',
         ),
       ),
     ];
@@ -171,9 +236,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final workoutTab = _TabInfo(
         id: _HomeTabId.workout,
         page: workoutPage,
-        item: const BottomNavigationBarItem(
-          icon: Icon(Icons.play_circle_outline),
+        item: _HomeTabBarItem(
+          icon: Icons.play_circle_outline,
+          activeIcon: Icons.play_circle,
           label: 'Workout',
+          barLabel: 'Train',
         ),
       );
 
@@ -189,18 +256,97 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       tabs.add(
         _TabInfo(
           id: _HomeTabId.coaching,
-          page: const CoachingHomeScreen(
-            key: PageStorageKey('Coaching'),
-          ),
-          item: const BottomNavigationBarItem(
-            icon: Icon(Icons.school),
+          page: const CoachingHomeScreen(key: PageStorageKey('Coaching')),
+          item: _HomeTabBarItem(
+            icon: Icons.school_outlined,
+            activeIcon: Icons.school,
             label: 'Coaching',
+            barLabel: 'Coach',
           ),
         ),
       );
     }
 
     return tabs;
+  }
+
+  void _openOverlayFeature(
+    _HomeOverlayFeature feature, {
+    DiscoverInitialPage discoverInitialPage = DiscoverInitialPage.stats,
+  }) {
+    ref.read(overlayNumericKeypadControllerProvider).close();
+    setState(() {
+      _overlayFeature = feature;
+      _discoverInitialPage = discoverInitialPage;
+    });
+  }
+
+  Widget? _buildOverlayBody({
+    required String gymId,
+    required String userId,
+    required VoidCallback onExitToProfile,
+  }) {
+    switch (_overlayFeature) {
+      case _HomeOverlayFeature.progress:
+        return ProgressTabNavigator(
+          key: const PageStorageKey('ProgressOverlay'),
+          navigatorKey: _progressOverlayNavigatorKey,
+          onExitToProfile: onExitToProfile,
+        );
+      case _HomeOverlayFeature.nutrition:
+        return NutritionTabNavigator(
+          key: const PageStorageKey('NutritionOverlay'),
+          navigatorKey: _nutritionOverlayNavigatorKey,
+          onExitToProfile: onExitToProfile,
+        );
+      case _HomeOverlayFeature.plan:
+        return TrainingPlanTabNavigator(
+          key: const PageStorageKey('PlanOverlay'),
+          navigatorKey: _planOverlayNavigatorKey,
+          onExitToProfile: onExitToProfile,
+        );
+      case _HomeOverlayFeature.discover:
+        return DiscoverTabNavigator(
+          key: ValueKey<String>('DiscoverOverlay-${_discoverInitialPage.name}'),
+          navigatorKey: _discoverOverlayNavigatorKey,
+          gymId: gymId,
+          userId: userId,
+          initialPage: _discoverInitialPage,
+          onExitToProfile: onExitToProfile,
+        );
+      case null:
+        return null;
+    }
+  }
+
+  NavigatorState? _activeOverlayNavigator() {
+    switch (_overlayFeature) {
+      case _HomeOverlayFeature.progress:
+        return _progressOverlayNavigatorKey.currentState;
+      case _HomeOverlayFeature.nutrition:
+        return _nutritionOverlayNavigatorKey.currentState;
+      case _HomeOverlayFeature.plan:
+        return _planOverlayNavigatorKey.currentState;
+      case _HomeOverlayFeature.discover:
+        return _discoverOverlayNavigatorKey.currentState;
+      case null:
+        return null;
+    }
+  }
+
+  Future<bool> _handleWillPop() async {
+    if (_overlayFeature == null) {
+      return true;
+    }
+    final overlayNavigator = _activeOverlayNavigator();
+    if (overlayNavigator != null) {
+      final handled = await overlayNavigator.maybePop();
+      if (handled) {
+        return false;
+      }
+    }
+    _switchToProfileTab();
+    return false;
   }
 
   @override
@@ -211,7 +357,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Nach Login Gym laden
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProv = ref.read(authControllerProvider);
-      debugPrint('[Tabs] role=${authProv.role}, isAdmin=${authProv.isAdmin}, restricted=${FF.limitTabsForMembers}');
+      debugPrint(
+        '[Tabs] role=${authProv.role}, isAdmin=${authProv.isAdmin}, restricted=${FF.limitTabsForMembers}',
+      );
       final gymProv = ref.read(gymProvider);
       final code = authProv.gymCode;
       if (code != null && code.isNotEmpty) {
@@ -230,25 +378,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isAdmin = auth.isAdmin;
     final isGuest = auth.isGuest;
     final allTabs = _buildTabs(context);
-    const restrictedTabIds = {
+    const memberTabIds = {
       _HomeTabId.gym,
       _HomeTabId.profile,
-      _HomeTabId.nutrition,
       _HomeTabId.workout,
       _HomeTabId.rank,
       _HomeTabId.deals,
-      _HomeTabId.plan,
       _HomeTabId.coaching,
     };
     final tabs = isGuest
         ? allTabs
-            .where((tab) => tab.id == _HomeTabId.gym)
-            .toList(growable: false)
-        : (FF.limitTabsForMembers && !isAdmin)
-            ? allTabs
-                .where((tab) => restrictedTabIds.contains(tab.id))
-                .toList(growable: false)
-            : allTabs;
+              .where((tab) => tab.id == _HomeTabId.gym)
+              .toList(growable: false)
+        : (!isAdmin)
+        ? allTabs
+              .where((tab) => memberTabIds.contains(tab.id))
+              .toList(growable: false)
+        : allTabs;
 
     debugPrint(
       '[Home] build currentIndex=$_currentIndex tabs=${tabs.map((t) => t.id).toList()}',
@@ -266,67 +412,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _currentIndex = profileIndex >= 0 ? profileIndex : 0;
     }
     final currentTab = tabs[_currentIndex];
-    final currentLabel = currentTab.item.label ?? '';
     _lastTabId = currentTab.id;
+    final overlayBody = _buildOverlayBody(
+      gymId: auth.gymCode ?? '',
+      userId: auth.userId ?? '',
+      onExitToProfile: _switchToProfileTab,
+    );
 
-    return Scaffold(
-      appBar: currentTab.id == _HomeTabId.workout
-          ? null
-          : AppBar(
-              automaticallyImplyLeading: false,
-              titleSpacing: 0,
-              centerTitle: true,
-              leadingWidth: kToolbarHeight + 8,
-              leading: const SizedBox(width: kToolbarHeight + 8),
-              title: _buildAppBarTitle(context, currentLabel),
-              actions: isGuest
-                  ? [
-                      TextButton(
-                        onPressed: () => _exitDemo(context),
-                        child: Text(
-                          loc.gymDemoExitCta,
-                          style: const TextStyle(color: Colors.white),
+    return WillPopScope(
+      onWillPop: _handleWillPop,
+      child: Scaffold(
+        extendBody: false,
+        appBar: (overlayBody != null || currentTab.id == _HomeTabId.workout)
+            ? null
+            : AppBar(
+                automaticallyImplyLeading: false,
+                titleSpacing: 0,
+                centerTitle: true,
+                leadingWidth: kToolbarHeight + 8,
+                leading: const SizedBox(width: kToolbarHeight + 8),
+                title: _buildAppBarTitle(context, currentTab),
+                actions: isGuest
+                    ? [
+                        TextButton(
+                          onPressed: () => _exitDemo(context),
+                          child: Text(
+                            loc.gymDemoExitCta,
+                            style: const TextStyle(color: Colors.white),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                    ]
-                  : [
-                      const NfcScanButton(),
-                      const SizedBox(width: 8),
-                    ],
+                        const SizedBox(width: 8),
+                      ]
+                    : [const NfcScanButton(), const SizedBox(width: 8)],
+              ),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: [for (final t in tabs) t.page],
+              ),
             ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [for (final t in tabs) t.page],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        type: BottomNavigationBarType.fixed,
-        onTap: (i) {
-          // Beim Tab-Wechsel immer Overlay-Keypad schließen, damit es nicht liegen bleibt.
-          ref.read(overlayNumericKeypadControllerProvider).close();
-          setState(() => _currentIndex = i);
-        },
-        items: [for (final t in tabs) t.item],
+            if (overlayBody != null) Positioned.fill(child: overlayBody),
+          ],
+        ),
+        bottomNavigationBar: _HomeBottomBar(
+          currentIndex: _currentIndex,
+          tabs: tabs,
+          onTap: (index) {
+            // Beim Tab-Wechsel immer Overlay-Keypad schließen, damit es nicht liegen bleibt.
+            ref.read(overlayNumericKeypadControllerProvider).close();
+            if (_overlayFeature != null) {
+              setState(() {
+                _overlayFeature = null;
+                _currentIndex = index;
+              });
+              return;
+            }
+            if (index == _currentIndex) {
+              if (tabs[index].id == _HomeTabId.nutrition) {
+                final nav = _nutritionNavigatorKey.currentState;
+                nav?.popUntil((route) => route.isFirst);
+              } else if (tabs[index].id == _HomeTabId.plan) {
+                final nav = _planNavigatorKey.currentState;
+                nav?.popUntil((route) => route.isFirst);
+              }
+              return;
+            }
+            setState(() => _currentIndex = index);
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildAppBarTitle(BuildContext context, String currentLabel) {
+  Widget _buildAppBarTitle(BuildContext context, _TabInfo currentTab) {
     final loc = AppLocalizations.of(context)!;
     final auth = ref.watch(authControllerProvider);
     final gymName = ref.watch(gymProvider.select((g) => g.gym?.name));
 
     String titleText;
-    switch (_currentIndex) {
-      case 0:
-        titleText = (gymName != null && gymName.trim().isNotEmpty) ? gymName : loc.gymTitle;
+    switch (currentTab.id) {
+      case _HomeTabId.gym:
+        titleText = (gymName != null && gymName.trim().isNotEmpty)
+            ? gymName
+            : loc.gymTitle;
         break;
-      case 1:
+      case _HomeTabId.profile:
         titleText = auth.userName ?? auth.userEmail ?? loc.profileTitle;
         break;
       default:
-        titleText = currentLabel.isNotEmpty ? currentLabel : loc.appTitle;
+        titleText = currentTab.item.label.isNotEmpty
+            ? currentTab.item.label
+            : loc.appTitle;
         break;
     }
 
@@ -336,6 +514,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.titleLarge,
         maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        softWrap: false,
       ),
     );
   }
@@ -352,10 +532,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         arguments: gymId,
       );
     } else {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRouter.gymEntry,
-        (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(AppRouter.gymEntry, (route) => false);
     }
   }
 }
@@ -373,11 +552,208 @@ enum _HomeTabId {
   coaching,
 }
 
+enum _HomeOverlayFeature { progress, nutrition, plan, discover }
+
 class _TabInfo {
   final _HomeTabId id;
   final Widget page;
-  final BottomNavigationBarItem item;
+  final _HomeTabBarItem item;
   const _TabInfo({required this.id, required this.page, required this.item});
+}
+
+class _HomeTabBarItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final String barLabel;
+
+  const _HomeTabBarItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.barLabel,
+  });
+}
+
+class _HomeBottomBar extends StatelessWidget {
+  const _HomeBottomBar({
+    required this.currentIndex,
+    required this.tabs,
+    required this.onTap,
+  });
+
+  final int currentIndex;
+  final List<_TabInfo> tabs;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final activeColor = Color.alphaBlend(
+      Colors.white.withOpacity(0.08),
+      scheme.secondary,
+    );
+    final barBackground = theme.scaffoldBackgroundColor;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final tabCount = tabs.length;
+    final compactMode = tabCount >= 7 || screenWidth < 390;
+    final showSelectedLabel = tabCount <= 4;
+    final horizontalInset = tabCount <= 4 ? 16.0 : (compactMode ? 8.0 : 10.0);
+    final minTapHeight = compactMode ? 54.0 : 58.0;
+
+    return ColoredBox(
+      color: barBackground,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(horizontalInset, 6, horizontalInset, 6),
+          child: Row(
+            children: [
+              for (var index = 0; index < tabs.length; index++)
+                Expanded(
+                  child: _HomeBottomBarButton(
+                    item: tabs[index].item,
+                    isSelected: index == currentIndex,
+                    onTap: () => onTap(index),
+                    showSelectedLabel: showSelectedLabel,
+                    minTapHeight: minTapHeight,
+                    selectedColor: activeColor.withOpacity(0.34),
+                    selectedBorderColor: activeColor.withOpacity(0.44),
+                    selectedIconColor: Colors.white.withOpacity(0.92),
+                    unselectedIconColor: scheme.onSurface.withOpacity(0.62),
+                    labelStyle: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.1,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeBottomBarButton extends StatelessWidget {
+  const _HomeBottomBarButton({
+    required this.item,
+    required this.isSelected,
+    required this.onTap,
+    required this.showSelectedLabel,
+    required this.minTapHeight,
+    required this.selectedColor,
+    required this.selectedBorderColor,
+    required this.selectedIconColor,
+    required this.unselectedIconColor,
+    required this.labelStyle,
+  });
+
+  final _HomeTabBarItem item;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final bool showSelectedLabel;
+  final double minTapHeight;
+  final Color selectedColor;
+  final Color selectedBorderColor;
+  final Color selectedIconColor;
+  final Color unselectedIconColor;
+  final TextStyle? labelStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: item.label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: SizedBox(
+            height: minTapHeight,
+            width: double.infinity,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final canShowLabel =
+                    isSelected &&
+                    showSelectedLabel &&
+                    constraints.maxWidth >= 108;
+
+                return Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    constraints: const BoxConstraints(minHeight: 42),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: canShowLabel ? 14 : 10,
+                      vertical: 9,
+                    ),
+                    decoration: isSelected
+                        ? BoxDecoration(
+                            color: selectedColor,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: selectedBorderColor,
+                              width: 1,
+                            ),
+                          )
+                        : null,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeOutCubic,
+                      child: canShowLabel
+                          ? ConstrainedBox(
+                              key: ValueKey<String>(
+                                'selected-label-${item.barLabel}',
+                              ),
+                              constraints: BoxConstraints(
+                                maxWidth: constraints.maxWidth - 16,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    item.activeIcon,
+                                    size: 23,
+                                    color: selectedIconColor,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      item.barLabel,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: labelStyle?.copyWith(
+                                        color: selectedIconColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Icon(
+                              key: ValueKey<bool>(isSelected),
+                              isSelected ? item.activeIcon : item.icon,
+                              size: 26,
+                              color: isSelected
+                                  ? selectedIconColor
+                                  : unselectedIconColor,
+                            ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Fallback-Screen für den Workout-Tab, wenn der Timer bereits läuft,
@@ -390,10 +766,7 @@ class _EmptyWorkoutScreen extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(loc.appTitle),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(loc.appTitle), centerTitle: true),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),

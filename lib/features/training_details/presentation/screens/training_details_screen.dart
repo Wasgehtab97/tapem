@@ -75,6 +75,7 @@ class TrainingDetailsScreen extends ConsumerWidget {
         userId: userId,
         date: date,
         sessions: sessions,
+        fallbackDurationMs: duration,
       );
       if (summary == null || summary.achievements.isEmpty) {
         messenger.showSnackBar(
@@ -96,8 +97,8 @@ class TrainingDetailsScreen extends ConsumerWidget {
         durationMs: duration,
         onStoryPressed:
             sessions.isEmpty || (prov.gymId ?? fallbackGymId) == null
-                ? null
-                : openStory,
+            ? null
+            : openStory,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -201,12 +202,11 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title =
-        titleDate != null
-            ? DateFormat.yMMMMd(
-              Localizations.localeOf(context).toString(),
-            ).format(titleDate!)
-            : 'Training Details';
+    final title = titleDate != null
+        ? DateFormat.yMMMMd(
+            Localizations.localeOf(context).toString(),
+          ).format(titleDate!)
+        : 'Training Details';
 
     Widget titleWidget = Text(
       title,
@@ -220,15 +220,11 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
           Expanded(
             child: Text(
               title,
-              style:
-                  TextStyle(color: Theme.of(context).colorScheme.secondary),
+              style: TextStyle(color: Theme.of(context).colorScheme.secondary),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          Text(
-            '⏱ $formatted',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          Text('⏱ $formatted', style: Theme.of(context).textTheme.bodyMedium),
         ],
       );
     }
@@ -257,7 +253,8 @@ class _PlanTag extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

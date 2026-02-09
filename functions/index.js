@@ -20,6 +20,8 @@ exports.onEventParticipation = avatars.onEventParticipation;
 exports.grantXpForSession = xp.grantXpForSession;
 exports.mirrorDeviceLogToActivity = activity.mirrorDeviceLogToActivity;
 exports.updatePowerliftingRankOnLog = powerlifting.updatePowerliftingRankOnLog;
+exports.updatePowerliftingRankOnLogDelete = powerlifting.updatePowerliftingRankOnLogDelete;
+exports.updatePowerliftingRankOnAssignmentWrite = powerlifting.updatePowerliftingRankOnAssignmentWrite;
 
 // Gym Code Functions (manual rotation only - works on Spark plan)
 exports.manuallyRotateGymCode = gymCodes.manuallyRotateGymCode;

@@ -18,36 +18,35 @@ class AnimatedTabIndicator extends StatelessWidget {
       animation: controller,
       builder: (context, child) {
         return Container(
-          height: 50,
+          height: 48,
           decoration: BoxDecoration(
-            color: AuthTheme.glassColor,
-            borderRadius: BorderRadius.circular(25),
-            border: Border.all(color: AuthTheme.glassBorderColor),
+            color: AuthTheme.surfaceRaised,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AuthTheme.border),
           ),
           child: Stack(
             children: [
-              // Sliding Indicator
               LayoutBuilder(
                 builder: (context, constraints) {
                   final tabWidth = constraints.maxWidth / tabs.length;
                   return AnimatedAlign(
-                    duration: const Duration(milliseconds: 250),
+                    duration: AuthTheme.animationDurationFast,
                     curve: Curves.easeOutCubic,
                     alignment: Alignment(
                       (controller.index * 2 / (tabs.length - 1)) - 1,
                       0,
                     ),
                     child: Container(
-                      width: tabWidth,
-                      height: double.infinity,
+                      width: tabWidth - 4,
+                      margin: const EdgeInsets.symmetric(vertical: 2),
                       decoration: BoxDecoration(
-                        gradient: AuthTheme.primaryGradient,
-                        borderRadius: BorderRadius.circular(25),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF8B5CF6).withOpacity(0.4),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
+                            color: Colors.black.withOpacity(0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
@@ -56,7 +55,6 @@ class AnimatedTabIndicator extends StatelessWidget {
                 },
               ),
 
-              // Tab Labels
               Row(
                 children: tabs.asMap().entries.map((entry) {
                   final index = entry.key;
@@ -69,13 +67,18 @@ class AnimatedTabIndicator extends StatelessWidget {
                         HapticFeedback.selectionClick();
                         controller.animateTo(index);
                       },
-                      behavior: HitTestBehavior.translucent, // Ensure tap target fills area
+                      behavior: HitTestBehavior
+                          .translucent, // Ensure tap target fills area
                       child: Center(
                         child: AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 200),
+                          duration: AuthTheme.animationDurationFast,
                           style: AuthTheme.buttonTextStyle.copyWith(
-                            color: Colors.white.withOpacity(isSelected ? 1 : 0.6),
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected
+                                ? Colors.black
+                                : AuthTheme.textMuted,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                           ),
                           child: Text(text),
                         ),

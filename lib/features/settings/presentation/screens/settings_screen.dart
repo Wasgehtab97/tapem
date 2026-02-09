@@ -65,8 +65,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       return;
     }
     final target = settings.bodyWeightKg;
-    final formatted =
-        target != null && target > 0 ? target.toStringAsFixed(1) : '';
+    final formatted = target != null && target > 0
+        ? target.toStringAsFixed(1)
+        : '';
     if (_bodyWeightCtrl.text != formatted) {
       _bodyWeightCtrl.value = TextEditingValue(
         text: formatted,
@@ -136,7 +137,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showPrivacyDialog() {
     final authProv = ref.read(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
-    final current = authProv.showInLeaderboard ?? true;
+    final current =
+        authProv.publicProfile ?? authProv.showInLeaderboard ?? true;
+
+    Future<void> applySelection(bool value) async {
+      final success = await authProv.setProfileVisibility(value);
+      if (!mounted) return;
+      if (success) {
+        Navigator.pop(context);
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(loc.commonSaveError)));
+    }
+
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
@@ -148,22 +163,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: Text(loc.publicProfilePublic),
               value: true,
               groupValue: current,
-              onChanged: (v) {
+              onChanged: (v) async {
                 if (v == null) return;
-                authProv.setShowInLeaderboard(v);
-                authProv.setPublicProfile(v);
-                Navigator.pop(context);
+                await applySelection(v);
               },
             ),
             RadioListTile<bool>(
               title: Text(loc.publicProfilePrivate),
               value: false,
               groupValue: current,
-              onChanged: (v) {
+              onChanged: (v) async {
                 if (v == null) return;
-                authProv.setShowInLeaderboard(v);
-                authProv.setPublicProfile(v);
-                Navigator.pop(context);
+                await applySelection(v);
               },
             ),
           ],
@@ -197,9 +208,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.commonSaveError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(loc.commonSaveError)));
     }
   }
 
@@ -275,9 +286,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   );
                 } catch (_) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(loc.commonSaveError)),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(loc.commonSaveError)));
                 }
               },
             ),
@@ -311,9 +322,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   );
                 } catch (_) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(loc.commonSaveError)),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(loc.commonSaveError)));
                 }
               },
             ),
@@ -331,9 +342,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   );
                 } catch (_) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(loc.commonSaveError)),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(loc.commonSaveError)));
                 }
               },
             ),
@@ -437,10 +448,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               : LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Colors.grey.shade800,
-                    Colors.black,
-                  ],
+                  colors: [Colors.grey.shade800, Colors.black],
                 );
 
           return GestureDetector(
@@ -451,16 +459,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 gradient: gradient,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
+                  color: isSelected
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.1),
                   width: isSelected ? 2 : 1,
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: (preset?.gradientStart ?? Colors.white).withOpacity(0.4),
+                          color: (preset?.gradientStart ?? Colors.white)
+                              .withOpacity(0.4),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
-                        )
+                        ),
                       ]
                     : null,
               ),
@@ -488,9 +499,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     left: 0,
                     right: 0,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                        borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(20),
+                        ),
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -526,7 +542,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             return Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(32),
+                ),
               ),
               child: Column(
                 children: [
@@ -540,30 +558,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 8,
+                    ),
                     child: Text(
                       loc.settingsThemeDialogTitle,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
                   Expanded(
                     child: GridView(
                       controller: controller,
                       padding: const EdgeInsets.all(24),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 1.4,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 1.4,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
                       children: [
                         buildThemeCard(
                           label: manualDefault != null
                               ? '${loc.settingsThemeDefault} (${_themeOptionLabel(loc, manualDefault)})'
                               : loc.settingsThemeDefault,
-                          preset: manualDefault != null ? BrandThemePresets.of(manualDefault) : null,
+                          preset: manualDefault != null
+                              ? BrandThemePresets.of(manualDefault)
+                              : null,
                           isSelected: selectedId == null,
                           onTap: () => _onThemeSelected(sheetContext, null),
                         ),
@@ -596,9 +619,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } catch (_) {
       if (!mounted) return;
       final loc = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.settingsThemeSaveError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(loc.settingsThemeSaveError)));
     }
   }
 
@@ -652,7 +675,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   left: AppSpacing.lg,
                   right: AppSpacing.lg,
                   top: AppSpacing.md,
-                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom +
+                  bottom:
+                      MediaQuery.of(sheetContext).viewInsets.bottom +
                       AppSpacing.lg,
                 ),
                 child: Form(
@@ -723,7 +747,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           },
                           onFieldSubmitted: (_) {
                             _handleBodyMetricsSubmit(
-                                sheetContext, selectedGender, loc);
+                              sheetContext,
+                              selectedGender,
+                              loc,
+                            );
                           },
                         ),
                         const SizedBox(height: AppSpacing.lg),
@@ -756,14 +783,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         bodyWeightKg: result['bodyWeight'] as double?,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.settingsBodyMetricsSaved)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(loc.settingsBodyMetricsSaved)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.settingsBodyMetricsSaveError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(loc.settingsBodyMetricsSaveError)));
     }
   }
 
@@ -783,18 +810,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final raw = _bodyWeightCtrl.text.trim();
     final normalized = raw.replaceAll(',', '.');
     final parsed = normalized.isEmpty ? null : double.parse(normalized);
-    Navigator.of(sheetContext).pop({
-      'gender': selectedGender,
-      'bodyWeight': parsed,
-    });
+    Navigator.of(
+      sheetContext,
+    ).pop({'gender': selectedGender, 'bodyWeight': parsed});
   }
 
   void _showLegalPlaceholder(String label) {
     final loc = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(loc.settingsLegalPlaceholder(label)),
-      ),
+      SnackBar(content: Text(loc.settingsLegalPlaceholder(label))),
     );
   }
 
@@ -810,22 +834,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final languageLabel = _languageLabel(loc, appProv.locale, locale);
     final themeLabel = _currentThemeLabel(loc, themePref, auth.gymCode);
     final bodySummary = _bodyMetricsSummary(loc);
-    final creatineStatus =
-        settings.creatineEnabled ? loc.settingsCreatineEnabled : loc.settingsCreatineDisabled;
-    final privacyLabel =
-        (auth.publicProfile ?? auth.showInLeaderboard ?? true)
-            ? loc.publicProfilePublic
-            : loc.publicProfilePrivate;
+    final creatineStatus = settings.creatineEnabled
+        ? loc.settingsCreatineEnabled
+        : loc.settingsCreatineDisabled;
+    final privacyLabel = (auth.publicProfile ?? auth.showInLeaderboard ?? true)
+        ? loc.publicProfilePublic
+        : loc.publicProfilePrivate;
     final username = auth.userName ?? loc.genericUser;
 
-    final localeName = locale.countryCode != null && locale.countryCode!.isNotEmpty
+    final localeName =
+        locale.countryCode != null && locale.countryCode!.isNotEmpty
         ? '${locale.languageCode}_${locale.countryCode}'
         : locale.languageCode;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(loc.settingsScreenTitle),
-      ),
+      appBar: AppBar(title: Text(loc.settingsScreenTitle)),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
@@ -952,10 +975,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 }
 
 class _SettingsSection extends StatelessWidget {
-  const _SettingsSection({
-    required this.title,
-    required this.children,
-  });
+  const _SettingsSection({required this.title, required this.children});
 
   final String title;
   final List<Widget> children;
@@ -975,10 +995,12 @@ class _SettingsSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          ...children.map((child) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: child,
-              )),
+          ...children.map(
+            (child) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: child,
+            ),
+          ),
         ],
       ),
     );
@@ -1037,11 +1059,7 @@ class _PremiumSettingsTile extends StatelessWidget {
                     color: brandColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(
-                    icon,
-                    color: brandColor,
-                    size: 24,
-                  ),
+                  child: Icon(icon, color: brandColor, size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1059,7 +1077,9 @@ class _PremiumSettingsTile extends StatelessWidget {
                       Text(
                         subtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                          color: theme.textTheme.bodySmall?.color?.withOpacity(
+                            0.6,
+                          ),
                           height: 1.2,
                         ),
                       ),

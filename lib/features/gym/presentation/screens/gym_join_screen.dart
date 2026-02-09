@@ -225,9 +225,11 @@ class _GymJoinScreenState extends ConsumerState<GymJoinScreen> {
         final prefs = ref.read(sharedPreferencesProvider);
         await prefs.remove(StorageKeys.preAuthGymId);
         if (!mounted) return;
-        Navigator.of(
-          context,
-        ).pushReplacementNamed(AppRouter.home, arguments: 1);
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRouter.home,
+          (route) => false,
+          arguments: 1,
+        );
         return;
       }
       final loc = AppLocalizations.of(context)!;
@@ -298,28 +300,24 @@ class _GymJoinScreenState extends ConsumerState<GymJoinScreen> {
     final gymAsync = ref.watch(gymByIdProvider(widget.gymId));
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       body: AuthBackground(
         child: AuthKeyboardScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AuthTheme.spacingM),
           child: gymAsync.when(
             data: (gym) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const OfflineBanner(),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Hero(
-                      tag: 'gym-logo-${gym.id}',
-                      child: NetworkCircleAvatar(url: gym.logoUrl, radius: 34),
-                    ),
-                  ),
-                  const SizedBox(height: AuthTheme.spacingS),
+                  const SizedBox(height: 10),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AuthTheme.textMuted,
+                      ),
                       onPressed: () async {
                         final prefs = ref.read(sharedPreferencesProvider);
                         await prefs.remove(StorageKeys.preAuthGymId);
@@ -331,19 +329,24 @@ class _GymJoinScreenState extends ConsumerState<GymJoinScreen> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
+                  Center(
+                    child: Hero(
+                      tag: 'gym-logo-${gym.id}',
+                      child: NetworkCircleAvatar(url: gym.logoUrl, radius: 34),
+                    ),
+                  ),
+                  const SizedBox(height: AuthTheme.spacingM),
                   Text(
                     loc.gymJoinTitle(gym.name),
                     textAlign: TextAlign.center,
-                    style: AuthTheme.headingStyle,
+                    style: AuthTheme.headingStyle.copyWith(fontSize: 28),
                   ),
                   const SizedBox(height: AuthTheme.spacingS),
                   Text(
                     loc.gymJoinSubtitle,
                     textAlign: TextAlign.center,
-                    style: AuthTheme.bodyStyle.copyWith(
-                      color: Colors.white.withOpacity(0.7),
-                    ),
+                    style: AuthTheme.bodyStyle,
                   ),
                   const SizedBox(height: AuthTheme.spacingL),
                   GlassCard(
@@ -386,7 +389,7 @@ class _GymJoinScreenState extends ConsumerState<GymJoinScreen> {
                               child: Text(
                                 _error!,
                                 style: const TextStyle(
-                                  color: Color(0xFFFF8A80),
+                                  color: AuthTheme.danger,
                                   fontSize: 12,
                                 ),
                               ),
@@ -400,7 +403,7 @@ class _GymJoinScreenState extends ConsumerState<GymJoinScreen> {
                               child: Text(
                                 _scanError!,
                                 style: const TextStyle(
-                                  color: Color(0xFFFF8A80),
+                                  color: AuthTheme.danger,
                                   fontSize: 12,
                                 ),
                               ),
@@ -413,7 +416,7 @@ class _GymJoinScreenState extends ConsumerState<GymJoinScreen> {
                                   ? loc.nfcScanWaiting
                                   : loc.nfcScanTitle,
                               style: AuthTheme.labelStyle.copyWith(
-                                color: Colors.white70,
+                                color: AuthTheme.textMuted,
                                 decoration: TextDecoration.underline,
                               ),
                             ),
@@ -428,11 +431,12 @@ class _GymJoinScreenState extends ConsumerState<GymJoinScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 18),
                 ],
               );
             },
             loading: () => const Center(
-              child: CircularProgressIndicator(color: Colors.white70),
+              child: CircularProgressIndicator(color: Colors.white),
             ),
             error: (error, _) => Center(
               child: Padding(
@@ -440,9 +444,7 @@ class _GymJoinScreenState extends ConsumerState<GymJoinScreen> {
                 child: Text(
                   loc.authErrorGeneric(error),
                   textAlign: TextAlign.center,
-                  style: AuthTheme.bodyStyle.copyWith(
-                    color: Colors.white.withOpacity(0.7),
-                  ),
+                  style: AuthTheme.bodyStyle,
                 ),
               ),
             ),

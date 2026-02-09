@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/utils/remote_url_utils.dart';
 import 'package:tapem/features/deals/domain/models/deal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class DealCard extends StatefulWidget {
-  const DealCard({
-    super.key,
-    required this.deal,
-    required this.onTrackClick,
-  });
+  const DealCard({super.key, required this.deal, required this.onTrackClick});
 
   final Deal deal;
   final VoidCallback onTrackClick;
@@ -22,12 +19,54 @@ class DealCard extends StatefulWidget {
 class _DealCardState extends State<DealCard> {
   bool _isExpanded = false;
 
-  Future<void> _launchUrl() async {
-    widget.onTrackClick();
-    final uri = Uri.parse(widget.deal.link);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+  void _showSnackBar(String message) {
+    if (!mounted) {
+      return;
     }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  Future<void> _launchUrl() async {
+    final uri = parseHttpUri(widget.deal.link);
+    if (uri == null) {
+      _showSnackBar('Ungültiger Shop-Link.');
+      return;
+    }
+
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (launched) {
+        widget.onTrackClick();
+        return;
+      }
+      _showSnackBar('Shop konnte nicht geöffnet werden.');
+    } catch (_) {
+      _showSnackBar('Shop konnte nicht geöffnet werden.');
+    }
+  }
+
+  Widget _buildDealImageFallback(Color onSurface) {
+    return Container(
+      color: AppColors.background,
+      child: Center(
+        child: Icon(Icons.broken_image, color: onSurface.withOpacity(0.3)),
+      ),
+    );
+  }
+
+  Widget _buildPartnerLogoFallback(Color onSurface) {
+    return Center(
+      child: Icon(
+        Icons.storefront_outlined,
+        size: 18,
+        color: onSurface.withOpacity(0.25),
+      ),
+    );
   }
 
   void _copyCode(BuildContext context) {
@@ -46,6 +85,8 @@ class _DealCardState extends State<DealCard> {
     final brandTheme = theme.extension<AppBrandTheme>();
     final accent = brandTheme?.outline ?? theme.colorScheme.secondary;
     final onSurface = theme.colorScheme.onSurface;
+    final dealImageUri = parseHttpUri(widget.deal.imageUrl);
+    final partnerLogoUri = parseHttpUri(widget.deal.partnerLogoUrl);
 
     return Container(
       decoration: BoxDecoration(
@@ -71,16 +112,14 @@ class _DealCardState extends State<DealCard> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.network(
-                  widget.deal.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (ctx, err, stack) => Container(
-                    color: AppColors.background,
-                    child: Center(
-                      child: Icon(Icons.broken_image, color: onSurface.withOpacity(0.3)),
-                    ),
+                if (dealImageUri != null)
+                  Image.network(
+                    dealImageUri.toString(),
+                    fit: BoxFit.cover,
+                    errorBuilder: (ctx, err, stack) =>
+                        _buildDealImageFallback(onSurface),
                   ),
-                ),
+                if (dealImageUri == null) _buildDealImageFallback(onSurface),
                 // Premium Gradient overlay
                 Container(
                   decoration: BoxDecoration(
@@ -108,7 +147,10 @@ class _DealCardState extends State<DealCard> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.2), width: 2),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 2,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.3),
@@ -118,11 +160,14 @@ class _DealCardState extends State<DealCard> {
                       ],
                     ),
                     child: ClipOval(
-                      child: Image.network(
-                        widget.deal.partnerLogoUrl,
-                        fit: BoxFit.contain,
-                        errorBuilder: (ctx, err, stack) => const SizedBox(),
-                      ),
+                      child: partnerLogoUri != null
+                          ? Image.network(
+                              partnerLogoUri.toString(),
+                              fit: BoxFit.contain,
+                              errorBuilder: (ctx, err, stack) =>
+                                  _buildPartnerLogoFallback(onSurface),
+                            )
+                          : _buildPartnerLogoFallback(onSurface),
                     ),
                   ),
                 ),
@@ -131,7 +176,10 @@ class _DealCardState extends State<DealCard> {
                   top: 12,
                   right: 12,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.6),
                       borderRadius: BorderRadius.circular(AppRadius.chip),
@@ -151,20 +199,22 @@ class _DealCardState extends State<DealCard> {
               ],
             ),
           ),
-          
+
           // Content Area with subtle gradient
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.surface,
-                  AppColors.surface.withOpacity(0.9),
-                ],
+                colors: [AppColors.surface, AppColors.surface.withOpacity(0.9)],
               ),
             ),
-            padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -185,7 +235,9 @@ class _DealCardState extends State<DealCard> {
                     child: Text(
                       widget.deal.description,
                       maxLines: _isExpanded ? null : 2,
-                      overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                      overflow: _isExpanded
+                          ? TextOverflow.visible
+                          : TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: onSurface.withOpacity(0.6),
                         height: 1.5,
@@ -212,7 +264,7 @@ class _DealCardState extends State<DealCard> {
                   )
                 else
                   const SizedBox(height: 8),
-                
+
                 // Actions
                 Row(
                   children: [
@@ -226,8 +278,13 @@ class _DealCardState extends State<DealCard> {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
                             color: AppColors.background.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(AppRadius.button),
-                            border: Border.all(color: accent.withOpacity(0.4), width: 1.5),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.button,
+                            ),
+                            border: Border.all(
+                              color: accent.withOpacity(0.4),
+                              width: 1.5,
+                            ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -276,17 +333,25 @@ class _DealCardState extends State<DealCard> {
                             foregroundColor: Colors.black,
                             shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.button),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.button,
+                              ),
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          child: const Text('ZUM SHOP', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                          child: const Text(
+                            'ZUM SHOP',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                
+
                 // Footer (fills space and adds credibility)
                 const SizedBox(height: AppSpacing.md),
                 Divider(color: onSurface.withOpacity(0.05), height: 1),
@@ -294,7 +359,11 @@ class _DealCardState extends State<DealCard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.verified_user_outlined, size: 12, color: onSurface.withOpacity(0.3)),
+                    Icon(
+                      Icons.verified_user_outlined,
+                      size: 12,
+                      color: onSurface.withOpacity(0.3),
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'VERIFIZIERTER PARTNER-DEAL',

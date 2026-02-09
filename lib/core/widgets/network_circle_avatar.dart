@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tapem/core/utils/remote_url_utils.dart';
 
 class NetworkCircleAvatar extends StatelessWidget {
   const NetworkCircleAvatar({
@@ -18,19 +19,15 @@ class NetworkCircleAvatar extends StatelessWidget {
 
   Widget _buildPlaceholder() {
     return Center(
-      child: placeholder ??
-          const Icon(
-            Icons.fitness_center_outlined,
-          ),
+      child: placeholder ?? const Icon(Icons.fitness_center_outlined),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final resolvedBackground =
-        backgroundColor ?? Colors.white.withOpacity(0.1);
-    final imageUrl = url?.trim() ?? '';
-    if (imageUrl.isEmpty) {
+    final resolvedBackground = backgroundColor ?? Colors.white.withOpacity(0.1);
+    final imageUri = parseHttpUri(url);
+    if (imageUri == null) {
       return CircleAvatar(
         radius: radius,
         backgroundColor: resolvedBackground,
@@ -46,7 +43,7 @@ class NetworkCircleAvatar extends StatelessWidget {
           width: size,
           height: size,
           child: Image.network(
-            imageUrl,
+            imageUri.toString(),
             fit: fit,
             errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
             loadingBuilder: (context, child, loadingProgress) {

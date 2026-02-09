@@ -1,11 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+String _normalizeUsername(String value) {
+  return value.trim().replaceAll(RegExp(' +'), ' ');
+}
+
+bool _isValidUsername(String value) {
+  return value.length >= 3 &&
+      value.length <= 20 &&
+      RegExp(r'^[A-Za-z0-9 ]+$').hasMatch(value);
+}
+
 Future<void> changeUsernameTransaction({
   required FirebaseFirestore firestore,
   required String uid,
   required String newUsername,
 }) async {
-  final newName = newUsername.trim().replaceAll(RegExp(' +'), ' ');
+  final newName = _normalizeUsername(newUsername);
+  if (!_isValidUsername(newName)) {
+    throw FirebaseException(plugin: 'tapem', code: 'username_invalid');
+  }
   final newLower = newName.toLowerCase();
   final userRef = firestore.collection('users').doc(uid);
   final userDoc = await userRef.get();
@@ -36,16 +49,10 @@ Future<void> changeUsernameTransaction({
       currentSnap = await tx.get(currentRef);
     }
 
-    tx.set(newRef, {
-      'uid': uid,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    tx.set(newRef, {'uid': uid, 'createdAt': FieldValue.serverTimestamp()});
     if (currentSnap != null && currentSnap.exists) {
       tx.delete(currentRef!);
     }
-    tx.update(userRef, {
-      'username': newName,
-      'usernameLower': newLower,
-    });
+    tx.update(userRef, {'username': newName, 'usernameLower': newLower});
   });
 }

@@ -14,37 +14,41 @@ class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({
     Future<UserData> Function(String email, String password)? onLogin,
     Future<UserData> Function(String email, String password, String gymId)?
-        onRegister,
+    onRegister,
     Future<void> Function()? onLogout,
     Future<UserData?> Function()? onGetCurrentUser,
     Future<void> Function(String userId, String username)? onSetUsername,
     Future<void> Function(String userId, bool value)? onSetShowInLeaderboard,
     Future<void> Function(String userId, bool value)? onSetPublicProfile,
+    Future<void> Function(String userId, bool value)? onSetProfileVisibility,
     Future<void> Function(String userId, String avatarKey)? onSetAvatarKey,
     Future<void> Function(String userId, bool value)? onSetCoachEnabled,
     Future<bool> Function(String username)? onIsUsernameAvailable,
     Future<void> Function(String email)? onSendPasswordResetEmail,
-  })  : _onLogin = onLogin,
-        _onRegister = onRegister,
-        _onLogout = onLogout,
-        _onGetCurrentUser = onGetCurrentUser,
-        _onSetUsername = onSetUsername,
-        _onSetShowInLeaderboard = onSetShowInLeaderboard,
-        _onSetPublicProfile = onSetPublicProfile,
-        _onSetAvatarKey = onSetAvatarKey,
-        _onSetCoachEnabled = onSetCoachEnabled,
-        _onIsUsernameAvailable = onIsUsernameAvailable,
-        _onSendPasswordResetEmail = onSendPasswordResetEmail;
+  }) : _onLogin = onLogin,
+       _onRegister = onRegister,
+       _onLogout = onLogout,
+       _onGetCurrentUser = onGetCurrentUser,
+       _onSetUsername = onSetUsername,
+       _onSetShowInLeaderboard = onSetShowInLeaderboard,
+       _onSetPublicProfile = onSetPublicProfile,
+       _onSetProfileVisibility = onSetProfileVisibility,
+       _onSetAvatarKey = onSetAvatarKey,
+       _onSetCoachEnabled = onSetCoachEnabled,
+       _onIsUsernameAvailable = onIsUsernameAvailable,
+       _onSendPasswordResetEmail = onSendPasswordResetEmail;
 
   final Future<UserData> Function(String email, String password)? _onLogin;
   final Future<UserData> Function(String email, String password, String gymId)?
-      _onRegister;
+  _onRegister;
   final Future<void> Function()? _onLogout;
   final Future<UserData?> Function()? _onGetCurrentUser;
   final Future<void> Function(String userId, String username)? _onSetUsername;
   final Future<void> Function(String userId, bool value)?
-      _onSetShowInLeaderboard;
+  _onSetShowInLeaderboard;
   final Future<void> Function(String userId, bool value)? _onSetPublicProfile;
+  final Future<void> Function(String userId, bool value)?
+  _onSetProfileVisibility;
   final Future<void> Function(String userId, String avatarKey)? _onSetAvatarKey;
   final Future<void> Function(String userId, bool value)? _onSetCoachEnabled;
   final Future<bool> Function(String username)? _onIsUsernameAvailable;
@@ -57,6 +61,7 @@ class FakeAuthRepository implements AuthRepository {
   int setUsernameCalls = 0;
   int setShowInLeaderboardCalls = 0;
   int setPublicProfileCalls = 0;
+  int setProfileVisibilityCalls = 0;
   int setAvatarKeyCalls = 0;
   int setCoachEnabledCalls = 0;
   int isUsernameAvailableCalls = 0;
@@ -119,6 +124,10 @@ class FakeAuthRepository implements AuthRepository {
     if (handler != null) {
       return handler(userId, value);
     }
+    final visibility = _onSetProfileVisibility;
+    if (visibility != null) {
+      return visibility(userId, value);
+    }
     throw UnimplementedError('setShowInLeaderboard handler not provided');
   }
 
@@ -129,7 +138,29 @@ class FakeAuthRepository implements AuthRepository {
     if (handler != null) {
       return handler(userId, value);
     }
+    final visibility = _onSetProfileVisibility;
+    if (visibility != null) {
+      return visibility(userId, value);
+    }
     throw UnimplementedError('setPublicProfile handler not provided');
+  }
+
+  @override
+  Future<void> setProfileVisibility(String userId, bool value) {
+    setProfileVisibilityCalls++;
+    final handler = _onSetProfileVisibility;
+    if (handler != null) {
+      return handler(userId, value);
+    }
+    final publicProfileHandler = _onSetPublicProfile;
+    if (publicProfileHandler != null) {
+      return publicProfileHandler(userId, value);
+    }
+    final leaderboardHandler = _onSetShowInLeaderboard;
+    if (leaderboardHandler != null) {
+      return leaderboardHandler(userId, value);
+    }
+    throw UnimplementedError('setProfileVisibility handler not provided');
   }
 
   @override
@@ -184,14 +215,15 @@ class FakeFirebaseAuthManager implements FirebaseAuthManager {
     Future<void> Function(fb_auth.User user)? onReload,
     Future<Map<String, dynamic>> Function(fb_auth.User user)? onForceRefresh,
     Future<Map<String, dynamic>> Function(fb_auth.User user)? onGetClaims,
-  })  : _currentUser = currentUser,
-        _onReload = onReload,
-        _onForceRefresh = onForceRefresh,
-        _onGetClaims = onGetClaims;
+  }) : _currentUser = currentUser,
+       _onReload = onReload,
+       _onForceRefresh = onForceRefresh,
+       _onGetClaims = onGetClaims;
 
   fb_auth.User? _currentUser;
   final Future<void> Function(fb_auth.User user)? _onReload;
-  final Future<Map<String, dynamic>> Function(fb_auth.User user)? _onForceRefresh;
+  final Future<Map<String, dynamic>> Function(fb_auth.User user)?
+  _onForceRefresh;
   final Future<Map<String, dynamic>> Function(fb_auth.User user)? _onGetClaims;
 
   int reloadCalls = 0;
@@ -306,7 +338,6 @@ class FakeFirebaseAuth extends Fake implements fb_auth.FirebaseAuth {
     passwordResetCalled = true;
     lastPasswordResetEmail = email;
   }
-
 }
 
 class FakeFirebaseUser extends Fake implements fb_auth.User {
@@ -339,11 +370,12 @@ class FakeFirebaseUser extends Fake implements fb_auth.User {
   }
 
   @override
-  Future<fb_auth.IdTokenResult> getIdTokenResult([bool forceRefresh = false]) async {
+  Future<fb_auth.IdTokenResult> getIdTokenResult([
+    bool forceRefresh = false,
+  ]) async {
     tokenRequests += forceRefresh ? 2 : 1;
     return FakeIdTokenResult(_claims);
   }
-
 }
 
 class FakeIdTokenResult extends Fake implements fb_auth.IdTokenResult {
@@ -353,7 +385,6 @@ class FakeIdTokenResult extends Fake implements fb_auth.IdTokenResult {
 
   @override
   Map<String, dynamic>? get claims => claimsMap;
-
 }
 
 class FakeUserCredential extends Fake implements fb_auth.UserCredential {
@@ -363,7 +394,6 @@ class FakeUserCredential extends Fake implements fb_auth.UserCredential {
 
   @override
   fb_auth.User? get user => _user;
-
 }
 
 class FakeSessionDraftRepository implements SessionDraftRepository {
@@ -374,7 +404,8 @@ class FakeSessionDraftRepository implements SessionDraftRepository {
   Future<SessionDraft?> get(String key) async => drafts[key];
 
   @override
-  Future<Map<String, SessionDraft>> getAll() async => Map<String, SessionDraft>.from(drafts);
+  Future<Map<String, SessionDraft>> getAll() async =>
+      Map<String, SessionDraft>.from(drafts);
 
   @override
   Future<void> put(String key, SessionDraft draft) async {

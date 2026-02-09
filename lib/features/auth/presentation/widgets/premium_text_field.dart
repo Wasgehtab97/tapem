@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:tapem/core/theme/app_brand_theme.dart';
 import '../theme/auth_theme.dart';
 
 class PremiumTextField extends StatefulWidget {
@@ -60,32 +59,29 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final brand = Theme.of(context).extension<AppBrandTheme>();
-    final focus = brand?.focusRing ?? const Color(0xFF8B5CF6);
+    final focusColor = Colors.white;
+
     return AnimatedContainer(
       duration: AuthTheme.animationDurationFast,
+      curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: _isFocused
-            ? AuthTheme.glassColor.withOpacity(0.15)
-            : AuthTheme.glassColor,
+        color: _isFocused ? AuthTheme.surfacePressed : AuthTheme.surfaceRaised,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _isFocused
-              ? focus.withOpacity(0.5)
-              : AuthTheme.glassBorderColor,
-          width: 1.5,
+          color: _isFocused ? focusColor.withOpacity(0.85) : AuthTheme.border,
+          width: _isFocused ? 1.4 : 1.1,
         ),
         boxShadow: _isFocused
             ? [
                 BoxShadow(
-                  color: focus.withOpacity(0.4),
-                  blurRadius: 15,
-                  spreadRadius: 1,
+                  color: Colors.black.withOpacity(0.22),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
                 ),
               ]
             : [],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       child: TextFormField(
         controller: widget.controller,
         initialValue: widget.initialValue,
@@ -95,24 +91,24 @@ class _PremiumTextFieldState extends State<PremiumTextField> {
         autocorrect: false,
         enableSuggestions: false,
         textCapitalization: TextCapitalization.none,
-        style: AuthTheme.bodyStyle.copyWith(color: Colors.white),
-        cursorColor: Colors.white,
+        style: AuthTheme.bodyStyle.copyWith(color: AuthTheme.textPrimary),
+        cursorColor: AuthTheme.textPrimary,
         textInputAction: widget.textInputAction,
         readOnly: widget.readOnly,
         scrollPadding: widget.scrollPadding,
         decoration: InputDecoration(
           labelText: widget.label,
-          labelStyle: AuthTheme.labelStyle,
+          labelStyle: AuthTheme.labelStyle.copyWith(color: AuthTheme.textMuted),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
           errorBorder: InputBorder.none,
           focusedErrorBorder: InputBorder.none,
           prefixIcon: widget.prefixIcon != null
-              ? Icon(widget.prefixIcon, color: Colors.white70)
+              ? Icon(widget.prefixIcon, color: AuthTheme.textMuted)
               : null,
           suffixIcon: widget.suffixIcon,
-          errorStyle: const TextStyle(height: 0.8, color: Color(0xFFFF8A80)),
+          errorStyle: const TextStyle(height: 1.1, color: AuthTheme.danger),
         ),
         validator: widget.validator,
         onSaved: widget.onSaved,

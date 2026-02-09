@@ -19,10 +19,7 @@ import 'package:tapem/features/profile/domain/models/powerlifting_record.dart';
 import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/services/membership_service.dart';
 
-enum PowerliftingMetric {
-  heaviest,
-  e1rm,
-}
+enum PowerliftingMetric { heaviest, e1rm }
 
 class PowerliftingProvider extends ChangeNotifier
     with GymScopedResettableChangeNotifier {
@@ -31,10 +28,10 @@ class PowerliftingProvider extends ChangeNotifier
     required GetDevicesForGym getDevicesForGym,
     required GetExercisesForDevice getExercisesForDevice,
     required MembershipService membership,
-  })  : _firestore = firestore,
-        _getDevicesForGym = getDevicesForGym,
-        _getExercisesForDevice = getExercisesForDevice,
-        _membership = membership;
+  }) : _firestore = firestore,
+       _getDevicesForGym = getDevicesForGym,
+       _getExercisesForDevice = getExercisesForDevice,
+       _membership = membership;
 
   final FirebaseFirestore _firestore;
   final GetDevicesForGym _getDevicesForGym;
@@ -51,12 +48,17 @@ class PowerliftingProvider extends ChangeNotifier
   bool _isSaving = false;
   String? _error;
 
-  final Map<PowerliftingDiscipline, List<PowerliftingAssignment>> _assignments = {
-    for (final d in PowerliftingDiscipline.values) d: <PowerliftingAssignment>[],
-  };
+  final Map<PowerliftingDiscipline, List<PowerliftingAssignment>> _assignments =
+      {
+        for (final d in PowerliftingDiscipline.values)
+          d: <PowerliftingAssignment>[],
+      };
 
-  final Map<PowerliftingDiscipline,
-          Map<PowerliftingMetric, List<PowerliftingRecord>>> _records = {
+  final Map<
+    PowerliftingDiscipline,
+    Map<PowerliftingMetric, List<PowerliftingRecord>>
+  >
+  _records = {
     for (final d in PowerliftingDiscipline.values)
       d: {
         for (final metric in PowerliftingMetric.values)
@@ -68,8 +70,8 @@ class PowerliftingProvider extends ChangeNotifier
   final Map<String, List<Exercise>> _exerciseCache = <String, List<Exercise>>{};
   final Set<String> _loadingExercises = <String>{};
   final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
-      _logSubscriptions =
-          <String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>{};
+  _logSubscriptions =
+      <String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>{};
 
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
@@ -78,14 +80,14 @@ class PowerliftingProvider extends ChangeNotifier
   bool get hasAssignments =>
       _assignments.values.any((entries) => entries.isNotEmpty);
 
-  List<PowerliftingAssignment> assignmentsFor(PowerliftingDiscipline discipline) =>
-      List.unmodifiable(_assignments[discipline]!);
+  List<PowerliftingAssignment> assignmentsFor(
+    PowerliftingDiscipline discipline,
+  ) => List.unmodifiable(_assignments[discipline]!);
 
   List<PowerliftingRecord> recordsFor(
     PowerliftingDiscipline discipline, {
     PowerliftingMetric metric = PowerliftingMetric.heaviest,
-  }) =>
-      List.unmodifiable(_records[discipline]?[metric] ?? const []);
+  }) => List.unmodifiable(_records[discipline]?[metric] ?? const []);
 
   @override
   void dispose() {
@@ -150,6 +152,9 @@ class PowerliftingProvider extends ChangeNotifier
           ...data,
           'createdAt': createdAt ?? DateTime.fromMillisecondsSinceEpoch(0),
         });
+        if (assignment.gymId != gymId) {
+          continue;
+        }
         if (assignment.gymId.isEmpty || assignment.deviceId.isEmpty) {
           continue;
         }
@@ -234,18 +239,17 @@ class PowerliftingProvider extends ChangeNotifier
           .collection(_assignmentCollection)
           .doc(id)
           .set({
-        'discipline': assignment.discipline.id,
-        'gymId': assignment.gymId,
-        'deviceId': assignment.deviceId,
-        'exerciseId': assignment.exerciseId,
-        'createdAt': Timestamp.fromDate(assignment.createdAt),
-      }, SetOptions(merge: true));
+            'discipline': assignment.discipline.id,
+            'gymId': assignment.gymId,
+            'deviceId': assignment.deviceId,
+            'exerciseId': assignment.exerciseId,
+            'createdAt': Timestamp.fromDate(assignment.createdAt),
+          }, SetOptions(merge: true));
 
-      _assignments[discipline] = <PowerliftingAssignment>[...
-        _assignments[discipline]!,
+      _assignments[discipline] = <PowerliftingAssignment>[
+        ..._assignments[discipline]!,
         assignment,
-      ]
-        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
       await _loadRecordsForDiscipline(discipline);
       _ensureLogSubscription(assignment);
@@ -283,26 +287,47 @@ class PowerliftingProvider extends ChangeNotifier
     }
 
     final cacheKey = '$gymId|$deviceId';
-    if (_exerciseCache.containsKey(cacheKey) &&
-        _exerciseCache[cacheKey]!.isNotEmpty) {
-      return _exerciseCache[cacheKey]!;
+    return _loadExercisesForDeviceInGym(gymId, deviceId, cacheKey: cacheKey);
+  }
+
+  Future<List<Exercise>> _loadExercisesForDeviceInGym(
+    String gymId,
+    String deviceId, {
+    String? cacheKey,
+  }) async {
+    final uid = _userId;
+    if (gymId.isEmpty || uid == null || uid.isEmpty) {
+      return <Exercise>[];
     }
 
-    if (_loadingExercises.contains(cacheKey)) {
+    final resolvedCacheKey = cacheKey ?? '$gymId|$deviceId';
+    if (_exerciseCache.containsKey(resolvedCacheKey) &&
+        _exerciseCache[resolvedCacheKey]!.isNotEmpty) {
+      return _exerciseCache[resolvedCacheKey]!;
+    }
+
+    if (_loadingExercises.contains(resolvedCacheKey)) {
       await Future<void>.delayed(const Duration(milliseconds: 50));
-      return loadExercisesForDevice(deviceId);
+      return _loadExercisesForDeviceInGym(
+        gymId,
+        deviceId,
+        cacheKey: resolvedCacheKey,
+      );
     }
 
-    _loadingExercises.add(cacheKey);
+    _loadingExercises.add(resolvedCacheKey);
     try {
       await _membership.ensureMembership(gymId, uid);
-      final exercises =
-          await _getExercisesForDevice.execute(gymId, deviceId, uid);
+      final exercises = await _getExercisesForDevice.execute(
+        gymId,
+        deviceId,
+        uid,
+      );
       exercises.sort((a, b) => a.name.compareTo(b.name));
-      _exerciseCache[cacheKey] = exercises;
+      _exerciseCache[resolvedCacheKey] = exercises;
       return exercises;
     } finally {
-      _loadingExercises.remove(cacheKey);
+      _loadingExercises.remove(resolvedCacheKey);
     }
   }
 
@@ -333,7 +358,7 @@ class PowerliftingProvider extends ChangeNotifier
           .collection('users')
           .doc(uid)
           .collection(_assignmentCollection);
-      final snapshot = await collection.get();
+      final snapshot = await collection.where('gymId', isEqualTo: gymId).get();
 
       if (snapshot.docs.isNotEmpty) {
         final batch = _firestore.batch();
@@ -363,8 +388,9 @@ class PowerliftingProvider extends ChangeNotifier
   }
 
   Map<PowerliftingMetric, List<PowerliftingRecord>> _createEmptyRecordMap() => {
-        for (final metric in PowerliftingMetric.values) metric: <PowerliftingRecord>[],
-      };
+    for (final metric in PowerliftingMetric.values)
+      metric: <PowerliftingRecord>[],
+  };
 
   Future<void> _reloadDisciplineRecords(
     PowerliftingDiscipline discipline,
@@ -457,9 +483,7 @@ class PowerliftingProvider extends ChangeNotifier
     final Map<String, QueryDocumentSnapshot<Map<String, dynamic>>> docs =
         <String, QueryDocumentSnapshot<Map<String, dynamic>>>{};
 
-    Future<void> collect(
-      Query<Map<String, dynamic>> query,
-    ) async {
+    Future<void> collect(Query<Map<String, dynamic>> query) async {
       final snapshot = await query.get();
       for (final doc in snapshot.docs) {
         docs[doc.id] = doc;
@@ -478,9 +502,9 @@ class PowerliftingProvider extends ChangeNotifier
     }
 
     await collect(
-      baseQuery.orderBy('timestamp', descending: true).limit(
-            _logsLimitPerSource,
-          ),
+      baseQuery
+          .orderBy('timestamp', descending: true)
+          .limit(_logsLimitPerSource),
     );
 
     if (docs.isEmpty) {
@@ -492,7 +516,8 @@ class PowerliftingProvider extends ChangeNotifier
       final data = doc.data();
       final weight = (data['weight'] as num?)?.toDouble() ?? 0;
       final reps = (data['reps'] as num?)?.toInt() ?? 0;
-      final timestamp = (data['timestamp'] as Timestamp?)?.toDate() ??
+      final timestamp =
+          (data['timestamp'] as Timestamp?)?.toDate() ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
       final record = PowerliftingRecord(
@@ -524,7 +549,7 @@ class PowerliftingProvider extends ChangeNotifier
     String? exerciseName;
 
     if ((device?.isMulti ?? false) || exerciseId != deviceId) {
-      final exercises = await loadExercisesForDevice(deviceId);
+      final exercises = await _loadExercisesForDeviceInGym(gymId, deviceId);
       exerciseName = exercises
           .firstWhere(
             (element) => element.id == exerciseId,
@@ -537,7 +562,10 @@ class PowerliftingProvider extends ChangeNotifier
           .name;
     }
 
-    return _PowerliftingLabels(deviceName: deviceName, exerciseName: exerciseName);
+    return _PowerliftingLabels(
+      deviceName: deviceName,
+      exerciseName: exerciseName,
+    );
   }
 
   Future<Device?> _loadDevice(String gymId, String deviceId) async {
@@ -630,7 +658,9 @@ class PowerliftingProvider extends ChangeNotifier
   }
 }
 
-final powerliftingProvider = ChangeNotifierProvider<PowerliftingProvider>((ref) {
+final powerliftingProvider = ChangeNotifierProvider<PowerliftingProvider>((
+  ref,
+) {
   final provider = PowerliftingProvider(
     firestore: FirebaseFirestore.instance,
     getDevicesForGym: ref.read(getDevicesForGymProvider),
@@ -645,10 +675,7 @@ final powerliftingProvider = ChangeNotifierProvider<PowerliftingProvider>((ref) 
   Future<void> update() {
     final auth = ref.read(authControllerProvider);
     final gym = ref.read(gymProvider);
-    return provider.updateContext(
-      userId: auth.userId,
-      gymId: gym.currentGymId,
-    );
+    return provider.updateContext(userId: auth.userId, gymId: gym.currentGymId);
   }
 
   ref.onDispose(provider.dispose);

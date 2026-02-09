@@ -41,71 +41,102 @@ void main() {
 
     test('login throws when user document missing', () async {
       final user = FakeFirebaseUser(uid: 'uid-2', email: 'missing@example.com');
-      auth.addUser(email: 'missing@example.com', password: 'secret', user: user);
+      auth.addUser(
+        email: 'missing@example.com',
+        password: 'secret',
+        user: user,
+      );
 
       expect(
         () => source.login('missing@example.com', 'secret'),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('User document not found'))),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('User document not found'),
+          ),
+        ),
       );
     });
 
-    test('register creates Firestore document and gym membership with member number', () async {
-      await _seedGymCode(
-        firestore: firestore,
-        gymId: 'gym-42',
-        gymName: 'Gym',
-        code: 'JOIN42',
-      );
+    test(
+      'register creates Firestore document and gym membership with member number',
+      () async {
+        await _seedGymCode(
+          firestore: firestore,
+          gymId: 'gym-42',
+          gymName: 'Gym',
+          code: 'JOIN42',
+        );
 
-      final dto = await source.register('new@example.com', 'secret', 'join42');
+        final dto = await source.register(
+          'new@example.com',
+          'secret',
+          'join42',
+        );
 
-      final userDoc = await firestore.collection('users').doc(dto.userId).get();
-      expect(userDoc.exists, isTrue);
-      expect(userDoc.data(), containsPair('email', 'new@example.com'));
+        final userDoc = await firestore
+            .collection('users')
+            .doc(dto.userId)
+            .get();
+        expect(userDoc.exists, isTrue);
+        expect(userDoc.data(), containsPair('email', 'new@example.com'));
 
-      final membership = await firestore
-          .collection('gyms')
-          .doc('gym-42')
-          .collection('users')
-          .doc(dto.userId)
-          .get();
-      expect(membership.exists, isTrue);
-      expect(membership.data(), containsPair('memberNumber', '0001'));
+        final membership = await firestore
+            .collection('gyms')
+            .doc('gym-42')
+            .collection('users')
+            .doc(dto.userId)
+            .get();
+        expect(membership.exists, isTrue);
+        expect(membership.data(), containsPair('memberNumber', '0001'));
 
-      final gymDoc = await firestore.collection('gyms').doc('gym-42').get();
-      expect(gymDoc.data(), containsPair('memberNumberCounter', 1));
-    });
+        final gymDoc = await firestore.collection('gyms').doc('gym-42').get();
+        expect(gymDoc.data(), containsPair('memberNumberCounter', 1));
+      },
+    );
 
-    test('register increments member number sequentially for same gym', () async {
-      await _seedGymCode(
-        firestore: firestore,
-        gymId: 'gym-42',
-        gymName: 'Gym',
-        code: 'JOIN42',
-      );
+    test(
+      'register increments member number sequentially for same gym',
+      () async {
+        await _seedGymCode(
+          firestore: firestore,
+          gymId: 'gym-42',
+          gymName: 'Gym',
+          code: 'JOIN42',
+        );
 
-      final first = await source.register('one@example.com', 'secret', 'JOIN42');
-      final second = await source.register('two@example.com', 'secret', 'JOIN42');
+        final first = await source.register(
+          'one@example.com',
+          'secret',
+          'JOIN42',
+        );
+        final second = await source.register(
+          'two@example.com',
+          'secret',
+          'JOIN42',
+        );
 
-      final firstMembership = await firestore
-          .collection('gyms')
-          .doc('gym-42')
-          .collection('users')
-          .doc(first.userId)
-          .get();
-      final secondMembership = await firestore
-          .collection('gyms')
-          .doc('gym-42')
-          .collection('users')
-          .doc(second.userId)
-          .get();
+        final firstMembership = await firestore
+            .collection('gyms')
+            .doc('gym-42')
+            .collection('users')
+            .doc(first.userId)
+            .get();
+        final secondMembership = await firestore
+            .collection('gyms')
+            .doc('gym-42')
+            .collection('users')
+            .doc(second.userId)
+            .get();
 
-      expect(firstMembership.data(), containsPair('memberNumber', '0001'));
-      expect(secondMembership.data(), containsPair('memberNumber', '0002'));
+        expect(firstMembership.data(), containsPair('memberNumber', '0001'));
+        expect(secondMembership.data(), containsPair('memberNumber', '0002'));
 
-      final gymDoc = await firestore.collection('gyms').doc('gym-42').get();
-      expect(gymDoc.data(), containsPair('memberNumberCounter', 2));
-    });
+        final gymDoc = await firestore.collection('gyms').doc('gym-42').get();
+        expect(gymDoc.data(), containsPair('memberNumberCounter', 2));
+      },
+    );
 
     test('register throws when gym code not found', () {
       expect(
@@ -151,29 +182,32 @@ void main() {
       expect(available, isFalse);
     });
 
-    test('setUsername delegates to change runner and retries on retryable errors', () async {
-      final attempts = <int>[];
-      int callCount = 0;
-      Future<void> runner({
-        required FirebaseFirestore firestore,
-        required String uid,
-        required String newUsername,
-      }) async {
-        attempts.add(++callCount);
-        if (callCount < 2) {
-          throw FirebaseException(plugin: 'firestore', code: 'aborted');
+    test(
+      'setUsername delegates to change runner and retries on retryable errors',
+      () async {
+        final attempts = <int>[];
+        int callCount = 0;
+        Future<void> runner({
+          required FirebaseFirestore firestore,
+          required String uid,
+          required String newUsername,
+        }) async {
+          attempts.add(++callCount);
+          if (callCount < 2) {
+            throw FirebaseException(plugin: 'firestore', code: 'aborted');
+          }
         }
-      }
 
-      final testSource = FirestoreAuthSource(
-        auth: auth,
-        firestore: firestore,
-        changeUsername: runner,
-      );
+        final testSource = FirestoreAuthSource(
+          auth: auth,
+          firestore: firestore,
+          changeUsername: runner,
+        );
 
-      await testSource.setUsername('uid-1', 'name');
-      expect(attempts.length, 2);
-    });
+        await testSource.setUsername('uid-1', 'name');
+        expect(attempts.length, 2);
+      },
+    );
 
     test('setUsername rethrows non-retryable errors', () async {
       Future<void> runner({
@@ -192,32 +226,46 @@ void main() {
 
       expect(
         () => testSource.setUsername('uid-1', 'name'),
-        throwsA(isA<FirebaseException>().having((e) => e.code, 'code', 'permission-denied')),
+        throwsA(
+          isA<FirebaseException>().having(
+            (e) => e.code,
+            'code',
+            'permission-denied',
+          ),
+        ),
       );
     });
 
     test('setShowInLeaderboard updates Firestore field', () async {
-      await firestore.seedDocument('users/uid-1', {
-        'showInLeaderboard': true,
-      });
+      await firestore.seedDocument('users/uid-1', {'showInLeaderboard': true});
       await source.setShowInLeaderboard('uid-1', false);
       final doc = await firestore.collection('users').doc('uid-1').get();
       expect(doc.data(), containsPair('showInLeaderboard', false));
     });
 
     test('setPublicProfile updates Firestore field', () async {
-      await firestore.seedDocument('users/uid-2', {
-        'publicProfile': false,
-      });
+      await firestore.seedDocument('users/uid-2', {'publicProfile': false});
       await source.setPublicProfile('uid-2', true);
       final doc = await firestore.collection('users').doc('uid-2').get();
       expect(doc.data(), containsPair('publicProfile', true));
     });
 
+    test(
+      'setProfileVisibility updates both profile visibility fields',
+      () async {
+        await firestore.seedDocument('users/uid-9', {
+          'showInLeaderboard': true,
+          'publicProfile': true,
+        });
+        await source.setProfileVisibility('uid-9', false);
+        final doc = await firestore.collection('users').doc('uid-9').get();
+        expect(doc.data(), containsPair('showInLeaderboard', false));
+        expect(doc.data(), containsPair('publicProfile', false));
+      },
+    );
+
     test('setAvatarKey updates Firestore field and timestamp', () async {
-      await firestore.seedDocument('users/uid-4', {
-        'avatarKey': 'old',
-      });
+      await firestore.seedDocument('users/uid-4', {'avatarKey': 'old'});
       await source.setAvatarKey('uid-4', 'new');
       final doc = await firestore.collection('users').doc('uid-4').get();
       final data = doc.data();
@@ -255,9 +303,7 @@ Future<void> _seedGymCode({
   final created = createdAt ?? now.subtract(const Duration(days: 1));
   final expires = expiresAt ?? now.add(const Duration(days: 30));
 
-  await firestore.seedDocument('gyms/$gymId', {
-    'name': gymName,
-  });
+  await firestore.seedDocument('gyms/$gymId', {'name': gymName});
 
   await firestore.seedDocument('gym_codes/$gymId/codes/code-1', {
     'code': code.toUpperCase(),

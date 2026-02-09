@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
 
-class TimerAppBarTitle extends StatelessWidget {
+class TimerAppBarTitle extends ConsumerWidget {
   final Widget title;
   final bool centerTitle;
 
@@ -13,24 +15,25 @@ class TimerAppBarTitle extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final hasOutlineBranding = theme.extension<AppBrandTheme>() != null;
     final alignment = centerTitle ? Alignment.center : Alignment.centerLeft;
 
     if (!hasOutlineBranding) {
-      return Align(
-        alignment: alignment,
-        child: title,
-      );
+      return Align(alignment: alignment, child: title);
     }
 
     const timerPadding = EdgeInsets.symmetric(horizontal: 6, vertical: 4);
-    final timerSlotWidth = _estimatedTimerSlotWidth(context, theme);
-    const timer = ActiveWorkoutTimer(
-      padding: timerPadding,
-      compact: true,
+    final timerIsRunning = ref.watch(
+      workoutSessionDurationServiceProvider.select(
+        (service) => service.isRunning,
+      ),
     );
+    final timerSlotWidth = timerIsRunning
+        ? _estimatedTimerSlotWidth(context, theme)
+        : 0.0;
+    const timer = ActiveWorkoutTimer(padding: timerPadding, compact: true);
 
     if (!centerTitle) {
       return SizedBox(
@@ -41,19 +44,10 @@ class TimerAppBarTitle extends StatelessWidget {
           children: [
             SizedBox(
               width: timerSlotWidth,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: timer,
-              ),
+              child: Align(alignment: Alignment.centerLeft, child: timer),
             ),
             Expanded(
-              child: Align(
-                alignment: alignment,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: title,
-                ),
-              ),
+              child: Align(alignment: alignment, child: title),
             ),
           ],
         ),
@@ -69,18 +63,12 @@ class TimerAppBarTitle extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: SizedBox(
               width: timerSlotWidth,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: timer,
-              ),
+              child: Align(alignment: Alignment.centerLeft, child: timer),
             ),
           ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: timerSlotWidth),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: title,
-            ),
+            child: Align(alignment: Alignment.center, child: title),
           ),
         ],
       ),
@@ -89,16 +77,16 @@ class TimerAppBarTitle extends StatelessWidget {
 }
 
 double _estimatedTimerSlotWidth(BuildContext context, ThemeData theme) {
-  final baseStyle = (theme.textTheme.titleSmall ??
-          theme.textTheme.bodyMedium ??
-          const TextStyle(fontSize: 14))
-      .copyWith(fontWeight: FontWeight.w600);
+  final baseStyle =
+      (theme.textTheme.titleSmall ??
+              theme.textTheme.bodyMedium ??
+              const TextStyle(fontSize: 14))
+          .copyWith(fontWeight: FontWeight.w600);
   final painter = TextPainter(
     text: TextSpan(text: '000:00', style: baseStyle),
     maxLines: 1,
     textDirection: Directionality.of(context),
-  )
-    ..layout();
+  )..layout();
 
   const iconWidth = 16.0;
   const spacing = 6.0;

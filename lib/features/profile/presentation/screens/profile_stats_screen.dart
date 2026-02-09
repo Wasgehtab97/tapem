@@ -16,13 +16,35 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/nfc_stats/providers/nfc_scan_stats_providers.dart';
 
 class ProfileStatsScreen extends ConsumerStatefulWidget {
-  const ProfileStatsScreen({super.key});
+  const ProfileStatsScreen({super.key, this.onExitToProfile});
+
+  final VoidCallback? onExitToProfile;
 
   @override
   ConsumerState<ProfileStatsScreen> createState() => _ProfileStatsScreenState();
 }
 
 class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
+  void _handleBackPressed() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    widget.onExitToProfile?.call();
+  }
+
+  Widget? _buildLeadingBackButton() {
+    final canPop = Navigator.of(context).canPop();
+    if (!canPop && widget.onExitToProfile == null) {
+      return null;
+    }
+    return IconButton(
+      onPressed: _handleBackPressed,
+      icon: const Icon(Icons.chevron_left_rounded),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -36,9 +58,7 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
       final gymId = auth.gymCode;
       final userId = auth.userId;
       if (gymId != null && userId != null) {
-        unawaited(
-          restStats.load(gymId: gymId, userId: userId),
-        );
+        unawaited(restStats.load(gymId: gymId, userId: userId));
       }
     });
   }
@@ -51,7 +71,8 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
     final numberFormat = NumberFormat(
       '0.0',
       Localizations.localeOf(context).toString(),
@@ -60,8 +81,8 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
     final totalTrainingDays = prov.totalTrainingDays;
     final avgTrainingDays = prov.averageTrainingDaysPerWeek;
     final favoriteExercise = prov.favoriteExerciseName;
-    final restValue = restStatsProv.isLoading &&
-            restStatsProv.overallActualRestMs == null
+    final restValue =
+        restStatsProv.isLoading && restStatsProv.overallActualRestMs == null
         ? '…'
         : _formatRestDuration(restStatsProv.overallActualRestMs);
     final nfcValue = nfcStatsProv.when(
@@ -107,77 +128,83 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
 
               return Column(
                 children: [
-                   // Top Row: Total Days (Large) + Avg Days
-                   Row(
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     children: [
-                       Expanded(
-                         flex: 3,
-                         child: _StatCard(
-                           label: loc.profileStatsTotalTrainingDays,
-                           value: totalTrainingDays.toString(),
-                           icon: Icons.calendar_today_rounded,
-                           color: Colors.blueAccent,
-                           isLarge: true,
-                         ),
-                       ),
-                       SizedBox(width: gap),
-                       Expanded(
-                         flex: 4,
-                         child: _StatCard(
-                           label: loc.profileStatsAverageTrainingDaysPerWeek,
-                           value: formatAverage(avgTrainingDays),
-                           icon: Icons.show_chart_rounded,
-                           color: Colors.purpleAccent,
-                           subtitle: '/ ${loc.deviceLeaderboardTabWeek}',
-                         ),
-                       ),
-                     ],
-                   ),
-                   SizedBox(height: gap),
-                   // Second Row: Rest Timer + Favorite Exercise
-                   Row(
-                     children: [
-                       Expanded(
-                         child: _StatCard(
-                           label: 'Rest Timer', // loc.profileStatsRestTimerLabel might be long, check localization
-                           value: restValue,
-                           icon: Icons.timer_outlined,
-                           color: Colors.orangeAccent,
-                           onTap: () => Navigator.of(context).pushNamed(AppRouter.restStats),
-                         ),
-                       ),
-                       SizedBox(width: gap),
-                       Expanded(
-                         child: _StatCard(
-                           label: 'Lieblingsübung', // loc.profileStatsFavoriteExercise
-                           value: favoriteExercise,
-                           icon: Icons.favorite_rounded,
-                           color: Colors.pinkAccent,
-                           onTap: () => _showFavoriteExercisesDialog(context, prov, loc),
-                         ),
-                       ),
-                     ],
-                   ),
-                   SizedBox(height: gap),
-                   _StatCard(
-                     label: loc.profileStatsNfcScans,
-                     value: nfcValue,
-                     icon: Icons.nfc,
-                     color: Colors.tealAccent,
-                     subtitle: loc.profileStatsNfcScansSubtitle,
-                     isWide: true,
-                   ),
-                   SizedBox(height: gap),
-                   // Bottom: Powerlifting (Full Width or special)
-                   _StatCard(
-                     label: loc.profileStatsPowerliftingButton,
-                     value: 'Total & Wilks',
-                     icon: Icons.fitness_center_rounded,
-                     color: brandColor, // Theme color
-                     onTap: () => Navigator.of(context).pushNamed(AppRouter.powerlifting),
-                     isWide: true,
-                   ),
+                  // Top Row: Total Days (Large) + Avg Days
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: _StatCard(
+                          label: loc.profileStatsTotalTrainingDays,
+                          value: totalTrainingDays.toString(),
+                          icon: Icons.calendar_today_rounded,
+                          color: Colors.blueAccent,
+                          isLarge: true,
+                        ),
+                      ),
+                      SizedBox(width: gap),
+                      Expanded(
+                        flex: 4,
+                        child: _StatCard(
+                          label: loc.profileStatsAverageTrainingDaysPerWeek,
+                          value: formatAverage(avgTrainingDays),
+                          icon: Icons.show_chart_rounded,
+                          color: Colors.purpleAccent,
+                          subtitle: '/ ${loc.deviceLeaderboardTabWeek}',
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: gap),
+                  // Second Row: Rest Timer + Favorite Exercise
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          label:
+                              'Rest Timer', // loc.profileStatsRestTimerLabel might be long, check localization
+                          value: restValue,
+                          icon: Icons.timer_outlined,
+                          color: Colors.orangeAccent,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRouter.restStats),
+                        ),
+                      ),
+                      SizedBox(width: gap),
+                      Expanded(
+                        child: _StatCard(
+                          label:
+                              'Lieblingsübung', // loc.profileStatsFavoriteExercise
+                          value: favoriteExercise,
+                          icon: Icons.favorite_rounded,
+                          color: Colors.pinkAccent,
+                          onTap: () =>
+                              _showFavoriteExercisesDialog(context, prov, loc),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: gap),
+                  _StatCard(
+                    label: loc.profileStatsNfcScans,
+                    value: nfcValue,
+                    icon: Icons.nfc,
+                    color: Colors.tealAccent,
+                    subtitle: loc.profileStatsNfcScansSubtitle,
+                    isWide: true,
+                  ),
+                  SizedBox(height: gap),
+                  // Bottom: Powerlifting (Full Width or special)
+                  _StatCard(
+                    label: loc.profileStatsPowerliftingButton,
+                    value: 'Total & Wilks',
+                    icon: Icons.fitness_center_rounded,
+                    color: brandColor, // Theme color
+                    onTap: () =>
+                        Navigator.of(context).pushNamed(AppRouter.powerlifting),
+                    isWide: true,
+                  ),
                 ],
               );
             },
@@ -188,6 +215,8 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: _buildLeadingBackButton(),
         title: Text(
           loc.profileStatsTitle,
           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -198,13 +227,16 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
       ),
       extendBodyBehindAppBar: true,
       body: Container(
-         decoration: BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
               theme.scaffoldBackgroundColor,
-              Color.alphaBlend(brandColor.withOpacity(0.05), theme.scaffoldBackgroundColor),
+              Color.alphaBlend(
+                brandColor.withOpacity(0.05),
+                theme.scaffoldBackgroundColor,
+              ),
             ],
           ),
         ),
@@ -276,19 +308,15 @@ class _ProfileStatsScreenState extends ConsumerState<ProfileStatsScreen> {
                           Expanded(
                             child: Text(
                               usage.name,
-                              style: Theme.of(dialogContext)
-                                  .textTheme
-                                  .bodyMedium,
+                              style: Theme.of(
+                                dialogContext,
+                              ).textTheme.bodyMedium,
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           Text(
-                            loc.reportDeviceUsageSessions(
-                              usage.sessionCount,
-                            ),
-                            style: Theme.of(dialogContext)
-                                .textTheme
-                                .bodyMedium,
+                            loc.reportDeviceUsageSessions(usage.sessionCount),
+                            style: Theme.of(dialogContext).textTheme.bodyMedium,
                           ),
                         ],
                       ),
@@ -340,8 +368,10 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final displayValue = (value == null || value!.trim().isEmpty) ? '—' : value!;
-    
+    final displayValue = (value == null || value!.trim().isEmpty)
+        ? '—'
+        : value!;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -355,10 +385,7 @@ class _StatCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.03),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.08),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -376,20 +403,16 @@ class _StatCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                   Container(
+                  Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      icon,
-                      size: 20,
-                      color: color,
-                    ),
+                    child: Icon(icon, size: 20, color: color),
                   ),
                   if (onTap != null)
-                     Icon(
+                    Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 14,
                       color: Colors.white.withOpacity(0.3),

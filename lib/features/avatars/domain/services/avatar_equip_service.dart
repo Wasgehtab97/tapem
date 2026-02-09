@@ -18,10 +18,10 @@ class AvatarEquipService {
     FirebaseAuth? auth,
     required AvatarInventoryProvider inventory,
     AvatarsV2Telemetry? telemetry,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance,
-        _inventory = inventory,
-        _telemetry = telemetry;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _auth = auth ?? FirebaseAuth.instance,
+       _inventory = inventory,
+       _telemetry = telemetry;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
@@ -65,16 +65,24 @@ class AvatarEquipService {
         throw EquipAvatarException('not_owned');
       }
 
+      final inventoryKey = source == 'global'
+          ? 'global/$avatarId'
+          : '${source.split(':')[1]}/$avatarId';
+      final inventoryDocId = inventoryKey.replaceAll('/', '__');
+      final inventorySnap = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('avatarInventory')
+          .doc(inventoryDocId)
+          .get();
+      if (!inventorySnap.exists) {
+        throw EquipAvatarException('not_owned');
+      }
+
       if (source.startsWith('gym:')) {
         final gymId = source.split(':')[1];
-        final ownedDoc = await _firestore
-            .collection('users')
-            .doc(uid)
-            .collection('avatarsOwned')
-            .doc(avatarId)
-            .get();
-        final ownedSource = ownedDoc.data()?['source'] as String? ?? 'global';
-        if (ownedSource != 'gym:$gymId') {
+        final inventoryGymId = inventorySnap.data()?['gymId'] as String?;
+        if (inventoryGymId != null && inventoryGymId != gymId) {
           throw EquipAvatarException('cross_gym_forbidden');
         }
         final memberSnap = await _firestore
@@ -91,10 +99,9 @@ class AvatarEquipService {
       final prev = _equippedRef;
       _equippedRef = equippedRef;
       try {
-        await _firestore
-            .collection('users')
-            .doc(uid)
-            .set({'equippedAvatarRef': equippedRef}, SetOptions(merge: true));
+        await _firestore.collection('users').doc(uid).set({
+          'equippedAvatarRef': equippedRef,
+        }, SetOptions(merge: true));
       } on FirebaseException catch (e) {
         _equippedRef = prev;
         if (e.code == 'permission-denied') {
@@ -110,7 +117,10 @@ class AvatarEquipService {
       rethrow;
     } finally {
       _telemetry?.avatarEquipAttempt(
-          avatarId: avatarId, source: source, result: result);
+        avatarId: avatarId,
+        source: source,
+        result: result,
+      );
     }
   }
 }

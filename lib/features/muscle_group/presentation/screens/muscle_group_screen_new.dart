@@ -3,12 +3,16 @@ import 'dart:math' as math;
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/providers/auth_providers.dart';
 import '../../../../core/providers/muscle_group_provider.dart';
 import '../../../../core/providers/xp_provider.dart';
+import '../../../../core/theme/app_brand_theme.dart';
+import '../../../../core/theme/design_tokens.dart';
 import '../../../rank/domain/services/level_service.dart';
+import '../../../rank/presentation/widgets/ranking_ui.dart';
 import '../../domain/models/muscle_group.dart';
 import '../widgets/muscle_group_radar_chart.dart';
 import '../../../../ui/muscles/muscle_group_display.dart';
@@ -41,14 +45,47 @@ class _MuscleGroupScreenNewState extends ConsumerState<MuscleGroupScreenNew> {
   @override
   Widget build(BuildContext context) {
     final prov = ref.watch(muscleGroupProvider);
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final accent = brandTheme?.outline ?? theme.colorScheme.secondary;
 
     if (prov.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: const Color(0xFF0B1221),
+        appBar: AppBar(
+          title: Text(
+            'Muskelranking',
+            style: GoogleFonts.orbitron(
+              textStyle: theme.textTheme.titleLarge,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
     if (prov.error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Muskelgruppen')),
-        body: Center(child: Text(prov.error!)),
+        backgroundColor: const Color(0xFF0B1221),
+        appBar: AppBar(
+          title: Text(
+            'Muskelranking',
+            style: GoogleFonts.orbitron(
+              textStyle: theme.textTheme.titleLarge,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Text(
+            prov.error!,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+        ),
       );
     }
 
@@ -153,44 +190,148 @@ class _MuscleGroupScreenNewState extends ConsumerState<MuscleGroupScreenNew> {
       math.min(MediaQuery.of(context).size.width - 32, 420.0),
     );
 
+    final orderedStats = [...stats]..sort((a, b) => b.xp.compareTo(a.xp));
+    final strongest = orderedStats.isEmpty ? null : orderedStats.first;
+    final weakest = orderedStats.isEmpty ? null : orderedStats.last;
+    final nextLevelTarget = orderedStats
+        .where((stat) => !stat.reachedMaxLevel)
+        .fold<_MuscleNextLevelTarget?>(null, (best, stat) {
+          final xpToNext = LevelService.xpPerLevel - stat.xpInLevel;
+          if (best == null || xpToNext < best.xpToNextLevel) {
+            return _MuscleNextLevelTarget(
+              label: stat.label,
+              nextLevel: stat.level + 1,
+              xpToNextLevel: xpToNext,
+            );
+          }
+          return best;
+        });
+    final isDe = Localizations.localeOf(
+      context,
+    ).languageCode.toLowerCase().startsWith('de');
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Muskelgruppen')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Verteilung deiner XP',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              if (totalXp <= 0)
-                Card(
-                  elevation: 0,
-                  color: Theme.of(context).colorScheme.surfaceVariant,
-                  child: const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text(
-                      'Sammle erste Trainingseinheiten, um deine Muskelverteilung zu sehen.',
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: Text(
+          'Muskelranking',
+          style: GoogleFonts.orbitron(
+            textStyle: theme.textTheme.titleLarge,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ),
+      body: RankingGradientBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _MuscleHeroCard(
+                  totalXpLabel: numberFormat.format(totalXp.round()),
+                  strongestLabel: strongest?.label ?? '-',
+                  weakestLabel: weakest?.label ?? '-',
+                  accent: accent,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                RankingGoalSignalCard(
+                  accent: accent,
+                  title: isDe
+                      ? 'Nächstes Muskel-Level in'
+                      : 'Next muscle level in',
+                  value: nextLevelTarget == null
+                      ? 'Max'
+                      : '${numberFormat.format(nextLevelTarget.xpToNextLevel)} XP',
+                  subtitle: nextLevelTarget == null
+                      ? (isDe
+                            ? 'Alle Muskelgruppen sind auf Max-Level.'
+                            : 'All muscle groups are at max level.')
+                      : (isDe
+                            ? '${nextLevelTarget.label} -> Level ${nextLevelTarget.nextLevel}'
+                            : '${nextLevelTarget.label} -> Level ${nextLevelTarget.nextLevel}'),
+                  icon: Icons.insights_rounded,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.surface.withOpacity(0.95),
+                        theme.colorScheme.surface.withOpacity(0.84),
+                      ],
                     ),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    border: Border.all(color: accent.withOpacity(0.24)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.34),
+                        blurRadius: 22,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
                   ),
-                )
-              else ...[
-                Center(
-                  child: SizedBox(
-                    height: chartExtent,
-                    width: chartExtent,
-                    child: MuscleGroupRadarChart(entries: chartEntries),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Verteilung deiner XP',
+                        style: GoogleFonts.orbitron(
+                          textStyle: theme.textTheme.titleMedium,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (totalXp <= 0)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.onSurface.withOpacity(
+                              0.04,
+                            ),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.button,
+                            ),
+                            border: Border.all(
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.1,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'Sammle erste Trainingseinheiten, um deine Muskelverteilung zu sehen.',
+                            style: GoogleFonts.rajdhani(
+                              textStyle: theme.textTheme.bodyLarge,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        )
+                      else
+                        Center(
+                          child: SizedBox(
+                            height: chartExtent,
+                            width: chartExtent,
+                            child: MuscleGroupRadarChart(entries: chartEntries),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.md),
                 Text(
                   'Details nach Muskelgruppe',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: GoogleFonts.orbitron(
+                    textStyle: theme.textTheme.titleMedium,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.sm),
                 ...stats.map((stat) {
                   final xpLabel = numberFormat.format(stat.xp.round());
                   final shareLabel =
@@ -200,8 +341,8 @@ class _MuscleGroupScreenNewState extends ConsumerState<MuscleGroupScreenNew> {
                   final progressLabel = isMaxLevel
                       ? 'Maximales Level erreicht'
                       : 'Fortschritt zu Level ${level + 1}: '
-                          '${numberFormat.format(stat.xpInLevel)} / '
-                          '${numberFormat.format(LevelService.xpPerLevel)} XP';
+                            '${numberFormat.format(stat.xpInLevel)} / '
+                            '${numberFormat.format(LevelService.xpPerLevel)} XP';
                   return _MuscleStatTile(
                     label: stat.label,
                     levelLabel: 'Level $level',
@@ -210,10 +351,11 @@ class _MuscleGroupScreenNewState extends ConsumerState<MuscleGroupScreenNew> {
                     levelProgress: stat.levelProgress,
                     progressLabel: progressLabel,
                     maxedOut: isMaxLevel,
+                    accent: accent,
                   );
                 }),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -243,6 +385,61 @@ class _MuscleStat {
   final bool reachedMaxLevel;
 }
 
+class _MuscleNextLevelTarget {
+  const _MuscleNextLevelTarget({
+    required this.label,
+    required this.nextLevel,
+    required this.xpToNextLevel,
+  });
+
+  final String label;
+  final int nextLevel;
+  final int xpToNextLevel;
+}
+
+class _MuscleHeroCard extends StatelessWidget {
+  const _MuscleHeroCard({
+    required this.totalXpLabel,
+    required this.strongestLabel,
+    required this.weakestLabel,
+    required this.accent,
+  });
+
+  final String totalXpLabel;
+  final String strongestLabel;
+  final String weakestLabel;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return RankingHeroCard(
+      accent: accent,
+      shadowOpacity: 0,
+      child: Row(
+        children: [
+          Expanded(
+            child: RankingHeroStatTile(label: 'Gesamt XP', value: totalXpLabel),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: RankingHeroStatTile(
+              label: 'Staerkste Zone',
+              value: strongestLabel,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: RankingHeroStatTile(
+              label: 'Schwaechste Zone',
+              value: weakestLabel,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MuscleStatTile extends StatelessWidget {
   const _MuscleStatTile({
     required this.label,
@@ -252,6 +449,7 @@ class _MuscleStatTile extends StatelessWidget {
     required this.levelProgress,
     required this.progressLabel,
     required this.maxedOut,
+    required this.accent,
   });
 
   final String label;
@@ -261,73 +459,95 @@ class _MuscleStatTile extends StatelessWidget {
   final double levelProgress;
   final String progressLabel;
   final bool maxedOut;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    label,
-                    style: theme.textTheme.titleSmall,
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: const BorderRadius.all(Radius.circular(999)),
-                  ),
-                  child: Text(
-                    levelLabel,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '$totalXpLabel · $shareLabel',
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: const BorderRadius.all(Radius.circular(4)),
-              child: LinearProgressIndicator(
-                value: levelProgress.clamp(0.0, 1.0),
-                minHeight: 6,
-                backgroundColor: theme.colorScheme.surfaceVariant,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  maxedOut
-                      ? theme.colorScheme.tertiary
-                      : theme.colorScheme.primary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              progressLabel,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: maxedOut
-                    ? theme.colorScheme.tertiary
-                    : theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs / 2),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.surface.withOpacity(0.95),
+            theme.colorScheme.surface.withOpacity(0.85),
           ],
         ),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: accent.withOpacity(0.2)),
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.rajdhani(
+                    textStyle: theme.textTheme.titleMedium,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: accent.withOpacity(0.14),
+                  borderRadius: const BorderRadius.all(Radius.circular(999)),
+                  border: Border.all(color: accent.withOpacity(0.4)),
+                ),
+                child: Text(
+                  levelLabel,
+                  style: GoogleFonts.orbitron(
+                    textStyle: theme.textTheme.labelMedium,
+                    color: accent,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$totalXpLabel · $shareLabel',
+            style: GoogleFonts.rajdhani(
+              textStyle: theme.textTheme.bodyMedium,
+              color: theme.colorScheme.onSurface.withOpacity(0.68),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(4)),
+            child: LinearProgressIndicator(
+              value: levelProgress.clamp(0.0, 1.0),
+              minHeight: 6,
+              backgroundColor: theme.colorScheme.surfaceVariant,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                maxedOut ? theme.colorScheme.tertiary : accent,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            progressLabel,
+            style: GoogleFonts.rajdhani(
+              textStyle: theme.textTheme.bodySmall,
+              color: maxedOut ? theme.colorScheme.tertiary : accent,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

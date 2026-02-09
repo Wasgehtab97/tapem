@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 
@@ -8,15 +7,15 @@ import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
-import 'package:tapem/core/widgets/brand_interactive_card.dart';
-import 'package:tapem/core/widgets/brand_outline_button.dart';
+import 'package:tapem/core/widgets/brand_modal.dart';
 import 'package:tapem/core/widgets/brand_primary_button.dart';
+import 'package:tapem/core/widgets/premium_action_tile.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/widgets/exercise_bottom_sheet.dart';
-import 'package:tapem/features/device/presentation/widgets/muscle_chips.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/ui/muscles/muscle_group_display.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart'
     show workoutSessionDurationServiceProvider;
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
@@ -44,15 +43,14 @@ class _ExerciseListScreenState
     extends riverpod.ConsumerState<ExerciseListScreen> {
   final _searchCtr = TextEditingController();
   String _query = '';
-  final Set<String> _selectedGroups = {};
-  bool _sortDescending = false;
 
   @override
   void initState() {
     super.initState();
-    final userId = riverpod.ProviderScope.containerOf(context, listen: false)
-        .read(authControllerProvider)
-        .userId!;
+    final userId = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(authControllerProvider).userId!;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final container = riverpod.ProviderScope.containerOf(context);
       container
@@ -69,10 +67,9 @@ class _ExerciseListScreenState
   }
 
   Future<void> _openAdd([Exercise? ex]) async {
-    final result = await showModalBottomSheet<Exercise>(
+    final result = await showDialog<Exercise>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
       builder: (_) => ExerciseBottomSheet(
         gymId: widget.gymId,
         deviceId: widget.deviceId,
@@ -91,15 +88,13 @@ class _ExerciseListScreenState
         onSelect(selection);
       } else {
         final container = riverpod.ProviderScope.containerOf(context);
-        final timer =
-            container.read(workoutSessionDurationServiceProvider);
+        final timer = container.read(workoutSessionDurationServiceProvider);
         if (timer.isRunning) {
           final auth = container.read(authControllerProvider);
           final userId = auth.userId;
           if (userId != null) {
             try {
-              final controller =
-                  container.read(workoutDayControllerProvider);
+              final controller = container.read(workoutDayControllerProvider);
               controller.addOrFocusSession(
                 gymId: widget.gymId,
                 deviceId: widget.deviceId,
@@ -132,21 +127,48 @@ class _ExerciseListScreenState
 
   Future<void> _deleteExercise(Exercise ex) async {
     final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final brand = theme.extension<AppBrandTheme>();
+    final brandColor = brand?.outline ?? theme.colorScheme.secondary;
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.exerciseDeleteTitle),
-        content: Text(loc.exerciseDeleteMessage(ex.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(loc.commonCancel),
+      barrierColor: Colors.black54,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: BrandModalSurface(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BrandModalHeader(
+                icon: Icons.delete_outline_rounded,
+                accent: brandColor,
+                title: loc.exerciseDeleteTitle,
+                subtitle: loc.exerciseDeleteMessage(ex.name),
+                onClose: () => Navigator.of(ctx).pop(false),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: Text(loc.commonCancel),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: BrandPrimaryButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: Text(loc.commonDelete),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(loc.commonDelete),
-          ),
-        ],
+        ),
       ),
     );
     if (confirm != true) return;
@@ -157,91 +179,13 @@ class _ExerciseListScreenState
         .removeExercise(widget.gymId, widget.deviceId, ex.id, userId);
   }
 
-  Future<void> _openMuscleFilter(List<MuscleGroup> groups) async {
-    final loc = AppLocalizations.of(context)!;
-    final result = await showModalBottomSheet<Set<String>>(
-      context: context,
-      builder: (ctx) {
-        final selected = Set<String>.from(_selectedGroups);
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: StatefulBuilder(
-              builder: (context, setSt) => Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    loc.filterMuscleChip,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final g in groups)
-                        FilterChip(
-                          label: Text(g.name),
-                          selected: selected.contains(g.id),
-                          onSelected: (value) {
-                            setSt(() {
-                              if (value) {
-                                selected.add(g.id);
-                              } else {
-                                selected.remove(g.id);
-                              }
-                            });
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      if (selected.isNotEmpty)
-                        TextButton(
-                          onPressed: () => setSt(() => selected.clear()),
-                          child: Text(loc.multiDeviceMuscleGroupFilterAll),
-                        ),
-                      const Spacer(),
-                      BrandPrimaryButton(
-                        onPressed: () => Navigator.of(ctx).pop(selected),
-                        child: Text(loc.commonOk),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-    if (result != null) {
-      setState(() {
-        _selectedGroups
-          ..clear()
-          ..addAll(result);
-      });
-    }
-  }
-
   List<Exercise> _filteredExercises(List<Exercise> all) {
     final q = _query.trim().toLowerCase();
-    final filtered = all.where((ex) {
-      final matchesQuery = ex.name.toLowerCase().contains(q);
-      final matchesGroup = _selectedGroups.isEmpty ||
-          _selectedGroups.any((id) => ex.muscleGroupIds.contains(id));
-      return matchesQuery && matchesGroup;
-    }).toList();
-    filtered.sort((a, b) =>
-        _sortDescending ? b.name.compareTo(a.name) : a.name.compareTo(b.name));
+    final filtered = all
+        .where((ex) => ex.name.toLowerCase().contains(q))
+        .toList();
+    filtered.sort((a, b) => a.name.compareTo(b.name));
     return filtered;
-  }
-
-  String _groupName(String id, List<MuscleGroup> groups) {
-    return groups.firstWhereOrNull((g) => g.id == id)?.name ?? id;
   }
 
   @override
@@ -252,8 +196,6 @@ class _ExerciseListScreenState
     final brandColor = brand?.outline ?? theme.colorScheme.secondary;
 
     final prov = ref.watch(exerciseProvider);
-    final groups = ref.watch(muscleGroupProvider).groups;
-
     final exercises = _filteredExercises(prov.exercises);
 
     Widget body;
@@ -264,7 +206,9 @@ class _ExerciseListScreenState
         child: Text(
           '${loc.errorPrefix}: ${prov.error}',
           textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.error,
+          ),
         ),
       );
     } else if (exercises.isEmpty) {
@@ -274,7 +218,11 @@ class _ExerciseListScreenState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.search_off, size: 48, color: brandColor.withOpacity(0.7)),
+              Icon(
+                Icons.search_off,
+                size: 48,
+                color: brandColor.withOpacity(0.7),
+              ),
               const SizedBox(height: 12),
               Text(
                 loc.multiDeviceNoExercises,
@@ -315,15 +263,17 @@ class _ExerciseListScreenState
                 onSelect(selection);
               } else {
                 final container = riverpod.ProviderScope.containerOf(context);
-                final timer =
-                    container.read(workoutSessionDurationServiceProvider);
+                final timer = container.read(
+                  workoutSessionDurationServiceProvider,
+                );
                 if (timer.isRunning) {
                   final auth = container.read(authControllerProvider);
                   final userId = auth.userId;
                   if (userId != null) {
                     try {
-                      final controller =
-                          container.read(workoutDayControllerProvider);
+                      final controller = container.read(
+                        workoutDayControllerProvider,
+                      );
                       controller.addOrFocusSession(
                         gymId: widget.gymId,
                         deviceId: widget.deviceId,
@@ -369,11 +319,9 @@ class _ExerciseListScreenState
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Row(
                 children: [
-                  BrandOutlineButton(
+                  _ExerciseBackButton(
+                    color: brandColor,
                     onPressed: () => Navigator.of(context).maybePop(),
-                    height: 44,
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-                    child: const Icon(Icons.arrow_back),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
@@ -396,9 +344,25 @@ class _ExerciseListScreenState
                   hintText: loc.multiDeviceSearchHint,
                   prefixIcon: const BrandGradientIcon(Icons.search),
                   filled: true,
+                  fillColor: theme.colorScheme.surface.withOpacity(0.32),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
+                    borderSide: BorderSide(
+                      color: Colors.white.withOpacity(0.08),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: Colors.white.withOpacity(0.08),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: brandColor.withOpacity(0.75),
+                      width: 1.2,
+                    ),
                   ),
                   contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 ),
@@ -406,57 +370,6 @@ class _ExerciseListScreenState
                 textInputAction: TextInputAction.search,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Row(
-                children: [
-                  FilterChip(
-                    label: Text(
-                      loc.filterNameChip,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                            color: brandColor,
-                          ) ??
-                          TextStyle(color: brandColor),
-                    ),
-                    selected: _sortDescending,
-                    onSelected: (_) => setState(() => _sortDescending = !_sortDescending),
-                    shape: const StadiumBorder(),
-                    selectedColor: theme.colorScheme.primaryContainer,
-                    showCheckmark: false,
-                  ),
-                  const SizedBox(width: 8),
-                  FilterChip(
-                    label: Text(
-                      loc.filterMuscleChip,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                            color: brandColor,
-                          ) ??
-                          TextStyle(color: brandColor),
-                    ),
-                    selected: _selectedGroups.isNotEmpty,
-                    onSelected: (_) => _openMuscleFilter(groups),
-                    shape: const StadiumBorder(),
-                    selectedColor: theme.colorScheme.primaryContainer,
-                    showCheckmark: false,
-                  ),
-                ],
-              ),
-            ),
-            if (_selectedGroups.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final id in _selectedGroups)
-                      InputChip(
-                        label: Text(_groupName(id, groups)),
-                        onDeleted: () => setState(() => _selectedGroups.remove(id)),
-                      ),
-                  ],
-                ),
-              ),
             const SizedBox(height: 16),
             Expanded(
               child: AnimatedSwitcher(
@@ -466,17 +379,13 @@ class _ExerciseListScreenState
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-              child: BrandPrimaryButton(
-                onPressed: () => _openAdd(),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.add),
-                    const SizedBox(width: 8),
-                    Text(loc.multiDeviceNewExercise),
-                  ],
-                ),
+              child: PremiumActionTile(
+                onTap: () => _openAdd(),
+                leading: const Icon(Icons.add_rounded, size: 20),
+                title: loc.multiDeviceNewExercise,
+                subtitle: 'Neue Übung für dieses Gerät erstellen',
+                accentColor: brandColor,
+                margin: EdgeInsets.zero,
               ),
             ),
           ],
@@ -503,59 +412,130 @@ class _ExerciseCard extends StatelessWidget {
     required this.deleteLabel,
   });
 
+  String? _muscleSummary(BuildContext context) {
+    final groups = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(muscleGroupProvider).groups;
+    final ids = [
+      ...exercise.primaryMuscleGroupIds,
+      ...exercise.secondaryMuscleGroupIds,
+    ];
+    if (ids.isEmpty) return null;
+
+    final seen = <String>{};
+    final labels = <String>[];
+    for (final id in ids) {
+      if (!seen.add(id)) continue;
+      MuscleGroup? group;
+      for (final entry in groups) {
+        if (entry.id == id) {
+          group = entry;
+          break;
+        }
+      }
+      MuscleRegion? region = group?.region;
+      if (region == null) {
+        for (final candidate in MuscleRegion.values) {
+          if (candidate.name == id) {
+            region = candidate;
+            break;
+          }
+        }
+      }
+      labels.add(
+        region != null ? displayNameForMuscleGroup(region, group) : id,
+      );
+    }
+    if (labels.isEmpty) return null;
+    return labels.join(' · ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final brandColor = theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
-    final secondaryColor = theme.colorScheme.onSurface.withOpacity(0.7);
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
 
-    return BrandInteractiveCard(
+    return PremiumActionTile(
       onTap: onOpen,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 12,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      leading: const Icon(Icons.fitness_center_rounded, size: 20),
+      title: exercise.name,
+      subtitle: _muscleSummary(context),
+      accentColor: brandColor,
+      trailingLeading: PopupMenuButton<_ExerciseAction>(
+        tooltip: editLabel,
+        icon: Icon(
+          Icons.more_vert_rounded,
+          color: theme.colorScheme.onSurface.withOpacity(0.72),
+        ),
+        onSelected: (value) {
+          if (value == _ExerciseAction.edit) {
+            onEdit();
+            return;
+          }
+          onDelete();
+        },
+        itemBuilder: (_) => [
+          PopupMenuItem<_ExerciseAction>(
+            value: _ExerciseAction.edit,
+            child: Row(
               children: [
-                Text(
-                  exercise.name,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: brandColor,
-                    fontWeight: FontWeight.w700,
-                  ),
+                const Icon(Icons.edit_outlined, size: 18),
+                const SizedBox(width: 8),
+                Text(editLabel),
+              ],
+            ),
+          ),
+          PopupMenuItem<_ExerciseAction>(
+            value: _ExerciseAction.delete,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: theme.colorScheme.error,
                 ),
-                const SizedBox(height: 8),
-                MuscleChips(
-                  primaryIds: exercise.primaryMuscleGroupIds,
-                  secondaryIds: exercise.secondaryMuscleGroupIds,
+                const SizedBox(width: 8),
+                Text(
+                  deleteLabel,
+                  style: TextStyle(color: theme.colorScheme.error),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                color: secondaryColor,
-                tooltip: editLabel,
-                onPressed: onEdit,
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                color: theme.colorScheme.error,
-                tooltip: deleteLabel,
-                onPressed: onDelete,
-              ),
-            ],
-          ),
         ],
+      ),
+    );
+  }
+}
+
+enum _ExerciseAction { edit, delete }
+
+class _ExerciseBackButton extends StatelessWidget {
+  const _ExerciseBackButton({required this.onPressed, required this.color});
+
+  final VoidCallback onPressed;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.36),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withOpacity(0.12)),
+          ),
+          child: Icon(Icons.arrow_back_rounded, color: color),
+        ),
       ),
     );
   }

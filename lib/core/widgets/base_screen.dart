@@ -19,6 +19,9 @@ class BaseScreen extends StatelessWidget {
           title: Text(
             title,
             textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
           ),
         ),
         actions: const [

@@ -924,9 +924,7 @@ class _WorkoutDayTableCardState
             context,
             listen: false,
           ).read(overlayNumericKeypadControllerProvider);
-          final allowDecimal = focusField == DeviceSetFieldFocus.weight ||
-              focusField == DeviceSetFieldFocus.dropWeight;
-          keypad.openFor(controller!, allowDecimal: allowDecimal);
+          keypad.openFor(controller!, allowDecimal: true);
         });
       }
     }

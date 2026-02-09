@@ -190,6 +190,9 @@ class OverlayNumericKeypadController extends ChangeNotifier {
       _klog(
         'retarget(tc#${controller.hashCode.toRadixString(16)} allowDecimal=$allowDecimal text="${controller.text}")',
       );
+      // Retargeting can change key layout (e.g. decimal key visibility).
+      // Notify while open so the keypad updates immediately.
+      notifyListeners();
     }
   }
 

@@ -1,3 +1,4 @@
+import 'day_xp_breakdown.dart';
 import 'session_xp_award.dart';
 
 abstract class XpRepository {
@@ -17,6 +18,10 @@ abstract class XpRepository {
   });
 
   Stream<int> watchDayXp({required String userId, required DateTime date});
+  Stream<DayXpBreakdown> watchDayBreakdown({
+    required String userId,
+    required DateTime date,
+  });
 
   Stream<Map<String, int>> watchMuscleXp({
     required String gymId,

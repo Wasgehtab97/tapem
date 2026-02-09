@@ -1,4 +1,8 @@
-.PHONY: ios android push ios-dev ios-emu ios-emu-prod ios-mobile-dev ios-mobile-prod android-emu ios-emu-both R rules rules-dev rules-prod ios-wireless ios-wireless-dev-d ios-wireless-prod admin admin-web admin-web-dev admin-web-prod admin-web-avatars admin-web-avatars-dev admin-web-avatars-prod logo ios-prep ios-config-dev ios-config-prod ios-check-space ios-clean-build-cache
+.PHONY: ios android push ios-dev ios-emu ios-emu-prod ios-mobile-dev ios-mobile-prod android-emu ios-emu-both R rules rules-dev rules-prod ios-wireless ios-wireless-dev-d ios-wireless-prod admin admin-web admin-web-dev admin-web-prod admin-web-avatars admin-web-avatars-dev admin-web-avatars-prod logo ios-prep ios-config-dev ios-config-prod ios-check-space ios-clean-build-cache ios-upload-testflight-prod apk-release aab-release version-show
+
+# Local, untracked environment overrides (e.g. ASC_API_* for uploads)
+-include .env
+-include .env.local
 
 # Gerätedefinitionen
 iOS_DEV_ID   := 00008030-001E59420191802E
@@ -14,6 +18,14 @@ IOS_BUNDLE_ID_PROD := com.example.tapem
 IOS_MIN_FREE_MB ?= 4096
 FLUTTER ?= ./scripts/flutterw
 IOS_SIM_RESOLVER ?= ./scripts/resolve_ios_simulator.sh
+IOS_EXPORT_OPTIONS_PLIST ?= ios/ExportOptions.plist
+IOS_IPA_DIR ?= build/ios/ipa
+APP_VERSION_SCRIPT ?= ./scripts/pubspec_version.sh
+# Optional manual override. If empty, build number is read from pubspec.yaml and auto-incremented after successful release.
+APP_BUILD_NUMBER ?=
+ASC_API_KEY_ID ?=
+ASC_API_ISSUER_ID ?=
+ASC_API_KEY_PATH ?=
 
 # iOS auf echtem Gerät
 ios:
@@ -312,6 +324,77 @@ ios-wireless-prod:
 	@echo "🚀 Launching PROD app on iPhone (Wireless Release)..."
 	fvm flutter run --release --flavor prod -d $(iOS_DEV_ID) --dart-define=ENV=prod --device-timeout=30
 
+# App Store Connect Upload (Prod -> TestFlight)
+# Required env vars:
+#   ASC_API_KEY_ID=<Key ID>
+#   ASC_API_ISSUER_ID=<Issuer ID>
+#   ASC_API_KEY_PATH=/absolute/path/AuthKey_<KEY_ID>.p8
+# Optional:
+#   APP_BUILD_NUMBER=123 (manual override; no auto-increment if set)
+ios-upload-testflight-prod:
+	@set -e; \
+	echo "═════════════════════════════════════════════════════"; \
+	echo "☁️  Uploading PROD build to App Store Connect/TestFlight"; \
+	echo "═════════════════════════════════════════════════════"; \
+	test -n "$(ASC_API_KEY_ID)" || (echo "❌ ASC_API_KEY_ID is missing"; exit 1); \
+	test -n "$(ASC_API_ISSUER_ID)" || (echo "❌ ASC_API_ISSUER_ID is missing"; exit 1); \
+	test -n "$(ASC_API_KEY_PATH)" || (echo "❌ ASC_API_KEY_PATH is missing"; exit 1); \
+	test -f "$(ASC_API_KEY_PATH)" || (echo "❌ API key file not found: $(ASC_API_KEY_PATH)"; exit 1); \
+	test -x "$(APP_VERSION_SCRIPT)" || (echo "❌ Missing executable script: $(APP_VERSION_SCRIPT)"; exit 1); \
+	test -f "$(IOS_EXPORT_OPTIONS_PLIST)" || (echo "❌ Missing export options: $(IOS_EXPORT_OPTIONS_PLIST)"; exit 1); \
+	MARKETING_VERSION=$$($(APP_VERSION_SCRIPT) marketing); \
+	BUILD_NUMBER="$(APP_BUILD_NUMBER)"; \
+	AUTO_BUMP=0; \
+	if [ -z "$$BUILD_NUMBER" ]; then \
+		BUILD_NUMBER=$$($(APP_VERSION_SCRIPT) build); \
+		AUTO_BUMP=1; \
+	fi; \
+	echo "🔢 Releasing iOS version $$MARKETING_VERSION ($$BUILD_NUMBER)"; \
+	$(MAKE) ios-clean-build-cache; \
+	$(MAKE) ios-config-prod; \
+	$(FLUTTER) clean; \
+	$(MAKE) ios-prep; \
+	echo "🏗️  Building ipa..."; \
+	$(FLUTTER) build ipa --release --flavor prod --dart-define=ENV=prod --build-name=$$MARKETING_VERSION --build-number=$$BUILD_NUMBER --export-options-plist=$(IOS_EXPORT_OPTIONS_PLIST); \
+	grep -q "FLAVOR=prod" ios/Flutter/Generated.xcconfig || (echo "❌ FLAVOR is not prod in ios/Flutter/Generated.xcconfig"; exit 1); \
+	grep -q "RU5WPXByb2Q=" ios/Flutter/Generated.xcconfig || (echo "❌ ENV=prod missing in ios/Flutter/Generated.xcconfig (DART_DEFINES)"; exit 1); \
+	grep -q "<string>tap-em</string>" ios/Runner/GoogleService-Info.plist || (echo "❌ Runner/GoogleService-Info.plist is not prod"; exit 1); \
+	ARCHIVE_INFO_PLIST="build/ios/archive/Runner.xcarchive/Info.plist"; \
+	test -f "$$ARCHIVE_INFO_PLIST" || (echo "❌ Archive Info.plist not found: $$ARCHIVE_INFO_PLIST"; exit 1); \
+	ARCHIVE_MARKETING_VERSION=$$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleShortVersionString' "$$ARCHIVE_INFO_PLIST"); \
+	ARCHIVE_BUILD_NUMBER=$$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleVersion' "$$ARCHIVE_INFO_PLIST"); \
+	if [ "$$ARCHIVE_MARKETING_VERSION" != "$$MARKETING_VERSION" ] || [ "$$ARCHIVE_BUILD_NUMBER" != "$$BUILD_NUMBER" ]; then \
+		echo "❌ Built archive version mismatch. Expected $$MARKETING_VERSION ($$BUILD_NUMBER), got $$ARCHIVE_MARKETING_VERSION ($$ARCHIVE_BUILD_NUMBER)"; \
+		exit 1; \
+	fi; \
+	IPA_PATH=$$(ls -t $(IOS_IPA_DIR)/*.ipa 2>/dev/null | head -n1); \
+	if [ -z "$$IPA_PATH" ]; then \
+		echo "❌ No ipa found in $(IOS_IPA_DIR)"; \
+		exit 1; \
+	fi; \
+	KEY_DIR=$$(mktemp -d); \
+	cp "$(ASC_API_KEY_PATH)" "$$KEY_DIR/AuthKey_$(ASC_API_KEY_ID).p8"; \
+	echo "📤 Uploading $$IPA_PATH"; \
+	set +e; \
+	API_PRIVATE_KEYS_DIR="$$KEY_DIR" xcrun altool --upload-app --type ios --file "$$IPA_PATH" --apiKey "$(ASC_API_KEY_ID)" --apiIssuer "$(ASC_API_ISSUER_ID)"; \
+	STATUS=$$?; \
+	if [ "$$STATUS" -ne 0 ]; then \
+		echo "⚠️  altool failed, retrying with iTMSTransporter..."; \
+		API_PRIVATE_KEYS_DIR="$$KEY_DIR" xcrun iTMSTransporter -m upload -assetFile "$$IPA_PATH" -apiKey "$(ASC_API_KEY_ID)" -apiIssuer "$(ASC_API_ISSUER_ID)" -v informational; \
+		STATUS=$$?; \
+	fi; \
+	set -e; \
+	rm -rf "$$KEY_DIR"; \
+	if [ "$$STATUS" -ne 0 ]; then \
+		echo "❌ Upload failed"; \
+		exit "$$STATUS"; \
+	fi; \
+	if [ "$$AUTO_BUMP" -eq 1 ]; then \
+		$(APP_VERSION_SCRIPT) bump-build >/dev/null; \
+		echo "🔁 Next build prepared: $$($(APP_VERSION_SCRIPT) full)"; \
+	fi; \
+	echo "✅ Upload finished. Build should appear in App Store Connect/TestFlight shortly."
+
 # Firestore-Regeln deployen
 rules: rules-prod
 
@@ -330,10 +413,49 @@ alter-stand:
 
 # APK Release
 apk-release:
-	flutter clean
-	flutter pub get
-	flutter gen-l10n
-	flutter build apk --release
+	@set -e; \
+	test -x "$(APP_VERSION_SCRIPT)" || (echo "❌ Missing executable script: $(APP_VERSION_SCRIPT)"; exit 1); \
+	MARKETING_VERSION=$$($(APP_VERSION_SCRIPT) marketing); \
+	BUILD_NUMBER="$(APP_BUILD_NUMBER)"; \
+	AUTO_BUMP=0; \
+	if [ -z "$$BUILD_NUMBER" ]; then \
+		BUILD_NUMBER=$$($(APP_VERSION_SCRIPT) build); \
+		AUTO_BUMP=1; \
+	fi; \
+	echo "📱 Building Android APK version $$MARKETING_VERSION ($$BUILD_NUMBER)"; \
+	cp android/config/prod/google-services.json android/app/google-services.json; \
+	$(FLUTTER) clean; \
+	$(FLUTTER) pub get; \
+	$(FLUTTER) gen-l10n; \
+	$(FLUTTER) build apk --release --build-name=$$MARKETING_VERSION --build-number=$$BUILD_NUMBER --dart-define=ENV=prod; \
+	if [ "$$AUTO_BUMP" -eq 1 ]; then \
+		$(APP_VERSION_SCRIPT) bump-build >/dev/null; \
+		echo "🔁 Next build prepared: $$($(APP_VERSION_SCRIPT) full)"; \
+	fi
+
+aab-release:
+	@set -e; \
+	test -x "$(APP_VERSION_SCRIPT)" || (echo "❌ Missing executable script: $(APP_VERSION_SCRIPT)"; exit 1); \
+	MARKETING_VERSION=$$($(APP_VERSION_SCRIPT) marketing); \
+	BUILD_NUMBER="$(APP_BUILD_NUMBER)"; \
+	AUTO_BUMP=0; \
+	if [ -z "$$BUILD_NUMBER" ]; then \
+		BUILD_NUMBER=$$($(APP_VERSION_SCRIPT) build); \
+		AUTO_BUMP=1; \
+	fi; \
+	echo "📦 Building Android AAB version $$MARKETING_VERSION ($$BUILD_NUMBER)"; \
+	cp android/config/prod/google-services.json android/app/google-services.json; \
+	$(FLUTTER) clean; \
+	$(FLUTTER) pub get; \
+	$(FLUTTER) gen-l10n; \
+	$(FLUTTER) build appbundle --release --build-name=$$MARKETING_VERSION --build-number=$$BUILD_NUMBER --dart-define=ENV=prod; \
+	if [ "$$AUTO_BUMP" -eq 1 ]; then \
+		$(APP_VERSION_SCRIPT) bump-build >/dev/null; \
+		echo "🔁 Next build prepared: $$($(APP_VERSION_SCRIPT) full)"; \
+	fi
+
+version-show:
+	@echo "$$($(APP_VERSION_SCRIPT) full)"
 
 # localhost
 localhost:

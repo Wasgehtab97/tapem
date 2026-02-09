@@ -40,8 +40,11 @@ class _FakeAuthRepository implements AuthRepository {
   Future<UserData> login(String email, String password) async => _user;
 
   @override
-  Future<UserData> register(String email, String password, String gymId) async =>
-      _user.copyWith(gymCodes: [gymId]);
+  Future<UserData> register(
+    String email,
+    String password,
+    String gymId,
+  ) async => _user.copyWith(gymCodes: [gymId]);
 
   @override
   Future<void> logout() async {}
@@ -57,6 +60,9 @@ class _FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> setPublicProfile(String userId, bool value) async {}
+
+  @override
+  Future<void> setProfileVisibility(String userId, bool value) async {}
 
   @override
   Future<void> setAvatarKey(String userId, String avatarKey) async {}
@@ -127,10 +133,7 @@ Future<AuthProvider> _buildAuthProvider() async {
   );
 }
 
-Widget _buildTestApp(
-  Widget child, {
-  required List<Override> overrides,
-}) {
+Widget _buildTestApp(Widget child, {required List<Override> overrides}) {
   return ProviderScope(
     overrides: overrides,
     child: MaterialApp(
@@ -152,9 +155,7 @@ void main() {
   });
 
   testWidgets('GymEntryScreen shows gyms', (tester) async {
-    final gyms = [
-      GymConfig(id: 'gym-1', code: 'AAAAAA', name: 'Test Gym'),
-    ];
+    final gyms = [GymConfig(id: 'gym-1', code: 'AAAAAA', name: 'Test Gym')];
 
     await tester.pumpWidget(
       _buildTestApp(
@@ -182,7 +183,8 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           authControllerProvider.overrideWith((ref) => authProvider),
           gymByIdProvider.overrideWith(
-            (ref, id) async => GymConfig(id: id, code: 'AAAAAA', name: 'Test Gym'),
+            (ref, id) async =>
+                GymConfig(id: id, code: 'AAAAAA', name: 'Test Gym'),
           ),
         ],
       ),
@@ -195,14 +197,17 @@ void main() {
     expect(find.byType(TextFormField), findsWidgets);
   });
 
-  testWidgets('GymRegisterMethodScreen shows registration options', (tester) async {
+  testWidgets('GymRegisterMethodScreen shows registration options', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _buildTestApp(
         const GymRegisterMethodScreen(gymId: 'gym-1'),
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           gymByIdProvider.overrideWith(
-            (ref, id) async => GymConfig(id: id, code: 'AAAAAA', name: 'Test Gym'),
+            (ref, id) async =>
+                GymConfig(id: id, code: 'AAAAAA', name: 'Test Gym'),
           ),
         ],
       ),
@@ -242,7 +247,8 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           authControllerProvider.overrideWith((ref) => authProvider),
           gymByIdProvider.overrideWith(
-            (ref, id) async => GymConfig(id: id, code: 'AAAAAA', name: 'Test Gym'),
+            (ref, id) async =>
+                GymConfig(id: id, code: 'AAAAAA', name: 'Test Gym'),
           ),
         ],
       ),

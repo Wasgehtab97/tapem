@@ -52,7 +52,7 @@ class _PasswordResetDialogState extends State<_PasswordResetDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(loc.passwordResetSent),
-          backgroundColor: Colors.green.withOpacity(0.8),
+          backgroundColor: AuthTheme.surfaceRaised,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -60,7 +60,7 @@ class _PasswordResetDialogState extends State<_PasswordResetDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authProv.error ?? loc.errorPrefix),
-          backgroundColor: Colors.red.withOpacity(0.8),
+          backgroundColor: AuthTheme.danger.withOpacity(0.9),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -83,8 +83,7 @@ class _PasswordResetDialogState extends State<_PasswordResetDialog> {
           child: GlassCard(
             padding: const EdgeInsets.all(AuthTheme.spacingL),
             child: Material(
-              color: Colors
-                  .transparent, // Need Material for text inputs to work correctly
+              color: Colors.transparent,
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -93,7 +92,9 @@ class _PasswordResetDialogState extends State<_PasswordResetDialog> {
                   children: [
                     Text(
                       loc.forgotPassword,
-                      style: AuthTheme.subHeadingStyle,
+                      style: AuthTheme.subHeadingStyle.copyWith(
+                        color: AuthTheme.textPrimary,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AuthTheme.spacingL),

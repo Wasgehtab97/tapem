@@ -10,6 +10,8 @@ class DailyStatsCacheEntry {
     required this.totalXp,
     required this.dayKey,
     this.computedTotalXp,
+    this.rulesetId,
+    this.rulesetVersion,
     this.components = const <Map<String, dynamic>>[],
     this.penalties = const <Map<String, dynamic>>[],
   });
@@ -19,6 +21,8 @@ class DailyStatsCacheEntry {
   final int totalXp;
   final String dayKey;
   final int? computedTotalXp;
+  final String? rulesetId;
+  final int? rulesetVersion;
   final List<Map<String, dynamic>> components;
   final List<Map<String, dynamic>> penalties;
 
@@ -27,14 +31,16 @@ class DailyStatsCacheEntry {
   }
 
   Map<String, dynamic> toJson() => {
-        'xp': xp,
-        'totalXp': totalXp,
-        'dayKey': dayKey,
-        'cachedAt': cachedAt.toIso8601String(),
-        if (computedTotalXp != null) 'computedTotalXp': computedTotalXp,
-        if (components.isNotEmpty) 'components': components,
-        if (penalties.isNotEmpty) 'penalties': penalties,
-      };
+    'xp': xp,
+    'totalXp': totalXp,
+    'dayKey': dayKey,
+    'cachedAt': cachedAt.toIso8601String(),
+    if (computedTotalXp != null) 'computedTotalXp': computedTotalXp,
+    if (rulesetId != null) 'rulesetId': rulesetId,
+    if (rulesetVersion != null) 'rulesetVersion': rulesetVersion,
+    if (components.isNotEmpty) 'components': components,
+    if (penalties.isNotEmpty) 'penalties': penalties,
+  };
 
   static DailyStatsCacheEntry? fromJson(Map<String, dynamic> json) {
     final xpValue = json['xp'];
@@ -48,6 +54,8 @@ class DailyStatsCacheEntry {
     }
     final totalValue = (json['totalXp'] as num?)?.toInt();
     final computedValue = (json['computedTotalXp'] as num?)?.toInt();
+    final rulesetIdValue = (json['rulesetId'] as String?)?.trim();
+    final rulesetVersionValue = (json['rulesetVersion'] as num?)?.toInt();
     final storedDayKey = json['dayKey'] as String? ?? logicDayKey(timestamp);
     final rawXp = xpValue.toInt();
     final totalXp = totalValue ?? rawXp;
@@ -60,6 +68,10 @@ class DailyStatsCacheEntry {
       totalXp: totalXp,
       dayKey: storedDayKey,
       computedTotalXp: computedTotalXp,
+      rulesetId: rulesetIdValue == null || rulesetIdValue.isEmpty
+          ? null
+          : rulesetIdValue,
+      rulesetVersion: rulesetVersionValue,
       components: components,
       penalties: penalties,
     );
@@ -84,6 +96,8 @@ abstract class DailyStatsCache {
     DateTime cachedAt, {
     int? totalXp,
     int? computedTotalXp,
+    String? rulesetId,
+    int? rulesetVersion,
     List<Map<String, dynamic>>? components,
     List<Map<String, dynamic>>? penalties,
   });
@@ -95,6 +109,8 @@ abstract class DailyStatsCache {
     DateTime cachedAt, {
     int? dayXp,
     int? computedTotalXp,
+    String? rulesetId,
+    int? rulesetVersion,
     List<Map<String, dynamic>>? components,
     List<Map<String, dynamic>>? penalties,
   });
@@ -142,6 +158,8 @@ class DailyStatsCacheStore implements DailyStatsCache {
     DateTime cachedAt, {
     int? totalXp,
     int? computedTotalXp,
+    String? rulesetId,
+    int? rulesetVersion,
     List<Map<String, dynamic>>? components,
     List<Map<String, dynamic>>? penalties,
   }) async {
@@ -152,6 +170,8 @@ class DailyStatsCacheStore implements DailyStatsCache {
       totalXp: totalXp ?? xp,
       dayKey: logicDayKey(cachedAt),
       computedTotalXp: computedTotalXp ?? totalXp ?? xp,
+      rulesetId: rulesetId,
+      rulesetVersion: rulesetVersion,
       components: components ?? const <Map<String, dynamic>>[],
       penalties: penalties ?? const <Map<String, dynamic>>[],
     );
@@ -167,6 +187,8 @@ class DailyStatsCacheStore implements DailyStatsCache {
     DateTime cachedAt, {
     int? dayXp,
     int? computedTotalXp,
+    String? rulesetId,
+    int? rulesetVersion,
     List<Map<String, dynamic>>? components,
     List<Map<String, dynamic>>? penalties,
   }) async {
@@ -196,14 +218,26 @@ class DailyStatsCacheStore implements DailyStatsCache {
       resolvedDailyXp = 0;
     }
 
-    final resolvedComponents = components ??
+    final resolvedComponents =
+        components ??
         (existing != null && existing.dayKey == dayKey
             ? existing.components
             : const <Map<String, dynamic>>[]);
-    final resolvedPenalties = penalties ??
+    final resolvedPenalties =
+        penalties ??
         (existing != null && existing.dayKey == dayKey
             ? existing.penalties
             : const <Map<String, dynamic>>[]);
+    final resolvedRulesetId =
+        rulesetId ??
+        (existing != null && existing.dayKey == dayKey
+            ? existing.rulesetId
+            : null);
+    final resolvedRulesetVersion =
+        rulesetVersion ??
+        (existing != null && existing.dayKey == dayKey
+            ? existing.rulesetVersion
+            : null);
 
     final entry = DailyStatsCacheEntry(
       xp: resolvedDailyXp,
@@ -211,6 +245,8 @@ class DailyStatsCacheStore implements DailyStatsCache {
       totalXp: totalXp,
       dayKey: dayKey,
       computedTotalXp: computedTotalXp ?? totalXp,
+      rulesetId: resolvedRulesetId,
+      rulesetVersion: resolvedRulesetVersion,
       components: resolvedComponents,
       penalties: resolvedPenalties,
     );
@@ -254,6 +290,12 @@ class DailyStatsCacheStore implements DailyStatsCache {
     final resolvedPenalties = existing != null && existing.dayKey == dayKey
         ? existing.penalties
         : const <Map<String, dynamic>>[];
+    final resolvedRulesetId = existing != null && existing.dayKey == dayKey
+        ? existing.rulesetId
+        : null;
+    final resolvedRulesetVersion = existing != null && existing.dayKey == dayKey
+        ? existing.rulesetVersion
+        : null;
 
     final entry = DailyStatsCacheEntry(
       xp: adjustedDailyXp,
@@ -261,6 +303,8 @@ class DailyStatsCacheStore implements DailyStatsCache {
       totalXp: adjustedTotal,
       dayKey: dayKey,
       computedTotalXp: adjustedTotal,
+      rulesetId: resolvedRulesetId,
+      rulesetVersion: resolvedRulesetVersion,
       components: resolvedComponents,
       penalties: resolvedPenalties,
     );

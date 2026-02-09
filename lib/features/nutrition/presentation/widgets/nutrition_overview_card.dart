@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_interactive_card.dart';
+import 'package:tapem/features/nutrition/presentation/widgets/nutrition_ui.dart';
 
 class NutritionOverviewCard extends StatelessWidget {
   final DateTime date;
@@ -30,11 +31,12 @@ class NutritionOverviewCard extends StatelessWidget {
     final brand = theme.extension<AppBrandTheme>();
     final brandGradient = brand?.gradient ?? AppGradients.brandGradient;
     final brandColor = brand?.outline ?? theme.colorScheme.secondary;
+    final macroAccentColor = nutritionBrandAccentColor(context);
     final dateLabel = DateFormat.yMMMd().format(date);
     final remaining = goal - total;
     final progress = goal > 0 ? (total / goal).clamp(0, 2).toDouble() : 0.0;
     final progressPercent = goal > 0 ? (progress * 100).round() : 0;
-    final statusColor = remaining >= 0 ? AppColors.accentMint : AppColors.accentAmber;
+    final statusColor = macroAccentColor;
     final headerGradient = LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
@@ -148,19 +150,19 @@ class NutritionOverviewCard extends StatelessWidget {
                   label: 'Protein',
                   shortLabel: 'P',
                   value: '$protein g',
-                  color: const Color(0xFFE53935),
+                  color: macroAccentColor,
                 ),
                 _MacroSummaryPill(
                   label: 'Kohlenhydrate',
                   shortLabel: 'C',
                   value: '$carbs g',
-                  color: AppColors.accentMint,
+                  color: macroAccentColor,
                 ),
                 _MacroSummaryPill(
                   label: 'Fett',
                   shortLabel: 'F',
                   value: '$fat g',
-                  color: AppColors.accentAmber,
+                  color: macroAccentColor,
                 ),
               ],
             ),
@@ -289,16 +291,8 @@ class _KcalMetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(AppRadius.button),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withOpacity(0.08),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
       child: Row(
         children: [
           Icon(
@@ -344,22 +338,8 @@ class _MacroSummaryPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color.withOpacity(0.16),
-            color.withOpacity(0.08),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.chip),
-        border: Border.all(
-          color: color.withOpacity(0.4),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

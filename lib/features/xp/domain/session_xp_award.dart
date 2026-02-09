@@ -9,6 +9,8 @@ class SessionXpAward {
     this.xpDelta = 0,
     this.components = const [],
     this.penalties = const [],
+    this.rulesetId,
+    this.rulesetVersion,
   });
 
   /// Outcome of the device leaderboard write.
@@ -29,6 +31,12 @@ class SessionXpAward {
   /// Serialized information about penalty events that were written.
   final List<Map<String, dynamic>> penalties;
 
+  /// Identifier of the XP ruleset that produced this award.
+  final String? rulesetId;
+
+  /// Monotonic version of the XP ruleset implementation.
+  final int? rulesetVersion;
+
   SessionXpAward copyWith({
     DeviceXpResult? result,
     int? totalXp,
@@ -38,16 +46,22 @@ class SessionXpAward {
     int? xpDelta,
     List<Map<String, dynamic>>? components,
     List<Map<String, dynamic>>? penalties,
+    String? rulesetId,
+    bool unsetRulesetId = false,
+    int? rulesetVersion,
+    bool unsetRulesetVersion = false,
   }) {
     return SessionXpAward(
       result: result ?? this.result,
-      totalXp: unsetTotalXp
-          ? null
-          : (totalXp ?? this.totalXp),
+      totalXp: unsetTotalXp ? null : (totalXp ?? this.totalXp),
       dayXp: unsetDayXp ? null : (dayXp ?? this.dayXp),
       xpDelta: xpDelta ?? this.xpDelta,
       components: components ?? this.components,
       penalties: penalties ?? this.penalties,
+      rulesetId: unsetRulesetId ? null : (rulesetId ?? this.rulesetId),
+      rulesetVersion: unsetRulesetVersion
+          ? null
+          : (rulesetVersion ?? this.rulesetVersion),
     );
   }
 }

@@ -1,8 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
-import 'package:tapem/core/widgets/brand_gradient_icon.dart';
+import 'package:tapem/core/widgets/brand_modal.dart';
+import 'package:tapem/core/widgets/premium_action_tile.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 class ProfileHubButton extends StatelessWidget {
@@ -11,11 +11,15 @@ class ProfileHubButton extends StatelessWidget {
     required this.onStatsTap,
     required this.onCommunityTap,
     required this.onSurveysTap,
+    this.compact = false,
+    this.compactTitle,
   });
 
   final VoidCallback onStatsTap;
   final VoidCallback onCommunityTap;
   final VoidCallback onSurveysTap;
+  final bool compact;
+  final String? compactTitle;
 
   void _showHubSheet(BuildContext context) {
     showModalBottomSheet(
@@ -37,102 +41,19 @@ class ProfileHubButton extends StatelessWidget {
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-      child: GestureDetector(
+      padding: compact
+          ? EdgeInsets.zero
+          : const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      child: PremiumActionTile(
         onTap: () => _showHubSheet(context),
-        child: Container(
-          height: 72,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                brandColor.withOpacity(0.08),
-                brandColor.withOpacity(0.02),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(24), // Keep same radius or use AppRadius.card
-            border: Border.all(
-              color: Colors.white.withOpacity(0.05), // Subtle border like other cards
-              width: 1,
-            ),
-             // Removed colorful shadow
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: brandColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: BrandGradientIcon(
-                    Icons.grid_view_rounded,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Entdecken',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      Text(
-                        'Insights & Community',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        brandColor.withOpacity(0.22),
-                        brandColor.withOpacity(0.02),
-                      ],
-                      center: Alignment.topLeft,
-                      radius: 1.0,
-                    ),
-                    border: Border.all(
-                      color: brandColor.withOpacity(0.4),
-                      width: 1.1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.35),
-                        blurRadius: 14,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.arrow_outward_rounded,
-                    color: brandColor,
-                    size: 18,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        leading: const Icon(Icons.grid_view_rounded, size: 20),
+        title: compact ? (compactTitle ?? 'Entd') : 'Entdecken',
+        subtitle: compact ? null : 'Insights & Community',
+        accentColor: brandColor,
+        margin: EdgeInsets.zero,
+        padding: compact
+            ? const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 9)
+            : null,
       ),
     );
   }
@@ -142,113 +63,76 @@ class ProfileProgressButton extends StatelessWidget {
   const ProfileProgressButton({
     super.key,
     required this.onTap,
+    this.compact = false,
+    this.compactTitle,
   });
 
   final VoidCallback onTap;
+  final bool compact;
+  final String? compactTitle;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-      child: GestureDetector(
+      padding: compact
+          ? EdgeInsets.zero
+          : const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      child: PremiumActionTile(
         onTap: onTap,
-        child: Container(
-          height: 72,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                brandColor.withOpacity(0.08),
-                brandColor.withOpacity(0.02),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.05),
-              width: 1,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: brandColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: BrandGradientIcon(
-                    Icons.trending_up_rounded,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        loc.progressButtonTitle,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      Text(
-                        loc.progressButtonSubtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        brandColor.withOpacity(0.22),
-                        brandColor.withOpacity(0.02),
-                      ],
-                      center: Alignment.topLeft,
-                      radius: 1.0,
-                    ),
-                    border: Border.all(
-                      color: brandColor.withOpacity(0.4),
-                      width: 1.1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.35),
-                        blurRadius: 14,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.arrow_outward_rounded,
-                    color: brandColor,
-                    size: 18,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        leading: const Icon(Icons.trending_up_rounded, size: 20),
+        title: compact ? (compactTitle ?? 'Prog') : loc.progressButtonTitle,
+        subtitle: compact ? null : loc.progressButtonSubtitle,
+        accentColor: brandColor,
+        margin: EdgeInsets.zero,
+        padding: compact
+            ? const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 9)
+            : null,
+      ),
+    );
+  }
+}
+
+class ProfileShortcutButton extends StatelessWidget {
+  const ProfileShortcutButton({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    required this.onTap,
+    this.compact = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback onTap;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+
+    return Padding(
+      padding: compact
+          ? EdgeInsets.zero
+          : const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      child: PremiumActionTile(
+        onTap: onTap,
+        leading: Icon(icon, size: 20),
+        title: title,
+        subtitle: compact ? null : subtitle,
+        accentColor: brandColor,
+        margin: EdgeInsets.zero,
+        padding: compact
+            ? const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 9)
+            : null,
       ),
     );
   }
@@ -267,153 +151,58 @@ class _ProfileHubSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
-    
-    return RepaintBoundary(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withOpacity(0.8),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            border: Border(
-              top: BorderSide(
-                color: Colors.white.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 32),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  _HubItem(
-                    title: loc.profileStatsButtonLabel,
-                    subtitle: loc.profileStatsButtonSubtitle,
-                    icon: Icons.auto_graph,
-                    onTap: () {
-                      Navigator.pop(context);
-                      onStatsTap();
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _HubItem(
-                    title: loc.profileCommunityButtonTitle,
-                    subtitle: loc.profileCommunityButtonSubtitle,
-                    icon: Icons.groups_2,
-                    onTap: () {
-                      Navigator.pop(context);
-                      onCommunityTap();
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _HubItem(
-                    title: loc.surveyListTitle,
-                    subtitle: loc.reportViewSurveysTitle,
-                    icon: Icons.poll_outlined,
-                    onTap: () {
-                      Navigator.pop(context);
-                      onSurveysTap();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HubItem extends StatelessWidget {
-  const _HubItem({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.cardColor.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.05),
-            ),
+    return BrandModalSheet(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          BrandModalHeader(
+            icon: Icons.grid_view_rounded,
+            accent: brandColor,
+            title: 'Entdecken',
+            subtitle: 'Insights & Community',
+            onClose: () => Navigator.pop(context),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: brandColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Icon(
-                  icon,
-                  color: brandColor,
-                  size: 26,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: theme.iconTheme.color?.withOpacity(0.3),
-              ),
-            ],
+          const SizedBox(height: 16),
+          BrandModalOptionCard(
+            title: loc.profileStatsButtonLabel,
+            subtitle: loc.profileStatsButtonSubtitle,
+            icon: Icons.auto_graph_rounded,
+            accent: brandColor,
+            onTap: () {
+              Navigator.pop(context);
+              onStatsTap();
+            },
           ),
-        ),
+          const SizedBox(height: 10),
+          BrandModalOptionCard(
+            title: loc.profileCommunityButtonTitle,
+            subtitle: loc.profileCommunityButtonSubtitle,
+            icon: Icons.groups_2_rounded,
+            accent: brandColor,
+            onTap: () {
+              Navigator.pop(context);
+              onCommunityTap();
+            },
+          ),
+          const SizedBox(height: 10),
+          BrandModalOptionCard(
+            title: loc.surveyListTitle,
+            subtitle: loc.reportViewSurveysTitle,
+            icon: Icons.poll_outlined,
+            accent: brandColor,
+            onTap: () {
+              Navigator.pop(context);
+              onSurveysTap();
+            },
+          ),
+        ],
       ),
     );
   }

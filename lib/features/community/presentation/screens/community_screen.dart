@@ -12,20 +12,46 @@ import '../../domain/models/community_stats.dart';
 import '../providers/community_providers.dart';
 
 class CommunityScreen extends riverpod.ConsumerStatefulWidget {
-  const CommunityScreen({super.key});
+  const CommunityScreen({super.key, this.onExitToProfile});
+
+  final VoidCallback? onExitToProfile;
 
   @override
-  riverpod.ConsumerState<CommunityScreen> createState() => _CommunityScreenState();
+  riverpod.ConsumerState<CommunityScreen> createState() =>
+      _CommunityScreenState();
 }
 
 class _CommunityScreenState extends riverpod.ConsumerState<CommunityScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
+  void _handleBackPressed() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    widget.onExitToProfile?.call();
+  }
+
+  Widget? _buildLeadingBackButton() {
+    final canPop = Navigator.of(context).canPop();
+    if (!canPop && widget.onExitToProfile == null) {
+      return null;
+    }
+    return IconButton(
+      onPressed: _handleBackPressed,
+      icon: const Icon(Icons.chevron_left_rounded),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: CommunityPeriod.values.length, vsync: this);
+    _tabController = TabController(
+      length: CommunityPeriod.values.length,
+      vsync: this,
+    );
   }
 
   @override
@@ -43,6 +69,8 @@ class _CommunityScreenState extends riverpod.ConsumerState<CommunityScreen>
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: _buildLeadingBackButton(),
         title: Text(loc.communityTitle),
         bottom: TabBar(
           controller: _tabController,
@@ -103,10 +131,7 @@ class _CommunityTab extends riverpod.ConsumerWidget {
 }
 
 class _CommunityContent extends StatelessWidget {
-  const _CommunityContent({
-    required this.stats,
-    required this.onRetryStats,
-  });
+  const _CommunityContent({required this.stats, required this.onRetryStats});
 
   final CommunityStats stats;
   final VoidCallback onRetryStats;
@@ -140,9 +165,7 @@ class _CommunityContent extends StatelessWidget {
           AppSpacing.lg,
         ),
         sliver: SliverToBoxAdapter(
-          child: _CommunityFeedCard(
-            highlightColor: brandColor,
-          ),
+          child: _CommunityFeedCard(highlightColor: brandColor),
         ),
       ),
     ];
@@ -166,14 +189,15 @@ class _CommunityLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(),
-    );
+    return const Center(child: CircularProgressIndicator());
   }
 }
 
 class _CommunityScrollableError extends StatelessWidget {
-  const _CommunityScrollableError({required this.message, required this.onRetry});
+  const _CommunityScrollableError({
+    required this.message,
+    required this.onRetry,
+  });
 
   final String message;
   final VoidCallback onRetry;
@@ -212,7 +236,6 @@ class _CommunityScrollableError extends StatelessWidget {
     );
   }
 }
-
 
 class _CommunityKpiSection extends StatelessWidget {
   const _CommunityKpiSection({required this.stats, required this.accentColor});
@@ -282,9 +305,10 @@ class _CommunityKpiSection extends StatelessWidget {
               final columns = maxWidth >= 900
                   ? 5
                   : maxWidth >= 620
-                      ? 3
-                      : 2;
-              final itemWidth = (maxWidth - AppSpacing.sm * (columns - 1)) / columns;
+                  ? 3
+                  : 2;
+              final itemWidth =
+                  (maxWidth - AppSpacing.sm * (columns - 1)) / columns;
               return Wrap(
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
@@ -359,9 +383,7 @@ class _CommunityMetricTile extends StatelessWidget {
 }
 
 class _CommunityFeedCard extends riverpod.ConsumerWidget {
-  const _CommunityFeedCard({
-    required this.highlightColor,
-  });
+  const _CommunityFeedCard({required this.highlightColor});
 
   final Color highlightColor;
 
@@ -370,8 +392,9 @@ class _CommunityFeedCard extends riverpod.ConsumerWidget {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context)!;
     final calendarYear = DateTime.now().year;
-    final activeUsersValue =
-        ref.watch(communityActiveUsersByDayProvider(calendarYear));
+    final activeUsersValue = ref.watch(
+      communityActiveUsersByDayProvider(calendarYear),
+    );
     final activeUsersByDay = activeUsersValue.valueOrNull ?? const {};
     final trainingDates = activeUsersByDay.entries
         .where((entry) => entry.value > 0)
@@ -432,10 +455,7 @@ class _CommunityFeedCard extends riverpod.ConsumerWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [
-                      highlightColor,
-                      highlightColor.withOpacity(0.75),
-                    ],
+                    colors: [highlightColor, highlightColor.withOpacity(0.75)],
                   ),
                 ),
                 padding: const EdgeInsets.all(AppSpacing.xs * 0.75),
@@ -534,7 +554,9 @@ void _showActiveUsersSheet(BuildContext context, int count) {
     context: context,
     backgroundColor: theme.colorScheme.surface,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.cardLg)),
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppRadius.cardLg),
+      ),
     ),
     builder: (context) {
       return SafeArea(
@@ -615,10 +637,7 @@ class _CommunityCalendarSkeleton extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            baseColor.withOpacity(0.7),
-            baseColor.withOpacity(0.35),
-          ],
+          colors: [baseColor.withOpacity(0.7), baseColor.withOpacity(0.35)],
         ),
       ),
     );
