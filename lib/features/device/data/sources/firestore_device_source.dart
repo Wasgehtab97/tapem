@@ -30,6 +30,15 @@ class FirestoreDeviceSource {
         .set(device.toJson());
   }
 
+  Future<void> updateDevice(String gymId, Device device) {
+    return _firestore
+        .collection('gyms')
+        .doc(gymId)
+        .collection('devices')
+        .doc(device.uid)
+        .update(device.toJson());
+  }
+
   // Neu: Gerät löschen
   Future<void> deleteDevice(String gymId, String deviceId) {
     return _firestore

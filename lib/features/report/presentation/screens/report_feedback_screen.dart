@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_brand_theme.dart';
 import '../../../../core/theme/design_tokens.dart';
-import '../../../../core/widgets/premium_action_card.dart';
-import '../../../../core/widgets/premium_leading_icon.dart';
+import '../../../../core/widgets/premium_action_tile.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../feedback/feedback_provider.dart' as feedback_riverpod;
 import '../../../feedback/presentation/screens/feedback_overview_screen.dart';
@@ -55,14 +54,12 @@ class ReportFeedbackScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.lg),
                 SizedBox(
                   width: double.infinity,
-                  child: PremiumActionCard(
+                  child: PremiumActionTile(
+                    leading: const Icon(Icons.feedback_outlined),
                     title: loc.reportFeedbackCardTitle,
                     subtitle: openCount > 0
                         ? loc.reportFeedbackOpenEntries(openCount)
                         : loc.reportFeedbackNoOpenEntries,
-                    leading: const PremiumLeadingIcon(
-                      icon: Icons.feedback_outlined,
-                    ),
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(

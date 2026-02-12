@@ -1,8 +1,10 @@
 // lib/app_router.dart
 
 import 'package:flutter/material.dart';
+import 'package:tapem/core/auth/role_utils.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_devices_screen.dart';
+import 'package:tapem/features/manufacturer/presentation/screens/manage_manufacturers_screen.dart'; // NEW
 import 'package:tapem/features/deals/presentation/screens/deals_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_deals_screen.dart';
 import 'package:tapem/features/auth/presentation/screens/gym_access_screen.dart';
@@ -14,7 +16,6 @@ import 'package:tapem/features/device/presentation/widgets/workout_day_table_car
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/features/history/presentation/screens/history_screen.dart';
 import 'package:tapem/features/progress/presentation/screens/progress_screen.dart';
-import 'package:tapem/features/muscle_group/presentation/screens/muscle_group_admin_screen.dart';
 import 'package:tapem/features/home/presentation/screens/home_screen.dart';
 import 'package:tapem/features/admin/presentation/screens/branding_screen.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen.dart';
@@ -99,7 +100,6 @@ class AppRouter {
   static const planOverview = '/plan_overview';
   static const trainingPlanDetail = '/training_plan_detail';
   static const trainingPlanPicker = '/training_plan_picker';
-  static const manageMuscleGroups = '/manage_muscle_groups';
   static const branding = '/branding';
   static const resetPassword = '/reset_password';
   static const xpOverview = '/xp_overview';
@@ -133,8 +133,21 @@ class AppRouter {
   static const nutritionRecipes = '/nutrition/recipes';
   static const nutritionRecipeEdit = '/nutrition/recipes/edit';
   static const adminDeals = '/admin/deals';
+  static const manageManufacturers = '/admin/manufacturers'; // NEW
 
-  static const restrictedRoutesForMembers = {report, admin, deals};
+  static const restrictedRoutesForMembers = {
+    report,
+    admin,
+    deals,
+    adminDevices,
+    adminRemoveUsers,
+    branding,
+    manageChallenges,
+    adminSymbols,
+    userSymbols,
+    adminDeals,
+    manageManufacturers, // NEW
+  };
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     final deepLink = _routeFromGymPath(settings);
@@ -142,10 +155,12 @@ class AppRouter {
       return deepLink;
     }
     final authState = _readAuthState();
-    final isRestricted =
-        FF.limitTabsForMembers &&
-        !(authState?.isAdmin ?? false) &&
-        restrictedRoutesForMembers.contains(settings.name);
+    final accessTier = authState?.accessTier ?? UserAccessTier.guest;
+    final isRestricted = shouldRedirectRestrictedRoute(
+      routeName: settings.name,
+      accessTier: accessTier,
+      limitTabsForMembers: FF.limitTabsForMembers,
+    );
     if (isRestricted) {
       return MaterialPageRoute(builder: (_) => const HomeScreen());
     }
@@ -378,11 +393,6 @@ class AppRouter {
       case AppRouter.settings:
         return SettingsScreen.route();
 
-      case manageMuscleGroups:
-        return MaterialPageRoute(
-          builder: (_) => const MuscleGroupAdminScreen(),
-        );
-
       case branding:
         return MaterialPageRoute(builder: (_) => const BrandingScreen());
 
@@ -421,6 +431,11 @@ class AppRouter {
       case adminDeals:
         return MaterialPageRoute(
           builder: (_) => const GymContextGuard(child: AdminDealsScreen()),
+        );
+
+      case manageManufacturers:
+        return MaterialPageRoute(
+          builder: (_) => const GymContextGuard(child: ManageManufacturersScreen()),
         );
 
       case deals:
@@ -603,5 +618,20 @@ class AppRouter {
     } catch (_) {
       return null;
     }
+  }
+
+  @visibleForTesting
+  static bool shouldRedirectRestrictedRoute({
+    required String? routeName,
+    required UserAccessTier accessTier,
+    required bool limitTabsForMembers,
+  }) {
+    if (!limitTabsForMembers) {
+      return false;
+    }
+    if (!restrictedRoutesForMembers.contains(routeName)) {
+      return false;
+    }
+    return !canAccessRestrictedMemberRoutes(accessTier);
   }
 }

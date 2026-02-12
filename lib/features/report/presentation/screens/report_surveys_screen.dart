@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_brand_theme.dart';
 import '../../../../core/theme/design_tokens.dart';
-import '../../../../core/widgets/premium_action_card.dart';
-import '../../../../core/widgets/premium_leading_icon.dart';
+import '../../../../core/widgets/premium_action_tile.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../survey/presentation/screens/survey_overview_screen.dart';
 import '../../../survey/presentation/widgets/create_survey_sheet.dart';
@@ -61,26 +60,22 @@ class ReportSurveysScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.lg),
                 SizedBox(
                   width: double.infinity,
-                  child: PremiumActionCard(
+                  child: PremiumActionTile(
+                    leading: const Icon(Icons.add_circle_outline),
                     title: loc.reportCreateSurveyTitle,
                     subtitle: '',
-                    leading: const PremiumLeadingIcon(
-                      icon: Icons.add_circle_outline,
-                    ),
                     onTap: () => _showCreateSurveyDialog(context),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 SizedBox(
                   width: double.infinity,
-                  child: PremiumActionCard(
+                  child: PremiumActionTile(
+                    leading: const Icon(Icons.poll),
                     title: loc.reportViewSurveysTitle,
                     subtitle: openCount > 0 || closedCount > 0
                         ? 'Aktiv: $openCount · Abgeschlossen: $closedCount'
                         : loc.reportSurveysButtonSubtitle,
-                    leading: const PremiumLeadingIcon(
-                      icon: Icons.poll,
-                    ),
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(

@@ -24,10 +24,7 @@ class AnalyticsService {
     });
 
     try {
-      await _analytics.logEvent(
-        name: name,
-        parameters: cleaned,
-      );
+      await _analytics.logEvent(name: name, parameters: cleaned);
     } catch (e, st) {
       // Analytics darf nie die App crashen – bei fehlender Plattform-Integration
       // oder während der Entwicklung wird nur geloggt.
@@ -44,10 +41,7 @@ class AnalyticsService {
   }) {
     return logEvent(
       'workout_started',
-      parameters: {
-        'gym_id': gymId,
-        'user_id': userId,
-      },
+      parameters: {'gym_id': gymId, 'user_id': userId},
     );
   }
 
@@ -67,7 +61,8 @@ class AnalyticsService {
         'user_id': userId,
         'session_id': sessionId,
         if (deviceId != null && deviceId.isNotEmpty) 'device_id': deviceId,
-        if (exerciseId != null && exerciseId.isNotEmpty) 'exercise_id': exerciseId,
+        if (exerciseId != null && exerciseId.isNotEmpty)
+          'exercise_id': exerciseId,
         if (durationMs != null) 'duration_ms': durationMs,
         if (setCount != null) 'set_count': setCount,
       },
@@ -89,10 +84,7 @@ class AnalyticsService {
     );
   }
 
-  static Future<void> logGymSelected({
-    required String gymId,
-    String? source,
-  }) {
+  static Future<void> logGymSelected({required String gymId, String? source}) {
     return logEvent(
       'gym_selected',
       parameters: {
@@ -108,10 +100,7 @@ class AnalyticsService {
   }) {
     return logEvent(
       'gym_auth_choice',
-      parameters: {
-        'gym_id': gymId,
-        'action': action,
-      },
+      parameters: {'gym_id': gymId, 'action': action},
     );
   }
 
@@ -121,10 +110,7 @@ class AnalyticsService {
   }) {
     return logEvent(
       'gym_register_method',
-      parameters: {
-        'gym_id': gymId,
-        'method': method,
-      },
+      parameters: {'gym_id': gymId, 'method': method},
     );
   }
 
@@ -176,6 +162,47 @@ class AnalyticsService {
         'is_multi': isMulti,
         'status': status, // success | failed
       },
+    );
+  }
+
+  static Future<void> logOwnerHubViewed({
+    required String gymId,
+    required String userId,
+    required String variant,
+  }) {
+    return logEvent(
+      'owner_hub_viewed',
+      parameters: {
+        'gym_id': gymId,
+        'user_id': userId,
+        'variant': variant, // legacy | v1 | v2
+      },
+    );
+  }
+
+  static Future<void> logOwnerHubActionClick({
+    required String gymId,
+    required String userId,
+    required String targetPage,
+  }) {
+    return logEvent(
+      'owner_hub_action_click',
+      parameters: {
+        'gym_id': gymId,
+        'user_id': userId,
+        'target_page': targetPage,
+      },
+    );
+  }
+
+  static Future<void> logOwnerHubAbort({
+    required String gymId,
+    required String userId,
+    required String reason,
+  }) {
+    return logEvent(
+      'owner_hub_abort',
+      parameters: {'gym_id': gymId, 'user_id': userId, 'reason': reason},
     );
   }
 }

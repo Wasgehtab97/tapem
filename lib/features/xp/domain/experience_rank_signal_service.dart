@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/core/auth/role_utils.dart';
 
 class ExperienceRankSignal {
   const ExperienceRankSignal({
@@ -58,7 +59,7 @@ class ExperienceRankSignalService {
           final showInLeaderboard =
               userData['showInLeaderboard'] as bool? ?? true;
           final role = userData['role'] as String?;
-          if (!showInLeaderboard || role == 'admin') return null;
+          if (!showInLeaderboard || isAdminLikeRole(role)) return null;
 
           final statsSnap = await _firestore
               .collection('gyms')

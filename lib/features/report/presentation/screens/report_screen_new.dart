@@ -5,15 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/providers/report_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
-import 'package:tapem/core/widgets/premium_action_card.dart';
-import 'package:tapem/core/widgets/premium_leading_icon.dart';
+import 'package:tapem/core/widgets/premium_action_tile.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart'
     as feedback_riverpod;
 import 'package:tapem/features/report/presentation/widgets/usage_key_metrics.dart';
 import 'package:tapem/features/report/providers/report_providers.dart'
     as report_providers;
-import 'package:tapem/features/survey/survey_provider.dart'
-    as survey_riverpod;
+import 'package:tapem/features/survey/survey_provider.dart' as survey_riverpod;
 import 'package:tapem/l10n/app_localizations.dart';
 
 import 'report_feedback_screen.dart';
@@ -23,8 +21,10 @@ import 'report_usage_screen.dart';
 
 class ReportScreenNew extends ConsumerWidget {
   final String gymId;
+  final PreferredSizeWidget? appBar;
 
-  const ReportScreenNew({Key? key, required this.gymId}) : super(key: key);
+  const ReportScreenNew({Key? key, required this.gymId, this.appBar})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,7 +56,7 @@ class ReportScreenNew extends ConsumerWidget {
     final closedSurveysCount = surveyState.closedSurveys.length;
 
     return Scaffold(
-
+      appBar: appBar,
       body: Container(
         color: theme.scaffoldBackgroundColor,
         child: SafeArea(
@@ -69,7 +69,6 @@ class ReportScreenNew extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 const SizedBox(height: AppSpacing.sm),
                 Center(
                   child: Text(
@@ -132,8 +131,7 @@ class ReportScreenNew extends ConsumerWidget {
                           side: BorderSide(
                             color: isSelected
                                 ? brandColor
-                                : theme.colorScheme.onSurface
-                                    .withOpacity(0.1),
+                                : theme.colorScheme.onSurface.withOpacity(0.1),
                           ),
                         ),
                       );
@@ -146,10 +144,7 @@ class ReportScreenNew extends ConsumerWidget {
                 // Hero-KPIs auf Basis der Nutzungsdaten
                 if (usageStats.isNotEmpty ||
                     reportProvider.state == ReportState.loading)
-                  UsageKeyMetrics(
-                    stats: usageStats,
-                    range: usageRange,
-                  ),
+                  UsageKeyMetrics(stats: usageStats, range: usageRange),
 
                 // Service-KPIs (Feedback & Umfragen)
                 const SizedBox(height: AppSpacing.lg),
@@ -178,12 +173,12 @@ class ReportScreenNew extends ConsumerWidget {
                       0,
                       (sum, item) => sum + item.sessions,
                     ),
-                    topDeviceName: (List.of(usageStats)
-                          ..sort(
-                            (a, b) => b.sessions.compareTo(a.sessions),
-                          ))
-                        .first
-                        .name,
+                    topDeviceName:
+                        (List.of(
+                              usageStats,
+                            )..sort((a, b) => b.sessions.compareTo(a.sessions)))
+                            .first
+                            .name,
                   ),
                 ],
 
@@ -194,17 +189,14 @@ class ReportScreenNew extends ConsumerWidget {
                   children: [
                     SizedBox(
                       width: double.infinity,
-                      child: PremiumActionCard(
+                      child: PremiumActionTile(
+                        leading: const Icon(Icons.groups_rounded),
                         title: loc.reportMembersButtonTitle,
                         subtitle: loc.reportMembersButtonSubtitle,
-                        leading: const PremiumLeadingIcon(
-                          icon: Icons.groups_rounded,
-                        ),
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  ReportMembersScreen(gymId: gymId),
+                              builder: (_) => ReportMembersScreen(gymId: gymId),
                             ),
                           );
                         },
@@ -213,17 +205,14 @@ class ReportScreenNew extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.sm),
                     SizedBox(
                       width: double.infinity,
-                      child: PremiumActionCard(
+                      child: PremiumActionTile(
+                        leading: const Icon(Icons.bar_chart_rounded),
                         title: loc.reportUsageButtonTitle,
                         subtitle: loc.reportUsageButtonSubtitle,
-                        leading: const PremiumLeadingIcon(
-                          icon: Icons.bar_chart_rounded,
-                        ),
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  ReportUsageScreen(gymId: gymId),
+                              builder: (_) => ReportUsageScreen(gymId: gymId),
                             ),
                           );
                         },
@@ -232,16 +221,12 @@ class ReportScreenNew extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.sm),
                     SizedBox(
                       width: double.infinity,
-                      child: PremiumActionCard(
+                      child: PremiumActionTile(
+                        leading: const Icon(Icons.feedback_outlined),
                         title: loc.reportFeedbackButtonTitle,
                         subtitle: openFeedbackCount > 0
-                            ? loc.reportFeedbackOpenEntries(
-                                openFeedbackCount,
-                              )
+                            ? loc.reportFeedbackOpenEntries(openFeedbackCount)
                             : loc.reportFeedbackNoOpenEntries,
-                        leading: const PremiumLeadingIcon(
-                          icon: Icons.feedback_outlined,
-                        ),
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
@@ -255,19 +240,16 @@ class ReportScreenNew extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.sm),
                     SizedBox(
                       width: double.infinity,
-                      child: PremiumActionCard(
+                      child: PremiumActionTile(
+                        leading: const Icon(Icons.poll),
                         title: loc.reportSurveysButtonTitle,
                         subtitle: openSurveysCount > 0 || closedSurveysCount > 0
                             ? 'Aktiv: $openSurveysCount · Abgeschlossen: $closedSurveysCount'
                             : loc.reportSurveysButtonSubtitle,
-                        leading: const PremiumLeadingIcon(
-                          icon: Icons.poll,
-                        ),
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  ReportSurveysScreen(gymId: gymId),
+                              builder: (_) => ReportSurveysScreen(gymId: gymId),
                             ),
                           );
                         },
@@ -300,9 +282,13 @@ class _ManagementSummary extends StatelessWidget {
 
     final List<String> lines = [];
     if (totalSessions > 0) {
-      lines.add('In diesem Zeitraum wurden $totalSessions Sessions dokumentiert.');
+      lines.add(
+        'In diesem Zeitraum wurden $totalSessions Sessions dokumentiert.',
+      );
     } else {
-      lines.add('Für den aktuellen Zeitraum liegen noch keine Nutzungssessions vor.');
+      lines.add(
+        'Für den aktuellen Zeitraum liegen noch keine Nutzungssessions vor.',
+      );
     }
     if (topDeviceName.isNotEmpty) {
       lines.add('Am häufigsten genutzt: $topDeviceName.');
@@ -335,10 +321,7 @@ class _ManagementSummary extends StatelessWidget {
 }
 
 class _ReportChip extends StatelessWidget {
-  const _ReportChip({
-    required this.label,
-    required this.value,
-  });
+  const _ReportChip({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -356,9 +339,7 @@ class _ReportChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-          color: colorScheme.onSurface.withOpacity(0.06),
-        ),
+        border: Border.all(color: colorScheme.onSurface.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

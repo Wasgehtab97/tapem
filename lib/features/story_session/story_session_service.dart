@@ -388,7 +388,9 @@ class StorySessionService {
           before: startOfDay,
         );
         // If Firestore query failed (null) or found no prior usage (false), mark as new
-        final shouldAdd = existedBefore != true;
+        // STRICT CHECK: existedBefore must be explicitly false (not null) to be considered new.
+        // If it returns null (offline/error), we assume it existed before to avoid false positives.
+        final shouldAdd = existedBefore == false;
         if (shouldAdd) {
           newDevices[deviceId] = session;
         }
@@ -409,7 +411,8 @@ class StorySessionService {
               exerciseId: null,
               before: startOfDay,
             );
-            final shouldAdd = existedBefore != true;
+            // STRICT CHECK: existedBefore must be explicitly false (not null).
+            final shouldAdd = existedBefore == false;
             if (shouldAdd) {
               newDevices[deviceId] = session;
             }
@@ -440,7 +443,8 @@ class StorySessionService {
             before: startOfDay,
           );
           // If Firestore query failed (null) or found no prior usage (false), mark as new
-          final shouldAdd = existedBefore != true;
+          // STRICT CHECK: existedBefore must be explicitly false.
+          final shouldAdd = existedBefore == false;
           if (shouldAdd) {
             newExercises[key] = session;
           }
@@ -765,9 +769,16 @@ class StorySessionService {
       query = query.where('exerciseId', isEqualTo: exerciseId);
     }
     try {
-      final snap = await query.limit(1).get();
+      final snap = await query.limit(1).get().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          throw FirebaseException(plugin: 'firestore', code: 'timeout');
+        },
+      );
       return snap.docs.isNotEmpty;
-    } on FirebaseException {
+    } on FirebaseException catch (_) {
+      return null;
+    } catch (_) {
       return null;
     }
   }
@@ -828,8 +839,15 @@ class StorySessionService {
     }
     QuerySnapshot<Map<String, dynamic>> snap;
     try {
-      snap = await query.get();
+      snap = await query.get().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          throw FirebaseException(plugin: 'firestore', code: 'timeout');
+        },
+      );
     } on FirebaseException {
+      return null;
+    } catch (_) {
       return null;
     }
     if (snap.docs.isEmpty) return null;
@@ -881,7 +899,12 @@ class StorySessionService {
         .collection('session_stories')
         .doc(dayKey);
     try {
-      final snap = await ref.get();
+      final snap = await ref.get().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          throw FirebaseException(plugin: 'firestore', code: 'timeout');
+        },
+      );
       if (!snap.exists) return null;
       final data = snap.data();
       if (data == null) return null;

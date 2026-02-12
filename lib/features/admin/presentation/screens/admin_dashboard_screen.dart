@@ -6,8 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
-import 'package:tapem/core/widgets/premium_action_card.dart';
-import 'package:tapem/core/widgets/premium_leading_icon.dart';
+import 'package:tapem/core/widgets/premium_action_tile.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 
@@ -51,16 +50,8 @@ class AdminDashboardScreen extends ConsumerWidget {
                       title: loc.challengeAdminFieldDevices, // "Geräte"
                       subtitle: loc.adminDashboardCreateDevice, // "Geräte verwalten & erstellen" - using create string as proxy for now or generic
                       onTap: () {
-                        Navigator.of(context).pushNamed(AppRouter.adminDevices);
-                      },
-                    ),
-                    _AdminAction(
-                      icon: Icons.accessibility_new,
-                      title: loc.muscleGroupTitle,
-                      subtitle: 'Muskelgruppen & Kategorien bearbeiten', // Hardcoded for now as no specific loc string exists
-                      onTap: () {
-                        Navigator.of(context)
-                            .pushNamed(AppRouter.manageMuscleGroups);
+                        Navigator.of(context, rootNavigator: true)
+                            .pushNamed(AppRouter.adminDevices);
                       },
                     ),
                     _AdminAction(
@@ -68,7 +59,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                       title: loc.challengeAdminTitle,
                       subtitle: 'Challenges erstellen & verwalten',
                       onTap: () {
-                        Navigator.of(context)
+                        Navigator.of(context, rootNavigator: true)
                             .pushNamed(AppRouter.manageChallenges);
                       },
                     ),
@@ -77,7 +68,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                       title: loc.admin_symbols_title,
                       subtitle: 'Benutzer-Symbole & Ränge',
                       onTap: () {
-                        Navigator.of(context)
+                        Navigator.of(context, rootNavigator: true)
                             .pushNamed(AppRouter.adminSymbols);
                       },
                     ),
@@ -86,7 +77,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                       title: 'Nutzer entfernen',
                       subtitle: 'Testnutzer & Daten bereinigen',
                       onTap: () {
-                        Navigator.of(context)
+                        Navigator.of(context, rootNavigator: true)
                             .pushNamed(AppRouter.adminRemoveUsers);
                       },
                     ),
@@ -95,7 +86,8 @@ class AdminDashboardScreen extends ConsumerWidget {
                       title: 'Deals verwalten',
                       subtitle: 'Sponsoren & Rabatte pflegen',
                       onTap: () {
-                        Navigator.of(context).pushNamed(AppRouter.adminDeals);
+                        Navigator.of(context, rootNavigator: true)
+                            .pushNamed(AppRouter.adminDeals);
                       },
                     ),
                   ],
@@ -132,19 +124,16 @@ class _AdminActionList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        for (final action in actions) ...[
+        for (final action in actions)
           SizedBox(
             width: double.infinity,
-            child: PremiumActionCard(
+            child: PremiumActionTile(
+              leading: Icon(action.icon),
               title: action.title,
               subtitle: action.subtitle,
-              leading: PremiumLeadingIcon(icon: action.icon),
               onTap: action.onTap,
-              uiLogEvent: 'ADMIN_NAV_${action.title.toUpperCase().replaceAll(' ', '_')}',
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-        ],
       ],
     );
   }

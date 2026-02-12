@@ -316,6 +316,7 @@ export function Users() {
             <option value="member">member</option>
             <option value="coach">coach</option>
             <option value="admin">admin</option>
+            <option value="gymowner">gymowner</option>
             <option value="global_admin">global_admin</option>
             <option value="gym_admin">gym_admin</option>
           </select>
@@ -363,6 +364,7 @@ export function Users() {
                           <option value="member">member</option>
                           <option value="coach">coach</option>
                           <option value="admin">admin</option>
+                          <option value="gymowner">gymowner</option>
                         </select>
                       )}
                       <button

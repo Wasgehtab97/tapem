@@ -573,12 +573,14 @@ class DeviceProvider extends ChangeNotifier {
         xpChanged = changed;
       });
 
-      await Future.wait<void>([
+      await lastSessionFuture;
+      
+      // Fire-and-forget non-critical data to prevent blocking UI
+      unawaited(Future.wait([
         snapshotsFuture,
-        lastSessionFuture,
         userNoteFuture,
         userXpFuture,
-      ]);
+      ]));
       final draftChanged = await _restoreDraft();
       if (_persistEmptyDrafts && _draftCreatedAt == null) {
         await _saveDraftNow();
@@ -1343,27 +1345,17 @@ class DeviceProvider extends ChangeNotifier {
           DateTime(sessionDate.year, sessionDate.month, sessionDate.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
 
-      final logsCol = _firestore
-          .collection('gyms')
-          .doc(gymId)
-          .collection('devices')
-          .doc(_device!.uid)
-          .collection('logs');
+      final existingSessions = await _sessionRepository.getSessionsForDate(
+        userId: userId,
+        date: startOfDay,
+      );
+      final alreadySaved = existingSessions.any(
+        (s) => s.exerciseId == _currentExerciseId,
+      );
 
-      final existingToday = await logsCol
-          .where('userId', isEqualTo: userId)
-          .where('exerciseId', isEqualTo: _currentExerciseId)
-          .where(
-            'timestamp',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
-          )
-          .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
-          .limit(1)
-          .get();
-
-      if (existingToday.docs.isNotEmpty) {
+      if (alreadySaved) {
         _error = 'Heute bereits gespeichert.';
-        _log('⚠️ [Provider] save aborted: already saved today');
+        _log('⚠️ [Provider] save aborted: already saved today (OFFLINE-CHECK)');
         XpTrace.log('SKIP', {'reason': 'alreadyToday', 'traceId': traceId});
         return false;
       }
@@ -1501,11 +1493,13 @@ class DeviceProvider extends ChangeNotifier {
         );
 
       // Fire and forget aux data - rely on Firestore persistence
+      // We do NOT await this, so the UI can finish immediately.
       unawaited(
         batch.commit().then((_) {
-          _log('📚 [Provider] aux data (attempts/notes) stored session=$sessionId');
+          _log(
+              '📚 [Provider] aux data (attempts/notes) stored session=$sessionId');
         }).catchError((e) {
-          _log('⚠️ [Provider] aux data save failed (offline?): $e');
+          _log('⚠️ [Provider] aux data save failed (local/offline?): $e');
         }),
       );
       XpTrace.log('LOGS_STORED', {
@@ -1548,22 +1542,25 @@ class DeviceProvider extends ChangeNotifier {
 
       final restStatsService = _getRestStatsService();
       if (restStatsService != null && averageRestMs != null) {
-        try {
-          await restStatsService.recordSession(
-            gymId: gymId,
-            userId: userId,
-            deviceId: _device!.uid,
-            deviceName: _device!.name,
-            exerciseId: _device!.isMulti ? _currentExerciseId : null,
-            exerciseName: _lookupExerciseName(),
-            averageActualRestMs: averageRestMs,
-            plannedRestMs: plannedRestMs,
-            sessionDate: endDate,
-            setCount: savedSets.length,
-          );
-        } catch (e, st) {
-          _log('⚠️ [Provider] rest stats record error: $e', st);
-        }
+        // Fire-and-forget rest stats
+        unawaited(() async {
+          try {
+            await restStatsService.recordSession(
+              gymId: gymId,
+              userId: userId,
+              deviceId: _device!.uid,
+              deviceName: _device!.name,
+              exerciseId: _device!.isMulti ? _currentExerciseId : null,
+              exerciseName: _lookupExerciseName(),
+              averageActualRestMs: averageRestMs!,
+              plannedRestMs: plannedRestMs,
+              sessionDate: endDate,
+              setCount: savedSets.length,
+            );
+          } catch (e, st) {
+            _log('⚠️ [Provider] rest stats record error: $e', st);
+          }
+        }());
       }
       final dayKey = logicDayKey(sessionDate);
       elogUi('SAVE_PERSIST_OK', {
@@ -1910,21 +1907,14 @@ class DeviceProvider extends ChangeNotifier {
     String userId,
   ) async {
     try {
-      final logsCol = _firestore
-          .collection('gyms')
-          .doc(gymId)
-          .collection('devices')
-          .doc(deviceId)
-          .collection('logs');
+      final lastSession = await _sessionRepository.getLastSession(
+        gymId: gymId,
+        userId: userId,
+        deviceId: deviceId,
+        exerciseId: exerciseId,
+      );
 
-      final lastSnap = await logsCol
-          .where('userId', isEqualTo: userId)
-          .where('exerciseId', isEqualTo: exerciseId)
-          .orderBy('timestamp', descending: true)
-          .limit(1)
-          .get();
-
-      if (lastSnap.docs.isEmpty) {
+      if (lastSession == null) {
         final hadData = _lastSessionSets.isNotEmpty ||
             _lastSessionDate != null ||
             _lastSessionNote.isNotEmpty;
@@ -1938,69 +1928,41 @@ class DeviceProvider extends ChangeNotifier {
         return false;
       }
 
-    final data = lastSnap.docs.first.data();
-    final sid = data['sessionId'] as String;
-    final ts = (data['timestamp'] as Timestamp).toDate();
-    final note = data['note'] as String? ?? '';
-
-    final sessionDocs = await logsCol
-        .where('userId', isEqualTo: userId)
-        .where('exerciseId', isEqualTo: exerciseId)
-        .where('sessionId', isEqualTo: sid)
-        .orderBy('timestamp')
-        .get();
-
-    final newSets = [
-      for (var entry in sessionDocs.docs.asMap().entries)
-        () {
-          final data = entry.value.data();
-          final dropList = <Map<String, String>>[];
-          final rawDrops = data['drops'];
-          if (rawDrops is List) {
-            for (final drop in rawDrops) {
-              if (drop is Map) {
-                final map = Map<String, dynamic>.from(drop);
-                dropList.add({
-                  'weight': '${map['kg'] ?? map['weight'] ?? ''}',
-                  'reps': '${map['reps'] ?? map['wdh'] ?? ''}',
-                });
-              }
-            }
-          }
-          if (dropList.isEmpty) {
-            final legacyWeight = '${data['dropWeightKg'] ?? ''}';
-            final legacyReps = '${data['dropReps'] ?? ''}';
-            if (legacyWeight.isNotEmpty && legacyReps.isNotEmpty) {
-              dropList.add({'weight': legacyWeight, 'reps': legacyReps});
-            }
-          }
-          return _withNormalizedDrops({
-            'number': '${entry.key + 1}',
-            'weight': '${data['weight']}',
-            'reps': '${data['reps']}',
-            'dropWeight': '${data['dropWeightKg'] ?? ''}',
-            'dropReps': '${data['dropReps'] ?? ''}',
-            'isBodyweight': data['isBodyweight'] ?? false,
-            'drops': dropList,
+      final newSets = lastSession.sets.map((s) {
+        final dropList = <Map<String, String>>[];
+        if ((s.dropWeightKg ?? 0) > 0 || (s.dropReps ?? 0) > 0) {
+          dropList.add({
+            'weight': '${s.dropWeightKg ?? ''}',
+            'reps': '${s.dropReps ?? ''}',
           });
-        }(),
-    ];
-    final changed =
-        !const DeepCollectionEquality().equals(_lastSessionSets, newSets) ||
-        _lastSessionId != sid ||
-        _lastSessionNote != note;
-    if (changed) {
-      _lastSessionSets = newSets;
-      _lastSessionDate = ts;
-      _lastSessionNote = note;
-      _lastSessionId = sid;
-      _log(
-        '📜 [Provider] loaded last session id=$sid sets=${_lastSessionSets.length}',
-      );
-    }
-    return changed;
-    } catch (e) {
-      _log('⚠️ [Provider] failed to load last session (offline?): $e');
+        }
+        return _withNormalizedDrops({
+          'number': '${s.setNumber}',
+          'weight': '${s.weight}',
+          'reps': '${s.reps}',
+          'dropWeight': '${s.dropWeightKg ?? ''}',
+          'dropReps': '${s.dropReps ?? ''}',
+          'isBodyweight': s.isBodyweight,
+          'drops': dropList,
+        });
+      }).toList();
+
+      final changed =
+          !const DeepCollectionEquality().equals(_lastSessionSets, newSets) ||
+              _lastSessionId != lastSession.sessionId ||
+              _lastSessionNote != lastSession.note;
+      if (changed) {
+        _lastSessionSets = newSets;
+        _lastSessionDate = lastSession.timestamp;
+        _lastSessionNote = lastSession.note;
+        _lastSessionId = lastSession.sessionId;
+        _log(
+          '📜 [Provider] loaded last session id=${lastSession.sessionId} sets=${_lastSessionSets.length} (OFFLINE-FIRST)',
+        );
+      }
+      return changed;
+    } catch (e, st) {
+      _log('⚠️ [Provider] failed to load last session: $e', st);
       return false;
     }
   }

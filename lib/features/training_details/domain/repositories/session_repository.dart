@@ -7,6 +7,13 @@ abstract class SessionRepository {
     bool fromCacheOnly = false,
   });
 
+  Future<Session?> getLastSession({
+    required String gymId,
+    required String userId,
+    required String deviceId,
+    required String exerciseId,
+  });
+
   Future<void> saveSession({
     required Session session,
   });

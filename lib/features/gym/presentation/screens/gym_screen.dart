@@ -85,8 +85,8 @@ class _GymScreenState extends ConsumerState<GymScreen>
     final res = devices
         .where((d) {
           final nameMatch = d.name.toLowerCase().contains(q);
-          final brandMatch = d.description.toLowerCase().contains(q);
-          return nameMatch || brandMatch;
+          final subtitleMatch = d.displaySubtitle.toLowerCase().contains(q);
+          return nameMatch || subtitleMatch;
         })
         .where((d) => !_favoritesOnly || favoriteIds.contains(d.uid))
         .where((d) {

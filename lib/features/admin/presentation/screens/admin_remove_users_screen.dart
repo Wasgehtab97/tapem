@@ -10,6 +10,7 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:intl/intl.dart';
 
 class AdminRemoveUsersScreen extends StatefulWidget {
   const AdminRemoveUsersScreen({super.key, this.firestore});
@@ -64,7 +65,7 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
               padding: const EdgeInsets.all(AppSpacing.sm),
               child: TextField(
                 decoration: const InputDecoration(
-                  hintText: 'Nutzer suchen (Name / UID)',
+                  hintText: 'Nutzer suchen (Name)',
                   prefixIcon: Icon(Icons.search),
                 ),
                 onChanged: (value) {
@@ -137,7 +138,9 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
                               : profile.uid,
                         ),
                         subtitle: Text(
-                          profile.uid,
+                          profile.createdAt != null
+                              ? 'Mitglied seit: ${DateFormat('dd.MM.yyyy').format(profile.createdAt!)}'
+                              : profile.uid,
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall

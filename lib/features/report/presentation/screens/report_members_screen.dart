@@ -4,8 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/services.dart';
+import 'package:tapem/core/auth/role_utils.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/app_chip.dart';
+import 'package:tapem/core/widgets/app_empty_state.dart';
+import 'package:tapem/core/widgets/app_error_state.dart';
+import 'package:tapem/core/widgets/app_loading_view.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 import '../../data/training_day_repository.dart';
@@ -84,16 +89,15 @@ class _MembersTable extends StatelessWidget {
       stream: query.snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              loc.reportMembersLoadError,
-              textAlign: TextAlign.center,
-            ),
+          return AppErrorState(
+            message: loc.reportMembersLoadError,
           );
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const AppLoadingView(
+            message: 'Lade Mitglieder...',
+          );
         }
 
         final members = snapshot.data?.docs
@@ -106,7 +110,11 @@ class _MembersTable extends StatelessWidget {
         members.sort((a, b) => a.memberNumber.compareTo(b.memberNumber));
 
         if (members.isEmpty) {
-          return Center(child: Text(loc.no_members_found));
+          return AppEmptyState(
+            icon: Icons.people_outline,
+            message: loc.no_members_found,
+            secondaryMessage: 'Es wurden noch keine Mitglieder registriert.',
+          );
         }
 
         final dateFormat = DateFormat.yMMMd(loc.localeName).add_Hm();
@@ -180,11 +188,8 @@ class _MembersTableContentState extends State<_MembersTableContent> {
         final isAccessDenied = error is TrainingDayAccessDenied;
 
         if (snapshot.hasError && !isAccessDenied) {
-          return Center(
-            child: Text(
-              widget.loc.reportMembersLoadError,
-              textAlign: TextAlign.center,
-            ),
+          return AppErrorState(
+            message: widget.loc.reportMembersLoadError,
           );
         }
 
@@ -553,15 +558,10 @@ class _MembersSegmentFilter extends StatelessWidget {
       final selected = current == segment;
       return Padding(
         padding: const EdgeInsets.only(right: AppSpacing.sm),
-        child: ChoiceChip(
-          label: Text(label),
+        child: AppChip(
+          label: label,
           selected: selected,
           onSelected: (_) => onChanged(segment),
-          selectedColor: colorScheme.secondary.withOpacity(0.2),
-          backgroundColor: colorScheme.surface,
-          labelStyle: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-          ),
         ),
       );
     }
@@ -749,6 +749,7 @@ String _formatRole(String? role, AppLocalizations loc) {
     case 'member':
       return loc.reportMembersRoleMember;
     case 'admin':
+    case kRoleGymOwner:
       return loc.reportMembersRoleAdmin;
     default:
       return toBeginningOfSentenceCase(role) ?? role;

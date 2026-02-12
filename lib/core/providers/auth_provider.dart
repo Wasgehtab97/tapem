@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tapem/core/auth/role_utils.dart';
 import 'package:tapem/core/constants.dart';
 import 'package:tapem/core/data/user_profile_service.dart';
 import 'package:tapem/core/drafts/session_draft_repository.dart';
@@ -122,6 +123,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   bool _isLoading = false;
   String? _error;
   String? _selectedGymCode;
+  String? _activeGymMembershipRole;
   bool _isGuest = false;
 
   AuthProvider._({
@@ -232,7 +234,15 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   String? get userId => _user?.id;
   String? get role => _user?.role;
   bool get isMember => role == 'member';
-  bool get isAdmin => role == 'admin';
+  bool get isGymOwner =>
+      role == kRoleGymOwner || _activeGymMembershipRole == kRoleGymOwner;
+  UserAccessTier get accessTier => resolveUserAccessTier(
+    isGuest: isGuest,
+    isAdmin: isAdmin,
+    isGymOwner: isGymOwner,
+  );
+  bool get isAdmin =>
+      isAdminLikeRole(role) || isAdminLikeRole(_activeGymMembershipRole);
   bool get isCoach => (_user?.coachEnabled ?? false) || role == 'coach';
   DateTime? get createdAt => _user?.createdAt;
 
@@ -341,6 +351,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
         }
       } else {
         _user = null;
+        _activeGymMembershipRole = null;
         _isGuest = false;
       }
     } on fb_auth.FirebaseAuthException catch (e) {
@@ -429,6 +440,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       _gymScopedStateController?.resetGymScopedState();
       _user = null;
       _selectedGymCode = null;
+      _activeGymMembershipRole = null;
       _isGuest = false;
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(StorageKeys.demoGymId);
@@ -623,6 +635,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       prefs = await SharedPreferences.getInstance();
       await prefs.setString('selectedGymCode', gymId);
       _selectedGymCode = gymId;
+      await _loadActiveGymMembershipRole(userId: fbUser.uid, gymId: gymId);
       _gymScopedStateController?.resetGymScopedState();
       return const GymSwitchResult.success();
     } catch (e, st) {
@@ -691,6 +704,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('selectedGymCode', gymId);
       _selectedGymCode = gymId;
+      await _loadActiveGymMembershipRole(userId: fbUser.uid, gymId: gymId);
       _user = _user!.copyWith(gymCodes: [..._user!.gymCodes, gymId]);
       _gymScopedStateController?.resetGymScopedState();
       return const GymSwitchResult.success();
@@ -745,12 +759,17 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       if (_selectedGymCode == gymId) {
         _selectedGymCode = null;
         await prefs.remove('selectedGymCode');
+        _activeGymMembershipRole = null;
         if (updatedGyms.isNotEmpty) {
           final nextGym = updatedGyms.first;
           await _setActiveGym(nextGym);
           await _authManager.forceRefreshIdToken(fbUser);
           await prefs.setString('selectedGymCode', nextGym);
           _selectedGymCode = nextGym;
+          await _loadActiveGymMembershipRole(
+            userId: fbUser.uid,
+            gymId: nextGym,
+          );
         } else {
           await _firestore.collection('users').doc(_user!.id).update({
             'activeGymId': FieldValue.delete(),
@@ -783,6 +802,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   void _setGuestState({required String gymId, required String uid}) {
     _isGuest = true;
     _selectedGymCode = gymId;
+    _activeGymMembershipRole = null;
     _user = UserData(
       id: uid,
       email: 'demo@tapem.local',
@@ -800,6 +820,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
 
   Future<void> _clearDemoState() async {
     _isGuest = false;
+    _activeGymMembershipRole = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(StorageKeys.demoGymId);
   }
@@ -843,6 +864,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
 
       if (resolvedGym == null) {
         _selectedGymCode = null;
+        _activeGymMembershipRole = null;
         await prefs.remove('selectedGymCode');
         return;
       }
@@ -852,6 +874,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       } catch (error, stackTrace) {
         _error = 'membership_sync_failed';
         _selectedGymCode = null;
+        _activeGymMembershipRole = null;
         await prefs.remove('selectedGymCode');
         _logError(error, stackTrace, context: 'activeGymSync.ensureMembership');
         return;
@@ -897,8 +920,34 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       }
 
       _selectedGymCode = resolvedGym;
+      await _loadActiveGymMembershipRole(
+        userId: currentUser.id,
+        gymId: resolvedGym,
+      );
     } catch (e, st) {
       _logError(e, st, context: 'activeGymSync');
+    }
+  }
+
+  Future<void> _loadActiveGymMembershipRole({
+    required String userId,
+    required String? gymId,
+  }) async {
+    if (gymId == null || gymId.isEmpty) {
+      _activeGymMembershipRole = null;
+      return;
+    }
+    try {
+      final membershipDoc = await _firestore
+          .collection('gyms')
+          .doc(gymId)
+          .collection('users')
+          .doc(userId)
+          .get();
+      _activeGymMembershipRole = membershipDoc.data()?['role'] as String?;
+    } catch (e, st) {
+      _activeGymMembershipRole = null;
+      _logError(e, st, context: 'loadActiveGymMembershipRole');
     }
   }
 

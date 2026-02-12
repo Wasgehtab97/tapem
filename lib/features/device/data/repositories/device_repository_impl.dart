@@ -29,6 +29,11 @@ class DeviceRepositoryImpl implements DeviceRepository {
   }
 
   @override
+  Future<void> updateDevice(String gymId, Device device) {
+    return _source.updateDevice(gymId, device);
+  }
+
+  @override
   Future<Device?> getDeviceByNfcCode(String gymId, String nfcCode) async {
     final all = await getDevicesForGym(gymId);
     try {

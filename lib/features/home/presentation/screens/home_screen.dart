@@ -10,6 +10,8 @@ import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen
 import 'package:tapem/features/deals/presentation/screens/deals_screen.dart';
 import 'package:tapem/features/rank/presentation/screens/rank_screen.dart';
 import 'package:tapem/features/home/presentation/widgets/overlay_feature_navigators.dart';
+import 'package:tapem/features/home/domain/home_tab_policy.dart';
+import 'package:tapem/features/home/presentation/widgets/owner_tab_navigator.dart';
 import 'package:tapem/features/training_plan/presentation/widgets/training_plan_tab_navigator.dart';
 import 'package:tapem/features/coaching/presentation/screens/coaching_home_screen.dart';
 import 'package:tapem/features/nutrition/presentation/widgets/nutrition_tab_navigator.dart';
@@ -43,6 +45,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final GlobalKey<NavigatorState> _nutritionNavigatorKey =
       GlobalKey<NavigatorState>();
   final GlobalKey<NavigatorState> _planNavigatorKey =
+      GlobalKey<NavigatorState>();
+  final GlobalKey<NavigatorState> _ownerNavigatorKey =
       GlobalKey<NavigatorState>();
   final GlobalKey<NavigatorState> _nutritionOverlayNavigatorKey =
       GlobalKey<NavigatorState>();
@@ -267,6 +271,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
+    if (auth.isGymOwner) {
+      tabs.add(
+        _TabInfo(
+          id: _HomeTabId.owner,
+          page: OwnerTabNavigator(
+            key: const PageStorageKey('Owner'),
+            navigatorKey: _ownerNavigatorKey,
+          ),
+          item: const _HomeTabBarItem(
+            icon: Icons.workspace_premium_outlined,
+            activeIcon: Icons.workspace_premium,
+            label: 'Owner',
+            barLabel: 'Owner',
+          ),
+        ),
+      );
+    }
+
     return tabs;
   }
 
@@ -336,6 +358,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<bool> _handleWillPop() async {
     if (_overlayFeature == null) {
+      final activeTabId = _lastTabId;
+      final tabNavigator = _tabNavigatorFor(activeTabId);
+      if (tabNavigator != null) {
+        final handled = await tabNavigator.maybePop();
+        if (handled) {
+          return false;
+        }
+      }
       return true;
     }
     final overlayNavigator = _activeOverlayNavigator();
@@ -347,6 +377,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     _switchToProfileTab();
     return false;
+  }
+
+  NavigatorState? _tabNavigatorFor(_HomeTabId? tabId) {
+    switch (tabId) {
+      case _HomeTabId.nutrition:
+        return _nutritionNavigatorKey.currentState;
+      case _HomeTabId.plan:
+        return _planNavigatorKey.currentState;
+      case _HomeTabId.owner:
+        return _ownerNavigatorKey.currentState;
+      case _HomeTabId.gym:
+      case _HomeTabId.profile:
+      case _HomeTabId.workout:
+      case _HomeTabId.report:
+      case _HomeTabId.admin:
+      case _HomeTabId.rank:
+      case _HomeTabId.deals:
+      case _HomeTabId.coaching:
+      case null:
+        return null;
+    }
   }
 
   @override
@@ -375,26 +426,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final auth = ref.watch(authControllerProvider);
-    final isAdmin = auth.isAdmin;
-    final isGuest = auth.isGuest;
+    final accessTier = auth.accessTier;
     final allTabs = _buildTabs(context);
-    const memberTabIds = {
-      _HomeTabId.gym,
-      _HomeTabId.profile,
-      _HomeTabId.workout,
-      _HomeTabId.rank,
-      _HomeTabId.deals,
-      _HomeTabId.coaching,
-    };
-    final tabs = isGuest
-        ? allTabs
-              .where((tab) => tab.id == _HomeTabId.gym)
-              .toList(growable: false)
-        : (!isAdmin)
-        ? allTabs
-              .where((tab) => memberTabIds.contains(tab.id))
-              .toList(growable: false)
-        : allTabs;
+    final allowedSlots = visibleHomeTabSlotsForAccessTier(accessTier);
+    final tabs = allTabs
+        .where((tab) => allowedSlots.contains(tab.id.slot))
+        .toList(growable: false);
 
     debugPrint(
       '[Home] build currentIndex=$_currentIndex tabs=${tabs.map((t) => t.id).toList()}',
@@ -423,7 +460,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       onWillPop: _handleWillPop,
       child: Scaffold(
         extendBody: false,
-        appBar: (overlayBody != null || currentTab.id == _HomeTabId.workout)
+        appBar:
+            (overlayBody != null ||
+                currentTab.id == _HomeTabId.workout ||
+                currentTab.id == _HomeTabId.owner)
             ? null
             : AppBar(
                 automaticallyImplyLeading: false,
@@ -432,7 +472,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 leadingWidth: kToolbarHeight + 8,
                 leading: const SizedBox(width: kToolbarHeight + 8),
                 title: _buildAppBarTitle(context, currentTab),
-                actions: isGuest
+                actions: auth.isGuest
                     ? [
                         TextButton(
                           onPressed: () => _exitDemo(context),
@@ -475,6 +515,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 nav?.popUntil((route) => route.isFirst);
               } else if (tabs[index].id == _HomeTabId.plan) {
                 final nav = _planNavigatorKey.currentState;
+                nav?.popUntil((route) => route.isFirst);
+              } else if (tabs[index].id == _HomeTabId.owner) {
+                final nav = _ownerNavigatorKey.currentState;
                 nav?.popUntil((route) => route.isFirst);
               }
               return;
@@ -547,9 +590,28 @@ enum _HomeTabId {
   report,
   admin,
   rank,
+  owner,
   deals,
   plan,
   coaching,
+}
+
+extension on _HomeTabId {
+  HomeTabSlot get slot {
+    return switch (this) {
+      _HomeTabId.gym => HomeTabSlot.gym,
+      _HomeTabId.profile => HomeTabSlot.profile,
+      _HomeTabId.nutrition => HomeTabSlot.nutrition,
+      _HomeTabId.workout => HomeTabSlot.workout,
+      _HomeTabId.report => HomeTabSlot.report,
+      _HomeTabId.admin => HomeTabSlot.admin,
+      _HomeTabId.rank => HomeTabSlot.rank,
+      _HomeTabId.owner => HomeTabSlot.owner,
+      _HomeTabId.deals => HomeTabSlot.deals,
+      _HomeTabId.plan => HomeTabSlot.plan,
+      _HomeTabId.coaching => HomeTabSlot.coaching,
+    };
+  }
 }
 
 enum _HomeOverlayFeature { progress, nutrition, plan, discover }
@@ -673,6 +735,9 @@ class _HomeBottomBarButton extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          splashFactory: NoSplash.splashFactory,
           child: SizedBox(
             height: minTapHeight,
             width: double.infinity,

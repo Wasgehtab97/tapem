@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/app_chip.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/providers/report_provider.dart';
 import 'package:tapem/features/report/presentation/widgets/calendar_heatmap.dart';
@@ -80,23 +81,14 @@ class ReportUsageScreen extends ConsumerWidget {
                       
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(label),
+                        child: AppChip(
+                          label: label,
                           selected: isSelected,
                           onSelected: (selected) {
                             if (selected) {
                               reportProvider.changeUsageRange(range);
                             }
                           },
-                          selectedColor: brandColor.withOpacity(0.2),
-                          labelStyle: TextStyle(
-                            color: isSelected ? brandColor : theme.colorScheme.onSurface,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                          backgroundColor: theme.colorScheme.surface,
-                          side: BorderSide(
-                            color: isSelected ? brandColor : theme.colorScheme.onSurface.withOpacity(0.1),
-                          ),
                         ),
                       );
                     }).toList(),

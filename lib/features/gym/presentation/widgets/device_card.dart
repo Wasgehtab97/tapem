@@ -17,7 +17,7 @@ class DeviceCard extends StatelessWidget {
     final theme = context.theme;
     final device = this.device;
     final initial = device.name.isNotEmpty ? device.name[0].toUpperCase() : '?';
-    final subtitle = device.description;
+    final subtitle = device.displaySubtitle;
     final idText = device.id > 0 ? device.id.toString() : '–';
     final onBrand = Theme.of(context).extension<BrandOnColors>()?.onGradient ?? Colors.black;
     return Hero(

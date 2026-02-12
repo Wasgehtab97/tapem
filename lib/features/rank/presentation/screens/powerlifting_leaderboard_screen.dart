@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import 'package:tapem/core/auth/role_utils.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -104,7 +105,7 @@ class _PowerliftingLeaderboardScreenState
         final showInLeaderboard =
             userData['showInLeaderboard'] as bool? ?? true;
         final role = userData['role'] as String?;
-        if (!showInLeaderboard || role == 'admin') {
+        if (!showInLeaderboard || isAdminLikeRole(role)) {
           return null;
         }
 

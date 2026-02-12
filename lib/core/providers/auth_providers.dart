@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tapem/core/auth/role_utils.dart';
 
 import '../../features/gym/data/sources/firestore_gym_source.dart';
 import '../../services/membership_service.dart';
@@ -29,6 +30,7 @@ class AuthViewState implements GymContextState {
     required this.isLoggedIn,
     required this.isGuest,
     required this.isAdmin,
+    this.isGymOwner = false,
     required this.isCoach,
     required this.gymContextStatus,
     required this.gymCode,
@@ -40,6 +42,7 @@ class AuthViewState implements GymContextState {
   final bool isLoggedIn;
   final bool isGuest;
   final bool isAdmin;
+  final bool isGymOwner;
   final bool isCoach;
   @override
   final GymContextStatus gymContextStatus;
@@ -49,6 +52,11 @@ class AuthViewState implements GymContextState {
   final String? error;
 
   bool get hasError => error != null && error!.isNotEmpty;
+  UserAccessTier get accessTier => resolveUserAccessTier(
+    isGuest: isGuest,
+    isAdmin: isAdmin,
+    isGymOwner: isGymOwner,
+  );
 
   factory AuthViewState.fromAuth(AuthProvider auth) {
     return AuthViewState(
@@ -56,6 +64,7 @@ class AuthViewState implements GymContextState {
       isLoggedIn: auth.isLoggedIn,
       isGuest: auth.isGuest,
       isAdmin: auth.isAdmin,
+      isGymOwner: auth.isGymOwner,
       isCoach: auth.isCoach,
       gymContextStatus: auth.gymContextStatus,
       gymCode: auth.gymCode,
@@ -79,18 +88,14 @@ final brandingProvider = ChangeNotifierProvider<BrandingProvider>((ref) {
   );
   branding.registerGymScopedResettable(gymScopedController);
 
-  ref.listen<AuthViewState>(
-    authViewStateProvider,
-    (previous, next) {
-      final gymChanged = previous?.gymCode != next.gymCode;
-      final userChanged = previous?.userId != next.userId;
-      if (!gymChanged && !userChanged) {
-        return;
-      }
-      branding.loadBrandingWithGym(next.gymCode, next.userId);
-    },
-    fireImmediately: true,
-  );
+  ref.listen<AuthViewState>(authViewStateProvider, (previous, next) {
+    final gymChanged = previous?.gymCode != next.gymCode;
+    final userChanged = previous?.userId != next.userId;
+    if (!gymChanged && !userChanged) {
+      return;
+    }
+    branding.loadBrandingWithGym(next.gymCode, next.userId);
+  }, fireImmediately: true);
 
   ref.onDispose(branding.dispose);
   return branding;
@@ -101,24 +106,20 @@ final gymProvider = ChangeNotifierProvider<GymProvider>((ref) {
   final gym = GymProvider();
   gym.registerGymScopedResettable(gymScopedController);
 
-  ref.listen<AuthViewState>(
-    authViewStateProvider,
-    (previous, next) {
-      if (previous?.gymCode == next.gymCode) {
-        return;
-      }
-      final gymId = next.gymCode;
-      if (gymId == null || gymId.isEmpty) {
-        gym.resetGymScopedState();
-        return;
-      }
-      if (gym.lastRequestedGymId == gymId) {
-        return;
-      }
-      unawaited(gym.loadGymData(gymId));
-    },
-    fireImmediately: true,
-  );
+  ref.listen<AuthViewState>(authViewStateProvider, (previous, next) {
+    if (previous?.gymCode == next.gymCode) {
+      return;
+    }
+    final gymId = next.gymCode;
+    if (gymId == null || gymId.isEmpty) {
+      gym.resetGymScopedState();
+      return;
+    }
+    if (gym.lastRequestedGymId == gymId) {
+      return;
+    }
+    unawaited(gym.loadGymData(gymId));
+  }, fireImmediately: true);
 
   ref.onDispose(gym.dispose);
   return gym;

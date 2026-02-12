@@ -9,6 +9,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAdminLikeRole(role) {
+      return role == 'admin' || role == 'gymowner' || role == 'gym_admin';
+    }
+
     // Membership: either custom claim gymId or membership doc under gym
     function inGym(gymId) {
       return isAuthed() && (
@@ -24,8 +28,8 @@ service cloud.firestore {
         (
           inGym(gymId) &&
           (
-            request.auth.token.role == 'admin' ||
-            get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role == 'admin'
+            isAdminLikeRole(request.auth.token.role) ||
+            isAdminLikeRole(get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role)
           )
         );
     }
@@ -70,7 +74,7 @@ service cloud.firestore {
     function isGymAdminFor(userId, gymId) {
       return isAuthed() &&
              isMember(userId, gymId) &&
-             get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role == 'admin';
+             isAdminLikeRole(get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role);
     }
 
     function isOwner(userId) {
@@ -349,11 +353,22 @@ service cloud.firestore {
     // Stickers collection
     // ─────────────────────────
     match /stickers/{stickerId} {
-      // Anyone authenticated can read stickers
       allow read: if isAuthed();
-      
-      // Only global admins can write stickers
       allow write: if isGlobalAdmin();
+    }
+
+    // ─────────────────────────
+    // Manufacturers collection (global list)
+    // ─────────────────────────
+    match /manufacturers/{manufacturerId} {
+      allow read: if isAuthed();
+      // Allow write if global admin OR if they are an admin in the gym they are currently in
+      // Since seeding happens from the client, we trust gym admins to initialize the list
+      allow write: if isAuthed() && (
+        isGlobalAdmin() || 
+        isAdminLikeRole(request.auth.token.role) ||
+        (activeGymId() is string && isAdmin(activeGymId()))
+      );
     }
 
     // ─────────────────────────
@@ -1053,6 +1068,12 @@ service cloud.firestore {
         allow write: if isAdmin(gymId);
       }
 
+      // Manufacturers (gym-specific selection)
+      match /manufacturers/{mId} {
+        allow read: if inGym(gymId) || isAdmin(gymId);
+        allow write: if isAdmin(gymId);
+      }
+
       // Challenges
       match /challenges/{type}/{docId}/{sub=**} {
         allow read: if inGym(gymId);
@@ -1082,7 +1103,7 @@ service cloud.firestore {
                      isFriend(userId, request.auth.uid) ||
                      (inGym(gymId) &&
                       get(/databases/$(database)/documents/users/$(userId)).data.showInLeaderboard == true &&
-                      get(/databases/$(database)/documents/users/$(userId)).data.role != 'admin');
+                      !isAdminLikeRole(get(/databases/$(database)/documents/users/$(userId)).data.role));
         allow write: if ownerOrAdmin(gymId, userId);
       }
 
@@ -1190,9 +1211,14 @@ service cloud.firestore {
 
     // Public deals (readable by any authenticated user)
     match /deals/{dealId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-        (request.auth.token.role == 'global_admin' || request.auth.token.role == 'admin');
+      allow read: if isAuthed();
+      allow write: if isAuthed() && (
+        isGlobalAdmin() || 
+        isAdminLikeRole(request.auth.token.role) ||
+        request.auth.token.role == 'gym_admin' ||
+        isAdminLikeRole(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role) ||
+        isAdmin(activeGymId())
+      );
     }
 
     // ─────────────────────────

@@ -2,6 +2,8 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
+const GYM_ADMIN_ROLES = new Set(['admin', 'gymowner']);
+
 /**
  * Generate a random, readable 6-character gym code
  * Excludes ambiguous characters: O/0, I/1, S/5, Z/2
@@ -83,7 +85,8 @@ exports.manuallyRotateGymCode = functions.https.onCall(async (data, context) => 
             .doc(userId)
             .get();
 
-        if (!membershipDoc.exists || membershipDoc.data().role !== 'admin') {
+        const membershipRole = membershipDoc.data()?.role;
+        if (!membershipDoc.exists || !GYM_ADMIN_ROLES.has(membershipRole)) {
             throw new functions.https.HttpsError(
                 'permission-denied',
                 'User is not an admin of this gym'

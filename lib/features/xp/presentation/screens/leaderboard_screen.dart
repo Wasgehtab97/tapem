@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:tapem/core/auth/role_utils.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
@@ -182,7 +183,7 @@ class _LeaderboardScreenState
         final showInLeaderboard =
             userData?['showInLeaderboard'] as bool? ?? true;
         final role = userData?['role'] as String?;
-        if (userData == null || !showInLeaderboard || role == 'admin') {
+        if (userData == null || !showInLeaderboard || isAdminLikeRole(role)) {
           return null;
         }
         final profile = PublicProfile.fromMap(uid, userData);
@@ -242,7 +243,7 @@ class _LeaderboardScreenState
         final showInLeaderboard =
             userData?['showInLeaderboard'] as bool? ?? true;
         final role = userData?['role'] as String?;
-        if (userData == null || !showInLeaderboard || role == 'admin') {
+        if (userData == null || !showInLeaderboard || isAdminLikeRole(role)) {
           return null;
         }
         final profile = PublicProfile.fromMap(uid, userData);

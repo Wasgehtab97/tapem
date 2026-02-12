@@ -35,7 +35,7 @@ class DeviceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final brand = device.description;
+    final brand = device.displaySubtitle;
     final idText = device.id.toString();
     final loc = AppLocalizations.of(context)!;
     final brandTheme = theme.extension<AppBrandTheme>();

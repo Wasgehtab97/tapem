@@ -44,6 +44,12 @@ void main() {
         role: 'admin',
       );
       await seedParticipant(
+        uid: 'u6',
+        username: 'foxtrot',
+        xp: 950,
+        role: 'gymowner',
+      );
+      await seedParticipant(
         uid: 'u5',
         username: 'echo',
         xp: 800,
@@ -52,7 +58,7 @@ void main() {
     });
 
     test(
-      'computes rank and xp gap while excluding hidden/admin users',
+      'computes rank and xp gap while excluding hidden/admin-like users',
       () async {
         final signal = await service.fetch(gymId: gymId, userId: 'u1');
 

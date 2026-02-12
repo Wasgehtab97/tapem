@@ -58,6 +58,40 @@ class DealsRepository {
     }
   }
 
+  /// Liefert ALLE Deals (auch inaktive) für Administrationszwecke.
+  Stream<List<Deal>> getAllDealsStream() {
+    return _firestore
+        .collection('deals')
+        .snapshots()
+        .map((snapshot) {
+      debugPrint('📦 Admin Deals Snapshot: ${snapshot.docs.length} docs found');
+      return snapshot.docs
+          .map((doc) => Deal.fromMap(doc.id, doc.data()))
+          .toList();
+    }).handleError((error) {
+      debugPrint('🔴 Admin Deals Stream Error: $error');
+      throw error;
+    });
+  }
+
+  Future<void> saveDeal(Deal deal) async {
+    final data = deal.toMap();
+    data['updatedAt'] = FieldValue.serverTimestamp();
+
+    if (deal.id.isEmpty) {
+      data['createdAt'] = FieldValue.serverTimestamp();
+      debugPrint('📝 Deals: Creating new deal: $data');
+      await _firestore.collection('deals').add(data);
+    } else {
+      debugPrint('📝 Deals: Updating deal ${deal.id}: $data');
+      await _firestore.collection('deals').doc(deal.id).update(data);
+    }
+  }
+
+  Future<void> deleteDeal(String dealId) async {
+    await _firestore.collection('deals').doc(dealId).delete();
+  }
+
   Future<void> trackClick(String dealId) async {
     try {
       final docRef = _firestore.collection('deals').doc(dealId);

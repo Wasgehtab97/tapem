@@ -78,6 +78,61 @@ class SessionRepositoryImpl implements SessionRepository {
     }).toList();
   }
 
+  @override
+  Future<Session?> getLastSession({
+    required String gymId,
+    required String userId,
+    required String deviceId,
+    required String exerciseId,
+  }) async {
+    final box = _db.sessionsBox;
+    // Filter sessions by gymId, userId, deviceId, and exerciseId
+    final matchingSessions = box.values.where((s) {
+      return s.gymId == gymId &&
+          s.userId == userId &&
+          s.deviceId == deviceId &&
+          s.exerciseId == exerciseId;
+    }).toList();
+
+    if (matchingSessions.isEmpty) {
+      return null;
+    }
+
+    // Sort by timestamp descending (newest first)
+    matchingSessions.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final latest = matchingSessions.first;
+
+    final sortedSets = latest.sets.toList()
+      ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+
+    return Session(
+      sessionId: latest.sessionId,
+      gymId: latest.gymId,
+      userId: latest.userId,
+      deviceId: latest.deviceId,
+      deviceName: latest.deviceName,
+      deviceDescription: latest.deviceDescription,
+      exerciseId: latest.exerciseId,
+      exerciseName: latest.exerciseName,
+      isMulti: latest.isMulti,
+      timestamp: latest.timestamp,
+      note: latest.note ?? '',
+      sets: sortedSets
+          .map((s) => SessionSet(
+                weight: s.weight,
+                reps: s.reps,
+                setNumber: s.setNumber,
+                dropWeightKg: s.dropWeightKg,
+                dropReps: s.dropReps,
+                isBodyweight: s.isBodyweight,
+              ))
+          .toList(),
+      startTime: latest.startTime,
+      endTime: latest.endTime,
+      durationMs: latest.durationMs,
+    );
+  }
+
    @override
   Future<void> saveSession({required Session session}) async {
     // 1. Save to Hive

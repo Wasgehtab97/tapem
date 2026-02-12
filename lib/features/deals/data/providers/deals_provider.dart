@@ -18,3 +18,12 @@ final dealsStreamProvider = StreamProvider<List<Deal>>((ref) {
   final repository = ref.watch(dealsRepositoryProvider);
   return repository.getDealsStream();
 });
+
+final allDealsStreamProvider = StreamProvider<List<Deal>>((ref) {
+  final auth = ref.watch(authViewStateProvider);
+  if (!auth.isLoggedIn) {
+    return Stream.value(const <Deal>[]);
+  }
+  final repository = ref.watch(dealsRepositoryProvider);
+  return repository.getAllDealsStream();
+});

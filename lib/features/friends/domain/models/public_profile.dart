@@ -8,6 +8,7 @@ class PublicProfile {
     this.avatarUrl,
     this.primaryGymCode,
     this.avatarKey,
+    this.createdAt,
   });
 
   final String uid;
@@ -16,11 +17,18 @@ class PublicProfile {
   final String? avatarUrl;
   final String? primaryGymCode;
   final String? avatarKey;
+  final DateTime? createdAt;
 
   String get safeLower =>
       usernameLower ?? username.toLowerCase();
 
   factory PublicProfile.fromMap(String id, Map<String, dynamic> data) {
+    DateTime? createdAt;
+    final ts = data['createdAt'];
+    if (ts is Timestamp) {
+      createdAt = ts.toDate();
+    }
+
     return PublicProfile(
       uid: id,
       username: data['username'] as String? ?? '',
@@ -28,6 +36,7 @@ class PublicProfile {
       avatarUrl: data['avatarUrl'] as String?,
       primaryGymCode: data['primaryGymCode'] as String?,
       avatarKey: data['avatarKey'] as String? ?? 'default',
+      createdAt: createdAt,
     );
   }
 

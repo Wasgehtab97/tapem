@@ -14,6 +14,8 @@ class DeviceDto {
   final List<String> muscleGroups;
   final List<String> primaryMuscleGroups;
   final List<String> secondaryMuscleGroups;
+  final String? manufacturerId; // NEW
+  final String? manufacturerName; // NEW
 
   DeviceDto({
     required this.uid,
@@ -26,6 +28,8 @@ class DeviceDto {
     List<String>? muscleGroups,
     List<String>? primaryMuscleGroups,
     List<String>? secondaryMuscleGroups,
+    this.manufacturerId,
+    this.manufacturerName,
   }) : muscleGroupIds = List.from(muscleGroupIds ?? []),
        muscleGroups = List.from(muscleGroups ?? []),
        primaryMuscleGroups = List.from(primaryMuscleGroups ?? []),
@@ -57,6 +61,8 @@ class DeviceDto {
           (data['secondaryMuscleGroups'] as List<dynamic>? ?? [])
               .map((e) => e.toString())
               .toList(),
+      manufacturerId: data['manufacturerId'] as String?,
+      manufacturerName: data['manufacturerName'] as String?,
     );
   }
 
@@ -72,5 +78,7 @@ class DeviceDto {
     description: description,
     nfcCode: nfcCode,
     isMulti: isMulti,
+    manufacturerId: manufacturerId,
+    manufacturerName: manufacturerName,
   );
 }

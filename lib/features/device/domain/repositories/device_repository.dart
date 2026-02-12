@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 abstract class DeviceRepository {
   Future<List<Device>> getDevicesForGym(String gymId);
   Future<void> createDevice(String gymId, Device device);
+  Future<void> updateDevice(String gymId, Device device); // NEW
   Future<Device?> getDeviceByNfcCode(String gymId, String nfcCode);
 
   // Neu: Gerät löschen

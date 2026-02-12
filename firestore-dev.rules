@@ -9,6 +9,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAdminLikeRole(role) {
+      return role == 'admin' || role == 'gymowner' || role == 'gym_admin';
+    }
+
     // Membership: either custom claim gymId or membership doc under gym
     function inGym(gymId) {
       return isAuthed() && (
@@ -24,8 +28,8 @@ service cloud.firestore {
         (
           inGym(gymId) &&
           (
-            request.auth.token.role == 'admin' ||
-            get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role == 'admin'
+            isAdminLikeRole(request.auth.token.role) ||
+            isAdminLikeRole(get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role)
           )
         );
     }
@@ -70,7 +74,7 @@ service cloud.firestore {
     function isGymAdminFor(userId, gymId) {
       return isAuthed() &&
              isMember(userId, gymId) &&
-             get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role == 'admin';
+             isAdminLikeRole(get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role);
     }
 
     function isOwner(userId) {
@@ -178,6 +182,38 @@ service cloud.firestore {
 
     function optionalNumberField(data, field) {
       return !(field in data) || data[field] is number;
+    }
+
+    function isNutritionDateKey(key) {
+      return key.matches('^\\d{8}$');
+    }
+
+    function isYearKey(key) {
+      return key.matches('^\\d{4}$');
+    }
+
+    function isBarcodeKey(key) {
+      return key.matches('^\\d{8}$') ||
+        key.matches('^\\d{12}$') ||
+        key.matches('^\\d{13}$') ||
+        key.matches('^\\d{14}$');
+    }
+
+    function isNutritionMacros(data) {
+      return data is map &&
+        data.keys().hasOnly(['protein', 'carbs', 'fat']) &&
+        data.protein is int &&
+        data.carbs is int &&
+        data.fat is int;
+    }
+
+    function isNutritionTotals(data) {
+      return data is map &&
+        data.keys().hasOnly(['kcal', 'protein', 'carbs', 'fat']) &&
+        data.kcal is int &&
+        data.protein is int &&
+        data.carbs is int &&
+        data.fat is int;
     }
 
     // ─────────────────────────
@@ -311,6 +347,28 @@ service cloud.firestore {
         request.resource.data.encryptedBy == request.auth.uid;
       
       allow delete: if false;
+    }
+
+    // ─────────────────────────
+    // Stickers collection
+    // ─────────────────────────
+    match /stickers/{stickerId} {
+      allow read: if isAuthed();
+      allow write: if isGlobalAdmin();
+    }
+
+    // ─────────────────────────
+    // Manufacturers collection (global list)
+    // ─────────────────────────
+    match /manufacturers/{manufacturerId} {
+      allow read: if isAuthed();
+      // Allow write if global admin OR if they are an admin in the gym they are currently in
+      // Since seeding happens from the client, we trust gym admins to initialize the list
+      allow write: if isAuthed() && (
+        isGlobalAdmin() || 
+        isAdminLikeRole(request.auth.token.role) ||
+        (activeGymId() is string && isAdmin(activeGymId()))
+      );
     }
 
     // ─────────────────────────
@@ -517,6 +575,47 @@ service cloud.firestore {
         allow read, write: if isOwner(uid);
       }
 
+      match /nutrition_goal_templates/{templateId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /nutrition_goals/{dateKey} {
+        allow read: if isOwner(uid) && isNutritionDateKey(dateKey);
+        allow create, update: if isOwner(uid) &&
+          isNutritionDateKey(dateKey) &&
+          request.resource.data.keys().hasOnly(['kcal', 'macros', 'source', 'updatedAt']) &&
+          request.resource.data.kcal is int &&
+          isNutritionMacros(request.resource.data.macros) &&
+          (!('source' in request.resource.data) || request.resource.data.source is string) &&
+          (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
+        allow delete: if isOwner(uid) && isNutritionDateKey(dateKey);
+      }
+
+      match /nutrition_logs/{dateKey} {
+        allow read: if isOwner(uid) && isNutritionDateKey(dateKey);
+        allow create, update: if isOwner(uid) &&
+          isNutritionDateKey(dateKey) &&
+          request.resource.data.keys().hasOnly(['date', 'total', 'entries', 'status', 'updatedAt']) &&
+          (!('date' in request.resource.data) || request.resource.data.date is string) &&
+          isNutritionTotals(request.resource.data.total) &&
+          (!('entries' in request.resource.data) ||
+            (request.resource.data.entries is list &&
+             request.resource.data.entries.size() <= 50)) &&
+          (!('status' in request.resource.data) ||
+            request.resource.data.status in ['under', 'on', 'over']) &&
+          (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
+        allow delete: if isOwner(uid) && isNutritionDateKey(dateKey);
+      }
+
+      match /nutrition_year_summary/{year} {
+        allow read: if isOwner(uid) && isYearKey(year);
+        allow create, update: if isOwner(uid) &&
+          isYearKey(year) &&
+          request.resource.data.keys().hasOnly(['days']) &&
+          request.resource.data.days is map;
+        allow delete: if isOwner(uid) && isYearKey(year);
+      }
+
       // Training plan stats per user (owner or active coach)
       match /training_plans/{planId}/meta/{docId} {
         allow read: if isOwner(uid) ||
@@ -585,6 +684,7 @@ service cloud.firestore {
               && isAdmin(activeGymId())
               && isMember(uid, activeGymId()));
 
+        // Eingeschränkte Felder und Typen
         allow write: if request.resource.data.keys().hasOnly([
               'dateKey',
               'planId',
@@ -595,20 +695,68 @@ service cloud.firestore {
             && request.resource.data.planId is string;
       }
 
+      // NFC Scan Statistiken (profilweit, gym-agnostisch)
+      match /nfc_scan_stats/{docId} {
+        allow read, get, list: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid) &&
+          request.resource.data.keys().hasOnly([
+            'totalScans',
+            'lastScanAt',
+            'lastGymId',
+            'lastDeviceId',
+            'lastExerciseId',
+            'updatedAt'
+          ]);
+      }
+
       match /{document=**} {
         allow read, write: if isOwner(uid);
       }
     }
 
-    match /deals/{dealId} {
+    match /users/{uid}/nutrition_recipes/{recipeId} {
+      allow read, write: if isOwner(uid);
+    }
+
+
+    match /nutrition_products/{barcode} {
       allow read: if isAuthed();
-      allow write: if isGlobalAdmin();
+      allow create, update: if isAuthed() &&
+        isBarcodeKey(barcode) &&
+        request.resource.data.keys().hasOnly([
+          'name',
+          'kcalPer100',
+          'proteinPer100',
+          'carbsPer100',
+          'fatPer100',
+          'updatedAt'
+        ]) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 160 &&
+        request.resource.data.kcalPer100 is int &&
+        request.resource.data.kcalPer100 >= 0 &&
+        request.resource.data.kcalPer100 <= 5000 &&
+        request.resource.data.proteinPer100 is int &&
+        request.resource.data.proteinPer100 >= 0 &&
+        request.resource.data.proteinPer100 <= 500 &&
+        request.resource.data.carbsPer100 is int &&
+        request.resource.data.carbsPer100 >= 0 &&
+        request.resource.data.carbsPer100 <= 500 &&
+        request.resource.data.fatPer100 is int &&
+        request.resource.data.fatPer100 >= 0 &&
+        request.resource.data.fatPer100 <= 500 &&
+        (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
+      allow delete: if false;
     }
 
     // ─────────────────────────
     // Coaching relations (top-level)
     // ─────────────────────────
     match /coachClientRelations/{relationId} {
+      // Coach oder Client dürfen ihre Relationen lesen.
+      // Hinweis: Admin-Fallback wird hier bewusst NICHT genutzt,
+      // um Query-Einschränkungen sauber abzubilden.
       allow read: if isAuthed() &&
         (request.auth.uid == resource.data.clientId ||
          request.auth.uid == resource.data.coachId);
@@ -647,14 +795,19 @@ service cloud.firestore {
           'endedReason',
           'note'
         ]) &&
+        // Identitätsfelder dürfen nicht verändert werden.
         request.resource.data.gymId == resource.data.gymId &&
         request.resource.data.coachId == resource.data.coachId &&
         request.resource.data.clientId == resource.data.clientId &&
         request.resource.data.createdAt == resource.data.createdAt &&
+        // Gültige Statuswerte
         request.resource.data.status in ['pending', 'active', 'ended', 'rejected'] &&
         (
+          // Client can update own relation (z.B. abbrechen)
           request.auth.uid == resource.data.clientId ||
+          // Admin des Gyms
           (resource.data.gymId is string && isAdmin(resource.data.gymId)) ||
+          // Coach mit passender Membership und zugeordneter coachId
           (resource.data.gymId is string &&
            request.auth.uid == resource.data.coachId &&
            isCoach(resource.data.gymId))
@@ -743,6 +896,7 @@ service cloud.firestore {
         request.resource.data.actorId == request.auth.uid &&
         request.resource.data.createdAt is string;
 
+      // Audit-Einträge sind unveränderlich.
       allow update, delete: if false;
     }
 
@@ -914,6 +1068,12 @@ service cloud.firestore {
         allow write: if isAdmin(gymId);
       }
 
+      // Manufacturers (gym-specific selection)
+      match /manufacturers/{mId} {
+        allow read: if inGym(gymId) || isAdmin(gymId);
+        allow write: if isAdmin(gymId);
+      }
+
       // Challenges
       match /challenges/{type}/{docId}/{sub=**} {
         allow read: if inGym(gymId);
@@ -943,7 +1103,7 @@ service cloud.firestore {
                      isFriend(userId, request.auth.uid) ||
                      (inGym(gymId) &&
                       get(/databases/$(database)/documents/users/$(userId)).data.showInLeaderboard == true &&
-                      get(/databases/$(database)/documents/users/$(userId)).data.role != 'admin');
+                      !isAdminLikeRole(get(/databases/$(database)/documents/users/$(userId)).data.role));
         allow write: if ownerOrAdmin(gymId, userId);
       }
 
@@ -1005,8 +1165,12 @@ service cloud.firestore {
     // ─────────────────────────
     match /gym_codes/{gymId}/codes/{codeId} {
       // Allow anyone to read codes for validation during registration
+      // This is safe because:
+      // 1. Codes are temporary (expire after 30 days)
+      // 2. Codes are random and hard to guess
+      // 3. Only active, non-expired codes work for registration
       allow read: if true;
-
+      
       // Only gym admins can create codes
       allow create: if (isAdmin(gymId) || isGymAdmin(gymId)) &&
         request.resource.data.keys().hasOnly([
@@ -1024,7 +1188,7 @@ service cloud.firestore {
         request.resource.data.expiresAt is timestamp &&
         request.resource.data.isActive is bool &&
         request.resource.data.createdBy is string;
-
+      
       // Only allow updating isActive field (for deactivation)
       allow update: if (isAdmin(gymId) || isGymAdmin(gymId)) &&
         request.resource.data.keys().hasOnly([
@@ -1040,9 +1204,22 @@ service cloud.firestore {
         request.resource.data.createdAt == resource.data.createdAt &&
         request.resource.data.expiresAt == resource.data.expiresAt &&
         request.resource.data.createdBy == resource.data.createdBy;
-
+      
       // Codes are immutable - no deletion
       allow delete: if false;
+    }
+
+    // Public deals (readable by any authenticated user)
+    // Public deals (readable by any authenticated user)
+    match /deals/{dealId} {
+      allow read: if isAuthed();
+      allow write: if isAuthed() && (
+        isGlobalAdmin() || 
+        isAdminLikeRole(request.auth.token.role) ||
+        request.auth.token.role == 'gym_admin' ||
+        isAdminLikeRole(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role) ||
+        isAdmin(activeGymId())
+      );
     }
 
     // ─────────────────────────

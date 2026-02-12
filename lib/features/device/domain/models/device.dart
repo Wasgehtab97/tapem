@@ -12,6 +12,9 @@ class Device {
   final List<String> primaryMuscleGroups;
   final List<String> secondaryMuscleGroups;
 
+  final String? manufacturerId; // NEW
+  final String? manufacturerName; // NEW: Denormalized for easy display
+
   Device({
     required this.uid,
     required this.id,
@@ -23,6 +26,8 @@ class Device {
     List<String>? muscleGroups,
     List<String>? primaryMuscleGroups,
     List<String>? secondaryMuscleGroups,
+    this.manufacturerId,
+    this.manufacturerName,
   }) : muscleGroupIds = List.unmodifiable(muscleGroupIds ?? []),
        primaryMuscleGroups = List.unmodifiable(primaryMuscleGroups ?? []),
        secondaryMuscleGroups = List.unmodifiable(secondaryMuscleGroups ?? []),
@@ -42,6 +47,8 @@ class Device {
     List<String>? muscleGroups,
     List<String>? primaryMuscleGroups,
     List<String>? secondaryMuscleGroups,
+    String? manufacturerId,
+    String? manufacturerName,
   }) => Device(
     uid: uid ?? this.uid,
     id: id ?? this.id,
@@ -58,6 +65,8 @@ class Device {
         ],
     primaryMuscleGroups: primaryMuscleGroups ?? this.primaryMuscleGroups,
     secondaryMuscleGroups: secondaryMuscleGroups ?? this.secondaryMuscleGroups,
+    manufacturerId: manufacturerId ?? this.manufacturerId,
+    manufacturerName: manufacturerName ?? this.manufacturerName,
   );
 
   factory Device.fromJson(Map<String, dynamic> json) {
@@ -93,6 +102,8 @@ class Device {
       primaryMuscleGroups: primary,
       secondaryMuscleGroups: secondary,
       muscleGroups: muscleGroups ?? [...primary, ...secondary],
+      manufacturerId: json['manufacturerId'] as String?,
+      manufacturerName: json['manufacturerName'] as String?,
     );
   }
 
@@ -106,5 +117,11 @@ class Device {
     'muscleGroups': muscleGroups,
     'primaryMuscleGroups': primaryMuscleGroups,
     'secondaryMuscleGroups': secondaryMuscleGroups,
+    'manufacturerId': manufacturerId,
+    'manufacturerName': manufacturerName,
   };
+
+  /// Returns the manufacturer name if available, otherwise falls back to the description.
+  String get displaySubtitle =>
+      (manufacturerName?.isNotEmpty ?? false) ? manufacturerName! : description;
 }

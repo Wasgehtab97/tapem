@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import 'package:tapem/core/auth/role_utils.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -73,7 +74,7 @@ class _DeviceXpLeaderboardScreenState
           final userDoc = await fs.collection('users').doc(doc.id).get();
           final userData = userDoc.data() ?? <String, dynamic>{};
           final role = userData['role'] as String?;
-          if (role == 'admin') {
+          if (isAdminLikeRole(role)) {
             return null;
           }
           final profile = PublicProfile.fromMap(doc.id, userData);

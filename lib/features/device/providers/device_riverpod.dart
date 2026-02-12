@@ -21,6 +21,7 @@ import '../domain/usecases/set_device_muscle_groups_usecase.dart';
 import '../domain/usecases/update_device_muscle_groups_usecase.dart';
 import '../domain/usecases/update_exercise_muscle_groups_usecase.dart';
 import '../domain/usecases/update_exercise_usecase.dart';
+import '../domain/usecases/update_device_usecase.dart'; // NEW
 
 final deviceRepositoryProvider = Provider<DeviceRepository>((ref) {
   final firestore = ref.watch(firebaseFirestoreProvider);
@@ -43,6 +44,10 @@ final deleteDeviceUseCaseProvider = Provider<DeleteDeviceUseCase>((ref) {
 
 final createDeviceUseCaseProvider = Provider<CreateDeviceUseCase>((ref) {
   return CreateDeviceUseCase(ref.watch(deviceRepositoryProvider));
+});
+
+final updateDeviceUseCaseProvider = Provider<UpdateDeviceUseCase>((ref) {
+  return UpdateDeviceUseCase(ref.watch(deviceRepositoryProvider));
 });
 
 final setDeviceMuscleGroupsUseCaseProvider =
