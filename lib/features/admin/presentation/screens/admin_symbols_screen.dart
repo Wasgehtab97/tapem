@@ -6,14 +6,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/features/admin/data/services/gym_member_directory_service.dart';
+import 'package:tapem/features/admin/providers/admin_service_providers.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
 
 class AdminSymbolsScreen extends StatefulWidget {
-  const AdminSymbolsScreen({super.key, this.firestore});
+  const AdminSymbolsScreen({
+    super.key,
+    this.firestore,
+    this.memberDirectoryService,
+  });
 
   final FirebaseFirestore? firestore;
+  final GymMemberDirectoryService? memberDirectoryService;
 
   @override
   State<AdminSymbolsScreen> createState() => _AdminSymbolsScreenState();
@@ -22,6 +29,24 @@ class AdminSymbolsScreen extends StatefulWidget {
 class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
   String _query = '';
   Timer? _debounce;
+  late final GymMemberDirectoryService _memberDirectoryService;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.memberDirectoryService != null) {
+      _memberDirectoryService = widget.memberDirectoryService!;
+      return;
+    }
+    if (widget.firestore != null) {
+      _memberDirectoryService = GymMemberDirectoryService(
+        firestore: widget.firestore,
+      );
+      return;
+    }
+    final container = riverpod.ProviderScope.containerOf(context, listen: false);
+    _memberDirectoryService = container.read(gymMemberDirectoryServiceProvider);
+  }
 
   @override
   void dispose() {
@@ -32,23 +57,17 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final auth = riverpod.ProviderScope.containerOf(context).read(
-      authControllerProvider,
-    );
-    if (!auth.isAdmin) {
+    final auth = riverpod.ProviderScope.containerOf(
+      context,
+    ).read(authControllerProvider);
+    if (!auth.canManageGym) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(loc.admin_symbols_title),
-        ),
-        body: const Center(child: Text('Kein Zugriff')),
+        appBar: AppBar(title: Text(loc.admin_symbols_title)),
+        body: Center(child: Text(loc.commonNoAccess)),
       );
     }
     final gymId = auth.gymCode ?? '';
-    final fs = widget.firestore ?? FirebaseFirestore.instance;
-    final stream = fs
-        .collection('users')
-        .where('gymCodes', arrayContains: gymId)
-        .snapshots();
+    final stream = _memberDirectoryService.watchProfilesForGym(gymId);
 
     return Scaffold(
       appBar: AppBar(
@@ -57,8 +76,8 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
           if (kDebugMode)
             IconButton(
               icon: const Icon(Icons.build),
-              tooltip: 'backfill usernameLower',
-              onPressed: () => _backfill(fs, gymId),
+              tooltip: loc.adminSymbolsBackfillTooltip,
+              onPressed: () => _backfill(gymId),
             ),
         ],
       ),
@@ -82,17 +101,10 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
               ),
             ),
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
+              child: StreamBuilder<List<PublicProfile>>(
                 stream: stream,
                 builder: (context, snapshot) {
-                  final docs = snapshot.data?.docs ?? [];
-                  final profiles = docs
-                      .map(
-                        (d) => PublicProfile.fromMap(
-                          d.id,
-                          d.data() as Map<String, dynamic>,
-                        ),
-                      )
+                  final profiles = (snapshot.data ?? const <PublicProfile>[])
                       .where((p) => p.safeLower.startsWith(_query))
                       .toList();
                   if (profiles.isEmpty) {
@@ -117,9 +129,7 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
                         },
                       );
                       return ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: image.image,
-                        ),
+                        leading: CircleAvatar(backgroundImage: image.image),
                         title: Text(
                           profile.username.isNotEmpty
                               ? profile.username
@@ -146,17 +156,21 @@ class _AdminSymbolsScreenState extends State<AdminSymbolsScreen> {
     );
   }
 
-  Future<void> _backfill(FirebaseFirestore fs, String gymId) async {
-    final query = await fs
-        .collection('users')
-        .where('gymCodes', arrayContains: gymId)
-        .where('usernameLower', isNull: true)
-        .get();
-    for (final doc in query.docs) {
-      final data = doc.data();
-      final name = data['username'] as String? ?? '';
-      await doc.reference.update({'usernameLower': name.toLowerCase()});
-      await Future.delayed(const Duration(milliseconds: 50));
+  Future<void> _backfill(String gymId) async {
+    final loc = AppLocalizations.of(context)!;
+    try {
+      final updated = await _memberDirectoryService.backfillUsernameLower(
+        gymId,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.adminSymbolsBackfillSuccess(updated))),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${loc.errorPrefix}: $error')));
     }
   }
 }

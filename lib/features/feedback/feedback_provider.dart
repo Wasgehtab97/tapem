@@ -56,13 +56,12 @@ class FeedbackProvider extends ChangeNotifier
     _error = null;
     notifyListeners();
     try {
-      final snap =
-          await _firestore
-              .collection('gyms')
-              .doc(gymId)
-              .collection('feedback')
-              .orderBy('createdAt', descending: true)
-              .get();
+      final snap = await _firestore
+          .collection('gyms')
+          .doc(gymId)
+          .collection('feedback')
+          .orderBy('createdAt', descending: true)
+          .get();
       _entries
         ..clear()
         ..addAll(
@@ -107,13 +106,28 @@ class FeedbackProvider extends ChangeNotifier
     required String gymId,
     required String entryId,
   }) async {
+    await _setDoneStatus(gymId: gymId, entryId: entryId, isDone: true);
+  }
+
+  Future<void> markOpen({
+    required String gymId,
+    required String entryId,
+  }) async {
+    await _setDoneStatus(gymId: gymId, entryId: entryId, isDone: false);
+  }
+
+  Future<void> _setDoneStatus({
+    required String gymId,
+    required String entryId,
+    required bool isDone,
+  }) async {
     try {
       await _firestore
           .collection('gyms')
           .doc(gymId)
           .collection('feedback')
           .doc(entryId)
-          .update({'isDone': true});
+          .update({'isDone': isDone});
       final idx = _entries.indexWhere((e) => e.id == entryId);
       if (idx != -1) {
         _entries[idx] = FeedbackEntry(
@@ -123,12 +137,12 @@ class FeedbackProvider extends ChangeNotifier
           userId: _entries[idx].userId,
           text: _entries[idx].text,
           createdAt: _entries[idx].createdAt,
-          isDone: true,
+          isDone: isDone,
         );
         notifyListeners();
       }
     } catch (e, st) {
-      _log('FeedbackProvider.markDone error: $e', st);
+      _log('FeedbackProvider._setDoneStatus error: $e', st);
       _error = e.toString();
     }
   }

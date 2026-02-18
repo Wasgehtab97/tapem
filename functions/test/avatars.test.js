@@ -79,7 +79,7 @@ test('onUserCreateDefaults grants two defaults once', async () => {
 
 test('adminGrantAvatar respects gym boundaries and idempotence', async () => {
   const fn = wrap('adminGrantAvatar');
-  const context = { auth: { uid: 'A1', token: { role: 'gym_admin', gymId: 'G1' } } };
+  const context = { auth: { uid: 'A1', token: { role: 'gymowner', gymId: 'G1' } } };
   let res = await fn({ uid: 'U1', avatarPath: 'gyms/G1/avatarCatalog/g1_x' }, context);
   assert.strictEqual(res.status, 'granted');
   await assert.rejects(

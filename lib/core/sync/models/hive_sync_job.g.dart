@@ -24,13 +24,18 @@ class HiveSyncJobAdapter extends TypeAdapter<HiveSyncJob> {
       ..payload = fields[4] as String
       ..createdAt = fields[5] as DateTime
       ..retryCount = fields[6] as int
-      ..lastAttempt = fields[7] as DateTime?;
+      ..lastAttempt = fields[7] as DateTime?
+      ..isDeadLetter = fields[8] as bool? ?? false
+      ..deadLetterReason = fields[9] as String?
+      ..deadLetterErrorCode = fields[10] as String?
+      ..firstFailureAt = fields[11] as DateTime?
+      ..deadLetterAt = fields[12] as DateTime?;
   }
 
   @override
   void write(BinaryWriter writer, HiveSyncJob obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -46,7 +51,17 @@ class HiveSyncJobAdapter extends TypeAdapter<HiveSyncJob> {
       ..writeByte(6)
       ..write(obj.retryCount)
       ..writeByte(7)
-      ..write(obj.lastAttempt);
+      ..write(obj.lastAttempt)
+      ..writeByte(8)
+      ..write(obj.isDeadLetter)
+      ..writeByte(9)
+      ..write(obj.deadLetterReason)
+      ..writeByte(10)
+      ..write(obj.deadLetterErrorCode)
+      ..writeByte(11)
+      ..write(obj.firstFailureAt)
+      ..writeByte(12)
+      ..write(obj.deadLetterAt);
   }
 
   @override

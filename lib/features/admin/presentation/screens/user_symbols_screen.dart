@@ -1,21 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
-import 'package:tapem/core/config/remote_config.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/features/admin/data/services/gym_member_directory_service.dart';
+import 'package:tapem/features/admin/providers/admin_service_providers.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/avatars/presentation/providers/avatar_inventory_provider.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
 class UserSymbolsScreen extends StatefulWidget {
-  const UserSymbolsScreen({super.key, required this.uid, this.firestore});
+  const UserSymbolsScreen({
+    super.key,
+    required this.uid,
+    this.firestore,
+    this.memberDirectoryService,
+  });
 
   final String uid;
   final FirebaseFirestore? firestore;
+  final GymMemberDirectoryService? memberDirectoryService;
 
   @override
   State<UserSymbolsScreen> createState() => _UserSymbolsScreenState();
@@ -23,24 +29,11 @@ class UserSymbolsScreen extends StatefulWidget {
 
 class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
   late final AvatarInventoryProvider _inventory;
-  late final FirebaseFirestore _fs;
+  late final GymMemberDirectoryService _memberDirectoryService;
   late final String _gymId;
   bool _permitted = false;
   bool _loading = true;
   Set<String> _keys = <String>{};
-
-  String _avatarPathFromKey(String key) {
-    final parts = key.split('/');
-    if (parts.length != 2) {
-      return key;
-    }
-    final scope = parts[0];
-    final avatarId = parts[1];
-    if (scope == 'global') {
-      return 'catalogAvatarsGlobal/$avatarId';
-    }
-    return 'gyms/$scope/avatarCatalog/$avatarId';
-  }
 
   @override
   void initState() {
@@ -50,29 +43,26 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       listen: false,
     );
     _inventory = container.read(avatarInventoryProvider);
+    if (widget.memberDirectoryService != null) {
+      _memberDirectoryService = widget.memberDirectoryService!;
+    } else if (widget.firestore != null) {
+      _memberDirectoryService = GymMemberDirectoryService(
+        firestore: widget.firestore,
+      );
+    } else {
+      _memberDirectoryService = container.read(gymMemberDirectoryServiceProvider);
+    }
     final auth = container.read(authControllerProvider);
     _gymId = auth.gymCode ?? '';
-    _fs = widget.firestore ?? FirebaseFirestore.instance;
     _init();
   }
 
   Future<void> _init() async {
     debugPrint('[UserSymbols] init uid=${widget.uid} gymId=$_gymId');
-    try {
-      final membership = await _fs
-          .collection('gyms')
-          .doc(_gymId)
-          .collection('users')
-          .doc(widget.uid)
-          .get();
-      debugPrint('[UserSymbols] membership exists=${membership.exists}');
-    } catch (e) {
-      debugPrint('[UserSymbols] membership fetch error: $e');
-    }
     _permitted = riverpod.ProviderScope.containerOf(
       context,
       listen: false,
-    ).read(authControllerProvider).isAdmin;
+    ).read(authControllerProvider).canManageGym;
     if (_permitted) {
       try {
         final inv = await _inventory
@@ -101,7 +91,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       final adminFlag = riverpod.ProviderScope.containerOf(
         context,
         listen: false,
-      ).read(authControllerProvider).isAdmin;
+      ).read(authControllerProvider).canManageGym;
       debugPrint(
         '[UserSymbols] toggle path=users/${widget.uid}/avatarInventory '
         'gymId=$_gymId uid=${widget.uid} key=$key has=$has isAdmin=$adminFlag',
@@ -134,10 +124,9 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
           ),
         );
       } else {
+        final loc = AppLocalizations.of(context)!;
         messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Keine Verbindung – später erneut versuchen.'),
-          ),
+          SnackBar(content: Text(loc.adminSymbolsRetryLater)),
         );
       }
     }
@@ -171,6 +160,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
               String title,
               List<String> keys,
               int catalogCount,
+              bool isGlobal,
             ) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,10 +177,10 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         catalogCount == 0
-                            ? (title == 'Global'
+                            ? (isGlobal
                                   ? loc.adminSymbolsNoGlobalAssets
                                   : loc.adminSymbolsNoAssetsForTitle(title))
-                            : (title == 'Global'
+                            : (isGlobal
                                   ? loc.adminSymbolsAllGlobalAssigned
                                   : loc.adminSymbolsAllTitleAssigned(title)),
                       ),
@@ -288,8 +278,13 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
-                          buildSection('Global', global, catalog.globalCount),
-                          buildSection(_gymId, gym, catalog.gymCount(_gymId)),
+                          buildSection(
+                            loc.adminSymbolsGlobalTitle,
+                            global,
+                            catalog.globalCount,
+                            true,
+                          ),
+                          buildSection(_gymId, gym, catalog.gymCount(_gymId), false),
                         ],
                       ),
                     ),
@@ -330,25 +325,10 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
           gymId: _gymId,
         );
         await _inventory.refresh();
-        if (RC.avatarsV2Enabled && RC.avatarsV2GrantsEnabled) {
-          final fn = FirebaseFunctions.instance.httpsCallable(
-            'adminGrantAvatar',
-          );
-          for (final k in selected) {
-            final avatarPath = _avatarPathFromKey(k);
-            unawaited(
-              fn.call({'uid': widget.uid, 'avatarPath': avatarPath}).catchError(
-                (Object e, StackTrace st) {
-                  debugPrint('[UserSymbols] adminGrantAvatar failed: $e');
-                },
-              ),
-            );
-          }
-        }
         final adminFlag = riverpod.ProviderScope.containerOf(
           context,
           listen: false,
-        ).read(authControllerProvider).isAdmin;
+        ).read(authControllerProvider).canManageGym;
         debugPrint(
           '[UserSymbols] add_commit path=users/${widget.uid}/avatarInventory '
           'gymId=$_gymId uid=${widget.uid} keys=${selected.join(',')} '
@@ -363,7 +343,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
         final adminFlag = riverpod.ProviderScope.containerOf(
           context,
           listen: false,
-        ).read(authControllerProvider).isAdmin;
+        ).read(authControllerProvider).canManageGym;
         debugPrint(
           '[UserSymbols] add_commit path=users/${widget.uid}/avatarInventory '
           'gymId=$_gymId uid=${widget.uid} keys=${selected.join(',')} '
@@ -496,16 +476,19 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
       );
     }
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: _fs.collection('users').doc(widget.uid).snapshots(),
+    return StreamBuilder<String>(
+      stream: _memberDirectoryService.watchDisplayName(
+        widget.uid,
+        fallback: widget.uid,
+      ),
       builder: (context, snap) {
-        final name = snap.data?.data()?['username'] as String? ?? widget.uid;
+        final name = snap.data ?? widget.uid;
         return Scaffold(
           appBar: AppBar(title: Text(loc.user_symbols_title(name))),
           floatingActionButton: _permitted && _gymId.isNotEmpty
               ? FloatingActionButton(
                   onPressed: _openAddDialog,
-                  tooltip: 'Symbole hinzufügen',
+                  tooltip: loc.userSymbolsAddTooltip,
                   child: const Icon(Icons.add),
                 )
               : null,
@@ -513,7 +496,7 @@ class _UserSymbolsScreenState extends State<UserSymbolsScreen> {
             child: Column(
               children: [
                 buildSection(
-                  'Inventar von $name',
+                  loc.userSymbolsInventoryTitle(name),
                   inventoryItems,
                   allowRemove: true,
                 ),

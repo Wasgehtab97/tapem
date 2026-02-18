@@ -27,7 +27,6 @@ class GymScopedStateController extends ChangeNotifier {
 final gymScopedStateControllerProvider =
     ChangeNotifierProvider<GymScopedStateController>((ref) {
   final controller = GymScopedStateController();
-  ref.onDispose(controller.dispose);
   return controller;
 });
 

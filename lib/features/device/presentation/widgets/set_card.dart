@@ -67,10 +67,10 @@ class SetCardTheme {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-     // Premium Colors
+    // Premium Colors
     // Very dark pill background for inputs
-    final inputFill = Colors.black.withOpacity(0.3); 
-    
+    final inputFill = Colors.black.withOpacity(0.3);
+
     // Brand glow for active state
     final brandColor = scheme.primary;
 
@@ -78,7 +78,7 @@ class SetCardTheme {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       chipBg: Colors.white.withOpacity(0.05),
       chipFg: Colors.white,
-      chipBorder: Colors.white.withOpacity(0.1),
+      chipBorder: Colors.transparent, // Global borderless refinement
       doneOn: brandColor,
       doneOff: Colors.white.withOpacity(0.1),
       menuBg: Colors.black.withOpacity(0.8),
@@ -86,7 +86,7 @@ class SetCardTheme {
       cardFill: Colors.transparent, // We use the container background or transparent
       inputFill: inputFill,
       inputFillDisabled: Colors.black.withOpacity(0.1),
-      inputStroke: Colors.transparent, 
+      inputStroke: Colors.transparent,
       inputStrokeActive: brandColor.withOpacity(0.5), // Subtle glow
       inputShadow: Colors.transparent,
       inputShadowActive: brandColor.withOpacity(0.2),
@@ -1311,7 +1311,6 @@ class _InputPillState extends State<_InputPill> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     final showLabel = widget.showLabel;
     final tokens = widget.tokens;
@@ -1319,8 +1318,6 @@ class _InputPillState extends State<_InputPill> {
     final radius = BorderRadius.circular(dense ? 12 : 14);
 
     final Color baseFill = tokens.inputFill.withOpacity(0.5);
-    final Color borderColor = tokens.chipBorder.withOpacity(0.2);
-    const double borderWid = 0.5;
 
     final baseStyle = GoogleFonts.inter(
       fontSize: dense ? 10 : 11,
@@ -1355,10 +1352,6 @@ class _InputPillState extends State<_InputPill> {
         decoration: BoxDecoration(
           color: baseFill,
           borderRadius: radius,
-          border: Border.all(
-            color: borderColor,
-            width: borderWid,
-          ),
         ),
         alignment: Alignment.center,
         child: IgnorePointer(
@@ -1497,9 +1490,6 @@ class _RoundButtonState extends State<_RoundButton> {
                       ),
                     ]
                   : [],
-              border: isFilled 
-                  ? null 
-                  : Border.all(color: Colors.white.withOpacity(isEnabled ? 0.1 : 0.05)),
             ),
             child: Icon(
               widget.icon,
@@ -1559,10 +1549,6 @@ class _CompactPreviousDisplay extends StatelessWidget {
       decoration: BoxDecoration(
         color: tokens.inputFill.withOpacity(0.5),
         borderRadius: BorderRadius.circular(dense ? 12 : 14),
-        border: Border.all(
-          color: tokens.chipBorder.withOpacity(0.2),
-          width: 0.5,
-        ),
       ),
       child: Center(
         child: FittedBox(

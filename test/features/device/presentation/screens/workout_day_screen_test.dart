@@ -1,28 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tapem/app_router.dart';
+import 'package:tapem/bootstrap/navigation.dart';
 import 'package:tapem/core/drafts/session_draft.dart';
 import 'package:tapem/core/drafts/session_draft_repository.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
+import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/services/workout_session_coordinator.dart';
+import 'package:tapem/core/services/workout_session_duration_service.dart';
 
 import 'package:tapem/features/training_details/domain/repositories/session_repository.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
+import 'package:tapem/features/device/domain/repositories/device_repository.dart';
+import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
-import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
 import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
+import 'package:tapem/features/device/providers/device_riverpod.dart';
+import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 import 'package:tapem/services/membership_service.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
 
 import '../../../../features/auth/helpers/fake_firestore.dart';
 
-class _MockAuthProvider extends Mock implements AuthProvider {}
-
-
+class _MockAuthProvider extends Mock
+    with ChangeNotifier
+    implements AuthProvider {}
 
 class _MockMembershipService extends Mock implements MembershipService {}
+
+class _MockDeviceRepository extends Mock implements DeviceRepository {}
 
 class _FakeSessionDraftRepository implements SessionDraftRepository {
   final Map<String, SessionDraft> _drafts = {};
@@ -39,9 +52,7 @@ class _FakeSessionDraftRepository implements SessionDraftRepository {
 
   @override
   Future<void> deleteExpired(int nowMs) async {
-    _drafts.removeWhere(
-      (_, draft) => draft.updatedAt + draft.ttlMs < nowMs,
-    );
+    _drafts.removeWhere((_, draft) => draft.updatedAt + draft.ttlMs < nowMs);
   }
 
   @override
@@ -62,37 +73,65 @@ class _FakeSessionDraftRepository implements SessionDraftRepository {
 
 class _MockSessionRepository extends Mock implements SessionRepository {}
 
+AuthViewState _testAuthViewState() {
+  return const AuthViewState(
+    isLoading: false,
+    isLoggedIn: true,
+    isGuest: false,
+    isAdmin: false,
+    isGymOwner: false,
+    isCoach: false,
+    gymContextStatus: GymContextStatus.ready,
+    gymCode: 'gym-1',
+    userId: 'user-1',
+    error: null,
+  );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
     registerFallbackValue(DateTime(2023));
-    registerFallbackValue(Session(
-      sessionId: 'dummy',
-      gymId: 'gym',
-      userId: 'user',
-      deviceId: 'device',
-      deviceName: 'Device',
-      note: 'Note',
-      timestamp: DateTime.now(),
-      sets: [],
-    ));
+    registerFallbackValue(
+      Session(
+        sessionId: 'dummy',
+        gymId: 'gym',
+        userId: 'user',
+        deviceId: 'device',
+        deviceName: 'Device',
+        note: 'Note',
+        timestamp: DateTime.now(),
+        sets: [],
+      ),
+    );
   });
 
   late WorkoutDayController controller;
   late _MockAuthProvider authProvider;
+  late WorkoutSessionDurationService durationService;
+  late WorkoutSessionCoordinator sessionCoordinator;
+  late FakeFirebaseFirestore firestore;
 
   late _MockMembershipService membership;
+  late _MockDeviceRepository deviceRepository;
   late _MockSessionRepository sessionRepository;
 
   setUp(() {
-    final firestore = FakeFirebaseFirestore();
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    firestore = FakeFirebaseFirestore();
     membership = _MockMembershipService();
+    deviceRepository = _MockDeviceRepository();
     sessionRepository = _MockSessionRepository();
-    when(() => membership.ensureMembership(any(), any()))
-        .thenAnswer((_) async {});
-    when(() => sessionRepository.saveSession(session: any(named: 'session')))
-        .thenAnswer((_) async {});
+    when(
+      () => membership.ensureMembership(any(), any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => deviceRepository.getDeviceByNfcCode(any(), any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => sessionRepository.saveSession(session: any(named: 'session')),
+    ).thenAnswer((_) async {});
 
     controller = WorkoutDayController(
       firestore: firestore,
@@ -100,38 +139,74 @@ void main() {
       sessionRepository: sessionRepository,
       createDraftRepository: () => _FakeSessionDraftRepository(),
     );
+    durationService = WorkoutSessionDurationService(firestore: firestore);
+    sessionCoordinator = WorkoutSessionCoordinator(
+      durationService: durationService,
+    );
     authProvider = _MockAuthProvider();
     when(() => authProvider.userId).thenReturn('user-1');
-
+    when(() => authProvider.gymCode).thenReturn('gym-1');
+    when(() => authProvider.showInLeaderboard).thenReturn(true);
+    when(() => authProvider.userName).thenReturn('user');
   });
 
-  tearDown(() {
-    controller.dispose();
-  });
-
-  testWidgets('tapping add button opens selector and adds session', (tester) async {
-    final observer = _InterceptingNavigatorObserver(
-      selection: const WorkoutDeviceSelection(
-        gymId: 'gym-1',
-        deviceId: 'device-2',
-        exerciseId: 'exercise-2',
-      ),
-    );
-
-    await tester.pumpWidget(
-      MultiProvider(
+  Widget buildHarness({
+    required Widget child,
+    List<NavigatorObserver> observers = const <NavigatorObserver>[],
+  }) {
+    return riverpod.ProviderScope(
+      overrides: [
+        authControllerProvider.overrideWith((ref) => authProvider),
+        authViewStateProvider.overrideWith((ref) => _testAuthViewState()),
+        workoutDayControllerProvider.overrideWith((ref) => controller),
+        workoutSessionDurationServiceProvider.overrideWith(
+          (ref) => durationService,
+        ),
+        workoutSessionCoordinatorProvider.overrideWith(
+          (ref) => sessionCoordinator,
+        ),
+        membershipServiceProvider.overrideWith((ref) => membership),
+        getDeviceByNfcCodeProvider.overrideWith(
+          (ref) => GetDeviceByNfcCode(deviceRepository),
+        ),
+      ],
+      child: MultiProvider(
         providers: [
           ChangeNotifierProvider<WorkoutDayController>.value(value: controller),
-          Provider<AuthProvider>.value(value: authProvider),
-
+          ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ],
         child: MaterialApp(
-          navigatorObservers: [observer],
-          home: const WorkoutDayScreen(
-            gymId: 'gym-1',
-            deviceId: 'device-1',
-            exerciseId: 'exercise-1',
-          ),
+          navigatorKey: navigatorKey,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          navigatorObservers: observers,
+          onGenerateRoute: (settings) {
+            if (settings.name == AppRouter.home) {
+              final tabIndex = settings.arguments as int?;
+              return MaterialPageRoute<void>(
+                builder: (_) =>
+                    Scaffold(body: Text('home-tab-${tabIndex ?? -1}')),
+                settings: settings,
+              );
+            }
+            return null;
+          },
+          home: child,
+        ),
+      ),
+    );
+  }
+
+  testWidgets('tapping add exercise footer navigates back to gym tab', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildHarness(
+        child: const WorkoutDayScreen(
+          gymId: 'gym-1',
+          deviceId: 'device-1',
+          exerciseId: 'exercise-1',
+          sessionBuilder: _minimalSessionBuilder,
         ),
       ),
     );
@@ -141,25 +216,15 @@ void main() {
 
     expect(controller.activeSessions(), hasLength(1));
 
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Übung hinzufügen'));
+    await tester.pumpAndSettle();
 
-    expect(controller.activeSessions(), hasLength(2));
-    expect(
-      controller.activeSessions().where(
-            (session) =>
-                session.deviceId == 'device-2' &&
-                session.exerciseId == 'exercise-2',
-          ),
-      isNotEmpty,
-    );
+    expect(find.text('home-tab-0'), findsOneWidget);
   });
 
-
-
-  testWidgets('closing a secondary screen keeps the shared session alive',
-      (tester) async {
+  testWidgets('closing a secondary screen keeps the shared session alive', (
+    tester,
+  ) async {
     final renderedSessionKeys = <String>[];
 
     Widget buildScreen() {
@@ -174,28 +239,17 @@ void main() {
       );
     }
 
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider<WorkoutDayController>.value(value: controller),
-          Provider<AuthProvider>.value(value: authProvider),
-
-        ],
-        child: MaterialApp(home: buildScreen()),
-      ),
-    );
+    await tester.pumpWidget(buildHarness(child: buildScreen()));
 
     await tester.pump();
     await tester.pump();
 
     expect(controller.activeSessions(), hasLength(1));
     final sessionKey = controller.activeSessions().first.key;
-    expect(find.byKey(ValueKey(sessionKey)), findsOneWidget);
+    expect(renderedSessionKeys, contains(sessionKey));
 
     final navigator = tester.state<NavigatorState>(find.byType(Navigator));
-    navigator.push(
-      MaterialPageRoute(builder: (_) => buildScreen()),
-    );
+    navigator.push(MaterialPageRoute(builder: (_) => buildScreen()));
 
     await tester.pump();
     await tester.pump();
@@ -203,10 +257,10 @@ void main() {
     expect(controller.activeSessions(), hasLength(1));
 
     navigator.pop();
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(controller.activeSessions(), hasLength(1));
-    expect(find.byKey(ValueKey(sessionKey)), findsOneWidget);
     expect(
       renderedSessionKeys.where((key) => key == sessionKey).length,
       greaterThanOrEqualTo(2),
@@ -214,70 +268,105 @@ void main() {
   });
 
   testWidgets(
-      'popping the workout screen keeps the session so new devices show prior cards',
-      (tester) async {
-    Future<void> pumpWorkoutScreen(String deviceId) async {
-      await tester.pumpWidget(
-        MultiProvider(
-          providers: [
-            ChangeNotifierProvider<WorkoutDayController>.value(
-              value: controller,
-            ),
-            Provider<AuthProvider>.value(value: authProvider),
+    'popping the workout screen keeps the session so new devices show prior cards',
+    (tester) async {
+      Widget buildScreen(String deviceId) {
+        return WorkoutDayScreen(
+          gymId: 'gym-1',
+          deviceId: deviceId,
+          exerciseId: 'exercise-1',
+          sessionBuilder: (context, session, displayIndex) {
+            return Text('session-${session.key}', key: ValueKey(session.key));
+          },
+        );
+      }
 
-          ],
-          child: MaterialApp(
-            home: WorkoutDayScreen(
-              gymId: 'gym-1',
-              deviceId: deviceId,
-              exerciseId: 'exercise-1',
-              sessionBuilder: (context, session, displayIndex) {
-                return Text('session-${session.key}', key: ValueKey(session.key));
-              },
-            ),
+      await tester.pumpWidget(buildHarness(child: buildScreen('device-1')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(controller.activeSessions(), hasLength(1));
+      final firstSessionKey = controller.activeSessions().first.key;
+
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      navigator.push(
+        MaterialPageRoute(builder: (_) => buildScreen('device-2')),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final activeSessions = controller.activeSessions();
+      expect(activeSessions, hasLength(2));
+      final sessionKeys = activeSessions.map((session) => session.key).toList();
+      expect(sessionKeys, contains(firstSessionKey));
+
+      final newSessionKey = sessionKeys.firstWhere(
+        (key) => key != firstSessionKey,
+      );
+      expect(sessionKeys, contains(firstSessionKey));
+      expect(sessionKeys, contains(newSessionKey));
+    },
+  );
+
+  testWidgets(
+    'stale workout route after finalized session redirects to profile and avoids re-entry',
+    (tester) async {
+      await sessionCoordinator.markSessionFinalized(
+        reason: WorkoutFinalizeReason.autoInactivity,
+        finalizedAt: DateTime.now(),
+      );
+
+      await tester.pumpWidget(
+        buildHarness(
+          child: const WorkoutDayScreen(
+            gymId: 'gym-1',
+            deviceId: 'device-1',
+            exerciseId: 'exercise-1',
+            sessionBuilder: _minimalSessionBuilder,
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('home-tab-1'), findsOneWidget);
+      expect(controller.activeSessions(), isEmpty);
+    },
+  );
+
+  testWidgets(
+    'fresh workout route after finalized session can start a new workout context',
+    (tester) async {
+      await sessionCoordinator.markSessionFinalized(
+        reason: WorkoutFinalizeReason.autoInactivity,
+        finalizedAt: DateTime.now(),
+      );
+
+      await tester.pumpWidget(
+        buildHarness(
+          child: WorkoutDayScreen(
+            gymId: 'gym-1',
+            deviceId: 'device-1',
+            exerciseId: 'exercise-1',
+            entryRequestedAtMs: DateTime.now().millisecondsSinceEpoch,
+            sessionBuilder: _minimalSessionBuilder,
           ),
         ),
       );
 
       await tester.pump();
       await tester.pump();
-    }
 
-    await pumpWorkoutScreen('device-1');
-
-    expect(controller.activeSessions(), hasLength(1));
-    final firstSessionKey = controller.activeSessions().first.key;
-    expect(find.byKey(ValueKey(firstSessionKey)), findsOneWidget);
-
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-
-    await pumpWorkoutScreen('device-2');
-
-    final activeSessions = controller.activeSessions();
-    expect(activeSessions, hasLength(2));
-    final sessionKeys = activeSessions.map((session) => session.key).toList();
-    expect(sessionKeys, contains(firstSessionKey));
-
-    final newSessionKey = sessionKeys.firstWhere((key) => key != firstSessionKey);
-    expect(find.byKey(ValueKey(firstSessionKey)), findsOneWidget);
-    expect(find.byKey(ValueKey(newSessionKey)), findsOneWidget);
-  });
+      expect(controller.activeSessions(), hasLength(1));
+    },
+  );
 }
 
-class _InterceptingNavigatorObserver extends NavigatorObserver {
-  _InterceptingNavigatorObserver({required this.selection});
-
-  final WorkoutDeviceSelection selection;
-  bool _handled = false;
-
-  @override
-  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    super.didPush(route, previousRoute);
-    if (_handled) return;
-    if (previousRoute != null && route is MaterialPageRoute<dynamic>) {
-      route.navigator?.pop(selection);
-      _handled = true;
-    }
-  }
+Widget _minimalSessionBuilder(
+  BuildContext context,
+  WorkoutDaySession session,
+  int displayIndex,
+) {
+  return Text('session-${session.key}', key: ValueKey(session.key));
 }

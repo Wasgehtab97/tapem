@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:tapem/app_router.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/device_provider.dart';
+import 'package:tapem/core/services/workout_session_coordinator.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
+import 'package:tapem/features/device/providers/workout_entry_orchestrator_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -41,17 +43,30 @@ class _DeviceScreenState extends riverpod.ConsumerState<DeviceScreen> {
 
   Future<void> _ensureSession() async {
     final auth = ref.read(authControllerProvider);
+    final userId = auth.userId;
+    if (userId == null) return;
     final controller = ref.read(workoutDayControllerProvider);
-    final session = controller.addOrFocusSession(
+    final coordinator = ref.read(workoutSessionCoordinatorProvider);
+    final orchestrator = ref.read(workoutEntryOrchestratorProvider);
+    final result = await orchestrator.addOrFocusFromExternalSource(
+      controller: controller,
+      coordinator: coordinator,
       gymId: widget.gymId,
       deviceId: widget.deviceId,
       exerciseId: widget.exerciseId,
-      userId: auth.userId!,
-      autoFinalizeEnabled: true,
+      userId: userId,
     );
+    final resolvedKey =
+        result.session?.key ??
+        WorkoutDayController.contextKey(
+          gymId: widget.gymId,
+          deviceId: widget.deviceId,
+          exerciseId: widget.exerciseId,
+          userId: userId,
+        );
     if (mounted) {
       setState(() {
-        _sessionKey = session.key;
+        _sessionKey = resolvedKey;
         _isInitializing = false;
       });
     }
@@ -200,13 +215,18 @@ class _DeviceScreenState extends riverpod.ConsumerState<DeviceScreen> {
             onBeforeOpen: () => FocusManager.instance.primaryFocus?.unfocus(),
             onSelection: (selection) async {
               final auth = ref.read(authControllerProvider);
+              final userId = auth.userId;
+              if (userId == null) return;
               final controller = ref.read(workoutDayControllerProvider);
-              controller.addOrFocusSession(
+              final coordinator = ref.read(workoutSessionCoordinatorProvider);
+              final orchestrator = ref.read(workoutEntryOrchestratorProvider);
+              await orchestrator.addOrFocusFromExternalSource(
+                controller: controller,
+                coordinator: coordinator,
                 gymId: selection.gymId,
                 deviceId: selection.deviceId,
                 exerciseId: selection.exerciseId,
-                userId: auth.userId!,
-                autoFinalizeEnabled: true,
+                userId: userId,
               );
             },
           ),

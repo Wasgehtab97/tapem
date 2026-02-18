@@ -1,6 +1,8 @@
 import '../models/session.dart';
 
 abstract class SessionRepository {
+  Future<void> warmupForUser({required String userId}) async {}
+
   Future<List<Session>> getSessionsForDate({
     required String userId,
     required DateTime date,

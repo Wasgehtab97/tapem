@@ -50,7 +50,7 @@ describe('Security Rules v1', function () {
       await db.collection('gyms').doc('G1').collection('devices').doc('D1').set({ id: 1 });
       await db.collection('gyms').doc('G2').collection('devices').doc('D2').set({ id: 1 });
       await db.collection('gyms').doc('G1').collection('users').doc('userA').set({ role: 'member' });
-      await db.collection('gyms').doc('G1').collection('users').doc('adminA').set({ role: 'admin' });
+      await db.collection('gyms').doc('G1').collection('users').doc('adminA').set({ role: 'gymowner' });
       await db.collection('gyms').doc('G2').collection('users').doc('userB').set({ role: 'member' });
       await db.collection('gyms').doc('G1').collection('trainingPlans').doc('planA').set({ createdBy: 'userA' });
       await db.collection('gyms').doc('G2').collection('trainingPlans').doc('planB').set({ createdBy: 'userB' });
@@ -135,7 +135,7 @@ describe('Security Rules v1', function () {
         .doc('G2')
         .collection('users')
         .doc('adminB')
-        .set({ role: 'admin' });
+        .set({ role: 'gymowner' });
       await db.collection('users').doc('userA').set({});
       await db
         .collection('users')
@@ -175,14 +175,14 @@ describe('Security Rules v1', function () {
 
   const userA = () => testEnv.authenticatedContext('userA', { gymId: 'G1', role: 'member' });
   const userB = () => testEnv.authenticatedContext('userB', { gymId: 'G2', role: 'member' });
-  const admin = () => testEnv.authenticatedContext('adminA', { gymId: 'G1', role: 'admin' });
+  const admin = () => testEnv.authenticatedContext('adminA', { gymId: 'G1', role: 'gymowner' });
   const noMember = () => testEnv.authenticatedContext('noMember', {});
   const p1 = () => testEnv.authenticatedContext('user1', {});
   const p2 = () => testEnv.authenticatedContext('user2', {});
   const p3 = () => testEnv.authenticatedContext('user3', {});
   const friend = () => testEnv.authenticatedContext('user2', { gymId: 'G1', role: 'member' });
   const stranger = () => testEnv.authenticatedContext('user4', { gymId: 'G1', role: 'member' });
-  const adminB = () => testEnv.authenticatedContext('adminB', { gymId: 'G2', role: 'admin' });
+  const adminB = () => testEnv.authenticatedContext('adminB', { gymId: 'G2', role: 'gymowner' });
   const registrant = () => testEnv.authenticatedContext('registrant', {});
 
   describe('Firestore rules', () => {

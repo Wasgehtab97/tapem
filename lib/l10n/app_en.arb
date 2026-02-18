@@ -1292,6 +1292,8 @@
   "@settingsThemeAirNomads": {"description": "Name of the air nomads inspired theme"},
   "settingsThemeEarthKingdom": "Earth Kingdom",
   "@settingsThemeEarthKingdom": {"description": "Name of the earth kingdom inspired theme"},
+  "settingsThemeMidnightGold": "Midnight Gold",
+  "@settingsThemeMidnightGold": {"description": "Exclusive premium theme in deep black and elegant gold."},
   "settingsThemeSaveError": "Could not save theme.",
   "@settingsThemeSaveError": {"description": "Error shown when saving the theme failed"},
   "settingsOptionPublicProfile": "Public profile",
@@ -1931,6 +1933,8 @@
   ,"@reportDeviceUsageError": {"description": "Message shown when fetching usage data fails"}
   ,"reportDeviceUsageSessions": "{count} sessions"
   ,"@reportDeviceUsageSessions": {"description": "Tooltip line with the number of sessions","placeholders": {"count": {"type": "int"}}}
+  ,"reportCalendarLogCount": "Logs on {date}: {count}"
+  ,"@reportCalendarLogCount": {"description": "Snackbar text when tapping a day in the report calendar","placeholders": {"date": {},"count": {"type": "int"}}}
   ,"exerciseDeleteTitle": "Delete exercise"
   ,"@exerciseDeleteTitle": {"description": "Dialog title asking to delete an exercise"}
   ,"exerciseDeleteMessage": "Do you really want to delete the exercise \"{name}\"?"
@@ -1979,8 +1983,22 @@
   ,"@challengeAdminFieldRequiredSets": {"description": "Label for the required sets field"}
   ,"challengeAdminFieldXpReward": "XP reward"
   ,"@challengeAdminFieldXpReward": {"description": "Label for the XP reward field"}
+  ,"challengeAdminFieldGoalType": "Challenge goal"
+  ,"@challengeAdminFieldGoalType": {"description": "Label for selecting the challenge goal type"}
+  ,"challengeAdminGoalTypeDeviceSets": "Device sets"
+  ,"@challengeAdminGoalTypeDeviceSets": {"description": "Option for set-based device challenges"}
+  ,"challengeAdminGoalTypeWorkoutFrequency": "Workout frequency"
+  ,"@challengeAdminGoalTypeWorkoutFrequency": {"description": "Option for workout frequency challenges"}
   ,"challengeAdminFieldType": "Type"
   ,"@challengeAdminFieldType": {"description": "Label for the challenge type field"}
+  ,"challengeAdminFieldWorkoutCount": "Workouts in period"
+  ,"@challengeAdminFieldWorkoutCount": {"description": "Label for required workouts in a period"}
+  ,"challengeAdminFieldWorkoutWindow": "Time window"
+  ,"@challengeAdminFieldWorkoutWindow": {"description": "Label for selecting workout challenge window"}
+  ,"challengeAdminWorkoutWindowOneWeek": "1 calendar week"
+  ,"@challengeAdminWorkoutWindowOneWeek": {"description": "Option for one calendar week window"}
+  ,"challengeAdminWorkoutWindowFourWeeks": "4 calendar weeks"
+  ,"@challengeAdminWorkoutWindowFourWeeks": {"description": "Option for four calendar weeks window"}
   ,"challengeTabActive": "Active"
   ,"@challengeTabActive": {"description": "Tab label for active challenges"}
   ,"challengeTabCompleted": "Completed"
@@ -1991,6 +2009,10 @@
   ,"@challengeEmptyCompleted": {"description": "Message shown when there are no completed challenges"}
   ,"challengeDetailXpReward": "XP: {xp}"
   ,"@challengeDetailXpReward": {"description": "XP reward shown in the challenge dialog","placeholders": {"xp": {"type": "int"}}}
+  ,"challengeDetailGoalDeviceSets": "Goal: {count} sets"
+  ,"@challengeDetailGoalDeviceSets": {"description": "Goal label for set-based challenges","placeholders": {"count": {"type": "int"}}}
+  ,"challengeDetailGoalWorkoutFrequency": "Goal: {count} workouts in {weeks} calendar weeks"
+  ,"@challengeDetailGoalWorkoutFrequency": {"description": "Goal label for workout frequency challenges","placeholders": {"count": {"type": "int"},"weeks": {"type": "int"}}}
   ,"challengeDetailDevices": "Devices: {devices}"
   ,"@challengeDetailDevices": {"description": "Device list shown in the challenge dialog","placeholders": {"devices": {}}}
   ,"challengeAdminTypeWeekly": "Weekly"
@@ -2007,6 +2029,8 @@
   ,"@challengeAdminMonthLabel": {"description": "Displayed label for a specific month","placeholders": {"month": {"type": "int"}}}
   ,"challengeAdminFieldDevices": "Devices"
   ,"@challengeAdminFieldDevices": {"description": "Section title listing devices"}
+  ,"challengeAdminCreateButton": "Create challenge"
+  ,"@challengeAdminCreateButton": {"description": "Button label for creating a challenge"}
   ,"adminAreaTitle": "Admin area"
   ,"@adminAreaTitle": {"description": "AppBar title when user enters the admin area"}
   ,"adminAreaNoPermission": "No admin rights"
@@ -2051,6 +2075,16 @@
   ,"@adminSymbolsAllGlobalAssigned": {"description": "Message shown when all global symbols are already assigned"}
   ,"adminSymbolsAllTitleAssigned": "All {title} symbols already assigned."
   ,"@adminSymbolsAllTitleAssigned": {"description": "Message shown when all symbols for a specific source are assigned","placeholders": {"title": {}}}
+  ,"adminSymbolsBackfillTooltip": "Backfill usernameLower"
+  ,"@adminSymbolsBackfillTooltip": {"description": "Tooltip for backfilling usernameLower in debug mode"}
+  ,"adminSymbolsBackfillSuccess": "usernameLower updated: {count}"
+  ,"@adminSymbolsBackfillSuccess": {"description": "Snackbar after usernameLower backfill","placeholders": {"count": {"type": "int"}}}
+  ,"adminSymbolsGlobalTitle": "Global"
+  ,"@adminSymbolsGlobalTitle": {"description": "Section title for global symbols"}
+  ,"userSymbolsAddTooltip": "Add symbols"
+  ,"@userSymbolsAddTooltip": {"description": "Tooltip for adding symbols"}
+  ,"userSymbolsInventoryTitle": "Inventory of {username}"
+  ,"@userSymbolsInventoryTitle": {"description": "Title for the user inventory section","placeholders": {"username": {}}}
   ,"brandingImageTooLarge": "Image too large (max 500KB)"
   ,"@brandingImageTooLarge": {"description": "Error shown when the selected logo is too large"}
   ,"brandingInvalidConfig": "Please select valid colours and a logo."
@@ -2151,4 +2185,374 @@
   ,"@communityCalendarCountOne": {"description": "Message for a single active user in the community calendar"}
   ,"communityCalendarCountOther": "{count} people trained on this day."
   ,"@communityCalendarCountOther": {"description": "Message for multiple active users in the community calendar", "placeholders": {"count": {}}}
+  ,"ownerWorkspaceTitle": "Owner workspace"
+  ,"@ownerWorkspaceTitle": {"description": "Header title of the owner workspace"}
+  ,"ownerWorkspaceActiveGym": "Active gym: {gymId}"
+  ,"@ownerWorkspaceActiveGym": {"description": "Header line showing the active gym code","placeholders": {"gymId": {}}}
+  ,"ownerWorkspaceGeneratedAt": "Updated: {timeLabel}"
+  ,"@ownerWorkspaceGeneratedAt": {"description": "Header line showing when the owner snapshot was generated","placeholders": {"timeLabel": {}}}
+  ,"ownerSectionKpiTitle": "Studio overview"
+  ,"@ownerSectionKpiTitle": {"description": "Section title for owner KPI metrics"}
+  ,"ownerSectionKpiSubtitle": "All core studio signals at a glance."
+  ,"@ownerSectionKpiSubtitle": {"description": "Section subtitle for owner KPI metrics"}
+  ,"ownerSectionTasksTitle": "Today's priorities"
+  ,"@ownerSectionTasksTitle": {"description": "Section title for owner tasks"}
+  ,"ownerSectionTasksSubtitle": "These tasks create immediate operational impact."
+  ,"@ownerSectionTasksSubtitle": {"description": "Section subtitle for owner tasks"}
+  ,"ownerSectionQuickActionsTitle": "Quick actions"
+  ,"@ownerSectionQuickActionsTitle": {"description": "Section title for owner quick actions"}
+  ,"ownerSectionQuickActionsSubtitle": "Direct access to all owner modules without route detours."
+  ,"@ownerSectionQuickActionsSubtitle": {"description": "Section subtitle for owner quick actions"}
+  ,"ownerTasksNone": "No open priorities. Studio operations are stable."
+  ,"@ownerTasksNone": {"description": "Neutral state text when no owner tasks are available"}
+  ,"ownerPriorityHigh": "high"
+  ,"@ownerPriorityHigh": {"description": "Chip label for high owner task priority"}
+  ,"ownerPriorityMedium": "medium"
+  ,"@ownerPriorityMedium": {"description": "Chip label for medium owner task priority"}
+  ,"ownerPriorityLow": "low"
+  ,"@ownerPriorityLow": {"description": "Chip label for low owner task priority"}
+  ,"ownerNoAccessSubtitle": "This area requires gymowner or admin permissions."
+  ,"@ownerNoAccessSubtitle": {"description": "Subtitle shown on owner screen when user has no access"}
+  ,"ownerGymContextMissingTitle": "Gym context missing"
+  ,"@ownerGymContextMissingTitle": {"description": "Title shown when owner screen has no active gym"}
+  ,"ownerGymContextMissingSubtitle": "Select an active gym first so owner data can be loaded."
+  ,"@ownerGymContextMissingSubtitle": {"description": "Subtitle shown when owner screen has no active gym"}
+  ,"ownerDashboardLoadErrorTitle": "Owner dashboard could not be loaded"
+  ,"@ownerDashboardLoadErrorTitle": {"description": "Title shown when loading owner snapshot fails"}
+  ,"ownerDashboardLoadErrorSubtitle": "Please refresh the data. Error: {error}"
+  ,"@ownerDashboardLoadErrorSubtitle": {"description": "Subtitle shown when loading owner snapshot fails","placeholders": {"error": {}}}
+  ,"ownerNoDataTitle": "No owner data available yet"
+  ,"@ownerNoDataTitle": {"description": "Title shown when owner snapshot is empty"}
+  ,"ownerNoDataSubtitle": "Create devices and first studio actions so the dashboard can show meaningful signals."
+  ,"@ownerNoDataSubtitle": {"description": "Subtitle shown when owner snapshot is empty"}
+  ,"ownerMetricMembersLabel": "Members"
+  ,"@ownerMetricMembersLabel": {"description": "Owner metric label for member count"}
+  ,"ownerMetricMembersHelper": "Registered members in the active gym."
+  ,"@ownerMetricMembersHelper": {"description": "Owner metric helper for member count"}
+  ,"ownerMetricDevicesLabel": "Devices"
+  ,"@ownerMetricDevicesLabel": {"description": "Owner metric label for device count"}
+  ,"ownerMetricDevicesHelper": "Available training devices."
+  ,"@ownerMetricDevicesHelper": {"description": "Owner metric helper for device count"}
+  ,"ownerMetricOpenFeedbackLabel": "Open feedback"
+  ,"@ownerMetricOpenFeedbackLabel": {"description": "Owner metric label for open feedback"}
+  ,"ownerMetricOpenFeedbackHelper": "Feedback entries requiring action."
+  ,"@ownerMetricOpenFeedbackHelper": {"description": "Owner metric helper for open feedback"}
+  ,"ownerMetricOpenSurveysLabel": "Active surveys"
+  ,"@ownerMetricOpenSurveysLabel": {"description": "Owner metric label for active surveys"}
+  ,"ownerMetricOpenSurveysHelper": "Running surveys in your gym."
+  ,"@ownerMetricOpenSurveysHelper": {"description": "Owner metric helper for active surveys"}
+  ,"ownerMetricActiveChallengesLabel": "Active challenges"
+  ,"@ownerMetricActiveChallengesLabel": {"description": "Owner metric label for active challenges"}
+  ,"ownerMetricActiveChallengesHelper": "Weekly and monthly challenges currently running."
+  ,"@ownerMetricActiveChallengesHelper": {"description": "Owner metric helper for active challenges"}
+  ,"ownerTaskOpenFeedbackTitle": "Handle {count} open feedback item(s)"
+  ,"@ownerTaskOpenFeedbackTitle": {"description": "Owner task title for open feedback","placeholders": {"count": {"type": "int"}}}
+  ,"ownerTaskOpenFeedbackSubtitle": "Unresolved feedback reduces service quality."
+  ,"@ownerTaskOpenFeedbackSubtitle": {"description": "Owner task subtitle for open feedback"}
+  ,"ownerTaskPlanChallengeTitle": "Plan a new challenge"
+  ,"@ownerTaskPlanChallengeTitle": {"description": "Owner task title for challenge planning"}
+  ,"ownerTaskPlanChallengeSubtitle": "Active challenges increase training frequency and retention."
+  ,"@ownerTaskPlanChallengeSubtitle": {"description": "Owner task subtitle for challenge planning"}
+  ,"ownerTaskStartSurveyTitle": "Start a survey"
+  ,"@ownerTaskStartSurveyTitle": {"description": "Owner task title for survey creation"}
+  ,"ownerTaskStartSurveySubtitle": "Collect member feedback today with a short survey."
+  ,"@ownerTaskStartSurveySubtitle": {"description": "Owner task subtitle for survey creation"}
+  ,"ownerTaskCreateFirstDeviceTitle": "Create the first device"
+  ,"@ownerTaskCreateFirstDeviceTitle": {"description": "Owner task title for initial device creation"}
+  ,"ownerTaskCreateFirstDeviceSubtitle": "Without devices, key tracking and report data are missing."
+  ,"@ownerTaskCreateFirstDeviceSubtitle": {"description": "Owner task subtitle for initial device creation"}
+  ,"ownerTaskCheckMembersTitle": "Review member data"
+  ,"@ownerTaskCheckMembersTitle": {"description": "Owner task title for member data review"}
+  ,"ownerTaskCheckMembersSubtitle": "Low member counts in reports can indicate incomplete data."
+  ,"@ownerTaskCheckMembersSubtitle": {"description": "Owner task subtitle for member data review"}
+  ,"ownerQuickActionReportSubtitle": "Analyze usage, member trends, and studio KPIs."
+  ,"@ownerQuickActionReportSubtitle": {"description": "Subtitle for report quick action in owner workspace"}
+  ,"ownerQuickActionMembersSubtitle": "Review member base and start clean-up actions."
+  ,"@ownerQuickActionMembersSubtitle": {"description": "Subtitle for members quick action in owner workspace"}
+  ,"ownerQuickActionDevicesSubtitle": "Create, edit, and manage devices."
+  ,"@ownerQuickActionDevicesSubtitle": {"description": "Subtitle for devices quick action in owner workspace"}
+  ,"ownerQuickActionFeedbackSubtitle": "Review and resolve open feedback."
+  ,"@ownerQuickActionFeedbackSubtitle": {"description": "Subtitle for feedback quick action in owner workspace"}
+  ,"ownerQuickActionSurveysSubtitle": "Create, evaluate, and close surveys."
+  ,"@ownerQuickActionSurveysSubtitle": {"description": "Subtitle for surveys quick action in owner workspace"}
+  ,"ownerQuickActionChallengesSubtitle": "Plan challenges and maintain running campaigns."
+  ,"@ownerQuickActionChallengesSubtitle": {"description": "Subtitle for challenges quick action in owner workspace"}
+  ,"ownerQuickActionDealsTitle": "Deals"
+  ,"@ownerQuickActionDealsTitle": {"description": "Title for deals quick action in owner workspace"}
+  ,"ownerQuickActionDealsSubtitle": "Manage partner offers and promotions."
+  ,"@ownerQuickActionDealsSubtitle": {"description": "Subtitle for deals quick action in owner workspace"}
+  ,"ownerQuickActionAdminSubtitle": "Open all admin modules in one overview."
+  ,"@ownerQuickActionAdminSubtitle": {"description": "Subtitle for admin quick action in owner workspace"}
+  ,"reportOverviewIntro": "Key metrics for members, usage, and feedback."
+  ,"@reportOverviewIntro": {"description": "Intro text on report overview screen"}
+  ,"reportSurveyCountsInline": "Active: {openCount} · Closed: {closedCount}"
+  ,"@reportSurveyCountsInline": {"description": "Inline summary for open and closed surveys","placeholders": {"openCount": {"type": "int"},"closedCount": {"type": "int"}}}
+  ,"reportManagementSummarySessions": "{count} sessions were logged in this period."
+  ,"@reportManagementSummarySessions": {"description": "Management summary line showing session total","placeholders": {"count": {"type": "int"}}}
+  ,"reportManagementSummaryNoSessions": "No usage sessions are available for the current period yet."
+  ,"@reportManagementSummaryNoSessions": {"description": "Management summary fallback when there are no sessions"}
+  ,"reportManagementSummaryTopDevice": "Most used device: {deviceName}."
+  ,"@reportManagementSummaryTopDevice": {"description": "Management summary line for top used device","placeholders": {"deviceName": {}}}
+  ,"reportUsageHeatmapTitle": "Activity heatmap"
+  ,"@reportUsageHeatmapTitle": {"description": "Section title for usage heatmap"}
+  ,"reportUsageHeatmapEmpty": "No log data is available for the selected heatmap period yet."
+  ,"@reportUsageHeatmapEmpty": {"description": "Empty state text for usage heatmap"}
+  ,"reportUsageDetailsTitle": "Details"
+  ,"@reportUsageDetailsTitle": {"description": "Section title for detailed usage list"}
+  ,"reportUsageSlotMorning": "Morning"
+  ,"@reportUsageSlotMorning": {"description": "Label for morning time slot in usage pattern"}
+  ,"reportUsageSlotNoon": "Noon"
+  ,"@reportUsageSlotNoon": {"description": "Label for noon time slot in usage pattern"}
+  ,"reportUsageSlotEvening": "Evening"
+  ,"@reportUsageSlotEvening": {"description": "Label for evening time slot in usage pattern"}
+  ,"reportUsageWeekdayMon": "Mon"
+  ,"@reportUsageWeekdayMon": {"description": "Abbreviation for Monday in usage pattern"}
+  ,"reportUsageWeekdayTue": "Tue"
+  ,"@reportUsageWeekdayTue": {"description": "Abbreviation for Tuesday in usage pattern"}
+  ,"reportUsageWeekdayWed": "Wed"
+  ,"@reportUsageWeekdayWed": {"description": "Abbreviation for Wednesday in usage pattern"}
+  ,"reportUsageWeekdayThu": "Thu"
+  ,"@reportUsageWeekdayThu": {"description": "Abbreviation for Thursday in usage pattern"}
+  ,"reportUsageWeekdayFri": "Fri"
+  ,"@reportUsageWeekdayFri": {"description": "Abbreviation for Friday in usage pattern"}
+  ,"reportUsageWeekdaySat": "Sat"
+  ,"@reportUsageWeekdaySat": {"description": "Abbreviation for Saturday in usage pattern"}
+  ,"reportUsageWeekdaySun": "Sun"
+  ,"@reportUsageWeekdaySun": {"description": "Abbreviation for Sunday in usage pattern"}
+  ,"reportUsagePatternEmpty": "No data is available for typical training times yet."
+  ,"@reportUsagePatternEmpty": {"description": "Empty text for weekly usage pattern heatmap"}
+  ,"reportUsagePatternPeakSummary": "Highest load: {weekday} {slot}."
+  ,"@reportUsagePatternPeakSummary": {"description": "Summary sentence for peak usage slot","placeholders": {"weekday": {},"slot": {}}}
+  ,"reportUsagePatternTitle": "Pattern by weekday and time of day"
+  ,"@reportUsagePatternTitle": {"description": "Title above weekly usage pattern heatmap"}
+  ,"reportUsagePatternCellLabel": "{weekday} {slot}: {count} sessions"
+  ,"@reportUsagePatternCellLabel": {"description": "Tooltip/snackbar label for one pattern heatmap cell","placeholders": {"weekday": {},"slot": {},"count": {"type": "int"}}}
+  ,"reportMembersLoading": "Loading members..."
+  ,"@reportMembersLoading": {"description": "Loading state text while members are fetched"}
+  ,"reportMembersNoRegisteredMembers": "No members have been registered yet."
+  ,"@reportMembersNoRegisteredMembers": {"description": "Secondary empty state text for members report"}
+  ,"reportMembersSummaryTotal": "Members"
+  ,"@reportMembersSummaryTotal": {"description": "Summary chip label for total members"}
+  ,"reportMembersSummaryActive": "Active members"
+  ,"@reportMembersSummaryActive": {"description": "Summary chip label for active members"}
+  ,"reportMembersSummaryInactive": "Inactive"
+  ,"@reportMembersSummaryInactive": {"description": "Summary chip label for inactive members"}
+  ,"reportMembersSummaryAtRisk": "At risk (high)"
+  ,"@reportMembersSummaryAtRisk": {"description": "Summary chip label for at-risk members"}
+  ,"reportMembersSummaryNewMembers": "New members"
+  ,"@reportMembersSummaryNewMembers": {"description": "Summary chip label for new members"}
+  ,"reportMembersSummaryLoyal": "Loyal members"
+  ,"@reportMembersSummaryLoyal": {"description": "Summary chip label for loyal members"}
+  ,"reportMembersSummaryTrainingDays": "Training days total"
+  ,"@reportMembersSummaryTrainingDays": {"description": "Summary chip label for total training days"}
+  ,"reportMembersSegmentActions": "Actions for group"
+  ,"@reportMembersSegmentActions": {"description": "Button label for member segment actions"}
+  ,"reportMembersSegmentAll": "All members"
+  ,"@reportMembersSegmentAll": {"description": "Segment label for all members"}
+  ,"reportMembersSegmentActive": "Active members"
+  ,"@reportMembersSegmentActive": {"description": "Segment label for active members"}
+  ,"reportMembersSegmentInactive": "Inactive members"
+  ,"@reportMembersSegmentInactive": {"description": "Segment label for inactive members"}
+  ,"reportMembersSegmentAtRisk": "At-risk members"
+  ,"@reportMembersSegmentAtRisk": {"description": "Segment label for at-risk members"}
+  ,"reportMembersSegmentNewMembers": "New members"
+  ,"@reportMembersSegmentNewMembers": {"description": "Segment label for new members"}
+  ,"reportMembersSegmentLoyal": "Loyal members"
+  ,"@reportMembersSegmentLoyal": {"description": "Segment label for loyal members"}
+  ,"reportMembersSegmentNoNumbers": "No member numbers in this group."
+  ,"@reportMembersSegmentNoNumbers": {"description": "Snackbar text when a segment has no member numbers"}
+  ,"reportMembersSegmentLargeExportTitle": "Confirm large export action"
+  ,"@reportMembersSegmentLargeExportTitle": {"description": "Dialog title before exporting a very large member segment"}
+  ,"reportMembersSegmentLargeExportBody": "You are exporting {count} member numbers from \"All members\". Please confirm this sharing is required."
+  ,"@reportMembersSegmentLargeExportBody": {"description": "Dialog body before exporting a very large member segment","placeholders": {"count": {"type": "int"}}}
+  ,"reportMembersSegmentLargeExportConfirm": "Confirm"
+  ,"@reportMembersSegmentLargeExportConfirm": {"description": "Confirmation CTA for large segment export dialog"}
+  ,"reportMembersSegmentActionsFor": "Actions for {segmentName}"
+  ,"@reportMembersSegmentActionsFor": {"description": "Bottom sheet title for segment actions","placeholders": {"segmentName": {}}}
+  ,"reportMembersSegmentCount": "{count} members in this group."
+  ,"@reportMembersSegmentCount": {"description": "Bottom sheet subtitle showing number of members in segment","placeholders": {"count": {"type": "int"}}}
+  ,"reportMembersSegmentCopy": "Copy member numbers"
+  ,"@reportMembersSegmentCopy": {"description": "Action label to copy member numbers"}
+  ,"reportMembersSegmentCopied": "Member numbers copied."
+  ,"@reportMembersSegmentCopied": {"description": "Snackbar shown after member numbers were copied"}
+  ,"reportMembersSegmentShare": "Share member numbers"
+  ,"@reportMembersSegmentShare": {"description": "Action label to share member numbers"}
+  ,"reportMembersSegmentShareBody": "{segmentName} ({count} members)\n\nMember numbers:\n{numbers}"
+  ,"@reportMembersSegmentShareBody": {"description": "Shared text body for member segment export","placeholders": {"segmentName": {},"count": {"type": "int"},"numbers": {}}}
+  ,"reportMembersSegmentShareSubject": "Member segment from report"
+  ,"@reportMembersSegmentShareSubject": {"description": "Share subject for member segment export"}
+  ,"reportMembersSegmentAllShort": "All"
+  ,"@reportMembersSegmentAllShort": {"description": "Short filter label for all members segment"}
+  ,"reportMembersSegmentActiveShort": "Active"
+  ,"@reportMembersSegmentActiveShort": {"description": "Short filter label for active members segment"}
+  ,"reportMembersSegmentInactiveShort": "Inactive"
+  ,"@reportMembersSegmentInactiveShort": {"description": "Short filter label for inactive members segment"}
+  ,"reportMembersSegmentAtRiskShort": "At risk"
+  ,"@reportMembersSegmentAtRiskShort": {"description": "Short filter label for at-risk members segment"}
+  ,"reportMembersSegmentNewMembersShort": "New"
+  ,"@reportMembersSegmentNewMembersShort": {"description": "Short filter label for new members segment"}
+  ,"reportMembersSegmentLoyalShort": "Loyal"
+  ,"@reportMembersSegmentLoyalShort": {"description": "Short filter label for loyal members segment"}
+  ,"reportMembersRiskLow": "low risk"
+  ,"@reportMembersRiskLow": {"description": "Risk label for low risk members"}
+  ,"reportMembersRiskMedium": "medium risk"
+  ,"@reportMembersRiskMedium": {"description": "Risk label for medium risk members"}
+  ,"reportMembersRiskHigh": "high risk"
+  ,"@reportMembersRiskHigh": {"description": "Risk label for high risk members"}
+  ,"reportMembersRiskNewMember": "new member"
+  ,"@reportMembersRiskNewMember": {"description": "Risk label for new members"}
+  ,"reportMembersAdminOnlyHint": "Only admins of this gym can see training-day counts."
+  ,"@reportMembersAdminOnlyHint": {"description": "Hint shown when training day data is restricted to admins"}
+  ,"adminNoAccess": "No access"
+  ,"@adminNoAccess": {"description": "Generic no-access message"}
+  ,"adminRemoveUsersTitle": "Remove users"
+  ,"@adminRemoveUsersTitle": {"description": "Title for the remove users screen"}
+  ,"adminSearchUsersHint": "Search users (name)"
+  ,"@adminSearchUsersHint": {"description": "Hint for the search field in member list"}
+  ,"adminMemberSince": "Member since: {date}"
+  ,"@adminMemberSince": {"description": "Label for membership date","placeholders": {"date": {}}}
+  ,"adminDeleteUserTitle": "Delete user and data?"
+  ,"@adminDeleteUserTitle": {"description": "Confirmation title for user removal"}
+  ,"adminDeleteUserMessage": "The user \"{name}\" and all associated data in this gym will be permanently deleted."
+  ,"@adminDeleteUserMessage": {"description": "Confirmation message for user removal","placeholders": {"name": {}}}
+  ,"adminDeleteUserAuditHint": "This action will be logged in the admin audit and cannot be undone."
+  ,"@adminDeleteUserAuditHint": {"description": "Audit hint in removal dialog"}
+  ,"adminDeleteUserSuccess": "User {name}{warning} deleted"
+  ,"@adminDeleteUserSuccess": {"description": "Success message after user removal","placeholders": {"name": {},"warning": {}}}
+  ,"adminDeleteUserError": "Error deleting user: {error}"
+  ,"@adminDeleteUserError": {"description": "Error message after user removal failed","placeholders": {"error": {}}}
+  ,"brandingSelectedFile": "Selected file: {filename}"
+  ,"@brandingSelectedFile": {"description": "Label for selected logo file","placeholders": {"filename": {}}}
+  ,"brandingLogoUrlHint": "Note: Without Cloud Functions, please enter a public logo URL instead."
+  ,"@brandingLogoUrlHint": {"description": "Hint for branding logo URL"}
+  ,"brandingLogoUrlLabel": "Logo URL (optional)"
+  ,"@brandingLogoUrlLabel": {"description": "Label for logo URL field"}
+  ,"brandingLogoUrlPlaceholder": "https://..."
+  ,"@brandingLogoUrlPlaceholder": {"description": "Placeholder for logo URL input"}
+  ,"adminDealsDeleteTitle": "Delete deal?"
+  ,"@adminDealsDeleteTitle": {"description": "Confirmation title for deal removal"}
+  ,"adminDealsDeleteMessage": "Do you really want to delete the deal \"{name}\"?"
+  ,"@adminDealsDeleteMessage": {"description": "Confirmation message for deal removal","placeholders": {"name": {}}}
+  ,"adminDealsTitle": "Manage deals"
+  ,"@adminDealsTitle": {"description": "AppBar title for the deals management screen"}
+  ,"adminDealsToggleError": "Error updating deal state: {error}"
+  ,"@adminDealsToggleError": {"description": "Error snackbar when toggling deal state fails","placeholders": {"error": {}}}
+  ,"adminDealsLoadError": "Error loading deals: {error}"
+  ,"@adminDealsLoadError": {"description": "Error state text when deals cannot be loaded","placeholders": {"error": {}}}
+  ,"adminDealsDeleteAuditHint": "This change affects deal visibility for members immediately."
+  ,"@adminDealsDeleteAuditHint": {"description": "Audit hint for deleting deals"}
+  ,"adminDealsDeleted": "Deal deleted."
+  ,"@adminDealsDeleted": {"description": "Snackbar after deleting a deal"}
+  ,"adminDealsCreateSuccess": "Deal created."
+  ,"@adminDealsCreateSuccess": {"description": "Snackbar after creating a deal"}
+  ,"adminDealsUpdateSuccess": "Deal updated."
+  ,"@adminDealsUpdateSuccess": {"description": "Snackbar after updating a deal"}
+  ,"adminDealsStatusActive": "Deal is now active."
+  ,"@adminDealsStatusActive": {"description": "Snackbar after activating a deal"}
+  ,"adminDealsStatusInactive": "Deal is now inactive."
+  ,"@adminDealsStatusInactive": {"description": "Snackbar after deactivating a deal"}
+  ,"adminDealsRestored": "Deal restored."
+  ,"@adminDealsRestored": {"description": "Snackbar after undoing a deal deletion"}
+  ,"adminDealsUndoErrorPrefix": "Undo failed"
+  ,"@adminDealsUndoErrorPrefix": {"description": "Prefix for undo error while restoring a deal"}
+  ,"adminDealsDeleteError": "Error deleting deal: {error}"
+  ,"@adminDealsDeleteError": {"description": "Error snackbar when deleting a deal fails","placeholders": {"error": {}}}
+  ,"dealFormCategoryDefault": "Supplements"
+  ,"@dealFormCategoryDefault": {"description": "Default category for new deals"}
+  ,"dealFormCategoryLabel": "Category"
+  ,"@dealFormCategoryLabel": {"description": "Label for deal category field"}
+  ,"dealFormRequiredFieldsError": "Please fill in all required fields (Partner, Title, Code, Link)."
+  ,"@dealFormRequiredFieldsError": {"description": "Error when mandatory deal fields are empty"}
+  ,"dealFormInvalidUrlError": "Shop link is not a valid URL."
+  ,"@dealFormInvalidUrlError": {"description": "Error when shop link URL is invalid"}
+  ,"dealFormSaveError": "Error saving: {error}"
+  ,"@dealFormSaveError": {"description": "Error message when deal saving fails","placeholders": {"error": {}}}
+  ,"dealFormTitleNew": "New deal"
+  ,"@dealFormTitleNew": {"description": "Title for creating a new deal"}
+  ,"dealFormTitleEdit": "Edit deal"
+  ,"@dealFormTitleEdit": {"description": "Title for editing an existing deal"}
+  ,"dealFormPartnerLabel": "Partner Name *"
+  ,"@dealFormPartnerLabel": {"description": "Label for partner name field"}
+  ,"dealFormTitleLabel": "Title *"
+  ,"@dealFormTitleLabel": {"description": "Label for deal title field"}
+  ,"dealFormCodeLabel": "Discount code *"
+  ,"@dealFormCodeLabel": {"description": "Label for discount code field"}
+  ,"dealFormLinkLabel": "Shop Link *"
+  ,"@dealFormLinkLabel": {"description": "Label for shop link field"}
+  ,"dealFormImageUrlLabel": "Image URL"
+  ,"@dealFormImageUrlLabel": {"description": "Label for image URL field"}
+  ,"dealFormPartnerLogoLabel": "Partner logo URL"
+  ,"@dealFormPartnerLogoLabel": {"description": "Label for partner logo URL field"}
+  ,"dealFormDescriptionLabel": "Description"
+  ,"@dealFormDescriptionLabel": {"description": "Label for deal description field"}
+  ,"dealFormPriorityLabel": "Priority"
+  ,"@dealFormPriorityLabel": {"description": "Label for deal priority field"}
+  ,"dealFormActiveLabel": "Deal active?"
+  ,"@dealFormActiveLabel": {"description": "Label for deal active switch"}
+  ,"adminDeviceEditTitle": "Edit device"
+  ,"@adminDeviceEditTitle": {"description": "Title for editing a device"}
+  ,"adminDeviceNewTitle": "Create new device"
+  ,"@adminDeviceNewTitle": {"description": "Title for creating a new device"}
+  ,"adminDeviceUidLabel": "UID: {uid}"
+  ,"@adminDeviceUidLabel": {"description": "Label for device UID","placeholders": {"uid": {}}}
+  ,"adminDeviceIdLabel": "ID: {id}"
+  ,"@adminDeviceIdLabel": {"description": "Label for device ID","placeholders": {"id": {}}}
+  ,"adminDeviceNameLabel": "Name"
+  ,"@adminDeviceNameLabel": {"description": "Label for device name field"}
+  ,"adminDeviceNameHint": "e.g. Leg press"
+  ,"@adminDeviceNameHint": {"description": "Hint for device name field"}
+  ,"adminDeviceDescLabel": "Description"
+  ,"@adminDeviceDescLabel": {"description": "Label for device description field"}
+  ,"adminDeviceDescHint": "Optional (Model, etc.)"
+  ,"@adminDeviceDescHint": {"description": "Hint for device description field"}
+  ,"adminDeviceMultiExerciseLabel": "Includes multiple exercises?"
+  ,"@adminDeviceMultiExerciseLabel": {"description": "Label for multi-exercise switch"}
+  ,"adminDeviceMultiExerciseSubtitle": "For cable cross or racks"
+  ,"@adminDeviceMultiExerciseSubtitle": {"description": "Subtitle for multi-exercise switch"}
+  ,"adminDeviceDeleteAuditHint": "Device master data will be removed. Downstream evaluations may be affected."
+  ,"@adminDeviceDeleteAuditHint": {"description": "Audit hint when deleting a device"}
+  ,"adminDashboardChallengesSubtitle": "Create & manage challenges"
+  ,"@adminDashboardChallengesSubtitle": {"description": "Subtitle for challenges in admin dashboard"}
+  ,"adminDashboardSymbolsSubtitle": "User symbols & ranks"
+  ,"@adminDashboardSymbolsSubtitle": {"description": "Subtitle for symbols in admin dashboard"}
+  ,"adminDashboardRemoveUsersTitle": "Remove users"
+  ,"@adminDashboardRemoveUsersTitle": {"description": "Title for remove users in admin dashboard"}
+  ,"adminDashboardRemoveUsersSubtitle": "Clean up test users & data"
+  ,"@adminDashboardRemoveUsersSubtitle": {"description": "Subtitle for remove users in admin dashboard"}
+  ,"adminDashboardDealsTitle": "Manage deals"
+  ,"@adminDashboardDealsTitle": {"description": "Title for deals in admin dashboard"}
+  ,"adminDashboardDealsSubtitle": "Maintain sponsors & discounts"
+  ,"@adminDashboardDealsSubtitle": {"description": "Subtitle for deals in admin dashboard"}
+  ,"reportTotalSessions": "Total sessions"
+  ,"@reportTotalSessions": {"description": "Label for total sessions metric"}
+  ,"reportTopDevice": "Top device"
+  ,"@reportTopDevice": {"description": "Label for top device metric"}
+  ,"reportLogsAtDate": "Logs on {date}: {count}"
+  ,"@reportLogsAtDate": {"description": "Tooltip for calendar heatmap","placeholders": {"date": {},"count": {"type": "int"}}}
+  ,"reportSurveysSubtitle": "Start surveys and evaluate member feedback."
+  ,"@reportSurveysSubtitle": {"description": "Subtitle for surveys report"}
+  ,"reportFeedbackSubtitle": "Manage suggestions, complaints, and praise from your members."
+  ,"@reportFeedbackSubtitle": {"description": "Subtitle for feedback report"}
+  ,"reportSurveysStatus": "Active: {open} · Closed: {closed}"
+  ,"@reportSurveysStatus": {"description": "Status summary for surveys","placeholders": {"open": {"type": "int"},"closed": {"type": "int"}}}
+  ,"reportGenericError": "An error has occurred"
+  ,"@reportGenericError": {"description": "Generic error message for reports"}
+  ,"reportNoDataAvailable": "No data available"
+  ,"@reportNoDataAvailable": {"description": "Empty state message for reports"}
+  ,"adminDeviceManufacturerLabel": "Manufacturer"
+  ,"@adminDeviceManufacturerLabel": {"description": "Label for manufacturer dropdown"}
+  ,"adminDeviceMuscleGroupsLabel": "Muscle groups"
+  ,"@adminDeviceMuscleGroupsLabel": {"description": "Label for muscle groups section"}
+  ,"adminDeviceCreateButton": "Create"
+  ,"@adminDeviceCreateButton": {"description": "Button label for creating a device"}
+  ,"adminDeviceNameError": "Please enter a name."
+  ,"@adminDeviceNameError": {"description": "Error when device name is empty"}
+  ,"adminDeviceLoadingError": "Error loading"
+  ,"@adminDeviceLoadingError": {"description": "Error message when loading manufacturers fails"}
+  ,"adminDeviceNoManufacturers": "No manufacturers activated."
+  ,"@adminDeviceNoManufacturers": {"description": "Message when manufacturer list is empty"}
+  ,"adminDeviceManageManufacturers": "Manage"
+  ,"@adminDeviceManageManufacturers": {"description": "Button label to manage manufacturers"}
+  ,"adminDeviceSelectManufacturer": "Select manufacturer"
+  ,"@adminDeviceSelectManufacturer": {"description": "Hint for manufacturer dropdown"}
 }

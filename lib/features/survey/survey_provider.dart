@@ -23,6 +23,8 @@ class SurveyProvider extends ChangeNotifier
   StreamSubscription<List<Survey>>? _openSub;
   StreamSubscription<List<Survey>>? _closedSub;
   String? _currentGymId;
+  final Set<Object> _activeSubscribers = <Object>{};
+  static final Object _legacySubscriber = Object();
 
   List<Survey> openSurveys = [];
   List<Survey> closedSurveys = [];
@@ -33,13 +35,21 @@ class SurveyProvider extends ChangeNotifier
   bool get isLoading => _isLoading;
 
   SurveyProvider({required FirebaseFirestore firestore, LogFn? log})
-      : _firestore = firestore,
-        _log = log ?? _defaultLog;
+    : _firestore = firestore,
+      _log = log ?? _defaultLog;
 
-  void listen(String gymId) {
-    if (_currentGymId == gymId) {
+  void listen(String gymId, {Object? subscriber}) {
+    if (gymId.isEmpty) {
       return;
     }
+    _activeSubscribers.add(subscriber ?? _legacySubscriber);
+    if (_currentGymId == gymId && _openSub != null && _closedSub != null) {
+      return;
+    }
+    _restartListeners(gymId);
+  }
+
+  void _restartListeners(String gymId) {
     _currentGymId = gymId;
     _openSub?.cancel();
     _closedSub?.cancel();
@@ -77,9 +87,20 @@ class SurveyProvider extends ChangeNotifier
         });
   }
 
-  void cancel() {
+  void cancel({Object? subscriber, bool force = false}) {
+    if (!force) {
+      final key = subscriber ?? _legacySubscriber;
+      _activeSubscribers.remove(key);
+      if (_activeSubscribers.isNotEmpty) {
+        return;
+      }
+    } else {
+      _activeSubscribers.clear();
+    }
     _openSub?.cancel();
+    _openSub = null;
     _closedSub?.cancel();
+    _closedSub = null;
     _currentGymId = null;
   }
 
@@ -111,6 +132,25 @@ class SurveyProvider extends ChangeNotifier
     required String gymId,
     required String surveyId,
   }) async {
+    await _setSurveyStatus(
+      gymId: gymId,
+      surveyId: surveyId,
+      status: 'abgeschlossen',
+    );
+  }
+
+  Future<void> reopenSurvey({
+    required String gymId,
+    required String surveyId,
+  }) async {
+    await _setSurveyStatus(gymId: gymId, surveyId: surveyId, status: 'open');
+  }
+
+  Future<void> _setSurveyStatus({
+    required String gymId,
+    required String surveyId,
+    required String status,
+  }) async {
     _error = null;
     try {
       await _firestore
@@ -118,9 +158,9 @@ class SurveyProvider extends ChangeNotifier
           .doc(gymId)
           .collection('surveys')
           .doc(surveyId)
-          .update({'status': 'abgeschlossen'});
+          .update({'status': status});
     } catch (e, st) {
-      _log('SurveyProvider.closeSurvey error: $e', st);
+      _log('SurveyProvider._setSurveyStatus error: $e', st);
       _error = e.toString();
     }
   }
@@ -183,14 +223,14 @@ class SurveyProvider extends ChangeNotifier
 
   @override
   void dispose() {
-    cancel();
+    cancel(force: true);
     disposeGymScopedRegistration();
     super.dispose();
   }
 
   @override
   void resetGymScopedState() {
-    cancel();
+    cancel(force: true);
     openSurveys = [];
     closedSurveys = [];
     _error = null;

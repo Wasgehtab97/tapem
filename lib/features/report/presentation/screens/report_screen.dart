@@ -12,7 +12,6 @@ class ReportScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final container = riverpod.ProviderScope.containerOf(context);
     final gymId = container.read(authViewStateProvider).gymCode ?? '';
-    // Using UniqueKey to force rebuild and ensure new UI is picked up
-    return ReportScreenNew(key: UniqueKey(), gymId: gymId);
+    return ReportScreenNew(gymId: gymId);
   }
 }

@@ -18,11 +18,12 @@ class DealsRepository {
     var refreshedAfterDenied = false;
     while (true) {
       try {
-        await for (final snapshot in _firestore
-            .collection('deals')
-            .where('isActive', isEqualTo: true)
-            .orderBy('priority')
-            .snapshots()) {
+        await for (final snapshot
+            in _firestore
+                .collection('deals')
+                .where('isActive', isEqualTo: true)
+                .orderBy('priority')
+                .snapshots()) {
           debugPrint('📦 Deals Snapshot: ${snapshot.docs.length} docs found');
           yield snapshot.docs
               .map((doc) => Deal.fromMap(doc.id, doc.data()))
@@ -64,14 +65,17 @@ class DealsRepository {
         .collection('deals')
         .snapshots()
         .map((snapshot) {
-      debugPrint('📦 Admin Deals Snapshot: ${snapshot.docs.length} docs found');
-      return snapshot.docs
-          .map((doc) => Deal.fromMap(doc.id, doc.data()))
-          .toList();
-    }).handleError((error) {
-      debugPrint('🔴 Admin Deals Stream Error: $error');
-      throw error;
-    });
+          debugPrint(
+            '📦 Admin Deals Snapshot: ${snapshot.docs.length} docs found',
+          );
+          return snapshot.docs
+              .map((doc) => Deal.fromMap(doc.id, doc.data()))
+              .toList();
+        })
+        .handleError((error) {
+          debugPrint('🔴 Admin Deals Stream Error: $error');
+          throw error;
+        });
   }
 
   Future<void> saveDeal(Deal deal) async {
@@ -84,7 +88,10 @@ class DealsRepository {
       await _firestore.collection('deals').add(data);
     } else {
       debugPrint('📝 Deals: Updating deal ${deal.id}: $data');
-      await _firestore.collection('deals').doc(deal.id).update(data);
+      await _firestore
+          .collection('deals')
+          .doc(deal.id)
+          .set(data, SetOptions(merge: true));
     }
   }
 
@@ -95,9 +102,7 @@ class DealsRepository {
   Future<void> trackClick(String dealId) async {
     try {
       final docRef = _firestore.collection('deals').doc(dealId);
-      await docRef.update({
-        'clickCount': FieldValue.increment(1),
-      });
+      await docRef.update({'clickCount': FieldValue.increment(1)});
     } catch (e) {
       // Ignore errors (like permission denied) for non-admins to prevent UI impact
       debugPrint('⚠️ Silent failure tracking deal click: $e');

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/destructive_action.dart';
 import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/features/feedback/feedback_provider.dart'
     as feedback_riverpod;
@@ -20,8 +21,7 @@ class FeedbackOverviewScreen extends ConsumerStatefulWidget {
       _FeedbackOverviewScreenState();
 }
 
-class _FeedbackOverviewScreenState
-    extends ConsumerState<FeedbackOverviewScreen>
+class _FeedbackOverviewScreenState extends ConsumerState<FeedbackOverviewScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -44,7 +44,9 @@ class _FeedbackOverviewScreenState
   Widget build(BuildContext context) {
     final provider = ref.watch(feedback_riverpod.feedbackProvider);
     final gym = ref.watch(gymProvider);
-    final devices = {for (var d in gym.devices) d.uid: d}.cast<String, Device>();
+    final devices = {
+      for (var d in gym.devices) d.uid: d,
+    }.cast<String, Device>();
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
@@ -61,8 +63,7 @@ class _FeedbackOverviewScreenState
           controller: _tabController,
           indicatorColor: brandColor,
           labelColor: brandColor,
-          unselectedLabelColor:
-              theme.colorScheme.onSurface.withOpacity(0.7),
+          unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.7),
           tabs: const [
             Tab(text: 'Offen'),
             Tab(text: 'Erledigt'),
@@ -88,9 +89,7 @@ class _FeedbackOverviewScreenState
             children: [
               const SizedBox(height: AppSpacing.sm),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Text(
                   'Alle Rückmeldungen deiner Mitglieder im Überblick.',
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -145,8 +144,7 @@ class _FeedbackOverviewScreenState
       itemBuilder: (_, idx) {
         final entry = entries[idx];
         final deviceName = devices[entry.deviceId]?.name ?? entry.deviceId;
-        final createdAt =
-            entry.createdAt.toLocal().toString().split('T').first;
+        final createdAt = entry.createdAt.toLocal().toString().split('T').first;
         return BrandOutline(
           onTap: done
               ? null
@@ -164,8 +162,9 @@ class _FeedbackOverviewScreenState
                   height: 36,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient:
-                        Theme.of(context).extension<AppBrandTheme>()?.gradient,
+                    gradient: Theme.of(
+                      context,
+                    ).extension<AppBrandTheme>()?.gradient,
                   ),
                   child: const Icon(
                     Icons.feedback_outlined,
@@ -179,9 +178,7 @@ class _FeedbackOverviewScreenState
                     children: [
                       Text(
                         deviceName,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
+                        style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: AppSpacing.xs),
@@ -193,11 +190,10 @@ class _FeedbackOverviewScreenState
                       Text(
                         createdAt,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.6),
-                            ),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.6),
+                        ),
                       ),
                     ],
                   ),
@@ -205,11 +201,21 @@ class _FeedbackOverviewScreenState
                 if (!done)
                   IconButton(
                     icon: const Icon(Icons.check_circle_outline),
-                    onPressed: () {
-                      ref.read(feedback_riverpod.feedbackProvider).markDone(
-                            gymId: widget.gymId,
-                            entryId: entry.id,
-                          );
+                    onPressed: () async {
+                      await ref
+                          .read(feedback_riverpod.feedbackProvider)
+                          .markDone(gymId: widget.gymId, entryId: entry.id);
+                      if (!context.mounted) return;
+                      showUndoSnackBar(
+                        context: context,
+                        message: 'Feedback als erledigt markiert.',
+                        onUndo: () => ref
+                            .read(feedback_riverpod.feedbackProvider)
+                            .markOpen(gymId: widget.gymId, entryId: entry.id),
+                        undoSuccessMessage:
+                            'Feedback zurück auf offen gesetzt.',
+                        undoErrorPrefix: 'Rückgängig fehlgeschlagen',
+                      );
                     },
                   ),
               ],

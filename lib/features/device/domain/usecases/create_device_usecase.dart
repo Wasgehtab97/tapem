@@ -16,18 +16,20 @@ class CreateDeviceUseCase {
         .toUpperCase();
   }
 
-  Future<void> execute({
+  Future<Device> execute({
     required String gymId,
     required Device device,
     required bool isMulti,
     List<String>? muscleGroupIds,
   }) async {
     final existing = await _repo.getDevicesForGym(gymId);
-    final maxId =
-        existing.isEmpty
-            ? 0
-            : existing.map((d) => d.id).reduce((a, b) => a > b ? a : b);
-    final nextId = maxId + 1;
+    final maxId = existing.isEmpty
+        ? 0
+        : existing.map((d) => d.id).reduce((a, b) => a > b ? a : b);
+    final nextId = await _repo.allocateNextDeviceId(
+      gymId,
+      minimumExistingId: maxId,
+    );
 
     final code = _generateNfcCode();
     final toSave = device.copyWith(
@@ -37,5 +39,6 @@ class CreateDeviceUseCase {
       muscleGroupIds: muscleGroupIds,
     );
     await _repo.createDevice(gymId, toSave);
+    return toSave;
   }
 }

@@ -45,13 +45,13 @@ class _SurveyVoteScreenState extends ConsumerState<SurveyVoteScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(surveyProvider).listen(widget.gymId);
+      ref.read(surveyProvider).listen(widget.gymId, subscriber: this);
     });
   }
 
   @override
   void dispose() {
-    ref.read(surveyProvider).cancel();
+    ref.read(surveyProvider).cancel(subscriber: this);
     super.dispose();
   }
 

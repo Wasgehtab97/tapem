@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/models/favorite_exercise_usage.dart';
+import 'package:tapem/core/storage/local_training_days_store.dart';
 import 'package:tapem/core/storage/profile_cache_store.dart';
 import 'auth_providers.dart';
 import 'firebase_provider.dart';
@@ -15,11 +16,14 @@ class ProfileProvider extends ChangeNotifier {
   ProfileProvider({
     FirebaseFirestore? firestore,
     ProfileCacheStore? cache,
+    LocalTrainingDaysStore? localTrainingDaysStore,
     DateTime Function()? nowProvider,
     Duration? cacheTtl,
     Duration? favoriteExercisesLookback,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _cache = cache ?? const ProfileCacheStore(),
+        _localTrainingDaysStore =
+            localTrainingDaysStore ?? const LocalTrainingDaysStore(),
         _nowProvider = nowProvider ?? DateTime.now,
         _cacheTtl = cacheTtl ?? const Duration(hours: 24),
         _favoriteExercisesLookback =
@@ -27,6 +31,7 @@ class ProfileProvider extends ChangeNotifier {
 
   final FirebaseFirestore _firestore;
   final ProfileCacheStore _cache;
+  final LocalTrainingDaysStore _localTrainingDaysStore;
   final DateTime Function() _nowProvider;
   final Duration _cacheTtl;
   final Duration _favoriteExercisesLookback;
@@ -157,6 +162,20 @@ class ProfileProvider extends ChangeNotifier {
       return;
     }
 
+    final localDayKeys = await _localTrainingDaysStore.readDayKeys(userId);
+    if (localDayKeys.isNotEmpty) {
+      final localEntry = _buildLocalOnlyEntry(
+        userId: userId,
+        dayKeys: localDayKeys,
+        createdAt: authProv.createdAt,
+        now: _nowProvider(),
+      );
+      _assignEntry(localEntry, userId);
+      _error = null;
+      _isLoading = true;
+      notifyListeners();
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -214,6 +233,7 @@ class ProfileProvider extends ChangeNotifier {
       _assignEntry(entry, userId);
       _error = null;
       await _cache.write(userId, _buildCacheEntry(entry.cachedAt));
+      await _localTrainingDaysStore.writeDayKeys(userId, entry.trainingDates);
       _isLoading = false;
       notifyListeners();
     } catch (e, st) {
@@ -236,17 +256,82 @@ class ProfileProvider extends ChangeNotifier {
     required DateTime? createdAt,
     required DateTime now,
   }) async {
+    final localDayKeys = await _localTrainingDaysStore.readDayKeys(userId);
+    final localTrainingDayDates = <DateTime>[];
+    for (final key in localDayKeys) {
+      final parsed = _parseTrainingDayId(key);
+      if (parsed != null) {
+        localTrainingDayDates.add(parsed);
+      }
+    }
+    localTrainingDayDates.sort((a, b) => a.compareTo(b));
+
     final collection = _firestore
         .collection('users')
         .doc(userId)
         .collection('trainingDayXP')
         .orderBy(FieldPath.documentId);
 
-    final snapshot = await collection.get();
+    final trainingDayDates = <DateTime>[...localTrainingDayDates];
+    final seenDayKeys = <String>{
+      for (final dt in localTrainingDayDates)
+        '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}',
+    };
 
+    try {
+      final snapshot = await collection.get();
+      for (final doc in snapshot.docs) {
+        final parsed = _parseTrainingDayId(doc.id);
+        if (parsed == null) continue;
+        final key =
+            '${parsed.year.toString().padLeft(4, '0')}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}';
+        if (seenDayKeys.add(key)) {
+          trainingDayDates.add(parsed);
+        }
+      }
+    } on FirebaseException catch (_) {
+      // Offline: keep local days only.
+    } catch (_) {
+      // Offline/unknown read issue: keep local days only.
+    }
+
+    trainingDayDates.sort((a, b) => a.compareTo(b));
+    final trainingDates = trainingDayDates
+        .map((dt) =>
+            '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}')
+        .toList();
+    final totalTrainingDays = trainingDates.length;
+    final avgTrainingDaysPerWeek = _calculateAverageTrainingDaysPerWeek(
+      trainingDayDates,
+      createdAt,
+      nowProvider: () => now,
+    );
+
+    final keepFavorites =
+        _lastLoadedUserId == userId && _hasLoadedFavoriteExercises;
+
+    return ProfileCacheEntry(
+      trainingDates: trainingDates,
+      trainingDayDates: trainingDayDates,
+      totalTrainingDays: totalTrainingDays,
+      averageTrainingDaysPerWeek: avgTrainingDaysPerWeek,
+      favoriteExerciseName: keepFavorites ? _favoriteExerciseName : null,
+      favoriteExerciseUsages: keepFavorites
+          ? List<FavoriteExerciseUsage>.from(_favoriteExerciseUsages)
+          : const <FavoriteExerciseUsage>[],
+      cachedAt: now,
+    );
+  }
+
+  ProfileCacheEntry _buildLocalOnlyEntry({
+    required String userId,
+    required List<String> dayKeys,
+    required DateTime? createdAt,
+    required DateTime now,
+  }) {
     final trainingDayDates = <DateTime>[];
-    for (final doc in snapshot.docs) {
-      final parsed = _parseTrainingDayId(doc.id);
+    for (final key in dayKeys) {
+      final parsed = _parseTrainingDayId(key);
       if (parsed != null) {
         trainingDayDates.add(parsed);
       }
@@ -262,7 +347,6 @@ class ProfileProvider extends ChangeNotifier {
       createdAt,
       nowProvider: () => now,
     );
-
     final keepFavorites =
         _lastLoadedUserId == userId && _hasLoadedFavoriteExercises;
 
@@ -379,6 +463,7 @@ class ProfileProvider extends ChangeNotifier {
 
         final cacheEntry = _buildCacheEntry(_lastCacheAt!);
         unawaited(_cache.write(userId, cacheEntry));
+        unawaited(_localTrainingDaysStore.writeDayKeys(userId, trainingDates));
         notifyListeners();
       },
       onError: (Object error, StackTrace st) {

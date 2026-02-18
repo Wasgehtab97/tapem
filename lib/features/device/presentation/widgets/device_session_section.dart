@@ -7,6 +7,7 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/core/logging/elog.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/database_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
@@ -812,10 +813,6 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
             ),
           ],
         ),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.08),
-          width: 1,
-        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.5),
@@ -960,27 +957,26 @@ class _GroupedSetList extends StatelessWidget {
             repsLabel: loc.tableHeaderReps,
           );
 
-    return BrandOutline(
-      padding: EdgeInsets.zero,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (header != null) header,
-          ...sets.asMap().entries.map(
-            (entry) => _buildSetItem(
-              context: context,
-              index: entry.key,
-              set: entry.value,
-              innerRadius: innerRadius,
-              sessionKey: sessionKey,
-              previous: entry.key < previousSets.length
-                  ? previousSets[entry.key]
-                  : null,
-            ),
+    final listContent = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (header != null) header,
+        ...sets.asMap().entries.map(
+          (entry) => _buildSetItem(
+            context: context,
+            index: entry.key,
+            set: entry.value,
+            innerRadius: innerRadius,
+            sessionKey: sessionKey,
+            previous: entry.key < previousSets.length
+                ? previousSets[entry.key]
+                : null,
           ),
-        ],
-      ),
+        ),
+      ],
     );
+
+    return listContent;
   }
 
   Widget _buildSetItem({
@@ -1316,12 +1312,6 @@ class _ActionGridButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: isActive ? color.withOpacity(0.2) : surfaceColor,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isActive 
-                  ? color.withOpacity(0.6) 
-                  : Colors.white.withOpacity(0.08),
-              width: 1,
-            ),
             boxShadow: isActive
                 ? [
                     BoxShadow(

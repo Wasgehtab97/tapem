@@ -41,6 +41,25 @@ The migration logs detailed information to the console:
 **Related Fix:**
 The root cause was fixed in [`session_repository_impl.dart`](file:///Users/daniel/Projekte/tapem/lib/features/training_details/data/repositories/session_repository_impl.dart#L157-L253) by implementing upsert logic.
 
+### OfflineSessionBackfillMigration (v1)
+
+**Purpose:** Backfill offline training-day projections and missing session create jobs from already persisted local sessions.
+
+**Status:** Active  
+**Location:** [`offline_session_backfill_migration.dart`](file:///Users/daniel/Projekte/tapem/lib/core/migrations/offline_session_backfill_migration.dart)
+
+**What it does:**
+1. Checks if the migration has already run (stored in SharedPreferences as `migration_offline_session_backfill_v1`)
+2. Scans local Hive sessions
+3. Builds per-user local day keys and merges them into `trainingDaysLocal/{userId}`
+4. Enqueues missing `sessions/create` sync jobs for local sessions that have no queued create/update and no queued delete
+5. Marks migration as completed
+
+**Idempotency behavior:**
+- Re-running is skipped via migration key
+- Job backfill only adds missing jobs
+- Existing create/update/delete queue intent is respected
+
 ## How Migrations Work
 
 1. Migrations are executed in [`bootstrap.dart`](file:///Users/daniel/Projekte/tapem/lib/bootstrap/bootstrap.dart) after database initialization

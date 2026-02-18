@@ -4,7 +4,7 @@ import '../../../core/providers/auth_provider.dart';
 enum SplashDestination { auth, selectGym, home }
 
 SplashDestination? resolveSplashDestination(AuthViewState state) {
-  if (state.isLoading || (state.hasError && !state.isLoggedIn)) {
+  if (state.isLoading) {
     return null;
   }
   if (!state.isLoggedIn) {

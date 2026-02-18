@@ -8,8 +8,9 @@ import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
 import 'package:tapem/features/device/providers/device_riverpod.dart';
+import 'package:tapem/features/device/providers/workout_entry_orchestrator_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
-import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/core/services/workout_session_coordinator.dart';
 import 'package:tapem/features/nfc/domain/usecases/read_nfc_code.dart';
 import 'package:tapem/features/nfc/providers/nfc_providers.dart';
 
@@ -38,7 +39,7 @@ class _GlobalNfcListenerState extends ConsumerState<GlobalNfcListener> {
       _reader = ref.read(readNfcCodeProvider);
       _getDevice = ref.read(getDeviceByNfcCodeProvider);
       _auth = ref.read(authControllerProvider);
- 
+
       _nfcSubscription = _reader.execute().listen((code) async {
         if (code.isEmpty) return;
         final gymId = _auth.gymCode;
@@ -60,8 +61,12 @@ class _GlobalNfcListenerState extends ConsumerState<GlobalNfcListener> {
           );
         } else {
           // Einzelsitzung hinzufügen/fokussieren.
+          final orchestrator = ref.read(workoutEntryOrchestratorProvider);
           final controller = ref.read(workoutDayControllerProvider);
-          controller.addOrFocusSession(
+          final coordinator = ref.read(workoutSessionCoordinatorProvider);
+          final result = await orchestrator.addOrFocusFromExternalSource(
+            controller: controller,
+            coordinator: coordinator,
             gymId: gymId,
             deviceId: dev.uid,
             exerciseId: dev.uid,
@@ -69,15 +74,9 @@ class _GlobalNfcListenerState extends ConsumerState<GlobalNfcListener> {
             userId: userId,
           );
 
-          // Auto-Start Timer falls nicht aktiv
-          final timer = ref.read(workoutSessionDurationServiceProvider);
-          if (!timer.isRunning) {
-            await timer.start(uid: userId, gymId: gymId);
-          }
-
           // Visuelle Bestätigung
           final context = navigatorKey.currentContext;
-          if (context != null) {
+          if (!result.isDuplicate && context != null) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Übung "${dev.name}" wurde hinzugefügt'),

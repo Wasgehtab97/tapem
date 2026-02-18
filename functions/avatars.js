@@ -122,11 +122,17 @@ exports.adminGrantAvatar = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('unauthenticated', 'auth_required');
   }
   const claims = context.auth.token || {};
-  if (claims.role !== 'gym_admin') {
+  const isAppAdmin = claims.role === 'admin';
+  const isGymOwner = claims.role === 'gymowner';
+  if (!isAppAdmin && !isGymOwner) {
     throw new functions.https.HttpsError('permission-denied', 'admin_only');
   }
   const targetGym = claims.gymId;
-  if (avatarPath.startsWith('gyms/') && !avatarPath.startsWith(`gyms/${targetGym}/`)) {
+  if (
+    isGymOwner &&
+    avatarPath.startsWith('gyms/') &&
+    (!targetGym || !avatarPath.startsWith(`gyms/${targetGym}/`))
+  ) {
     throw new functions.https.HttpsError('permission-denied', 'cross_gym');
   }
   const res = await grantAvatar({
@@ -146,11 +152,17 @@ exports.adminRevokeAvatar = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('unauthenticated', 'auth_required');
   }
   const claims = context.auth.token || {};
-  if (claims.role !== 'gym_admin') {
+  const isAppAdmin = claims.role === 'admin';
+  const isGymOwner = claims.role === 'gymowner';
+  if (!isAppAdmin && !isGymOwner) {
     throw new functions.https.HttpsError('permission-denied', 'admin_only');
   }
   const targetGym = claims.gymId;
-  if (avatarPath.startsWith('gyms/') && !avatarPath.startsWith(`gyms/${targetGym}/`)) {
+  if (
+    isGymOwner &&
+    avatarPath.startsWith('gyms/') &&
+    (!targetGym || !avatarPath.startsWith(`gyms/${targetGym}/`))
+  ) {
     throw new functions.https.HttpsError('permission-denied', 'cross_gym');
   }
   const res = await revokeAvatar({ uid, avatarPath });

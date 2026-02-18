@@ -25,29 +25,40 @@ void main() {
       repo = _MockDeviceRepository();
     });
 
-    test('CreateDeviceUseCase generates incremented id and delegates creation', () async {
+    test('CreateDeviceUseCase allocates id and delegates creation', () async {
       final existing = [
         Device(uid: 'a', id: 1, name: 'A'),
         Device(uid: 'b', id: 5, name: 'B'),
       ];
-      when(() => repo.getDevicesForGym('gym')).thenAnswer((_) async => existing);
+      when(
+        () => repo.getDevicesForGym('gym'),
+      ).thenAnswer((_) async => existing);
+      when(
+        () => repo.allocateNextDeviceId('gym', minimumExistingId: 5),
+      ).thenAnswer((_) async => 6);
       when(() => repo.createDevice(any(), any())).thenAnswer((_) async {});
 
       final useCase = CreateDeviceUseCase(repo);
       final baseDevice = Device(uid: 'new', id: 0, name: 'New');
 
-      await useCase.execute(
+      final created = await useCase.execute(
         gymId: 'gym',
         device: baseDevice,
         isMulti: true,
         muscleGroupIds: const ['legs'],
       );
 
-      final captured = verify(() => repo.createDevice('gym', captureAny())).captured.single as Device;
+      final captured =
+          verify(() => repo.createDevice('gym', captureAny())).captured.single
+              as Device;
       expect(captured.id, 6);
       expect(captured.isMulti, isTrue);
       expect(captured.muscleGroupIds, ['legs']);
       expect(captured.nfcCode, isNotEmpty);
+      expect(created.id, 6);
+      verify(
+        () => repo.allocateNextDeviceId('gym', minimumExistingId: 5),
+      ).called(1);
     });
 
     test('DeleteDeviceUseCase forwards to repository', () async {
@@ -69,7 +80,9 @@ void main() {
     });
 
     test('GetDeviceByNfcCode forwards to repository', () async {
-      when(() => repo.getDeviceByNfcCode('gym', 'code')).thenAnswer((_) async => null);
+      when(
+        () => repo.getDeviceByNfcCode('gym', 'code'),
+      ).thenAnswer((_) async => null);
       final useCase = GetDeviceByNfcCode(repo);
 
       await useCase.execute('gym', 'code');
@@ -85,7 +98,9 @@ void main() {
 
       await useCase.execute('gym', 'device', ['p'], ['s']);
 
-      verify(() => repo.updateMuscleGroups('gym', 'device', ['p'], ['s'])).called(1);
+      verify(
+        () => repo.updateMuscleGroups('gym', 'device', ['p'], ['s']),
+      ).called(1);
     });
 
     test('SetDeviceMuscleGroupsUseCase forwards to repository', () async {
@@ -96,7 +111,9 @@ void main() {
 
       await useCase.execute('gym', 'device', ['p'], ['s']);
 
-      verify(() => repo.setMuscleGroups('gym', 'device', ['p'], ['s'])).called(1);
+      verify(
+        () => repo.setMuscleGroups('gym', 'device', ['p'], ['s']),
+      ).called(1);
     });
   });
 }

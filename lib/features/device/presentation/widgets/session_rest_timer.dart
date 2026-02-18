@@ -148,7 +148,7 @@ class SessionRestTimerState extends State<SessionRestTimer> {
                   child: CircularProgressIndicator(
                     value: progress,
                     strokeWidth: stroke,
-                    backgroundColor: Colors.white.withOpacity(0.08),
+                    backgroundColor: Colors.transparent,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       accent.withOpacity(0.85),
                     ),
@@ -315,12 +315,6 @@ class SessionRestTimerState extends State<SessionRestTimer> {
                                     ? Colors.blueAccent.withOpacity(0.2)
                                     : Colors.white.withOpacity(0.05),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Colors.blueAccent
-                                      : Colors.white.withOpacity(0.1),
-                                  width: isSelected ? 1.5 : 1,
-                                ),
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(

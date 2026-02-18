@@ -8,6 +8,7 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/brand_modal.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class DeviceFormDialog extends ConsumerStatefulWidget {
   const DeviceFormDialog({
@@ -68,6 +69,7 @@ class _DeviceFormDialogState extends ConsumerState<DeviceFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final accent = brandTheme?.outline ?? theme.colorScheme.secondary;
@@ -83,8 +85,12 @@ class _DeviceFormDialogState extends ConsumerState<DeviceFormDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               BrandModalHeader(
-                title: isEdit ? 'Gerät bearbeiten' : 'Neues Gerät anlegen',
-                subtitle: isEdit ? 'UID: ${widget.initialDevice?.uid}' : 'ID: ${widget.nextDeviceId}',
+                title: isEdit
+                    ? loc.adminDeviceEditTitle
+                    : loc.adminDeviceNewTitle,
+                subtitle: isEdit
+                    ? loc.adminDeviceUidLabel(widget.initialDevice?.uid ?? '')
+                    : loc.adminDeviceIdLabel(widget.nextDeviceId ?? ''),
                 icon: isEdit ? Icons.edit_rounded : Icons.add_circle_outline_rounded,
                 accent: accent,
                 onClose: () => Navigator.pop(context),
@@ -94,8 +100,8 @@ class _DeviceFormDialogState extends ConsumerState<DeviceFormDialog> {
               // Name Input
               _PremiumTextField(
                 controller: _nameCtrl,
-                label: 'Name',
-                hint: 'z.B. Beinpresse',
+                label: loc.adminDeviceNameLabel,
+                hint: loc.adminDeviceNameHint,
                 icon: Icons.fitness_center_rounded,
               ),
               const SizedBox(height: 16),
@@ -111,8 +117,8 @@ class _DeviceFormDialogState extends ConsumerState<DeviceFormDialog> {
               // Description Input
               _PremiumTextField(
                 controller: _descCtrl,
-                label: 'Beschreibung',
-                hint: 'Optional (Model etc.)',
+                label: loc.adminDeviceDescLabel,
+                hint: loc.adminDeviceDescHint,
                 icon: Icons.description_outlined,
                 maxLines: 2,
               ),
@@ -120,8 +126,8 @@ class _DeviceFormDialogState extends ConsumerState<DeviceFormDialog> {
 
               // Multi-Device Switch
               _PremiumSwitchTile(
-                title: 'Inkludiert mehrere Übungen?',
-                subtitle: 'Für Kabelzüge oder Racks',
+                title: loc.adminDeviceMultiExerciseLabel,
+                subtitle: loc.adminDeviceMultiExerciseSubtitle,
                 value: _isMulti,
                 onChanged: (val) => setState(() => _isMulti = val),
                 accent: accent,
@@ -131,7 +137,7 @@ class _DeviceFormDialogState extends ConsumerState<DeviceFormDialog> {
               // Muscle Groups (Shown only if not multi-device)
               if (!_isMulti) ...[
                 Text(
-                  'Muskelgruppen',
+                  loc.adminDeviceMuscleGroupsLabel,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.white70,
@@ -186,7 +192,7 @@ class _DeviceFormDialogState extends ConsumerState<DeviceFormDialog> {
                         foregroundColor: Colors.white60,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('Abbrechen'),
+                      child: Text(loc.commonCancel),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -209,7 +215,7 @@ class _DeviceFormDialogState extends ConsumerState<DeviceFormDialog> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(
-                              isEdit ? 'Speichern' : 'Erstellen',
+                              isEdit ? loc.commonSave : loc.adminDeviceCreateButton,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -227,10 +233,11 @@ class _DeviceFormDialogState extends ConsumerState<DeviceFormDialog> {
   }
 
   Future<void> _submit() async {
+    final loc = AppLocalizations.of(context)!;
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bitte gib einen Namen ein.')),
+        SnackBar(content: Text(loc.adminDeviceNameError)),
       );
       return;
     }
@@ -253,7 +260,7 @@ class _DeviceFormDialogState extends ConsumerState<DeviceFormDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')),
+          SnackBar(content: Text('${loc.errorPrefix}: $e')),
         );
         setState(() => _isSubmitting = false);
       }
@@ -391,6 +398,7 @@ class _ManufacturerDropdown extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final loc = AppLocalizations.of(context)!;
     final manufacturersAsync = ref.watch(gymManufacturersProvider);
     final theme = Theme.of(context);
 
@@ -398,7 +406,7 @@ class _ManufacturerDropdown extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Hersteller',
+          loc.adminDeviceManufacturerLabel,
           style: theme.textTheme.labelMedium?.copyWith(
             color: Colors.white60,
             fontWeight: FontWeight.w600,
@@ -407,7 +415,10 @@ class _ManufacturerDropdown extends ConsumerWidget {
         const SizedBox(height: 8),
         manufacturersAsync.when(
           loading: () => const Center(child: LinearProgressIndicator()),
-          error: (err, st) => Text('Fehler beim Laden', style: TextStyle(color: theme.colorScheme.error)),
+          error: (err, st) => Text(
+            loc.adminDeviceLoadingError,
+            style: TextStyle(color: theme.colorScheme.error),
+          ),
           data: (manufacturers) {
             if (manufacturers.isEmpty) {
               return Container(
@@ -422,14 +433,14 @@ class _ManufacturerDropdown extends ConsumerWidget {
                     const Icon(Icons.info_outline, color: Colors.white38, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: const Text(
-                        'Keine Hersteller aktiviert.',
-                        style: TextStyle(color: Colors.white38),
+                      child: Text(
+                        loc.adminDeviceNoManufacturers,
+                        style: const TextStyle(color: Colors.white38),
                       ),
                     ),
                     TextButton(
                       onPressed: () => Navigator.pushNamed(context, AppRouter.manageManufacturers),
-                      child: const Text('Verwalten'),
+                      child: Text(loc.adminDeviceManageManufacturers),
                     ),
                   ],
                 ),
@@ -453,7 +464,10 @@ class _ManufacturerDropdown extends ConsumerWidget {
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<Manufacturer>(
                   value: selected,
-                  hint: const Text('Hersteller wählen', style: TextStyle(color: Colors.white38)),
+                  hint: Text(
+                    loc.adminDeviceSelectManufacturer,
+                    style: const TextStyle(color: Colors.white38),
+                  ),
                   isExpanded: true,
                   dropdownColor: Colors.grey[900],
                   icon: Icon(Icons.keyboard_arrow_down, color: accent),

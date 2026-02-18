@@ -28,14 +28,14 @@ class _SurveyOverviewScreenState extends ConsumerState<SurveyOverviewScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(surveyProvider).listen(widget.gymId);
+      ref.read(surveyProvider).listen(widget.gymId, subscriber: this);
     });
     _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
-    ref.read(surveyProvider).cancel();
+    ref.read(surveyProvider).cancel(subscriber: this);
     _tabController.dispose();
     super.dispose();
   }
@@ -60,8 +60,7 @@ class _SurveyOverviewScreenState extends ConsumerState<SurveyOverviewScreen>
           controller: _tabController,
           indicatorColor: brandColor,
           labelColor: brandColor,
-          unselectedLabelColor:
-              theme.colorScheme.onSurface.withOpacity(0.7),
+          unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.7),
           tabs: [
             Tab(text: loc.surveyTabOpen),
             Tab(text: loc.surveyTabClosed),
@@ -87,9 +86,7 @@ class _SurveyOverviewScreenState extends ConsumerState<SurveyOverviewScreen>
             children: [
               const SizedBox(height: AppSpacing.sm),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Text(
                   'Aktive und abgeschlossene Umfragen deines Gyms.',
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -179,8 +176,9 @@ class _SurveyOverviewScreenState extends ConsumerState<SurveyOverviewScreen>
                   height: 36,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient:
-                        Theme.of(context).extension<AppBrandTheme>()?.gradient,
+                    gradient: Theme.of(
+                      context,
+                    ).extension<AppBrandTheme>()?.gradient,
                   ),
                   child: Icon(
                     open ? Icons.campaign_outlined : Icons.poll,
@@ -194,28 +192,22 @@ class _SurveyOverviewScreenState extends ConsumerState<SurveyOverviewScreen>
                     children: [
                       Text(
                         survey.title,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
+                        style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         subtitle,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.6),
-                            ),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.6),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                if (open)
-                  const Icon(
-                    Icons.chevron_right,
-                  ),
+                if (open) const Icon(Icons.chevron_right),
               ],
             ),
           ),

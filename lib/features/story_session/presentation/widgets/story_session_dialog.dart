@@ -125,8 +125,9 @@ class _SessionHighlightsPanel extends StatelessWidget {
                   compact ? 18 : 20,
                   compact ? 14 : 16,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  physics: const ClampingScrollPhysics(),
                   children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,7 +227,6 @@ class _SessionHighlightsPanel extends StatelessWidget {
                         palette: palette,
                         title: loc.storySessionBadgesTitle,
                       ),
-                    const Spacer(),
                     SizedBox(height: spacing),
                     Row(
                       children: [
@@ -445,6 +445,11 @@ class _HighlightsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasManyHighlights = viewModel.highlights.length > 2;
+    final highlightTileWidth = math.min(
+      MediaQuery.sizeOf(context).width * 0.68,
+      280.0,
+    );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -465,20 +470,29 @@ class _HighlightsCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
-          for (var i = 0; i < viewModel.highlights.length; i++) ...[
-            if (i > 0) const SizedBox(height: 6),
-            _HighlightRow(item: viewModel.highlights[i], palette: palette),
-          ],
-          if (viewModel.extraHighlights > 0) ...[
-            const SizedBox(height: 6),
-            Text(
-              '+${viewModel.extraHighlights}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.62),
-                fontWeight: FontWeight.w600,
+          if (!hasManyHighlights)
+            for (var i = 0; i < viewModel.highlights.length; i++) ...[
+              if (i > 0) const SizedBox(height: 6),
+              _HighlightRow(item: viewModel.highlights[i], palette: palette),
+            ]
+          else
+            SizedBox(
+              height: 84,
+              child: ListView.separated(
+                key: const ValueKey('highlights-horizontal-list'),
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: viewModel.highlights.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) => SizedBox(
+                  width: highlightTileWidth,
+                  child: _HighlightRow(
+                    item: viewModel.highlights[index],
+                    palette: palette,
+                  ),
+                ),
               ),
             ),
-          ],
         ],
       ),
     );
@@ -882,7 +896,6 @@ class _StorySessionViewModel {
     required this.rewardRows,
     required this.penaltyRows,
     required this.highlights,
-    required this.extraHighlights,
   });
 
   final String dateText;
@@ -902,7 +915,6 @@ class _StorySessionViewModel {
   final List<_XpBreakdownItem> rewardRows;
   final List<_XpBreakdownItem> penaltyRows;
   final List<_HighlightItem> highlights;
-  final int extraHighlights;
 
   factory _StorySessionViewModel.fromSummary({
     required StorySessionSummary summary,
@@ -943,7 +955,6 @@ class _StorySessionViewModel {
           ..sort(_achievementPriorityCompare);
 
     final highlights = highlightsRaw
-        .take(2)
         .map((achievement) {
           switch (achievement.type) {
             case StoryAchievementType.personalRecord:
@@ -1000,7 +1011,6 @@ class _StorySessionViewModel {
       rewardRows: componentRows.where((item) => item.amount > 0).toList(),
       penaltyRows: penaltyRows,
       highlights: highlights,
-      extraHighlights: math.max(0, highlightsRaw.length - highlights.length),
     );
   }
 

@@ -18,7 +18,7 @@ class AdminDashboardScreen extends ConsumerWidget {
     final auth = ref.watch(authControllerProvider);
     final loc = AppLocalizations.of(context)!;
     
-    if (!auth.isAdmin) {
+    if (!auth.canManageGym) {
       return Scaffold(
         appBar: AppBar(title: Text(loc.adminAreaTitle)),
         body: Center(child: Text(loc.adminAreaNoPermission)),

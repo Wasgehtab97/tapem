@@ -2009,6 +2009,12 @@ abstract class AppLocalizations {
   /// **'Earth Kingdom'**
   String get settingsThemeEarthKingdom;
 
+  /// Exclusive premium theme in deep black and elegant gold.
+  ///
+  /// In en, this message translates to:
+  /// **'Midnight Gold'**
+  String get settingsThemeMidnightGold;
+
   /// Error shown when saving the theme failed
   ///
   /// In en, this message translates to:
@@ -3941,6 +3947,12 @@ abstract class AppLocalizations {
   /// **'{count} sessions'**
   String reportDeviceUsageSessions(int count);
 
+  /// Snackbar text when tapping a day in the report calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Logs on {date}: {count}'**
+  String reportCalendarLogCount(Object date, int count);
+
   /// Dialog title asking to delete an exercise
   ///
   /// In en, this message translates to:
@@ -4085,11 +4097,53 @@ abstract class AppLocalizations {
   /// **'XP reward'**
   String get challengeAdminFieldXpReward;
 
+  /// Label for selecting the challenge goal type
+  ///
+  /// In en, this message translates to:
+  /// **'Challenge goal'**
+  String get challengeAdminFieldGoalType;
+
+  /// Option for set-based device challenges
+  ///
+  /// In en, this message translates to:
+  /// **'Device sets'**
+  String get challengeAdminGoalTypeDeviceSets;
+
+  /// Option for workout frequency challenges
+  ///
+  /// In en, this message translates to:
+  /// **'Workout frequency'**
+  String get challengeAdminGoalTypeWorkoutFrequency;
+
   /// Label for the challenge type field
   ///
   /// In en, this message translates to:
   /// **'Type'**
   String get challengeAdminFieldType;
+
+  /// Label for required workouts in a period
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts in period'**
+  String get challengeAdminFieldWorkoutCount;
+
+  /// Label for selecting workout challenge window
+  ///
+  /// In en, this message translates to:
+  /// **'Time window'**
+  String get challengeAdminFieldWorkoutWindow;
+
+  /// Option for one calendar week window
+  ///
+  /// In en, this message translates to:
+  /// **'1 calendar week'**
+  String get challengeAdminWorkoutWindowOneWeek;
+
+  /// Option for four calendar weeks window
+  ///
+  /// In en, this message translates to:
+  /// **'4 calendar weeks'**
+  String get challengeAdminWorkoutWindowFourWeeks;
 
   /// Tab label for active challenges
   ///
@@ -4120,6 +4174,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'XP: {xp}'**
   String challengeDetailXpReward(int xp);
+
+  /// Goal label for set-based challenges
+  ///
+  /// In en, this message translates to:
+  /// **'Goal: {count} sets'**
+  String challengeDetailGoalDeviceSets(int count);
+
+  /// Goal label for workout frequency challenges
+  ///
+  /// In en, this message translates to:
+  /// **'Goal: {count} workouts in {weeks} calendar weeks'**
+  String challengeDetailGoalWorkoutFrequency(int count, int weeks);
 
   /// Device list shown in the challenge dialog
   ///
@@ -4168,6 +4234,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Devices'**
   String get challengeAdminFieldDevices;
+
+  /// Button label for creating a challenge
+  ///
+  /// In en, this message translates to:
+  /// **'Create challenge'**
+  String get challengeAdminCreateButton;
 
   /// AppBar title when user enters the admin area
   ///
@@ -4300,6 +4372,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All {title} symbols already assigned.'**
   String adminSymbolsAllTitleAssigned(Object title);
+
+  /// Tooltip for backfilling usernameLower in debug mode
+  ///
+  /// In en, this message translates to:
+  /// **'Backfill usernameLower'**
+  String get adminSymbolsBackfillTooltip;
+
+  /// Snackbar after usernameLower backfill
+  ///
+  /// In en, this message translates to:
+  /// **'usernameLower updated: {count}'**
+  String adminSymbolsBackfillSuccess(int count);
+
+  /// Section title for global symbols
+  ///
+  /// In en, this message translates to:
+  /// **'Global'**
+  String get adminSymbolsGlobalTitle;
+
+  /// Tooltip for adding symbols
+  ///
+  /// In en, this message translates to:
+  /// **'Add symbols'**
+  String get userSymbolsAddTooltip;
+
+  /// Title for the user inventory section
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory of {username}'**
+  String userSymbolsInventoryTitle(Object username);
 
   /// Error shown when the selected logo is too large
   ///
@@ -4600,6 +4702,1116 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} people trained on this day.'**
   String communityCalendarCountOther(Object count);
+
+  /// Header title of the owner workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Owner workspace'**
+  String get ownerWorkspaceTitle;
+
+  /// Header line showing the active gym code
+  ///
+  /// In en, this message translates to:
+  /// **'Active gym: {gymId}'**
+  String ownerWorkspaceActiveGym(Object gymId);
+
+  /// Header line showing when the owner snapshot was generated
+  ///
+  /// In en, this message translates to:
+  /// **'Updated: {timeLabel}'**
+  String ownerWorkspaceGeneratedAt(Object timeLabel);
+
+  /// Section title for owner KPI metrics
+  ///
+  /// In en, this message translates to:
+  /// **'Studio overview'**
+  String get ownerSectionKpiTitle;
+
+  /// Section subtitle for owner KPI metrics
+  ///
+  /// In en, this message translates to:
+  /// **'All core studio signals at a glance.'**
+  String get ownerSectionKpiSubtitle;
+
+  /// Section title for owner tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s priorities'**
+  String get ownerSectionTasksTitle;
+
+  /// Section subtitle for owner tasks
+  ///
+  /// In en, this message translates to:
+  /// **'These tasks create immediate operational impact.'**
+  String get ownerSectionTasksSubtitle;
+
+  /// Section title for owner quick actions
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get ownerSectionQuickActionsTitle;
+
+  /// Section subtitle for owner quick actions
+  ///
+  /// In en, this message translates to:
+  /// **'Direct access to all owner modules without route detours.'**
+  String get ownerSectionQuickActionsSubtitle;
+
+  /// Neutral state text when no owner tasks are available
+  ///
+  /// In en, this message translates to:
+  /// **'No open priorities. Studio operations are stable.'**
+  String get ownerTasksNone;
+
+  /// Chip label for high owner task priority
+  ///
+  /// In en, this message translates to:
+  /// **'high'**
+  String get ownerPriorityHigh;
+
+  /// Chip label for medium owner task priority
+  ///
+  /// In en, this message translates to:
+  /// **'medium'**
+  String get ownerPriorityMedium;
+
+  /// Chip label for low owner task priority
+  ///
+  /// In en, this message translates to:
+  /// **'low'**
+  String get ownerPriorityLow;
+
+  /// Subtitle shown on owner screen when user has no access
+  ///
+  /// In en, this message translates to:
+  /// **'This area requires gymowner or admin permissions.'**
+  String get ownerNoAccessSubtitle;
+
+  /// Title shown when owner screen has no active gym
+  ///
+  /// In en, this message translates to:
+  /// **'Gym context missing'**
+  String get ownerGymContextMissingTitle;
+
+  /// Subtitle shown when owner screen has no active gym
+  ///
+  /// In en, this message translates to:
+  /// **'Select an active gym first so owner data can be loaded.'**
+  String get ownerGymContextMissingSubtitle;
+
+  /// Title shown when loading owner snapshot fails
+  ///
+  /// In en, this message translates to:
+  /// **'Owner dashboard could not be loaded'**
+  String get ownerDashboardLoadErrorTitle;
+
+  /// Subtitle shown when loading owner snapshot fails
+  ///
+  /// In en, this message translates to:
+  /// **'Please refresh the data. Error: {error}'**
+  String ownerDashboardLoadErrorSubtitle(Object error);
+
+  /// Title shown when owner snapshot is empty
+  ///
+  /// In en, this message translates to:
+  /// **'No owner data available yet'**
+  String get ownerNoDataTitle;
+
+  /// Subtitle shown when owner snapshot is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Create devices and first studio actions so the dashboard can show meaningful signals.'**
+  String get ownerNoDataSubtitle;
+
+  /// Owner metric label for member count
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get ownerMetricMembersLabel;
+
+  /// Owner metric helper for member count
+  ///
+  /// In en, this message translates to:
+  /// **'Registered members in the active gym.'**
+  String get ownerMetricMembersHelper;
+
+  /// Owner metric label for device count
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get ownerMetricDevicesLabel;
+
+  /// Owner metric helper for device count
+  ///
+  /// In en, this message translates to:
+  /// **'Available training devices.'**
+  String get ownerMetricDevicesHelper;
+
+  /// Owner metric label for open feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Open feedback'**
+  String get ownerMetricOpenFeedbackLabel;
+
+  /// Owner metric helper for open feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback entries requiring action.'**
+  String get ownerMetricOpenFeedbackHelper;
+
+  /// Owner metric label for active surveys
+  ///
+  /// In en, this message translates to:
+  /// **'Active surveys'**
+  String get ownerMetricOpenSurveysLabel;
+
+  /// Owner metric helper for active surveys
+  ///
+  /// In en, this message translates to:
+  /// **'Running surveys in your gym.'**
+  String get ownerMetricOpenSurveysHelper;
+
+  /// Owner metric label for active challenges
+  ///
+  /// In en, this message translates to:
+  /// **'Active challenges'**
+  String get ownerMetricActiveChallengesLabel;
+
+  /// Owner metric helper for active challenges
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly and monthly challenges currently running.'**
+  String get ownerMetricActiveChallengesHelper;
+
+  /// Owner task title for open feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Handle {count} open feedback item(s)'**
+  String ownerTaskOpenFeedbackTitle(int count);
+
+  /// Owner task subtitle for open feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Unresolved feedback reduces service quality.'**
+  String get ownerTaskOpenFeedbackSubtitle;
+
+  /// Owner task title for challenge planning
+  ///
+  /// In en, this message translates to:
+  /// **'Plan a new challenge'**
+  String get ownerTaskPlanChallengeTitle;
+
+  /// Owner task subtitle for challenge planning
+  ///
+  /// In en, this message translates to:
+  /// **'Active challenges increase training frequency and retention.'**
+  String get ownerTaskPlanChallengeSubtitle;
+
+  /// Owner task title for survey creation
+  ///
+  /// In en, this message translates to:
+  /// **'Start a survey'**
+  String get ownerTaskStartSurveyTitle;
+
+  /// Owner task subtitle for survey creation
+  ///
+  /// In en, this message translates to:
+  /// **'Collect member feedback today with a short survey.'**
+  String get ownerTaskStartSurveySubtitle;
+
+  /// Owner task title for initial device creation
+  ///
+  /// In en, this message translates to:
+  /// **'Create the first device'**
+  String get ownerTaskCreateFirstDeviceTitle;
+
+  /// Owner task subtitle for initial device creation
+  ///
+  /// In en, this message translates to:
+  /// **'Without devices, key tracking and report data are missing.'**
+  String get ownerTaskCreateFirstDeviceSubtitle;
+
+  /// Owner task title for member data review
+  ///
+  /// In en, this message translates to:
+  /// **'Review member data'**
+  String get ownerTaskCheckMembersTitle;
+
+  /// Owner task subtitle for member data review
+  ///
+  /// In en, this message translates to:
+  /// **'Low member counts in reports can indicate incomplete data.'**
+  String get ownerTaskCheckMembersSubtitle;
+
+  /// Subtitle for report quick action in owner workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Analyze usage, member trends, and studio KPIs.'**
+  String get ownerQuickActionReportSubtitle;
+
+  /// Subtitle for members quick action in owner workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Review member base and start clean-up actions.'**
+  String get ownerQuickActionMembersSubtitle;
+
+  /// Subtitle for devices quick action in owner workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Create, edit, and manage devices.'**
+  String get ownerQuickActionDevicesSubtitle;
+
+  /// Subtitle for feedback quick action in owner workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Review and resolve open feedback.'**
+  String get ownerQuickActionFeedbackSubtitle;
+
+  /// Subtitle for surveys quick action in owner workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Create, evaluate, and close surveys.'**
+  String get ownerQuickActionSurveysSubtitle;
+
+  /// Subtitle for challenges quick action in owner workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Plan challenges and maintain running campaigns.'**
+  String get ownerQuickActionChallengesSubtitle;
+
+  /// Title for deals quick action in owner workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Deals'**
+  String get ownerQuickActionDealsTitle;
+
+  /// Subtitle for deals quick action in owner workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Manage partner offers and promotions.'**
+  String get ownerQuickActionDealsSubtitle;
+
+  /// Subtitle for admin quick action in owner workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Open all admin modules in one overview.'**
+  String get ownerQuickActionAdminSubtitle;
+
+  /// Intro text on report overview screen
+  ///
+  /// In en, this message translates to:
+  /// **'Key metrics for members, usage, and feedback.'**
+  String get reportOverviewIntro;
+
+  /// Inline summary for open and closed surveys
+  ///
+  /// In en, this message translates to:
+  /// **'Active: {openCount} · Closed: {closedCount}'**
+  String reportSurveyCountsInline(int openCount, int closedCount);
+
+  /// Management summary line showing session total
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sessions were logged in this period.'**
+  String reportManagementSummarySessions(int count);
+
+  /// Management summary fallback when there are no sessions
+  ///
+  /// In en, this message translates to:
+  /// **'No usage sessions are available for the current period yet.'**
+  String get reportManagementSummaryNoSessions;
+
+  /// Management summary line for top used device
+  ///
+  /// In en, this message translates to:
+  /// **'Most used device: {deviceName}.'**
+  String reportManagementSummaryTopDevice(Object deviceName);
+
+  /// Section title for usage heatmap
+  ///
+  /// In en, this message translates to:
+  /// **'Activity heatmap'**
+  String get reportUsageHeatmapTitle;
+
+  /// Empty state text for usage heatmap
+  ///
+  /// In en, this message translates to:
+  /// **'No log data is available for the selected heatmap period yet.'**
+  String get reportUsageHeatmapEmpty;
+
+  /// Section title for detailed usage list
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get reportUsageDetailsTitle;
+
+  /// Label for morning time slot in usage pattern
+  ///
+  /// In en, this message translates to:
+  /// **'Morning'**
+  String get reportUsageSlotMorning;
+
+  /// Label for noon time slot in usage pattern
+  ///
+  /// In en, this message translates to:
+  /// **'Noon'**
+  String get reportUsageSlotNoon;
+
+  /// Label for evening time slot in usage pattern
+  ///
+  /// In en, this message translates to:
+  /// **'Evening'**
+  String get reportUsageSlotEvening;
+
+  /// Abbreviation for Monday in usage pattern
+  ///
+  /// In en, this message translates to:
+  /// **'Mon'**
+  String get reportUsageWeekdayMon;
+
+  /// Abbreviation for Tuesday in usage pattern
+  ///
+  /// In en, this message translates to:
+  /// **'Tue'**
+  String get reportUsageWeekdayTue;
+
+  /// Abbreviation for Wednesday in usage pattern
+  ///
+  /// In en, this message translates to:
+  /// **'Wed'**
+  String get reportUsageWeekdayWed;
+
+  /// Abbreviation for Thursday in usage pattern
+  ///
+  /// In en, this message translates to:
+  /// **'Thu'**
+  String get reportUsageWeekdayThu;
+
+  /// Abbreviation for Friday in usage pattern
+  ///
+  /// In en, this message translates to:
+  /// **'Fri'**
+  String get reportUsageWeekdayFri;
+
+  /// Abbreviation for Saturday in usage pattern
+  ///
+  /// In en, this message translates to:
+  /// **'Sat'**
+  String get reportUsageWeekdaySat;
+
+  /// Abbreviation for Sunday in usage pattern
+  ///
+  /// In en, this message translates to:
+  /// **'Sun'**
+  String get reportUsageWeekdaySun;
+
+  /// Empty text for weekly usage pattern heatmap
+  ///
+  /// In en, this message translates to:
+  /// **'No data is available for typical training times yet.'**
+  String get reportUsagePatternEmpty;
+
+  /// Summary sentence for peak usage slot
+  ///
+  /// In en, this message translates to:
+  /// **'Highest load: {weekday} {slot}.'**
+  String reportUsagePatternPeakSummary(Object weekday, Object slot);
+
+  /// Title above weekly usage pattern heatmap
+  ///
+  /// In en, this message translates to:
+  /// **'Pattern by weekday and time of day'**
+  String get reportUsagePatternTitle;
+
+  /// Tooltip/snackbar label for one pattern heatmap cell
+  ///
+  /// In en, this message translates to:
+  /// **'{weekday} {slot}: {count} sessions'**
+  String reportUsagePatternCellLabel(Object weekday, Object slot, int count);
+
+  /// Loading state text while members are fetched
+  ///
+  /// In en, this message translates to:
+  /// **'Loading members...'**
+  String get reportMembersLoading;
+
+  /// Secondary empty state text for members report
+  ///
+  /// In en, this message translates to:
+  /// **'No members have been registered yet.'**
+  String get reportMembersNoRegisteredMembers;
+
+  /// Summary chip label for total members
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get reportMembersSummaryTotal;
+
+  /// Summary chip label for active members
+  ///
+  /// In en, this message translates to:
+  /// **'Active members'**
+  String get reportMembersSummaryActive;
+
+  /// Summary chip label for inactive members
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get reportMembersSummaryInactive;
+
+  /// Summary chip label for at-risk members
+  ///
+  /// In en, this message translates to:
+  /// **'At risk (high)'**
+  String get reportMembersSummaryAtRisk;
+
+  /// Summary chip label for new members
+  ///
+  /// In en, this message translates to:
+  /// **'New members'**
+  String get reportMembersSummaryNewMembers;
+
+  /// Summary chip label for loyal members
+  ///
+  /// In en, this message translates to:
+  /// **'Loyal members'**
+  String get reportMembersSummaryLoyal;
+
+  /// Summary chip label for total training days
+  ///
+  /// In en, this message translates to:
+  /// **'Training days total'**
+  String get reportMembersSummaryTrainingDays;
+
+  /// Button label for member segment actions
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for group'**
+  String get reportMembersSegmentActions;
+
+  /// Segment label for all members
+  ///
+  /// In en, this message translates to:
+  /// **'All members'**
+  String get reportMembersSegmentAll;
+
+  /// Segment label for active members
+  ///
+  /// In en, this message translates to:
+  /// **'Active members'**
+  String get reportMembersSegmentActive;
+
+  /// Segment label for inactive members
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive members'**
+  String get reportMembersSegmentInactive;
+
+  /// Segment label for at-risk members
+  ///
+  /// In en, this message translates to:
+  /// **'At-risk members'**
+  String get reportMembersSegmentAtRisk;
+
+  /// Segment label for new members
+  ///
+  /// In en, this message translates to:
+  /// **'New members'**
+  String get reportMembersSegmentNewMembers;
+
+  /// Segment label for loyal members
+  ///
+  /// In en, this message translates to:
+  /// **'Loyal members'**
+  String get reportMembersSegmentLoyal;
+
+  /// Snackbar text when a segment has no member numbers
+  ///
+  /// In en, this message translates to:
+  /// **'No member numbers in this group.'**
+  String get reportMembersSegmentNoNumbers;
+
+  /// Dialog title before exporting a very large member segment
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm large export action'**
+  String get reportMembersSegmentLargeExportTitle;
+
+  /// Dialog body before exporting a very large member segment
+  ///
+  /// In en, this message translates to:
+  /// **'You are exporting {count} member numbers from \"All members\". Please confirm this sharing is required.'**
+  String reportMembersSegmentLargeExportBody(int count);
+
+  /// Confirmation CTA for large segment export dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get reportMembersSegmentLargeExportConfirm;
+
+  /// Bottom sheet title for segment actions
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for {segmentName}'**
+  String reportMembersSegmentActionsFor(Object segmentName);
+
+  /// Bottom sheet subtitle showing number of members in segment
+  ///
+  /// In en, this message translates to:
+  /// **'{count} members in this group.'**
+  String reportMembersSegmentCount(int count);
+
+  /// Action label to copy member numbers
+  ///
+  /// In en, this message translates to:
+  /// **'Copy member numbers'**
+  String get reportMembersSegmentCopy;
+
+  /// Snackbar shown after member numbers were copied
+  ///
+  /// In en, this message translates to:
+  /// **'Member numbers copied.'**
+  String get reportMembersSegmentCopied;
+
+  /// Action label to share member numbers
+  ///
+  /// In en, this message translates to:
+  /// **'Share member numbers'**
+  String get reportMembersSegmentShare;
+
+  /// Shared text body for member segment export
+  ///
+  /// In en, this message translates to:
+  /// **'{segmentName} ({count} members)\n\nMember numbers:\n{numbers}'**
+  String reportMembersSegmentShareBody(Object segmentName, int count, Object numbers);
+
+  /// Share subject for member segment export
+  ///
+  /// In en, this message translates to:
+  /// **'Member segment from report'**
+  String get reportMembersSegmentShareSubject;
+
+  /// Short filter label for all members segment
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get reportMembersSegmentAllShort;
+
+  /// Short filter label for active members segment
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get reportMembersSegmentActiveShort;
+
+  /// Short filter label for inactive members segment
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get reportMembersSegmentInactiveShort;
+
+  /// Short filter label for at-risk members segment
+  ///
+  /// In en, this message translates to:
+  /// **'At risk'**
+  String get reportMembersSegmentAtRiskShort;
+
+  /// Short filter label for new members segment
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get reportMembersSegmentNewMembersShort;
+
+  /// Short filter label for loyal members segment
+  ///
+  /// In en, this message translates to:
+  /// **'Loyal'**
+  String get reportMembersSegmentLoyalShort;
+
+  /// Risk label for low risk members
+  ///
+  /// In en, this message translates to:
+  /// **'low risk'**
+  String get reportMembersRiskLow;
+
+  /// Risk label for medium risk members
+  ///
+  /// In en, this message translates to:
+  /// **'medium risk'**
+  String get reportMembersRiskMedium;
+
+  /// Risk label for high risk members
+  ///
+  /// In en, this message translates to:
+  /// **'high risk'**
+  String get reportMembersRiskHigh;
+
+  /// Risk label for new members
+  ///
+  /// In en, this message translates to:
+  /// **'new member'**
+  String get reportMembersRiskNewMember;
+
+  /// Hint shown when training day data is restricted to admins
+  ///
+  /// In en, this message translates to:
+  /// **'Only admins of this gym can see training-day counts.'**
+  String get reportMembersAdminOnlyHint;
+
+  /// Generic no-access message
+  ///
+  /// In en, this message translates to:
+  /// **'No access'**
+  String get adminNoAccess;
+
+  /// Title for the remove users screen
+  ///
+  /// In en, this message translates to:
+  /// **'Remove users'**
+  String get adminRemoveUsersTitle;
+
+  /// Hint for the search field in member list
+  ///
+  /// In en, this message translates to:
+  /// **'Search users (name)'**
+  String get adminSearchUsersHint;
+
+  /// Label for membership date
+  ///
+  /// In en, this message translates to:
+  /// **'Member since: {date}'**
+  String adminMemberSince(Object date);
+
+  /// Confirmation title for user removal
+  ///
+  /// In en, this message translates to:
+  /// **'Delete user and data?'**
+  String get adminDeleteUserTitle;
+
+  /// Confirmation message for user removal
+  ///
+  /// In en, this message translates to:
+  /// **'The user \"{name}\" and all associated data in this gym will be permanently deleted.'**
+  String adminDeleteUserMessage(Object name);
+
+  /// Audit hint in removal dialog
+  ///
+  /// In en, this message translates to:
+  /// **'This action will be logged in the admin audit and cannot be undone.'**
+  String get adminDeleteUserAuditHint;
+
+  /// Success message after user removal
+  ///
+  /// In en, this message translates to:
+  /// **'User {name}{warning} deleted'**
+  String adminDeleteUserSuccess(Object name, Object warning);
+
+  /// Error message after user removal failed
+  ///
+  /// In en, this message translates to:
+  /// **'Error deleting user: {error}'**
+  String adminDeleteUserError(Object error);
+
+  /// Label for selected logo file
+  ///
+  /// In en, this message translates to:
+  /// **'Selected file: {filename}'**
+  String brandingSelectedFile(Object filename);
+
+  /// Hint for branding logo URL
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Without Cloud Functions, please enter a public logo URL instead.'**
+  String get brandingLogoUrlHint;
+
+  /// Label for logo URL field
+  ///
+  /// In en, this message translates to:
+  /// **'Logo URL (optional)'**
+  String get brandingLogoUrlLabel;
+
+  /// Placeholder for logo URL input
+  ///
+  /// In en, this message translates to:
+  /// **'https://...'**
+  String get brandingLogoUrlPlaceholder;
+
+  /// Confirmation title for deal removal
+  ///
+  /// In en, this message translates to:
+  /// **'Delete deal?'**
+  String get adminDealsDeleteTitle;
+
+  /// Confirmation message for deal removal
+  ///
+  /// In en, this message translates to:
+  /// **'Do you really want to delete the deal \"{name}\"?'**
+  String adminDealsDeleteMessage(Object name);
+
+  /// AppBar title for the deals management screen
+  ///
+  /// In en, this message translates to:
+  /// **'Manage deals'**
+  String get adminDealsTitle;
+
+  /// Error snackbar when toggling deal state fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error updating deal state: {error}'**
+  String adminDealsToggleError(Object error);
+
+  /// Error state text when deals cannot be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading deals: {error}'**
+  String adminDealsLoadError(Object error);
+
+  /// Audit hint for deleting deals
+  ///
+  /// In en, this message translates to:
+  /// **'This change affects deal visibility for members immediately.'**
+  String get adminDealsDeleteAuditHint;
+
+  /// Snackbar after deleting a deal
+  ///
+  /// In en, this message translates to:
+  /// **'Deal deleted.'**
+  String get adminDealsDeleted;
+
+  /// Snackbar after creating a deal
+  ///
+  /// In en, this message translates to:
+  /// **'Deal created.'**
+  String get adminDealsCreateSuccess;
+
+  /// Snackbar after updating a deal
+  ///
+  /// In en, this message translates to:
+  /// **'Deal updated.'**
+  String get adminDealsUpdateSuccess;
+
+  /// Snackbar after activating a deal
+  ///
+  /// In en, this message translates to:
+  /// **'Deal is now active.'**
+  String get adminDealsStatusActive;
+
+  /// Snackbar after deactivating a deal
+  ///
+  /// In en, this message translates to:
+  /// **'Deal is now inactive.'**
+  String get adminDealsStatusInactive;
+
+  /// Snackbar after undoing a deal deletion
+  ///
+  /// In en, this message translates to:
+  /// **'Deal restored.'**
+  String get adminDealsRestored;
+
+  /// Prefix for undo error while restoring a deal
+  ///
+  /// In en, this message translates to:
+  /// **'Undo failed'**
+  String get adminDealsUndoErrorPrefix;
+
+  /// Error snackbar when deleting a deal fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error deleting deal: {error}'**
+  String adminDealsDeleteError(Object error);
+
+  /// Default category for new deals
+  ///
+  /// In en, this message translates to:
+  /// **'Supplements'**
+  String get dealFormCategoryDefault;
+
+  /// Label for deal category field
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get dealFormCategoryLabel;
+
+  /// Error when mandatory deal fields are empty
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill in all required fields (Partner, Title, Code, Link).'**
+  String get dealFormRequiredFieldsError;
+
+  /// Error when shop link URL is invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Shop link is not a valid URL.'**
+  String get dealFormInvalidUrlError;
+
+  /// Error message when deal saving fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving: {error}'**
+  String dealFormSaveError(Object error);
+
+  /// Title for creating a new deal
+  ///
+  /// In en, this message translates to:
+  /// **'New deal'**
+  String get dealFormTitleNew;
+
+  /// Title for editing an existing deal
+  ///
+  /// In en, this message translates to:
+  /// **'Edit deal'**
+  String get dealFormTitleEdit;
+
+  /// Label for partner name field
+  ///
+  /// In en, this message translates to:
+  /// **'Partner Name *'**
+  String get dealFormPartnerLabel;
+
+  /// Label for deal title field
+  ///
+  /// In en, this message translates to:
+  /// **'Title *'**
+  String get dealFormTitleLabel;
+
+  /// Label for discount code field
+  ///
+  /// In en, this message translates to:
+  /// **'Discount code *'**
+  String get dealFormCodeLabel;
+
+  /// Label for shop link field
+  ///
+  /// In en, this message translates to:
+  /// **'Shop Link *'**
+  String get dealFormLinkLabel;
+
+  /// Label for image URL field
+  ///
+  /// In en, this message translates to:
+  /// **'Image URL'**
+  String get dealFormImageUrlLabel;
+
+  /// Label for partner logo URL field
+  ///
+  /// In en, this message translates to:
+  /// **'Partner logo URL'**
+  String get dealFormPartnerLogoLabel;
+
+  /// Label for deal description field
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get dealFormDescriptionLabel;
+
+  /// Label for deal priority field
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get dealFormPriorityLabel;
+
+  /// Label for deal active switch
+  ///
+  /// In en, this message translates to:
+  /// **'Deal active?'**
+  String get dealFormActiveLabel;
+
+  /// Title for editing a device
+  ///
+  /// In en, this message translates to:
+  /// **'Edit device'**
+  String get adminDeviceEditTitle;
+
+  /// Title for creating a new device
+  ///
+  /// In en, this message translates to:
+  /// **'Create new device'**
+  String get adminDeviceNewTitle;
+
+  /// Label for device UID
+  ///
+  /// In en, this message translates to:
+  /// **'UID: {uid}'**
+  String adminDeviceUidLabel(Object uid);
+
+  /// Label for device ID
+  ///
+  /// In en, this message translates to:
+  /// **'ID: {id}'**
+  String adminDeviceIdLabel(Object id);
+
+  /// Label for device name field
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get adminDeviceNameLabel;
+
+  /// Hint for device name field
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Leg press'**
+  String get adminDeviceNameHint;
+
+  /// Label for device description field
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get adminDeviceDescLabel;
+
+  /// Hint for device description field
+  ///
+  /// In en, this message translates to:
+  /// **'Optional (Model, etc.)'**
+  String get adminDeviceDescHint;
+
+  /// Label for multi-exercise switch
+  ///
+  /// In en, this message translates to:
+  /// **'Includes multiple exercises?'**
+  String get adminDeviceMultiExerciseLabel;
+
+  /// Subtitle for multi-exercise switch
+  ///
+  /// In en, this message translates to:
+  /// **'For cable cross or racks'**
+  String get adminDeviceMultiExerciseSubtitle;
+
+  /// Audit hint when deleting a device
+  ///
+  /// In en, this message translates to:
+  /// **'Device master data will be removed. Downstream evaluations may be affected.'**
+  String get adminDeviceDeleteAuditHint;
+
+  /// Subtitle for challenges in admin dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Create & manage challenges'**
+  String get adminDashboardChallengesSubtitle;
+
+  /// Subtitle for symbols in admin dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'User symbols & ranks'**
+  String get adminDashboardSymbolsSubtitle;
+
+  /// Title for remove users in admin dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Remove users'**
+  String get adminDashboardRemoveUsersTitle;
+
+  /// Subtitle for remove users in admin dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Clean up test users & data'**
+  String get adminDashboardRemoveUsersSubtitle;
+
+  /// Title for deals in admin dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Manage deals'**
+  String get adminDashboardDealsTitle;
+
+  /// Subtitle for deals in admin dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Maintain sponsors & discounts'**
+  String get adminDashboardDealsSubtitle;
+
+  /// Label for total sessions metric
+  ///
+  /// In en, this message translates to:
+  /// **'Total sessions'**
+  String get reportTotalSessions;
+
+  /// Label for top device metric
+  ///
+  /// In en, this message translates to:
+  /// **'Top device'**
+  String get reportTopDevice;
+
+  /// Tooltip for calendar heatmap
+  ///
+  /// In en, this message translates to:
+  /// **'Logs on {date}: {count}'**
+  String reportLogsAtDate(Object date, int count);
+
+  /// Subtitle for surveys report
+  ///
+  /// In en, this message translates to:
+  /// **'Start surveys and evaluate member feedback.'**
+  String get reportSurveysSubtitle;
+
+  /// Subtitle for feedback report
+  ///
+  /// In en, this message translates to:
+  /// **'Manage suggestions, complaints, and praise from your members.'**
+  String get reportFeedbackSubtitle;
+
+  /// Status summary for surveys
+  ///
+  /// In en, this message translates to:
+  /// **'Active: {open} · Closed: {closed}'**
+  String reportSurveysStatus(int open, int closed);
+
+  /// Generic error message for reports
+  ///
+  /// In en, this message translates to:
+  /// **'An error has occurred'**
+  String get reportGenericError;
+
+  /// Empty state message for reports
+  ///
+  /// In en, this message translates to:
+  /// **'No data available'**
+  String get reportNoDataAvailable;
+
+  /// Label for manufacturer dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer'**
+  String get adminDeviceManufacturerLabel;
+
+  /// Label for muscle groups section
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle groups'**
+  String get adminDeviceMuscleGroupsLabel;
+
+  /// Button label for creating a device
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get adminDeviceCreateButton;
+
+  /// Error when device name is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a name.'**
+  String get adminDeviceNameError;
+
+  /// Error message when loading manufacturers fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading'**
+  String get adminDeviceLoadingError;
+
+  /// Message when manufacturer list is empty
+  ///
+  /// In en, this message translates to:
+  /// **'No manufacturers activated.'**
+  String get adminDeviceNoManufacturers;
+
+  /// Button label to manage manufacturers
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get adminDeviceManageManufacturers;
+
+  /// Hint for manufacturer dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Select manufacturer'**
+  String get adminDeviceSelectManufacturer;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

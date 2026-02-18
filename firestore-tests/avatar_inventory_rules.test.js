@@ -25,8 +25,8 @@ describe('avatarInventory rules', function () {
       const db = context.firestore();
       await db.collection('gyms').doc('g1').set({ code: 'g1' });
       await db.collection('gyms').doc('g1').collection('users').doc('userA').set({ role: 'member' });
-      await db.collection('gyms').doc('g1').collection('users').doc('adminA').set({ role: 'admin' });
-      await db.collection('gyms').doc('g2').collection('users').doc('adminB').set({ role: 'admin' });
+      await db.collection('gyms').doc('g1').collection('users').doc('adminA').set({ role: 'gymowner' });
+      await db.collection('gyms').doc('g2').collection('users').doc('adminB').set({ role: 'gymowner' });
       await db.collection('users').doc('userA').set({});
     });
   });
@@ -36,9 +36,9 @@ describe('avatarInventory rules', function () {
   });
 
   const adminA = () =>
-    testEnv.authenticatedContext('adminA', { gymId: 'g1', role: 'admin' });
+    testEnv.authenticatedContext('adminA', { gymId: 'g1', role: 'gymowner' });
   const adminB = () =>
-    testEnv.authenticatedContext('adminB', { gymId: 'g2', role: 'admin' });
+    testEnv.authenticatedContext('adminB', { gymId: 'g2', role: 'gymowner' });
   const member = () =>
     testEnv.authenticatedContext('userA', { gymId: 'g1', role: 'member' });
 

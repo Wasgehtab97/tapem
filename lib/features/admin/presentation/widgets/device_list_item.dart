@@ -17,6 +17,7 @@ import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/features/nfc/domain/usecases/write_nfc_tag.dart';
 import 'package:tapem/features/nfc/providers/nfc_providers.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
+import 'package:tapem/core/widgets/destructive_action.dart';
 import 'package:tapem/core/widgets/premium_action_tile.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
@@ -123,7 +124,7 @@ class _DeviceAdminActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    
+
     return PopupMenuButton<String>(
       icon: Icon(
         Icons.more_vert,
@@ -140,63 +141,62 @@ class _DeviceAdminActions extends ConsumerWidget {
             builder: (ctx) => DeviceFormDialog(
               initialDevice: device,
               muscleGroups: muscleGroups,
-              onSave: (name, description, isMulti, muscleGroupIds, mId, mName) async {
-                final updatedDevice = device.copyWith(
-                  name: name,
-                  description: description,
-                  isMulti: isMulti,
-                  manufacturerId: mId,
-                  manufacturerName: mName,
-                  muscleGroupIds: muscleGroupIds,
-                );
-                
-                await updateUC.execute(
-                  gymId: gymId,
-                  device: updatedDevice,
-                );
+              onSave:
+                  (
+                    name,
+                    description,
+                    isMulti,
+                    muscleGroupIds,
+                    mId,
+                    mName,
+                  ) async {
+                    final updatedDevice = device.copyWith(
+                      name: name,
+                      description: description,
+                      isMulti: isMulti,
+                      manufacturerId: mId,
+                      manufacturerName: mName,
+                      muscleGroupIds: muscleGroupIds,
+                    );
 
-                final muscleProv = ref.read(muscleGroupProvider);
-                await muscleProv.updateDeviceAssignments(
-                  context,
-                  device.uid,
-                  isMulti ? [] : muscleGroupIds,
-                  [],
-                );
-                
-                onUpdated();
-              },
+                    await updateUC.execute(gymId: gymId, device: updatedDevice);
+
+                    final muscleProv = ref.read(muscleGroupProvider);
+                    await muscleProv.updateDeviceAssignments(
+                      context,
+                      device.uid,
+                      isMulti ? [] : muscleGroupIds,
+                      [],
+                    );
+
+                    onUpdated();
+                  },
             ),
           );
         } else if (value == 'nfc' && device.nfcCode != null) {
           try {
             await writeUC.execute(device.nfcCode!);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(loc.adminDeviceNfcWritten)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(loc.adminDeviceNfcWritten)));
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(loc.adminDeviceNfcWriteError(e.toString()))),
+              SnackBar(
+                content: Text(loc.adminDeviceNfcWriteError(e.toString())),
+              ),
             );
           }
         } else if (value == 'delete') {
-          final confirm = await showDialog<bool>(
+          final confirm = await showDestructiveActionDialog(
             context: context,
-            builder: (ctx) => AlertDialog(
-              title: Text(loc.deviceDeleteDialogTitle),
-              content: Text(loc.deviceDeleteDialogMessage(device.name)),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  child: Text(loc.commonCancel),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  child: Text(loc.commonDelete),
-                ),
-              ],
-            ),
+            title: loc.deviceDeleteDialogTitle,
+            message: loc.deviceDeleteDialogMessage(device.name),
+            confirmLabel: loc.commonDelete,
+            cancelLabel: loc.commonCancel,
+            auditHint:
+                'Gerätestammdaten werden entfernt. Nachgelagerte Auswertungen können davon betroffen sein.',
           );
-          if (confirm != true) return;
+          if (!confirm) return;
 
           final fbUser = fb_auth.FirebaseAuth.instance.currentUser;
           if (fbUser != null) await fbUser.getIdToken(true);
@@ -204,9 +204,9 @@ class _DeviceAdminActions extends ConsumerWidget {
           await deleteUC.execute(gymId: gymId, deviceId: device.uid);
           onDeleted();
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(loc.deviceDeleteSuccess)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(loc.deviceDeleteSuccess)));
         }
       },
       itemBuilder: (context) => [
@@ -235,7 +235,11 @@ class _DeviceAdminActions extends ConsumerWidget {
           value: 'delete',
           child: Row(
             children: [
-              Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
+              Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: theme.colorScheme.error,
+              ),
               const SizedBox(width: 12),
               Text(
                 loc.commonDelete,

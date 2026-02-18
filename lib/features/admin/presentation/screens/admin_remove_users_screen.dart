@@ -5,17 +5,29 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 
+import 'package:tapem/core/services/admin_audit_logger.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
+import 'package:tapem/core/widgets/destructive_action.dart';
+import 'package:tapem/features/admin/data/services/gym_member_directory_service.dart';
+import 'package:tapem/features/admin/data/services/gym_user_removal_service.dart';
+import 'package:tapem/features/admin/providers/admin_service_providers.dart';
 import 'package:tapem/features/avatars/domain/services/avatar_catalog.dart';
 import 'package:tapem/features/friends/domain/models/public_profile.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 class AdminRemoveUsersScreen extends StatefulWidget {
-  const AdminRemoveUsersScreen({super.key, this.firestore});
+  const AdminRemoveUsersScreen({
+    super.key,
+    this.firestore,
+    this.memberDirectoryService,
+    this.removalService,
+  });
 
   final FirebaseFirestore? firestore;
+  final GymMemberDirectoryService? memberDirectoryService;
+  final GymUserRemovalService? removalService;
 
   @override
   State<AdminRemoveUsersScreen> createState() => _AdminRemoveUsersScreenState();
@@ -25,6 +37,31 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
   String _query = '';
   Timer? _debounce;
   final Set<String> _deleting = {};
+  late final GymUserRemovalService _removalService;
+  late final GymMemberDirectoryService _memberDirectoryService;
+
+  @override
+  void initState() {
+    super.initState();
+    final container = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
+    final firestore = widget.firestore;
+
+    _removalService = firestore != null
+        ? GymUserRemovalService(
+            firestore: firestore,
+            auditLogger: AdminAuditLogger(firestore: firestore),
+          )
+        : (widget.removalService ??
+              container.read(gymUserRemovalServiceProvider));
+
+    _memberDirectoryService = firestore != null
+        ? GymMemberDirectoryService(firestore: firestore)
+        : (widget.memberDirectoryService ??
+              container.read(gymMemberDirectoryServiceProvider));
+  }
 
   @override
   void dispose() {
@@ -35,28 +72,20 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final auth = riverpod.ProviderScope.containerOf(context).read(
-      authControllerProvider,
-    );
-    if (!auth.isAdmin) {
+    final auth = riverpod.ProviderScope.containerOf(
+      context,
+    ).read(authControllerProvider);
+    if (!auth.canManageGym) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Nutzer entfernen'),
-        ),
-        body: const Center(child: Text('Kein Zugriff')),
+        appBar: AppBar(title: Text(loc.adminRemoveUsersTitle)),
+        body: Center(child: Text(loc.adminNoAccess)),
       );
     }
     final gymId = auth.gymCode ?? '';
-    final fs = widget.firestore ?? FirebaseFirestore.instance;
-    final stream = fs
-        .collection('users')
-        .where('gymCodes', arrayContains: gymId)
-        .snapshots();
+    final stream = _memberDirectoryService.watchProfilesForGym(gymId);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Nutzer entfernen'),
-      ),
+      appBar: AppBar(title: Text(loc.adminRemoveUsersTitle)),
       body: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
         child: Column(
@@ -64,9 +93,12 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
             Padding(
               padding: const EdgeInsets.all(AppSpacing.sm),
               child: TextField(
-                decoration: const InputDecoration(
-                  hintText: 'Nutzer suchen (Name)',
-                  prefixIcon: Icon(Icons.search),
+                decoration: InputDecoration(
+                  hintText: loc.adminSearchUsersHint,
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.button),
+                  ),
                 ),
                 onChanged: (value) {
                   _debounce?.cancel();
@@ -77,20 +109,13 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
               ),
             ),
             Expanded(
-              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              child: StreamBuilder<List<PublicProfile>>(
                 stream: stream,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  final docs = snapshot.data?.docs ?? [];
-                  final profiles = docs
-                      .map(
-                        (d) => PublicProfile.fromMap(
-                          d.id,
-                          d.data(),
-                        ),
-                      )
+                  final profiles = (snapshot.data ?? const <PublicProfile>[])
                       .where(
                         (p) =>
                             _query.isEmpty ||
@@ -129,28 +154,21 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
                       final isDeleting = _deleting.contains(profile.uid);
 
                       return ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: image.image,
-                        ),
+                        leading: CircleAvatar(backgroundImage: image.image),
                         title: Text(
                           profile.username.isNotEmpty
                               ? profile.username
                               : profile.uid,
                         ),
-                        subtitle: Text(
-                          profile.createdAt != null
-                              ? 'Mitglied seit: ${DateFormat('dd.MM.yyyy').format(profile.createdAt!)}'
-                              : profile.uid,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withOpacity(0.6),
-                              ),
-                        ),
+                        subtitle: profile.createdAt != null
+                            ? Text(
+                                loc.adminMemberSince(
+                                  DateFormat('dd.MM.yyyy').format(
+                                    profile.createdAt!,
+                                  ),
+                                ),
+                              )
+                            : Text(profile.uid),
                         trailing: isDeleting
                             ? const SizedBox(
                                 width: 24,
@@ -164,7 +182,6 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
                                 color: Theme.of(context).colorScheme.error,
                                 onPressed: () => _confirmAndDeleteUser(
                                   context,
-                                  fs,
                                   gymId,
                                   profile,
                                 ),
@@ -183,58 +200,54 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
 
   Future<void> _confirmAndDeleteUser(
     BuildContext context,
-    FirebaseFirestore fs,
     String gymId,
     PublicProfile profile,
   ) async {
     final loc = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showDestructiveActionDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nutzer und Daten löschen?'),
-        content: Text(
-          'Der Nutzer "${profile.username.isNotEmpty ? profile.username : profile.uid}" '
-          'und alle zugehörigen Daten in diesem Studio werden unwiderruflich gelöscht.\n\n'
-          'Dieser Vorgang kann nicht rückgängig gemacht werden.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(loc.cancelButton),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Löschen'),
-          ),
-        ],
+      title: loc.adminDeleteUserTitle,
+      message: loc.adminDeleteUserMessage(
+        profile.username.isNotEmpty ? profile.username : profile.uid,
       ),
+      confirmLabel: loc.commonDelete,
+      cancelLabel: loc.cancelButton,
+      auditHint: loc.adminDeleteUserAuditHint,
     );
-
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     setState(() {
       _deleting.add(profile.uid);
     });
 
     try {
-      await _deleteUserForGym(fs: fs, gymId: gymId, uid: profile.uid);
+      final actorUid = riverpod.ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(authControllerProvider).userId;
+      final result = await _removalService.removeUserFromGym(
+        gymId: gymId,
+        targetUid: profile.uid,
+        actorUid: actorUid ?? '',
+      );
       if (!mounted) return;
+      final warningText = result.hasCleanupWarnings
+          ? ' (mit ${result.cleanupErrors.length} Cleanup-Warnungen)'
+          : '';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Nutzer ${profile.username} gelöscht'),
+          content: Text(
+            loc.adminDeleteUserSuccess(profile.username, warningText),
+          ),
         ),
       );
-    } catch (e, st) {
+    } catch (e) {
+      final loc = AppLocalizations.of(context)!;
       debugPrint('Failed to delete user ${profile.uid}: $e');
-      debugPrint('$st');
-      if (!mounted) return;
+      if (!context.mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Fehler beim Löschen: $e'),
-        ),
+        SnackBar(content: Text(loc.adminDeleteUserError(e.toString()))),
       );
     } finally {
       if (mounted) {
@@ -242,70 +255,6 @@ class _AdminRemoveUsersScreenState extends State<AdminRemoveUsersScreen> {
           _deleting.remove(profile.uid);
         });
       }
-    }
-  }
-
-  Future<void> _deleteUserForGym({
-    required FirebaseFirestore fs,
-    required String gymId,
-    required String uid,
-  }) async {
-    // Load user doc to inspect gymCodes.
-    final userRef = fs.collection('users').doc(uid);
-    final userSnap = await userRef.get();
-    final userData = userSnap.data() ?? <String, dynamic>{};
-    final gymCodes = (userData['gymCodes'] as List<dynamic>? ?? const [])
-        .whereType<String>()
-        .toList();
-
-    // Delete gym-specific membership + rank/completedChallenges.
-    final membershipRef =
-        fs.collection('gyms').doc(gymId).collection('users').doc(uid);
-    await _deleteCollection(fs, membershipRef.collection('rank'));
-    await _deleteCollection(fs, membershipRef.collection('completedChallenges'));
-
-    // Remove device leaderboard entries within this gym.
-    final devicesSnap =
-        await fs.collection('gyms').doc(gymId).collection('devices').get();
-    for (final device in devicesSnap.docs) {
-      final lbUserRef =
-          device.reference.collection('leaderboard').doc(uid);
-      await _deleteCollection(fs, lbUserRef.collection('sessions'));
-      await _deleteCollection(fs, lbUserRef.collection('days'));
-      await lbUserRef.delete().catchError((_) {});
-    }
-
-    // Finally delete membership entry in this gym.
-    await membershipRef.delete().catchError((_) {});
-
-    // Remove gymId from gymCodes.
-    gymCodes.removeWhere((code) => code == gymId);
-    // If der Nutzer nur in diesem Gym war, können wir hier
-    // aus Sicherheitsgründen NICHT das User-Dokument selbst löschen,
-    // da dies laut Security-Rules nur der Nutzer selbst darf.
-    // Stattdessen bleiben globale User-Daten erhalten, der Nutzer
-    // ist aber nicht mehr Mitglied dieses Gyms und taucht in den
-    // gym-spezifischen Ranglisten nicht mehr auf.
-  }
-}
-
-Future<void> _deleteCollection(
-  FirebaseFirestore fs,
-  CollectionReference<Map<String, dynamic>> col, {
-  int batchSize = 200,
-}) async {
-  while (true) {
-    final snap = await col.limit(batchSize).get();
-    if (snap.docs.isEmpty) {
-      break;
-    }
-    final batch = fs.batch();
-    for (final doc in snap.docs) {
-      batch.delete(doc.reference);
-    }
-    await batch.commit();
-    if (snap.docs.length < batchSize) {
-      break;
     }
   }
 }

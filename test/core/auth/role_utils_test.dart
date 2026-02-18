@@ -2,57 +2,52 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tapem/core/auth/role_utils.dart';
 
 void main() {
+  group('role helpers', () {
+    test('supports member/gymowner/admin role helpers', () {
+      expect(isMemberRole('member'), isTrue);
+      expect(isGymOwnerRole('gymowner'), isTrue);
+      expect(isAppAdminRole('admin'), isTrue);
+      expect(isAdminLikeRole('member'), isFalse);
+      expect(isAdminLikeRole('gymowner'), isTrue);
+      expect(isAdminLikeRole('admin'), isTrue);
+    });
+  });
+
   group('resolveUserAccessTier', () {
-    test('resolves guest before any other flags', () {
+    test('prioritizes guest', () {
       final tier = resolveUserAccessTier(
         isGuest: true,
         isAdmin: true,
         isGymOwner: true,
       );
-
       expect(tier, UserAccessTier.guest);
     });
 
-    test('resolves gymowner before admin for mixed flags', () {
+    test('prioritizes admin over gymowner', () {
       final tier = resolveUserAccessTier(
         isGuest: false,
         isAdmin: true,
         isGymOwner: true,
       );
-
-      expect(tier, UserAccessTier.gymOwner);
-    });
-
-    test('resolves admin', () {
-      final tier = resolveUserAccessTier(
-        isGuest: false,
-        isAdmin: true,
-        isGymOwner: false,
-      );
-
       expect(tier, UserAccessTier.admin);
     });
 
-    test('resolves member as fallback', () {
+    test('returns gymowner for gymowner without admin', () {
+      final tier = resolveUserAccessTier(
+        isGuest: false,
+        isAdmin: false,
+        isGymOwner: true,
+      );
+      expect(tier, UserAccessTier.gymOwner);
+    });
+
+    test('defaults to member', () {
       final tier = resolveUserAccessTier(
         isGuest: false,
         isAdmin: false,
         isGymOwner: false,
       );
-
       expect(tier, UserAccessTier.member);
-    });
-  });
-
-  group('canAccessRestrictedMemberRoutes', () {
-    test('denies guest and member', () {
-      expect(canAccessRestrictedMemberRoutes(UserAccessTier.guest), isFalse);
-      expect(canAccessRestrictedMemberRoutes(UserAccessTier.member), isFalse);
-    });
-
-    test('allows admin and gymowner', () {
-      expect(canAccessRestrictedMemberRoutes(UserAccessTier.admin), isTrue);
-      expect(canAccessRestrictedMemberRoutes(UserAccessTier.gymOwner), isTrue);
     });
   });
 }

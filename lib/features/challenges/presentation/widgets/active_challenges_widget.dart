@@ -6,6 +6,7 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 
 import '../../../../core/providers/challenge_provider.dart';
+import '../../domain/models/challenge.dart';
 
 class ActiveChallengesWidget extends ConsumerWidget {
   const ActiveChallengesWidget({super.key});
@@ -23,7 +24,11 @@ class ActiveChallengesWidget extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.emoji_events_outlined, size: 64, color: theme.colorScheme.onSurface.withOpacity(0.2)),
+            Icon(
+              Icons.emoji_events_outlined,
+              size: 64,
+              color: theme.colorScheme.onSurface.withOpacity(0.2),
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               loc.challengeEmptyActive,
@@ -45,27 +50,37 @@ class ActiveChallengesWidget extends ConsumerWidget {
           onTap: () {
             showDialog(
               context: context,
-              builder:
-                  (_) => AlertDialog(
-                    title: Text(c.title),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(c.description),
-                        const SizedBox(height: 8),
-                        Text(loc.challengeDetailXpReward(c.xpReward)),
-                        const SizedBox(height: 8),
-                        Text(loc.challengeDetailDevices(c.deviceIds.join(', '))),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(loc.commonOk),
-                      ),
+              builder: (_) => AlertDialog(
+                title: Text(c.title),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(c.description),
+                    const SizedBox(height: 8),
+                    Text(loc.challengeDetailXpReward(c.xpReward)),
+                    const SizedBox(height: 8),
+                    if (c.isWorkoutChallenge)
+                      Text(
+                        loc.challengeDetailGoalWorkoutFrequency(
+                          c.targetWorkouts,
+                          c.durationWeeks,
+                        ),
+                      )
+                    else ...[
+                      Text(loc.challengeDetailGoalDeviceSets(c.minSets)),
+                      const SizedBox(height: 8),
+                      Text(loc.challengeDetailDevices(c.deviceIds.join(', '))),
                     ],
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(loc.commonOk),
                   ),
+                ],
+              ),
             );
           },
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -105,12 +120,24 @@ class ActiveChallengesWidget extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
+                    Text(
+                      _goalLabel(loc, c),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.8),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surface,
                         borderRadius: BorderRadius.circular(AppRadius.chip),
-                        border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.1)),
+                        border: Border.all(
+                          color: theme.colorScheme.onSurface.withOpacity(0.1),
+                        ),
                       ),
                       child: Text(
                         '+${c.xpReward} XP',
@@ -128,5 +155,15 @@ class ActiveChallengesWidget extends ConsumerWidget {
         );
       },
     );
+  }
+
+  String _goalLabel(AppLocalizations loc, Challenge challenge) {
+    if (challenge.isWorkoutChallenge) {
+      return loc.challengeDetailGoalWorkoutFrequency(
+        challenge.targetWorkouts,
+        challenge.durationWeeks,
+      );
+    }
+    return loc.challengeDetailGoalDeviceSets(challenge.minSets);
   }
 }

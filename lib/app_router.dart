@@ -63,6 +63,7 @@ import 'package:tapem/features/nutrition/domain/models/nutrition_recipe.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/profile/presentation/screens/powerlifting_screen.dart';
+import 'package:tapem/core/widgets/admin_access_guard.dart';
 import 'package:tapem/core/widgets/gym_context_guard.dart';
 import 'bootstrap/navigation.dart';
 import 'bootstrap/providers.dart';
@@ -82,6 +83,7 @@ class AppRouter {
   static const gymAddMembership = '/gym_add_membership';
   static const gymSwitch = '/gym_switch';
   static const home = '/home';
+  static const homeInitialIndexByRole = -1;
   static const workoutDay = '/workout_day';
   static const device = '/device';
   static const exerciseList = '/exercise_list';
@@ -245,9 +247,13 @@ class AppRouter {
         final exerciseId = args['exerciseId']?.toString() ?? '';
         final planId = args['planId']?.toString();
         final planName = args['planName']?.toString();
+        final entryRequestedAtRaw = args['entryRequestedAtMs'];
+        final entryRequestedAtMs = entryRequestedAtRaw is int
+            ? entryRequestedAtRaw
+            : int.tryParse(entryRequestedAtRaw?.toString() ?? '');
 
         debugPrint(
-          '🔀 [Router] workoutDay args gymId=$gymId deviceId=$deviceId exerciseId=$exerciseId planId=$planId planName=$planName',
+          '🔀 [Router] workoutDay args gymId=$gymId deviceId=$deviceId exerciseId=$exerciseId planId=$planId planName=$planName entryRequestedAtMs=$entryRequestedAtMs',
         );
         return MaterialPageRoute(
           settings: RouteSettings(name: workoutDay, arguments: rawArgs),
@@ -257,6 +263,7 @@ class AppRouter {
             exerciseId: exerciseId,
             planId: planId,
             planName: planName,
+            entryRequestedAtMs: entryRequestedAtMs,
             sessionBuilder: buildWorkoutDayTableSessionCard,
           ),
         );
@@ -394,48 +401,67 @@ class AppRouter {
         return SettingsScreen.route();
 
       case branding:
-        return MaterialPageRoute(builder: (_) => const BrandingScreen());
+        return MaterialPageRoute(
+          builder: (_) => const GymContextGuard(
+            child: AdminAccessGuard(child: BrandingScreen()),
+          ),
+        );
 
       case admin:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(child: AdminDashboardScreen()),
+          builder: (_) => const GymContextGuard(
+            child: AdminAccessGuard(child: AdminDashboardScreen()),
+          ),
         );
 
       case adminDevices:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(child: AdminDevicesScreen()),
+          builder: (_) => const GymContextGuard(
+            child: AdminAccessGuard(child: AdminDevicesScreen()),
+          ),
         );
 
       case adminRemoveUsers:
         return MaterialPageRoute(
-          builder: (_) =>
-              const GymContextGuard(child: AdminRemoveUsersScreen()),
+          builder: (_) => const GymContextGuard(
+            child: AdminAccessGuard(child: AdminRemoveUsersScreen()),
+          ),
         );
 
       case manageChallenges:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(child: ChallengeAdminScreen()),
+          builder: (_) => const GymContextGuard(
+            child: AdminAccessGuard(child: ChallengeAdminScreen()),
+          ),
         );
 
       case adminSymbols:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(child: AdminSymbolsScreen()),
+          builder: (_) => const GymContextGuard(
+            child: AdminAccessGuard(child: AdminSymbolsScreen()),
+          ),
         );
 
       case userSymbols:
         final uid = settings.arguments as String? ?? '';
         return MaterialPageRoute(
-          builder: (_) => GymContextGuard(child: UserSymbolsScreen(uid: uid)),
+          builder: (_) => GymContextGuard(
+            child: AdminAccessGuard(child: UserSymbolsScreen(uid: uid)),
+          ),
         );
 
       case adminDeals:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(child: AdminDealsScreen()),
+          builder: (_) => const GymContextGuard(
+            child: AdminAccessGuard(child: AdminDealsScreen()),
+          ),
         );
 
       case manageManufacturers:
         return MaterialPageRoute(
-          builder: (_) => const GymContextGuard(child: ManageManufacturersScreen()),
+          builder: (_) => const GymContextGuard(
+            child: AdminAccessGuard(child: ManageManufacturersScreen()),
+          ),
         );
 
       case deals:

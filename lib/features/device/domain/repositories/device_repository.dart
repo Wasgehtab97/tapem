@@ -6,6 +6,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 abstract class DeviceRepository {
   Future<List<Device>> getDevicesForGym(String gymId);
+  Future<int> allocateNextDeviceId(
+    String gymId, {
+    required int minimumExistingId,
+  });
   Future<void> createDevice(String gymId, Device device);
   Future<void> updateDevice(String gymId, Device device); // NEW
   Future<Device?> getDeviceByNfcCode(String gymId, String nfcCode);
@@ -27,7 +31,10 @@ abstract class DeviceRepository {
     List<String> secondaryGroups,
   );
 
-  Future<void> writeSessionSnapshot(String gymId, DeviceSessionSnapshot snapshot);
+  Future<void> writeSessionSnapshot(
+    String gymId,
+    DeviceSessionSnapshot snapshot,
+  );
 
   Future<List<DeviceSessionSnapshot>> fetchSessionSnapshotsPaginated({
     required String gymId,

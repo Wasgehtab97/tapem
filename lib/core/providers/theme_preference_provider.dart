@@ -163,6 +163,7 @@ class ThemePreferenceProvider extends ChangeNotifier {
       BrandThemeId.waterTribe,
       BrandThemeId.airNomads,
       BrandThemeId.earthKingdom,
+      BrandThemeId.midnightGold,
     ];
 
     final all = BrandThemeId.values.toList();

@@ -1,7 +1,11 @@
 import 'dart:convert';
 
-const int kDeviceDraftTtlMs = 36 * 60 * 60 * 1000; // 36h: über Mitternacht hinaus sicher
-const int kDeviceAutoFinalizeInactivityMs = 60 * 60 * 1000; // 1h Inaktivität -> auto-save
+import 'package:tapem/core/config/workout_inactivity_config.dart';
+
+const int kDeviceDraftTtlMs =
+    36 * 60 * 60 * 1000; // 36h: über Mitternacht hinaus sicher
+const int kDeviceAutoFinalizeInactivityMs =
+    kWorkoutInactivityMs; // Einheitlich mit Coordinator/Duration-Service.
 const int kDeviceDraftDebounceMs = 350;
 
 String buildDraftKey({
@@ -39,50 +43,44 @@ class SetDraft {
   });
 
   factory SetDraft.fromJson(Map<String, dynamic> json) => SetDraft(
-        index: json['index'] as int,
-        weight: json['weight'] as String? ?? '',
-        reps: json['reps'] as String? ?? '',
-        tempo: json['tempo'] as String?,
-        dropWeight: json['dropWeight'] as String?,
-        dropReps: json['dropReps'] as String?,
-        done: json['done'] as bool? ?? false,
-        isBodyweight: json['isBodyweight'] as bool? ?? false,
-        drops: (json['drops'] as List<dynamic>? ?? [])
-            .map((e) => DropDraft.fromJson(Map<String, dynamic>.from(e)))
-            .toList(),
-      );
+    index: json['index'] as int,
+    weight: json['weight'] as String? ?? '',
+    reps: json['reps'] as String? ?? '',
+    tempo: json['tempo'] as String?,
+    dropWeight: json['dropWeight'] as String?,
+    dropReps: json['dropReps'] as String?,
+    done: json['done'] as bool? ?? false,
+    isBodyweight: json['isBodyweight'] as bool? ?? false,
+    drops: (json['drops'] as List<dynamic>? ?? [])
+        .map((e) => DropDraft.fromJson(Map<String, dynamic>.from(e)))
+        .toList(),
+  );
 
   Map<String, dynamic> toJson() => {
-        'index': index,
-        'weight': weight,
-        'reps': reps,
-        if (tempo != null) 'tempo': tempo,
-        if (dropWeight != null) 'dropWeight': dropWeight,
-        if (dropReps != null) 'dropReps': dropReps,
-        'done': done,
-        if (isBodyweight) 'isBodyweight': true,
-        if (drops.isNotEmpty) 'drops': drops.map((d) => d.toJson()).toList(),
-      };
+    'index': index,
+    'weight': weight,
+    'reps': reps,
+    if (tempo != null) 'tempo': tempo,
+    if (dropWeight != null) 'dropWeight': dropWeight,
+    if (dropReps != null) 'dropReps': dropReps,
+    'done': done,
+    if (isBodyweight) 'isBodyweight': true,
+    if (drops.isNotEmpty) 'drops': drops.map((d) => d.toJson()).toList(),
+  };
 }
 
 class DropDraft {
   final String weight;
   final String reps;
 
-  DropDraft({
-    this.weight = '',
-    this.reps = '',
-  });
+  DropDraft({this.weight = '', this.reps = ''});
 
   factory DropDraft.fromJson(Map<String, dynamic> json) => DropDraft(
-        weight: json['weight'] as String? ?? '',
-        reps: json['reps'] as String? ?? '',
-      );
+    weight: json['weight'] as String? ?? '',
+    reps: json['reps'] as String? ?? '',
+  );
 
-  Map<String, dynamic> toJson() => {
-        'weight': weight,
-        'reps': reps,
-      };
+  Map<String, dynamic> toJson() => {'weight': weight, 'reps': reps};
 }
 
 class SessionDraft {
@@ -117,38 +115,38 @@ class SessionDraft {
   });
 
   factory SessionDraft.fromJson(Map<String, dynamic> json) => SessionDraft(
-        deviceId: json['deviceId'] as String,
-        exerciseId: json['exerciseId'] as String?,
-        gymId: json['gymId'] as String? ?? '',
-        userId: json['userId'] as String? ?? '',
-        createdAt: json['createdAt'] as int,
-        updatedAt: json['updatedAt'] as int,
-        ttlMs: json['ttlMs'] as int? ?? kDeviceDraftTtlMs,
-        units: json['units'] as String?,
-        note: json['note'] as String? ?? '',
-        sets: (json['sets'] as List<dynamic>? ?? [])
-            .map((e) => SetDraft.fromJson(Map<String, dynamic>.from(e)))
-            .toList(),
-        showInLeaderboard: json['showInLeaderboard'] as bool? ?? true,
-        version: json['version'] as int?,
-        autoFinalizeEnabled: json['autoFinalizeEnabled'] as bool? ?? true,
-      );
+    deviceId: json['deviceId'] as String,
+    exerciseId: json['exerciseId'] as String?,
+    gymId: json['gymId'] as String? ?? '',
+    userId: json['userId'] as String? ?? '',
+    createdAt: json['createdAt'] as int,
+    updatedAt: json['updatedAt'] as int,
+    ttlMs: json['ttlMs'] as int? ?? kDeviceDraftTtlMs,
+    units: json['units'] as String?,
+    note: json['note'] as String? ?? '',
+    sets: (json['sets'] as List<dynamic>? ?? [])
+        .map((e) => SetDraft.fromJson(Map<String, dynamic>.from(e)))
+        .toList(),
+    showInLeaderboard: json['showInLeaderboard'] as bool? ?? true,
+    version: json['version'] as int?,
+    autoFinalizeEnabled: json['autoFinalizeEnabled'] as bool? ?? true,
+  );
 
   Map<String, dynamic> toJson() => {
-        'deviceId': deviceId,
-        if (exerciseId != null) 'exerciseId': exerciseId,
-        'gymId': gymId,
-        'userId': userId,
-        'createdAt': createdAt,
-        'updatedAt': updatedAt,
-        'ttlMs': ttlMs,
-        if (units != null) 'units': units,
-        'note': note,
-        'sets': sets.map((e) => e.toJson()).toList(),
-        if (!showInLeaderboard) 'showInLeaderboard': false,
-        if (version != null) 'version': version,
-        'autoFinalizeEnabled': autoFinalizeEnabled,
-      };
+    'deviceId': deviceId,
+    if (exerciseId != null) 'exerciseId': exerciseId,
+    'gymId': gymId,
+    'userId': userId,
+    'createdAt': createdAt,
+    'updatedAt': updatedAt,
+    'ttlMs': ttlMs,
+    if (units != null) 'units': units,
+    'note': note,
+    'sets': sets.map((e) => e.toJson()).toList(),
+    if (!showInLeaderboard) 'showInLeaderboard': false,
+    if (version != null) 'version': version,
+    'autoFinalizeEnabled': autoFinalizeEnabled,
+  };
 
   String encode() => jsonEncode(toJson());
 

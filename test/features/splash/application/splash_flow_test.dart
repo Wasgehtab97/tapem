@@ -27,13 +27,16 @@ AuthViewState _state({
 }
 
 void main() {
-  test('returns null while loading or when error blocking login exists', () {
-    expect(resolveSplashDestination(_state(isLoading: true)), isNull);
-    expect(
-      resolveSplashDestination(_state(error: 'boom')),
-      isNull,
-    );
-  });
+  test(
+    'returns null while loading and routes to auth on non-logged-in errors',
+    () {
+      expect(resolveSplashDestination(_state(isLoading: true)), isNull);
+      expect(
+        resolveSplashDestination(_state(error: 'boom')),
+        SplashDestination.auth,
+      );
+    },
+  );
 
   test('navigates to auth when user is not logged in', () {
     expect(resolveSplashDestination(_state()), SplashDestination.auth);

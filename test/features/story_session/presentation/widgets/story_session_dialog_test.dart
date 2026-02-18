@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tapem/features/story_session/domain/models/story_achievement.dart';
 import 'package:tapem/features/story_session/domain/models/story_daily_xp.dart';
 import 'package:tapem/features/story_session/domain/models/story_session_summary.dart';
 import 'package:tapem/features/story_session/presentation/widgets/story_session_dialog.dart';
@@ -83,4 +84,114 @@ void main() {
     expect(find.text('Missed week penalty'), findsOneWidget);
     expect(find.text('Ruleset: xp_ruleset_v2 v1'), findsOneWidget);
   });
+
+  testWidgets('StorySessionDialog avoids bottom overflow on compact screens', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 700);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final summary = StorySessionSummary(
+      gymId: 'g1',
+      userId: 'u1',
+      dayKey: '2026-02-14',
+      totalXp: 50,
+      generatedAt: DateTime.utc(2026, 2, 14, 20, 0),
+      achievements: const [
+        StoryAchievement(
+          type: StoryAchievementType.newDevice,
+          deviceName: 'Kniebeuge',
+        ),
+        StoryAchievement(
+          type: StoryAchievementType.newDevice,
+          deviceName: 'Bankdruecken',
+        ),
+        StoryAchievement(
+          type: StoryAchievementType.newDevice,
+          deviceName: 'Chest Fly',
+        ),
+      ],
+      stats: const StorySessionStats(
+        exerciseCount: 3,
+        setCount: 8,
+        durationMs: 42 * 1000,
+      ),
+      dailyXp: const StoryDailyXp(
+        xp: 50,
+        components: [StoryXpComponent(code: 'base_daily', amount: 50)],
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Scaffold(body: StorySessionDialog(summary: summary)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final verticalLists = find.byWidgetPredicate((widget) {
+      return widget is ListView && widget.scrollDirection == Axis.vertical;
+    });
+    expect(verticalLists, findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'StorySessionDialog uses horizontal swipe for more than 2 badges',
+    (tester) async {
+      final summary = StorySessionSummary(
+        gymId: 'g1',
+        userId: 'u1',
+        dayKey: '2026-02-14',
+        totalXp: 50,
+        generatedAt: DateTime.utc(2026, 2, 14, 20, 0),
+        achievements: const [
+          StoryAchievement(
+            type: StoryAchievementType.newDevice,
+            deviceName: 'Kniebeuge',
+          ),
+          StoryAchievement(
+            type: StoryAchievementType.newDevice,
+            deviceName: 'Bankdruecken',
+          ),
+          StoryAchievement(
+            type: StoryAchievementType.newDevice,
+            deviceName: 'Chest Fly',
+          ),
+        ],
+        stats: const StorySessionStats(
+          exerciseCount: 3,
+          setCount: 8,
+          durationMs: 42 * 1000,
+        ),
+        dailyXp: const StoryDailyXp(
+          xp: 50,
+          components: [StoryXpComponent(code: 'base_daily', amount: 50)],
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Scaffold(body: StorySessionDialog(summary: summary)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final horizontalLists = find.byWidgetPredicate((widget) {
+        return widget is ListView && widget.scrollDirection == Axis.horizontal;
+      });
+      expect(horizontalLists, findsOneWidget);
+      expect(find.text('+1'), findsNothing);
+    },
+  );
 }

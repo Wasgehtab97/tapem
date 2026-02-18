@@ -12,6 +12,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "set-admin": "node scripts/setAdmin.js",
     "rules-test": "mocha --timeout 120000 firestore-tests/*.test.js",
+    "test:rules:phase0": "firebase emulators:exec --only firestore 'node --test ./tests/rules/phase0_roles.test.js'",
     "test:rules": "firebase emulators:exec --only firestore 'node --test ./tests/rules/run.js'",
     "test:functions": "cd functions && npm test",
     "test:all": "npm run test:rules && npm run test:functions"

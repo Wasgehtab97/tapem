@@ -16,10 +16,10 @@ import 'package:tapem/features/device/presentation/widgets/exercise_bottom_sheet
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/muscles/muscle_group_display.dart';
-import 'package:tapem/core/services/workout_session_duration_service.dart'
-    show workoutSessionDurationServiceProvider;
+import 'package:tapem/core/services/workout_session_coordinator.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
+import 'package:tapem/features/device/providers/workout_entry_orchestrator_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 
 class ExerciseListScreen extends riverpod.ConsumerStatefulWidget {
@@ -88,14 +88,19 @@ class _ExerciseListScreenState
         onSelect(selection);
       } else {
         final container = riverpod.ProviderScope.containerOf(context);
-        final timer = container.read(workoutSessionDurationServiceProvider);
-        if (timer.isRunning) {
+        final coordinator = container.read(workoutSessionCoordinatorProvider);
+        if (coordinator.isRunning) {
           final auth = container.read(authControllerProvider);
           final userId = auth.userId;
           if (userId != null) {
             try {
+              final orchestrator = container.read(
+                workoutEntryOrchestratorProvider,
+              );
               final controller = container.read(workoutDayControllerProvider);
-              controller.addOrFocusSession(
+              await orchestrator.addOrFocusFromExternalSource(
+                controller: controller,
+                coordinator: coordinator,
                 gymId: widget.gymId,
                 deviceId: widget.deviceId,
                 exerciseId: result.id,
@@ -118,6 +123,7 @@ class _ExerciseListScreenState
               'gymId': widget.gymId,
               'deviceId': widget.deviceId,
               'exerciseId': result.id,
+              'entryRequestedAtMs': DateTime.now().millisecondsSinceEpoch,
             },
           );
         }
@@ -251,7 +257,7 @@ class _ExerciseListScreenState
           final ex = exercises[i];
           return _ExerciseCard(
             exercise: ex,
-            onOpen: () {
+            onOpen: () async {
               final selection = WorkoutDeviceSelection(
                 gymId: widget.gymId,
                 deviceId: widget.deviceId,
@@ -263,18 +269,23 @@ class _ExerciseListScreenState
                 onSelect(selection);
               } else {
                 final container = riverpod.ProviderScope.containerOf(context);
-                final timer = container.read(
-                  workoutSessionDurationServiceProvider,
+                final coordinator = container.read(
+                  workoutSessionCoordinatorProvider,
                 );
-                if (timer.isRunning) {
+                if (coordinator.isRunning) {
                   final auth = container.read(authControllerProvider);
                   final userId = auth.userId;
                   if (userId != null) {
                     try {
+                      final orchestrator = container.read(
+                        workoutEntryOrchestratorProvider,
+                      );
                       final controller = container.read(
                         workoutDayControllerProvider,
                       );
-                      controller.addOrFocusSession(
+                      await orchestrator.addOrFocusFromExternalSource(
+                        controller: controller,
+                        coordinator: coordinator,
                         gymId: widget.gymId,
                         deviceId: widget.deviceId,
                         exerciseId: ex.id,
@@ -297,6 +308,8 @@ class _ExerciseListScreenState
                       'gymId': widget.gymId,
                       'deviceId': widget.deviceId,
                       'exerciseId': ex.id,
+                      'entryRequestedAtMs':
+                          DateTime.now().millisecondsSinceEpoch,
                     },
                   );
                 }

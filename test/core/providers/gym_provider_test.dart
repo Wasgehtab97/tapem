@@ -14,14 +14,12 @@ void main() {
   group('GymProvider', () {
     test('reset clears devices and reload fetches new gym data', () async {
       final provider = GymProvider(
-        getGymById: _FakeGetGymById((id) async => GymConfig(
-          id: id,
-          code: 'code_$id',
-          name: 'Gym $id',
-        )),
-        getDevicesForGym: _FakeGetDevicesForGym((id) async => [
-          Device(uid: '$id-device', id: 1, name: 'Device $id'),
-        ]),
+        getGymById: _FakeGetGymById(
+          (id) async => GymConfig(id: id, code: 'code_$id', name: 'Gym $id'),
+        ),
+        getDevicesForGym: _FakeGetDevicesForGym(
+          (id) async => [Device(uid: '$id-device', id: 1, name: 'Device $id')],
+        ),
       );
 
       await provider.loadGymData('gymA');
@@ -40,14 +38,12 @@ void main() {
     test('reset controller clears state and dispose unregisters', () async {
       final controller = _RecordingGymScopedStateController();
       final provider = GymProvider(
-        getGymById: _FakeGetGymById((id) async => GymConfig(
-          id: id,
-          code: 'code_$id',
-          name: 'Gym $id',
-        )),
-        getDevicesForGym: _FakeGetDevicesForGym((id) async => [
-          Device(uid: '$id-device', id: 1, name: 'Device $id'),
-        ]),
+        getGymById: _FakeGetGymById(
+          (id) async => GymConfig(id: id, code: 'code_$id', name: 'Gym $id'),
+        ),
+        getDevicesForGym: _FakeGetDevicesForGym(
+          (id) async => [Device(uid: '$id-device', id: 1, name: 'Device $id')],
+        ),
       );
       provider.registerGymScopedResettable(controller);
 
@@ -98,7 +94,20 @@ class _FakeDeviceRepository implements DeviceRepository {
   Future<List<Device>> getDevicesForGym(String gymId) async => const [];
 
   @override
+  Future<int> allocateNextDeviceId(
+    String gymId, {
+    required int minimumExistingId,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> createDevice(String gymId, Device device) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateDevice(String gymId, Device device) {
     throw UnimplementedError();
   }
 
@@ -134,7 +143,9 @@ class _FakeDeviceRepository implements DeviceRepository {
 
   @override
   Future<void> writeSessionSnapshot(
-      String gymId, DeviceSessionSnapshot snapshot) {
+    String gymId,
+    DeviceSessionSnapshot snapshot,
+  ) {
     throw UnimplementedError();
   }
 

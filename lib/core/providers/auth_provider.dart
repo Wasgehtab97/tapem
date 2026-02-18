@@ -116,7 +116,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   final MembershipService _membershipService;
   final ActiveGymSetter _setActiveGym;
   final GymScopedStateController? _gymScopedStateController;
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _firestore;
   final AuthErrorLogger? _errorLogger;
 
   UserData? _user;
@@ -159,7 +159,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
        _membershipService = membershipService,
        _setActiveGym = setActiveGym,
        _gymScopedStateController = gymScopedStateController,
-       _firestore = firestore ?? FirebaseFirestore.instance,
+       _firestore = firestore ?? _defaultFirestoreOrNull(),
        _errorLogger = errorLogger {
     _loadCurrentUser();
   }
@@ -206,6 +206,14 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     );
   }
 
+  static FirebaseFirestore? _defaultFirestoreOrNull() {
+    try {
+      return FirebaseFirestore.instance;
+    } catch (_) {
+      return null;
+    }
+  }
+
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _user != null;
   bool get isGuest => _isGuest;
@@ -218,14 +226,26 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
 
   /// Ausgewählter Gym-Code (wird in SharedPreferences gespeichert)
   @override
-  String? get gymCode => _selectedGymCode;
+  String? get gymCode {
+    final selected = _selectedGymCode?.trim();
+    if (selected != null && selected.isNotEmpty) {
+      return selected;
+    }
+    final codes = _user?.gymCodes ?? const <String>[];
+    if (codes.length == 1) {
+      // Offline-friendly fallback: a single membership should never force
+      // users through gym selection after restart.
+      return codes.first;
+    }
+    return null;
+  }
 
   @override
   GymContextStatus get gymContextStatus {
     if (!isLoggedIn) {
       return _isLoading ? GymContextStatus.loading : GymContextStatus.unknown;
     }
-    return (_selectedGymCode?.isNotEmpty ?? false)
+    return (gymCode?.isNotEmpty ?? false)
         ? GymContextStatus.ready
         : GymContextStatus.missingSelection;
   }
@@ -233,16 +253,20 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   /// Eindeutige Nutzer-ID
   String? get userId => _user?.id;
   String? get role => _user?.role;
-  bool get isMember => role == 'member';
+  bool get isMember => isMemberRole(role);
+  bool get isAppAdmin =>
+      isAppAdminRole(role) || isAppAdminRole(_activeGymMembershipRole);
   bool get isGymOwner =>
-      role == kRoleGymOwner || _activeGymMembershipRole == kRoleGymOwner;
+      isGymOwnerRole(role) || isGymOwnerRole(_activeGymMembershipRole);
+  bool get canManageGym =>
+      isAdminLikeRole(role) || isAdminLikeRole(_activeGymMembershipRole);
   UserAccessTier get accessTier => resolveUserAccessTier(
     isGuest: isGuest,
     isAdmin: isAdmin,
     isGymOwner: isGymOwner,
   );
-  bool get isAdmin =>
-      isAdminLikeRole(role) || isAdminLikeRole(_activeGymMembershipRole);
+  /// App-owner level admin role.
+  bool get isAdmin => isAppAdmin;
   bool get isCoach => (_user?.coachEnabled ?? false) || role == 'coach';
   DateTime? get createdAt => _user?.createdAt;
 
@@ -279,10 +303,17 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   Future<void> _loadCurrentUser() async {
     _setLoading(true);
     _error = null;
+    fb_auth.User? fbUser;
     try {
-      final fbUser = _authManager.currentUser;
+      fbUser = _authManager.currentUser;
       if (fbUser != null) {
-        if (fbUser.isAnonymous) {
+        var isAnonymous = false;
+        try {
+          isAnonymous = fbUser.isAnonymous;
+        } catch (_) {
+          isAnonymous = false;
+        }
+        if (isAnonymous) {
           final prefs = await SharedPreferences.getInstance();
           final demoGymId = prefs.getString(StorageKeys.demoGymId);
           if (demoGymId != null && demoGymId.isNotEmpty) {
@@ -293,13 +324,20 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
         Map<String, dynamic> claims = {};
         try {
           claims = await _authManager.getIdTokenClaims(fbUser);
-        } on fb_auth.FirebaseAuthException catch (e) {
-          _error = e.message;
-          _user = null;
-          return;
-        } catch (e) {
-          _error = e.toString();
-          return;
+        } on fb_auth.FirebaseAuthException catch (e, st) {
+          if (_isTransientAuthNetworkFailure(e)) {
+            // Offline startup should still try loading cached user profile data.
+            claims = const <String, dynamic>{};
+            _logError(e, st, context: 'getIdTokenClaims');
+          } else {
+            _error = e.message;
+            _user = null;
+            return;
+          }
+        } catch (e, st) {
+          // Unknown claims failures should not block cache-based user restore.
+          claims = const <String, dynamic>{};
+          _logError(e, st, context: 'getIdTokenClaims');
         }
         final fetchedUser = await _currentUC.execute();
         if (fetchedUser != null) {
@@ -344,10 +382,19 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
           }
 
           await _syncActiveGymSelection(
-            currentUser: _user!,
+            currentUser: _user ?? currentUser,
             fbUser: fbUser,
             claims: claims,
           );
+          await _persistAuthSnapshot();
+        } else {
+          final restored = await _restoreUserFromSnapshot(fbUser.uid);
+          if (!restored) {
+            _user = null;
+            _isGuest = false;
+            _selectedGymCode = null;
+            _activeGymMembershipRole = null;
+          }
         }
       } else {
         _user = null;
@@ -355,10 +402,18 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
         _isGuest = false;
       }
     } on fb_auth.FirebaseAuthException catch (e) {
-      _error = e.message;
-      _user = null;
+      final restored = await _restoreUserFromSnapshot(fbUser?.uid);
+      if (!restored || !_isTransientAuthNetworkFailure(e)) {
+        _error = e.message;
+        _user = null;
+      }
     } catch (e, st) {
-      _error = e.toString();
+      final restored = await _restoreUserFromSnapshot(fbUser?.uid);
+      if (!restored || !_isTransientFirestoreFailure(e)) {
+        _error = e.toString();
+      } else {
+        _error = null;
+      }
       _logError(e, st, context: '_loadCurrentUser');
     } finally {
       _setLoading(false);
@@ -419,8 +474,9 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
         if (registeredUser.gymCodes.isNotEmpty) {
           final prefs = await SharedPreferences.getInstance();
           _selectedGymCode = registeredUser.gymCodes.first;
-          await prefs.setString('selectedGymCode', _selectedGymCode!);
+          await prefs.setString(StorageKeys.selectedGymCode, _selectedGymCode!);
         }
+        await _persistAuthSnapshot();
         notifyListeners();
       }
       return _resolveAuthResult();
@@ -444,7 +500,8 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       _isGuest = false;
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(StorageKeys.demoGymId);
-      await prefs.remove('selectedGymCode');
+      await prefs.remove(StorageKeys.selectedGymCode);
+      await prefs.remove(StorageKeys.authSnapshot);
       await _sessionDraftRepository.deleteExpired(
         DateTime.now().millisecondsSinceEpoch,
       );
@@ -465,7 +522,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(StorageKeys.demoGymId, gymId);
       await prefs.setString(StorageKeys.lastUsedGymId, gymId);
-      await prefs.setString('selectedGymCode', gymId);
+      await prefs.setString(StorageKeys.selectedGymCode, gymId);
       _setGuestState(gymId: gymId, uid: fbUser.uid);
       _gymScopedStateController?.resetGymScopedState();
       return const AuthResult.success(
@@ -488,16 +545,19 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
 
   Future<bool> setUsername(String username) async {
     if (_user == null) return false;
+    final normalized = username.trim();
+    if (normalized.isEmpty) {
+      _error = 'username_invalid';
+      notifyListeners();
+      return false;
+    }
     _setLoading(true);
     _error = null;
     try {
-      final available = await _checkUsernameUC.execute(username);
-      if (!available) {
-        _error = 'username_taken';
-        return false;
-      }
-      await _setUsernameUC.execute(_user!.id, username);
-      _user = _user!.copyWith(userName: username);
+      await _setUsernameUC.execute(_user!.id, normalized);
+      _user = _user!.copyWith(userName: normalized);
+      await _persistAuthSnapshot();
+      notifyListeners();
       return true;
     } on FirebaseException catch (e) {
       _error = e.code;
@@ -627,18 +687,68 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     final previousGymCode = _selectedGymCode;
     var activeGymUpdated = false;
     SharedPreferences? prefs;
+    const switchGymStepTimeout = Duration(seconds: 2);
     try {
-      await _membershipService.ensureMembership(gymId, fbUser.uid);
-      await _setActiveGym(gymId);
+      await _membershipService
+          .ensureMembership(gymId, fbUser.uid)
+          .timeout(
+            switchGymStepTimeout,
+            onTimeout: () => throw FirebaseException(
+              plugin: 'firestore',
+              code: 'timeout',
+              message: 'switch_gym_membership_timeout',
+            ),
+          );
+      await _setActiveGym(gymId).timeout(
+        switchGymStepTimeout,
+        onTimeout: () => throw FirebaseException(
+          plugin: 'firestore',
+          code: 'timeout',
+          message: 'switch_gym_set_active_timeout',
+        ),
+      );
       activeGymUpdated = true;
-      await _authManager.forceRefreshIdToken(fbUser);
+      await _authManager
+          .forceRefreshIdToken(fbUser)
+          .timeout(
+            switchGymStepTimeout,
+            onTimeout: () => throw FirebaseException(
+              plugin: 'firebase_auth',
+              code: 'timeout',
+              message: 'switch_gym_refresh_token_timeout',
+            ),
+          );
       prefs = await SharedPreferences.getInstance();
-      await prefs.setString('selectedGymCode', gymId);
+      await prefs.setString(StorageKeys.selectedGymCode, gymId);
       _selectedGymCode = gymId;
       await _loadActiveGymMembershipRole(userId: fbUser.uid, gymId: gymId);
+      await _persistAuthSnapshot();
       _gymScopedStateController?.resetGymScopedState();
       return const GymSwitchResult.success();
     } catch (e, st) {
+      if (_isTransientSwitchGymFailure(e)) {
+        try {
+          prefs ??= await SharedPreferences.getInstance();
+          await prefs.setString(StorageKeys.selectedGymCode, gymId);
+          _selectedGymCode = gymId;
+          _activeGymMembershipRole = null;
+          _error = null;
+          await _persistAuthSnapshot();
+          _gymScopedStateController?.resetGymScopedState();
+          debugPrint(
+            'AuthProvider.switchGym.offlineFallback: selected gym persisted locally gymId=$gymId',
+          );
+          _logError(e, st, context: 'switchGym.offlineFallback');
+          return const GymSwitchResult.success();
+        } catch (fallbackError, fallbackStack) {
+          _logError(
+            fallbackError,
+            fallbackStack,
+            context: 'switchGym.offlineFallback.persist',
+          );
+        }
+      }
+
       final membershipFailure = !activeGymUpdated;
       _error = e is fb_auth.FirebaseAuthException
           ? e.message ?? e.code
@@ -649,10 +759,10 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
             await _setActiveGym(previousGymCode);
             await _authManager.forceRefreshIdToken(fbUser);
             prefs ??= await SharedPreferences.getInstance();
-            await prefs.setString('selectedGymCode', previousGymCode);
+            await prefs.setString(StorageKeys.selectedGymCode, previousGymCode);
           } else {
             prefs ??= await SharedPreferences.getInstance();
-            await prefs.remove('selectedGymCode');
+            await prefs.remove(StorageKeys.selectedGymCode);
           }
           _selectedGymCode = previousGymCode;
         } catch (restoreError, restoreStack) {
@@ -694,7 +804,12 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     _setLoading(true);
     _error = null;
     try {
-      await _firestore.collection('users').doc(_user!.id).update({
+      final firestore = _firestore;
+      if (firestore == null) {
+        _error = 'firestore_unavailable';
+        return GymSwitchResult.failure(errorCode: _error);
+      }
+      await firestore.collection('users').doc(_user!.id).update({
         'gymCodes': FieldValue.arrayUnion([gymId]),
       });
       await _membershipService.ensureMembership(gymId, fbUser.uid);
@@ -702,10 +817,11 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       await _authManager.forceRefreshIdToken(fbUser);
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('selectedGymCode', gymId);
+      await prefs.setString(StorageKeys.selectedGymCode, gymId);
       _selectedGymCode = gymId;
       await _loadActiveGymMembershipRole(userId: fbUser.uid, gymId: gymId);
       _user = _user!.copyWith(gymCodes: [..._user!.gymCodes, gymId]);
+      await _persistAuthSnapshot();
       _gymScopedStateController?.resetGymScopedState();
       return const GymSwitchResult.success();
     } catch (e, st) {
@@ -742,13 +858,18 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     _setLoading(true);
     _error = null;
     try {
+      final firestore = _firestore;
+      if (firestore == null) {
+        _error = 'firestore_unavailable';
+        return GymSwitchResult.failure(errorCode: _error);
+      }
       final updatedGyms = _user!.gymCodes
           .where((code) => code != gymId)
           .toList();
-      await _firestore.collection('users').doc(_user!.id).update({
+      await firestore.collection('users').doc(_user!.id).update({
         'gymCodes': updatedGyms,
       });
-      await _firestore
+      await firestore
           .collection('gyms')
           .doc(gymId)
           .collection('users')
@@ -758,26 +879,27 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       final prefs = await SharedPreferences.getInstance();
       if (_selectedGymCode == gymId) {
         _selectedGymCode = null;
-        await prefs.remove('selectedGymCode');
+        await prefs.remove(StorageKeys.selectedGymCode);
         _activeGymMembershipRole = null;
         if (updatedGyms.isNotEmpty) {
           final nextGym = updatedGyms.first;
           await _setActiveGym(nextGym);
           await _authManager.forceRefreshIdToken(fbUser);
-          await prefs.setString('selectedGymCode', nextGym);
+          await prefs.setString(StorageKeys.selectedGymCode, nextGym);
           _selectedGymCode = nextGym;
           await _loadActiveGymMembershipRole(
             userId: fbUser.uid,
             gymId: nextGym,
           );
         } else {
-          await _firestore.collection('users').doc(_user!.id).update({
+          await firestore.collection('users').doc(_user!.id).update({
             'activeGymId': FieldValue.delete(),
           });
         }
       }
 
       _user = _user!.copyWith(gymCodes: updatedGyms);
+      await _persistAuthSnapshot();
       _gymScopedStateController?.resetGymScopedState();
       return const GymSwitchResult.success();
     } catch (e, st) {
@@ -832,13 +954,34 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final stored = prefs.getString('selectedGymCode');
-      final doc = await _firestore
-          .collection('users')
-          .doc(currentUser.id)
-          .get();
-      final data = doc.data();
-      final firestoreActiveGym = data?['activeGymId'];
+      final stored = prefs.getString(StorageKeys.selectedGymCode);
+      final firestore = _firestore;
+      String? firestoreActiveGym;
+      if (firestore != null) {
+        try {
+          final doc = await firestore
+              .collection('users')
+              .doc(currentUser.id)
+              .get()
+              .timeout(
+                const Duration(seconds: 2),
+                onTimeout: () => throw FirebaseException(
+                  plugin: 'firestore',
+                  code: 'timeout',
+                  message: 'active_gym_fetch_timeout',
+                ),
+              );
+          final data = doc.data();
+          firestoreActiveGym = data?['activeGymId'] as String?;
+        } catch (error, stackTrace) {
+          // Continue with locally stored gym context on startup.
+          _logError(
+            error,
+            stackTrace,
+            context: 'activeGymSync.fetchRemoteActiveGym',
+          );
+        }
+      }
       String? normalizedFirestoreGym =
           (firestoreActiveGym is String &&
               currentUser.gymCodes.contains(firestoreActiveGym))
@@ -865,17 +1008,33 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       if (resolvedGym == null) {
         _selectedGymCode = null;
         _activeGymMembershipRole = null;
-        await prefs.remove('selectedGymCode');
+        await prefs.remove(StorageKeys.selectedGymCode);
         return;
       }
 
       try {
         await _membershipService.ensureMembership(resolvedGym, fbUser.uid);
       } catch (error, stackTrace) {
+        if (_isTransientFirestoreFailure(error)) {
+          // Offline startup: keep the resolved local gym context so app entry
+          // remains possible without network.
+          _selectedGymCode = resolvedGym;
+          await prefs.setString(StorageKeys.selectedGymCode, resolvedGym);
+          _activeGymMembershipRole = null;
+          debugPrint(
+            'AuthProvider.activeGymSync.offlineFallback: selected gym restored locally gymId=$resolvedGym',
+          );
+          _logError(
+            error,
+            stackTrace,
+            context: 'activeGymSync.ensureMembership.offline',
+          );
+          return;
+        }
         _error = 'membership_sync_failed';
         _selectedGymCode = null;
         _activeGymMembershipRole = null;
-        await prefs.remove('selectedGymCode');
+        await prefs.remove(StorageKeys.selectedGymCode);
         _logError(error, stackTrace, context: 'activeGymSync.ensureMembership');
         return;
       }
@@ -904,7 +1063,7 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       }
 
       if (normalizedStoredGym != resolvedGym) {
-        await prefs.setString('selectedGymCode', resolvedGym);
+        await prefs.setString(StorageKeys.selectedGymCode, resolvedGym);
       }
 
       var shouldRefreshClaims = false;
@@ -929,6 +1088,98 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     }
   }
 
+  Future<void> _persistAuthSnapshot() async {
+    final user = _user;
+    if (user == null || _isGuest) {
+      return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    final payload = <String, dynamic>{
+      'uid': user.id,
+      'email': user.email,
+      'userName': user.userName,
+      'gymCodes': user.gymCodes,
+      'showInLeaderboard': user.showInLeaderboard,
+      'publicProfile': user.publicProfile,
+      'role': user.role,
+      'createdAt': user.createdAt.toIso8601String(),
+      'avatarKey': user.avatarKey,
+      'coachEnabled': user.coachEnabled,
+      'selectedGymCode': _selectedGymCode,
+      'activeGymMembershipRole': _activeGymMembershipRole,
+      'cachedAt': DateTime.now().toIso8601String(),
+    };
+    await prefs.setString(StorageKeys.authSnapshot, jsonEncode(payload));
+  }
+
+  Future<bool> _restoreUserFromSnapshot(String? expectedUid) async {
+    if (expectedUid == null || expectedUid.isEmpty) {
+      return false;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(StorageKeys.authSnapshot);
+    if (raw == null || raw.isEmpty) {
+      return false;
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) {
+        await prefs.remove(StorageKeys.authSnapshot);
+        return false;
+      }
+      final uid = decoded['uid'] as String?;
+      if (uid == null || uid != expectedUid) {
+        return false;
+      }
+      final email = decoded['email'] as String?;
+      final createdAtRaw = decoded['createdAt'] as String?;
+      final createdAt = createdAtRaw == null
+          ? null
+          : DateTime.tryParse(createdAtRaw);
+      final gymCodes =
+          (decoded['gymCodes'] as List?)
+              ?.map((entry) => entry.toString())
+              .where((entry) => entry.isNotEmpty)
+              .toList() ??
+          const <String>[];
+      if (email == null || createdAt == null || gymCodes.isEmpty) {
+        return false;
+      }
+      _user = UserData(
+        id: uid,
+        email: email,
+        userName: decoded['userName'] as String?,
+        gymCodes: gymCodes,
+        showInLeaderboard: decoded['showInLeaderboard'] == true,
+        publicProfile: decoded['publicProfile'] == true,
+        role: (decoded['role'] as String?) ?? 'member',
+        createdAt: createdAt,
+        avatarKey: (decoded['avatarKey'] as String?) ?? 'default',
+        coachEnabled: decoded['coachEnabled'] == true,
+      );
+      _isGuest = false;
+      final selectedGym = (decoded['selectedGymCode'] as String?)?.trim();
+      if (selectedGym != null &&
+          selectedGym.isNotEmpty &&
+          gymCodes.contains(selectedGym)) {
+        _selectedGymCode = selectedGym;
+        await prefs.setString(StorageKeys.selectedGymCode, selectedGym);
+      } else if (gymCodes.length == 1) {
+        _selectedGymCode = gymCodes.first;
+        await prefs.setString(StorageKeys.selectedGymCode, gymCodes.first);
+      } else {
+        _selectedGymCode = null;
+      }
+      _activeGymMembershipRole = (decoded['activeGymMembershipRole'] as String?)
+          ?.trim();
+      _error = null;
+      return true;
+    } catch (_) {
+      await prefs.remove(StorageKeys.authSnapshot);
+      return false;
+    }
+  }
+
   Future<void> _loadActiveGymMembershipRole({
     required String userId,
     required String? gymId,
@@ -937,8 +1188,13 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
       _activeGymMembershipRole = null;
       return;
     }
+    final firestore = _firestore;
+    if (firestore == null) {
+      _activeGymMembershipRole = null;
+      return;
+    }
     try {
-      final membershipDoc = await _firestore
+      final membershipDoc = await firestore
           .collection('gyms')
           .doc(gymId)
           .collection('users')
@@ -960,5 +1216,43 @@ class AuthProvider extends ChangeNotifier implements GymContextState {
     final label = context != null ? 'AuthProvider.$context' : 'AuthProvider';
     debugPrint('$label: $error');
     debugPrintStack(label: label, stackTrace: stackTrace);
+  }
+
+  bool _isTransientAuthNetworkFailure(fb_auth.FirebaseAuthException error) {
+    final code = _normalizeErrorCode(error.code);
+    return code == 'network-request-failed' ||
+        code == 'too-many-requests' ||
+        code == 'timeout';
+  }
+
+  bool _isTransientSwitchGymFailure(Object error) {
+    if (error is fb_auth.FirebaseAuthException) {
+      return _isTransientAuthNetworkFailure(error);
+    }
+    return _isTransientFirestoreFailure(error);
+  }
+
+  bool _isTransientFirestoreFailure(Object error) {
+    if (error is FirebaseException) {
+      final code = _normalizeErrorCode(error.code);
+      return code == 'unavailable' ||
+          code == 'deadline-exceeded' ||
+          code == 'aborted' ||
+          code == 'network-request-failed' ||
+          code == 'timeout';
+    }
+    final message = error.toString().toLowerCase();
+    return message.contains('network error') ||
+        message.contains('unavailable') ||
+        message.contains('unreachable host') ||
+        message.contains('timeout');
+  }
+
+  String _normalizeErrorCode(String raw) {
+    final code = raw.trim().toLowerCase();
+    if (code.contains('/')) {
+      return code.split('/').last;
+    }
+    return code;
   }
 }

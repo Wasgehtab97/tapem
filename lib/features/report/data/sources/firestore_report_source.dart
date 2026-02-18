@@ -1,6 +1,7 @@
 // lib/features/report/data/sources/firestore_report_source.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tapem/features/report/domain/models/report_daily_aggregate.dart';
 
 class FirestoreReportSource {
   final FirebaseFirestore _fs;
@@ -39,5 +40,33 @@ class FirestoreReportSource {
     }
 
     return query.get().then((snap) => snap.docs);
+  }
+
+  Future<List<ReportDailyAggregate>> fetchDailyAggregates(
+    String gymId, {
+    DateTime? since,
+  }) async {
+    Query<Map<String, dynamic>> query = _fs
+        .collection('gyms')
+        .doc(gymId)
+        .collection('reportDaily')
+        .orderBy('dayKey');
+    if (since != null) {
+      query = query.where(
+        'dayKey',
+        isGreaterThanOrEqualTo: _dayKeyFromDate(since),
+      );
+    }
+    final snap = await query.get();
+    return snap.docs
+        .map((doc) => ReportDailyAggregate.fromMap(doc.id, doc.data()))
+        .toList(growable: false);
+  }
+
+  static String _dayKeyFromDate(DateTime date) {
+    final utc = date.toUtc();
+    final month = utc.month.toString().padLeft(2, '0');
+    final day = utc.day.toString().padLeft(2, '0');
+    return '${utc.year}$month$day';
   }
 }

@@ -111,7 +111,6 @@ class _DropChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black.withOpacity(0.24), width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

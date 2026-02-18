@@ -10,15 +10,36 @@ import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/gym_scoped_resettable.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
+import 'package:tapem/core/services/workout_session_coordinator.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/core/sync/sync_service.dart';
 import 'package:tapem/features/community/data/community_stats_writer.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
+import 'package:tapem/features/device/data/repositories/workout_data_repository_impl.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
+import 'package:tapem/features/device/data/sources/firestore_workout_context_source.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
+import 'package:tapem/features/device/domain/repositories/workout_data_repository.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/features/training_details/domain/repositories/session_repository.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/services/membership_service.dart';
+
+const bool _enableVerboseWorkoutDayControllerLogs = false;
+
+void _workoutFlowLog(String message) {
+  debugPrint('🏁 [WorkoutFlow] $message');
+}
+
+void _workoutDayVerboseLog(String message) {
+  if (!_enableVerboseWorkoutDayControllerLogs) return;
+  debugPrint(message);
+}
+
+void _workoutDayVerboseStack(String label) {
+  if (!_enableVerboseWorkoutDayControllerLogs) return;
+  debugPrintStack(label: label);
+}
 
 @immutable
 class WorkoutDaySession {
@@ -54,9 +75,7 @@ class WorkoutDaySession {
 
   bool get hasValidationWarning => hasSessionToday || error != null;
 
-  WorkoutDaySession copyWith({
-    String? exerciseName,
-  }) {
+  WorkoutDaySession copyWith({String? exerciseName}) {
     return WorkoutDaySession(
       key: key,
       gymId: gymId,
@@ -75,19 +94,19 @@ class WorkoutDaySession {
 
   @override
   int get hashCode => Object.hash(
-        key,
-        gymId,
-        deviceId,
-        exerciseId,
-        exerciseName,
-        userId,
-        provider,
-        canSave,
-        isSaving,
-        isLoading,
-        hasSessionToday,
-        error,
-      );
+    key,
+    gymId,
+    deviceId,
+    exerciseId,
+    exerciseName,
+    userId,
+    provider,
+    canSave,
+    isSaving,
+    isLoading,
+    hasSessionToday,
+    error,
+  );
 
   @override
   bool operator ==(Object other) {
@@ -130,27 +149,38 @@ class WorkoutDayController extends ChangeNotifier
     required FirebaseFirestore firestore,
     required MembershipService membership,
     required SessionRepository sessionRepository,
+    SyncService? syncService,
     DeviceRepository? deviceRepository,
+    WorkoutDataRepository? workoutDataRepository,
     GetDevicesForGym? getDevicesForGym,
     CommunityStatsWriter? communityStatsWriter,
     SessionDraftRepository Function()? createDraftRepository,
-  })  : _firestore = firestore,
-        _membership = membership,
-        _sessionRepository = sessionRepository,
-        _communityStatsWriter =
-            communityStatsWriter ?? CommunityStatsWriter(firestore: firestore),
-        _createDraftRepository =
-            createDraftRepository ?? (() => SessionDraftRepositoryImpl()) {
-    _deviceRepository = deviceRepository ??
+  }) : _firestore = firestore,
+       _membership = membership,
+       _sessionRepository = sessionRepository,
+       _syncService = syncService,
+       _communityStatsWriter =
+           communityStatsWriter ?? CommunityStatsWriter(firestore: firestore),
+       _createDraftRepository =
+           createDraftRepository ?? (() => SessionDraftRepositoryImpl()) {
+    _deviceRepository =
+        deviceRepository ??
         DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore));
-    _getDevicesForGym =
-        getDevicesForGym ?? GetDevicesForGym(_deviceRepository);
+    _workoutDataRepository =
+        workoutDataRepository ??
+        WorkoutDataRepositoryImpl(
+          sessionRepository: sessionRepository,
+          remoteSource: FirestoreWorkoutContextSource(firestore: firestore),
+        );
+    _getDevicesForGym = getDevicesForGym ?? GetDevicesForGym(_deviceRepository);
   }
 
   final FirebaseFirestore _firestore;
   MembershipService _membership;
   final SessionRepository _sessionRepository;
+  final SyncService? _syncService;
   late final DeviceRepository _deviceRepository;
+  late final WorkoutDataRepository _workoutDataRepository;
   late final GetDevicesForGym _getDevicesForGym;
   final CommunityStatsWriter _communityStatsWriter;
   final SessionDraftRepository Function() _createDraftRepository;
@@ -158,6 +188,7 @@ class WorkoutDayController extends ChangeNotifier
   XpProvider? _xpProvider;
   ChallengeProvider? _challengeProvider;
   WorkoutSessionDurationService? _sessionDurationService;
+  WorkoutSessionCoordinator? _sessionCoordinator;
   final Set<String> _restoredDraftContexts = <String>{};
 
   final Map<String, _SessionEntry> _sessions = <String, _SessionEntry>{};
@@ -166,6 +197,7 @@ class WorkoutDayController extends ChangeNotifier
   String? _focusedSessionKey;
   bool _isSavingAll = false;
   static const int _maxParallelSaveWorkers = 3;
+  static const Duration _perSessionSaveTimeout = Duration(seconds: 8);
 
   // Optional Plan-Kontext für den aktuellen Trainingstag eines Users.
   String? _activePlanId;
@@ -194,15 +226,18 @@ class WorkoutDayController extends ChangeNotifier
     required XpProvider xpProvider,
     required ChallengeProvider challengeProvider,
     required WorkoutSessionDurationService sessionDurationService,
+    required WorkoutSessionCoordinator sessionCoordinator,
   }) {
     _xpProvider = xpProvider;
     _challengeProvider = challengeProvider;
     _sessionDurationService = sessionDurationService;
+    _sessionCoordinator = sessionCoordinator;
     for (final entry in _sessions.values) {
       entry.provider.attachExternalServices(
         xpProvider: xpProvider,
         challengeProvider: challengeProvider,
         sessionDurationService: sessionDurationService,
+        sessionCoordinator: sessionCoordinator,
       );
     }
   }
@@ -215,8 +250,10 @@ class WorkoutDayController extends ChangeNotifier
 
   @override
   void resetGymScopedState() {
-    debugPrint('⚠️ [WorkoutDayController] resetGymScopedState triggered');
-    debugPrintStack(label: 'resetGymScopedState_stack');
+    _workoutDayVerboseLog(
+      '⚠️ [WorkoutDayController] resetGymScopedState triggered',
+    );
+    _workoutDayVerboseStack('resetGymScopedState_stack');
     for (final entry in _sessions.values) {
       entry.dispose();
     }
@@ -275,6 +312,8 @@ class WorkoutDayController extends ChangeNotifier
       draftRepo: _createDraftRepository(),
       membership: _membership,
       communityStatsWriter: _communityStatsWriter,
+      syncService: _syncService,
+      workoutDataRepository: _workoutDataRepository,
       autoFinalizeEnabled: autoFinalizeEnabled,
       persistEmptyDrafts: true,
     );
@@ -355,15 +394,14 @@ class WorkoutDayController extends ChangeNotifier
       return const <WorkoutDaySession>[];
     }
     if (_sessionOrder.isEmpty) {
-      final entries = _sessions.values
-          .where((entry) => entry.userId == userId && entry.gymId == gymId);
+      final entries = _sessions.values.where(
+        (entry) => entry.userId == userId && entry.gymId == gymId,
+      );
       return List.unmodifiable(entries.map((entry) => entry.snapshot));
     }
     final orderedKeys = _sessionOrder.where((key) {
       final entry = _sessions[key];
-      return entry != null &&
-          entry.userId == userId &&
-          entry.gymId == gymId;
+      return entry != null && entry.userId == userId && entry.gymId == gymId;
     });
     final sessions = <WorkoutDaySession>[];
     for (final key in orderedKeys) {
@@ -417,14 +455,17 @@ class WorkoutDayController extends ChangeNotifier
   }
 
   bool closeSession(String key) {
-    // Debug logging for disappearing exercises investigation
-    debugPrint('🔍 [WorkoutDayController] closeSession requested for key=$key');
-    debugPrintStack(label: 'closeSession_stack');
-    
+    _workoutDayVerboseLog(
+      '🔍 [WorkoutDayController] closeSession requested for key=$key',
+    );
+    _workoutDayVerboseStack('closeSession_stack');
+
     final entry = _sessions.remove(key);
     _sessionOrder.remove(key);
     if (entry == null) {
-      debugPrint('⚠️ [WorkoutDayController] closeSession: session not found for key=$key');
+      _workoutDayVerboseLog(
+        '⚠️ [WorkoutDayController] closeSession: session not found for key=$key',
+      );
       return false;
     }
     entry.provider.discardDraftForCancellation();
@@ -466,9 +507,7 @@ class WorkoutDayController extends ChangeNotifier
 
     final filtered = _sessionOrder.where((key) {
       final entry = _sessions[key];
-      return entry != null &&
-          entry.userId == userId &&
-          entry.gymId == gymId;
+      return entry != null && entry.userId == userId && entry.gymId == gymId;
     }).toList();
 
     final oldIndex = filtered.indexOf(oldKey);
@@ -492,6 +531,8 @@ class WorkoutDayController extends ChangeNotifier
         draftRepo: _createDraftRepository(),
         membership: _membership,
         communityStatsWriter: _communityStatsWriter,
+        syncService: _syncService,
+        workoutDataRepository: _workoutDataRepository,
         autoFinalizeEnabled: autoFinalizeEnabled,
         persistEmptyDrafts: true,
       );
@@ -519,7 +560,8 @@ class WorkoutDayController extends ChangeNotifier
     var filteredIdx = 0;
     for (final key in original) {
       final existing = _sessions[key];
-      final matches = existing != null &&
+      final matches =
+          existing != null &&
           existing.userId == userId &&
           existing.gymId == gymId;
       if (matches) {
@@ -550,9 +592,7 @@ class WorkoutDayController extends ChangeNotifier
     if (oldIndex == newIndex) return false;
     var filtered = _sessionOrder.where((key) {
       final entry = _sessions[key];
-      return entry != null &&
-          entry.userId == userId &&
-          entry.gymId == gymId;
+      return entry != null && entry.userId == userId && entry.gymId == gymId;
     }).toList();
     if (oldIndex < 0 || oldIndex >= filtered.length) return false;
     if (newIndex < 0) return false;
@@ -568,9 +608,8 @@ class WorkoutDayController extends ChangeNotifier
     var filteredIdx = 0;
     for (final key in original) {
       final entry = _sessions[key];
-      final matches = entry != null &&
-          entry.userId == userId &&
-          entry.gymId == gymId;
+      final matches =
+          entry != null && entry.userId == userId && entry.gymId == gymId;
       if (matches) {
         if (filteredIdx < filtered.length) {
           _sessionOrder.add(filtered[filteredIdx]);
@@ -603,6 +642,21 @@ class WorkoutDayController extends ChangeNotifier
     return closeSession(key);
   }
 
+  int closeAllSessionsFor({required String userId, required String gymId}) {
+    final keys = <String>[
+      for (final entry in _sessions.entries)
+        if (entry.value.userId == userId && entry.value.gymId == gymId)
+          entry.key,
+    ];
+    var closed = 0;
+    for (final key in keys) {
+      if (closeSession(key)) {
+        closed += 1;
+      }
+    }
+    return closed;
+  }
+
   Future<SaveAllSessionsResult> saveAllSessions({
     required String userId,
     required String gymId,
@@ -611,8 +665,13 @@ class WorkoutDayController extends ChangeNotifier
     String? gender,
     double? bodyWeightKg,
     Map<String, int?> plannedRestSecondsBySession = const {},
+    WorkoutFinalizeReason finalizeReason = WorkoutFinalizeReason.manualSave,
+    DateTime? finalizeEndTime,
   }) async {
     if (_isSavingAll) {
+      _workoutFlowLog(
+        'save_all_skipped reason=already_saving user=$userId gym=$gymId',
+      );
       return const SaveAllSessionsResult(
         attempted: 0,
         saved: 0,
@@ -628,6 +687,9 @@ class WorkoutDayController extends ChangeNotifier
     final staleKeys = <String>[];
     final saveEntries = <_SessionEntry>[];
 
+    _workoutFlowLog(
+      'save_all_begin reason=${finalizeReason.name} user=$userId gym=$gymId requestedEnd=${(finalizeEndTime ?? DateTime.now()).toIso8601String()}',
+    );
     _isSavingAll = true;
     notifyListeners();
     try {
@@ -645,6 +707,9 @@ class WorkoutDayController extends ChangeNotifier
       }
 
       attempted = saveEntries.length;
+      _workoutFlowLog(
+        'save_all_candidates total=${entries.length} stale=${staleKeys.length} attempted=$attempted',
+      );
       if (saveEntries.isNotEmpty) {
         final queue = ListQueue<_SessionEntry>.from(saveEntries);
         final workerCount = math.min(_maxParallelSaveWorkers, queue.length);
@@ -655,19 +720,29 @@ class WorkoutDayController extends ChangeNotifier
             var ok = false;
             String? error;
             try {
-              ok = await provider.saveWorkoutSession(
-                gymId: entry.gymId,
-                userId: userId,
-                showInLeaderboard: showInLeaderboard,
-                userName: userName,
-                gender: gender,
-                bodyWeightKg: bodyWeightKg,
-                plannedRestSeconds: plannedRestSecondsBySession[entry.key],
-              );
+              ok = await provider
+                  .saveWorkoutSession(
+                    gymId: entry.gymId,
+                    userId: userId,
+                    showInLeaderboard: showInLeaderboard,
+                    userName: userName,
+                    gender: gender,
+                    bodyWeightKg: bodyWeightKg,
+                    plannedRestSeconds: plannedRestSecondsBySession[entry.key],
+                  )
+                  .timeout(
+                    _perSessionSaveTimeout,
+                    onTimeout: () {
+                      _workoutFlowLog(
+                        'save_session_timeout key=${entry.key} timeoutMs=${_perSessionSaveTimeout.inMilliseconds}',
+                      );
+                      return false;
+                    },
+                  );
               error = provider.error;
             } catch (e, st) {
               error = e.toString();
-              debugPrint(
+              _workoutFlowLog(
                 '[WorkoutDayController] saveWorkoutSession failed for key=${entry.key}: $e',
               );
               debugPrintStack(stackTrace: st);
@@ -699,21 +774,159 @@ class WorkoutDayController extends ChangeNotifier
       failedSessions: failures,
       savedSessionKeys: List.unmodifiable(savedKeys),
     );
+    _workoutFlowLog(
+      'save_all_result attempted=${result.attempted} saved=${result.saved} failed=${result.failedSessions.length}',
+    );
 
     final durationService = _sessionDurationService;
-    if (durationService != null && result.attempted > 0) {
+    final sessionCoordinator = _sessionCoordinator;
+    if (sessionCoordinator != null) {
       try {
-        if (result.saved > 0) {
-          await durationService.save(endTime: DateTime.now());
-        } else {
-          await durationService.discard();
-        }
+        await sessionCoordinator.setActiveContext(uid: userId, gymId: gymId);
       } catch (_) {
-        // Ignore timer persistence failures; saving the workout is more important.
+        // Ignore; finalization falls back to best-effort behavior.
       }
+    }
+    final resolvedFinalizeTime = finalizeEndTime ?? DateTime.now();
+    final shouldFinalizeRunningSession =
+        durationService != null &&
+        (result.attempted > 0 ||
+            durationService.isRunning ||
+            (sessionCoordinator?.isRunning ?? false));
+    _workoutFlowLog(
+      'finalize_gate shouldFinalize=$shouldFinalizeRunningSession durationRunning=${durationService?.isRunning ?? false} coordinatorRunning=${sessionCoordinator?.isRunning ?? false}',
+    );
+    if (shouldFinalizeRunningSession) {
+      if (result.saved > 0) {
+        _workoutFlowLog(
+          'finalize_with_saved_sessions reason=${finalizeReason.name} end=${resolvedFinalizeTime.toIso8601String()}',
+        );
+        try {
+          await durationService.save(endTime: resolvedFinalizeTime);
+        } catch (error) {
+          _workoutFlowLog('finalize_duration_save_failed error=$error');
+          // Ignore timer persistence failures; saving the workout is more important.
+        }
+        if (sessionCoordinator != null) {
+          try {
+            if (finalizeReason == WorkoutFinalizeReason.autoInactivity) {
+              await sessionCoordinator.finishAutomaticallyAfterInactivity(
+                lastSetCompletedAt: resolvedFinalizeTime,
+              );
+            } else {
+              await sessionCoordinator.finishManuallyFromWorkoutSave(
+                finalizedAt: resolvedFinalizeTime,
+              );
+            }
+            _workoutFlowLog(
+              'finalize_coordinator_done reason=${finalizeReason.name}',
+            );
+          } catch (error) {
+            _workoutFlowLog('finalize_coordinator_failed error=$error');
+            // Ignore coordinator persistence failures.
+          }
+        }
+      } else {
+        _workoutFlowLog('finalize_no_saved_sessions -> discard');
+        if (sessionCoordinator != null) {
+          try {
+            await sessionCoordinator.finishDiscarded(
+              reason: WorkoutFinalizeReason.discardNoSets,
+            );
+            _workoutFlowLog('finalize_discard_via_coordinator_done');
+          } catch (error) {
+            _workoutFlowLog(
+              'finalize_discard_via_coordinator_failed error=$error',
+            );
+            // Ignore coordinator persistence failures.
+          }
+        } else {
+          try {
+            await durationService.discard();
+            _workoutFlowLog('finalize_discard_via_duration_done');
+          } catch (error) {
+            _workoutFlowLog(
+              'finalize_discard_via_duration_failed error=$error',
+            );
+            // Ignore timer discard failures.
+          }
+        }
+      }
+    } else {
+      _workoutFlowLog('finalize_skipped reason=no_running_session');
     }
 
     return result;
+  }
+
+  Future<SaveAllSessionsResult> endDay({
+    required String userId,
+    required String gymId,
+    required bool showInLeaderboard,
+    String? userName,
+    String? gender,
+    double? bodyWeightKg,
+    Map<String, int?> plannedRestSecondsBySession = const {},
+    WorkoutFinalizeReason finalizeReason = WorkoutFinalizeReason.manualSave,
+    DateTime? finalizeEndTime,
+    DateTime? sessionAnchorStartTime,
+    String? sessionAnchorDayKey,
+  }) async {
+    final result = await saveAllSessions(
+      userId: userId,
+      gymId: gymId,
+      showInLeaderboard: showInLeaderboard,
+      userName: userName,
+      gender: gender,
+      bodyWeightKg: bodyWeightKg,
+      plannedRestSecondsBySession: plannedRestSecondsBySession,
+      finalizeReason: finalizeReason,
+      finalizeEndTime: finalizeEndTime,
+    );
+    applySavedSessionCleanup(
+      result: result,
+      userId: userId,
+      gymId: gymId,
+      sessionAnchorStartTime: sessionAnchorStartTime,
+      sessionAnchorDayKey: sessionAnchorDayKey,
+    );
+    return result;
+  }
+
+  void applySavedSessionCleanup({
+    required SaveAllSessionsResult result,
+    required String userId,
+    required String gymId,
+    DateTime? sessionAnchorStartTime,
+    String? sessionAnchorDayKey,
+  }) {
+    if (result.saved <= 0) {
+      return;
+    }
+
+    // End-of-day cleanup: once at least one session is persisted, all open
+    // sessions in this user/gym context must be closed to avoid stale
+    // workout tabs and reactivation by leftover in-memory sessions.
+    final closed = closeAllSessionsFor(userId: userId, gymId: gymId);
+    _workoutFlowLog(
+      'cleanup_close_all_sessions reason=saved_end_day user=$userId gym=$gymId closed=$closed',
+    );
+
+    final normalizedAnchorDayKey = sessionAnchorDayKey?.trim();
+    final hasAnchorDay =
+        (normalizedAnchorDayKey != null && normalizedAnchorDayKey.isNotEmpty) ||
+        sessionAnchorStartTime != null;
+    if (!hasAnchorDay) {
+      _workoutFlowLog(
+        'cleanup_skip_plan_context reason=missing_anchor_day gym=$gymId',
+      );
+      return;
+    }
+    clearPlanContextForDay(
+      gymId: gymId,
+      date: sessionAnchorStartTime,
+      dayKey: normalizedAnchorDayKey,
+    );
   }
 
   // --- Plan-Kontext ---------------------------------------------------------
@@ -730,23 +943,25 @@ class WorkoutDayController extends ChangeNotifier
     required String planId,
     String? planName,
     DateTime? date,
+    String? dayKey,
   }) {
-    final dayKey = logicDayKey(date ?? DateTime.now());
+    final resolvedDayKey = _resolvePlanDayKey(date: date, dayKey: dayKey);
     _activePlanId = planId;
     _activePlanName = planName;
     _activePlanGymId = gymId;
-    _activePlanDayKey = dayKey;
+    _activePlanDayKey = resolvedDayKey;
   }
 
   /// Liefert den aktuellen Plan-Kontext für [gymId] und [date], falls vorhanden.
   (String planId, String? planName)? getPlanContext({
     required String gymId,
     DateTime? date,
+    String? dayKey,
   }) {
-    final dayKey = logicDayKey(date ?? DateTime.now());
+    final resolvedDayKey = _resolvePlanDayKey(date: date, dayKey: dayKey);
     if (_activePlanId == null ||
         _activePlanGymId != gymId ||
-        _activePlanDayKey != dayKey) {
+        _activePlanDayKey != resolvedDayKey) {
       return null;
     }
     return (_activePlanId!, _activePlanName);
@@ -758,6 +973,8 @@ class WorkoutDayController extends ChangeNotifier
   void cancelActivePlan({
     required String userId,
     required String gymId,
+    DateTime? date,
+    String? dayKey,
   }) {
     final entriesToClose = _sessions.values
         .where((e) => e.userId == userId && e.gymId == gymId)
@@ -768,18 +985,27 @@ class WorkoutDayController extends ChangeNotifier
       entry.provider.discardDraftForCancellation();
       closeSession(entry.key);
     }
-    clearPlanContextForDay(gymId: gymId);
+    clearPlanContextForDay(gymId: gymId, date: date, dayKey: dayKey);
   }
 
   /// Löscht den Plan-Kontext für [gymId] am aktuellen Tag (ohne Sessions zu verändern).
   void clearPlanContextForDay({
     required String gymId,
     DateTime? date,
+    String? dayKey,
   }) {
-    final dayKey = logicDayKey(date ?? DateTime.now());
-    if (_activePlanGymId == gymId && _activePlanDayKey == dayKey) {
+    final resolvedDayKey = _resolvePlanDayKey(date: date, dayKey: dayKey);
+    if (_activePlanGymId == gymId && _activePlanDayKey == resolvedDayKey) {
       _clearPlanContext();
     }
+  }
+
+  String _resolvePlanDayKey({DateTime? date, String? dayKey}) {
+    final normalizedDayKey = dayKey?.trim();
+    if (normalizedDayKey != null && normalizedDayKey.isNotEmpty) {
+      return normalizedDayKey;
+    }
+    return logicDayKey(date ?? DateTime.now());
   }
 
   @override
@@ -800,11 +1026,16 @@ class WorkoutDayController extends ChangeNotifier
     final xp = _xpProvider;
     final challenge = _challengeProvider;
     final duration = _sessionDurationService;
-    if (xp != null && challenge != null && duration != null) {
+    final coordinator = _sessionCoordinator;
+    if (xp != null &&
+        challenge != null &&
+        duration != null &&
+        coordinator != null) {
       provider.attachExternalServices(
         xpProvider: xp,
         challengeProvider: challenge,
         sessionDurationService: duration,
+        sessionCoordinator: coordinator,
       );
     }
   }
@@ -824,19 +1055,19 @@ class _SessionEntry {
     required this.userId,
     required this.provider,
   }) : snapshot = WorkoutDaySession(
-          key: key,
-          gymId: gymId,
-          deviceId: deviceId,
-          exerciseId: exerciseId,
-          exerciseName: exerciseName,
-          userId: userId,
-          provider: provider,
-          canSave: provider.hasActiveUnsavedSession,
-          isSaving: provider.isSaving,
-          isLoading: provider.isLoading,
-          hasSessionToday: provider.hasSessionToday,
-          error: provider.error,
-        );
+         key: key,
+         gymId: gymId,
+         deviceId: deviceId,
+         exerciseId: exerciseId,
+         exerciseName: exerciseName,
+         userId: userId,
+         provider: provider,
+         canSave: provider.hasActiveUnsavedSession,
+         isSaving: provider.isSaving,
+         isLoading: provider.isLoading,
+         hasSessionToday: provider.hasSessionToday,
+         error: provider.error,
+       );
 
   final String key;
   final String gymId;

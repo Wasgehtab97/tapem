@@ -1036,6 +1036,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsThemeEarthKingdom => 'Earth Kingdom';
 
   @override
+  String get settingsThemeMidnightGold => 'Midnight Gold';
+
+  @override
   String get settingsThemeSaveError => 'Could not save theme.';
 
   @override
@@ -2078,6 +2081,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String reportCalendarLogCount(Object date, int count) {
+    return 'Logs on $date: $count';
+  }
+
+  @override
   String get exerciseDeleteTitle => 'Delete exercise';
 
   @override
@@ -2154,7 +2162,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get challengeAdminFieldXpReward => 'XP reward';
 
   @override
+  String get challengeAdminFieldGoalType => 'Challenge goal';
+
+  @override
+  String get challengeAdminGoalTypeDeviceSets => 'Device sets';
+
+  @override
+  String get challengeAdminGoalTypeWorkoutFrequency => 'Workout frequency';
+
+  @override
   String get challengeAdminFieldType => 'Type';
+
+  @override
+  String get challengeAdminFieldWorkoutCount => 'Workouts in period';
+
+  @override
+  String get challengeAdminFieldWorkoutWindow => 'Time window';
+
+  @override
+  String get challengeAdminWorkoutWindowOneWeek => '1 calendar week';
+
+  @override
+  String get challengeAdminWorkoutWindowFourWeeks => '4 calendar weeks';
 
   @override
   String get challengeTabActive => 'Active';
@@ -2171,6 +2200,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String challengeDetailXpReward(int xp) {
     return 'XP: $xp';
+  }
+
+  @override
+  String challengeDetailGoalDeviceSets(int count) {
+    return 'Goal: $count sets';
+  }
+
+  @override
+  String challengeDetailGoalWorkoutFrequency(int count, int weeks) {
+    return 'Goal: $count workouts in $weeks calendar weeks';
   }
 
   @override
@@ -2202,6 +2241,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get challengeAdminFieldDevices => 'Devices';
+
+  @override
+  String get challengeAdminCreateButton => 'Create challenge';
 
   @override
   String get adminAreaTitle => 'Admin area';
@@ -2281,6 +2323,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String adminSymbolsAllTitleAssigned(Object title) {
     return 'All $title symbols already assigned.';
+  }
+
+  @override
+  String get adminSymbolsBackfillTooltip => 'Backfill usernameLower';
+
+  @override
+  String adminSymbolsBackfillSuccess(int count) {
+    return 'usernameLower updated: $count';
+  }
+
+  @override
+  String get adminSymbolsGlobalTitle => 'Global';
+
+  @override
+  String get userSymbolsAddTooltip => 'Add symbols';
+
+  @override
+  String userSymbolsInventoryTitle(Object username) {
+    return 'Inventory of $username';
   }
 
   @override
@@ -2442,4 +2503,613 @@ class AppLocalizationsEn extends AppLocalizations {
   String communityCalendarCountOther(Object count) {
     return '$count people trained on this day.';
   }
+
+  @override
+  String get ownerWorkspaceTitle => 'Owner workspace';
+
+  @override
+  String ownerWorkspaceActiveGym(Object gymId) {
+    return 'Active gym: $gymId';
+  }
+
+  @override
+  String ownerWorkspaceGeneratedAt(Object timeLabel) {
+    return 'Updated: $timeLabel';
+  }
+
+  @override
+  String get ownerSectionKpiTitle => 'Studio overview';
+
+  @override
+  String get ownerSectionKpiSubtitle => 'All core studio signals at a glance.';
+
+  @override
+  String get ownerSectionTasksTitle => 'Today\'s priorities';
+
+  @override
+  String get ownerSectionTasksSubtitle => 'These tasks create immediate operational impact.';
+
+  @override
+  String get ownerSectionQuickActionsTitle => 'Quick actions';
+
+  @override
+  String get ownerSectionQuickActionsSubtitle => 'Direct access to all owner modules without route detours.';
+
+  @override
+  String get ownerTasksNone => 'No open priorities. Studio operations are stable.';
+
+  @override
+  String get ownerPriorityHigh => 'high';
+
+  @override
+  String get ownerPriorityMedium => 'medium';
+
+  @override
+  String get ownerPriorityLow => 'low';
+
+  @override
+  String get ownerNoAccessSubtitle => 'This area requires gymowner or admin permissions.';
+
+  @override
+  String get ownerGymContextMissingTitle => 'Gym context missing';
+
+  @override
+  String get ownerGymContextMissingSubtitle => 'Select an active gym first so owner data can be loaded.';
+
+  @override
+  String get ownerDashboardLoadErrorTitle => 'Owner dashboard could not be loaded';
+
+  @override
+  String ownerDashboardLoadErrorSubtitle(Object error) {
+    return 'Please refresh the data. Error: $error';
+  }
+
+  @override
+  String get ownerNoDataTitle => 'No owner data available yet';
+
+  @override
+  String get ownerNoDataSubtitle => 'Create devices and first studio actions so the dashboard can show meaningful signals.';
+
+  @override
+  String get ownerMetricMembersLabel => 'Members';
+
+  @override
+  String get ownerMetricMembersHelper => 'Registered members in the active gym.';
+
+  @override
+  String get ownerMetricDevicesLabel => 'Devices';
+
+  @override
+  String get ownerMetricDevicesHelper => 'Available training devices.';
+
+  @override
+  String get ownerMetricOpenFeedbackLabel => 'Open feedback';
+
+  @override
+  String get ownerMetricOpenFeedbackHelper => 'Feedback entries requiring action.';
+
+  @override
+  String get ownerMetricOpenSurveysLabel => 'Active surveys';
+
+  @override
+  String get ownerMetricOpenSurveysHelper => 'Running surveys in your gym.';
+
+  @override
+  String get ownerMetricActiveChallengesLabel => 'Active challenges';
+
+  @override
+  String get ownerMetricActiveChallengesHelper => 'Weekly and monthly challenges currently running.';
+
+  @override
+  String ownerTaskOpenFeedbackTitle(int count) {
+    return 'Handle $count open feedback item(s)';
+  }
+
+  @override
+  String get ownerTaskOpenFeedbackSubtitle => 'Unresolved feedback reduces service quality.';
+
+  @override
+  String get ownerTaskPlanChallengeTitle => 'Plan a new challenge';
+
+  @override
+  String get ownerTaskPlanChallengeSubtitle => 'Active challenges increase training frequency and retention.';
+
+  @override
+  String get ownerTaskStartSurveyTitle => 'Start a survey';
+
+  @override
+  String get ownerTaskStartSurveySubtitle => 'Collect member feedback today with a short survey.';
+
+  @override
+  String get ownerTaskCreateFirstDeviceTitle => 'Create the first device';
+
+  @override
+  String get ownerTaskCreateFirstDeviceSubtitle => 'Without devices, key tracking and report data are missing.';
+
+  @override
+  String get ownerTaskCheckMembersTitle => 'Review member data';
+
+  @override
+  String get ownerTaskCheckMembersSubtitle => 'Low member counts in reports can indicate incomplete data.';
+
+  @override
+  String get ownerQuickActionReportSubtitle => 'Analyze usage, member trends, and studio KPIs.';
+
+  @override
+  String get ownerQuickActionMembersSubtitle => 'Review member base and start clean-up actions.';
+
+  @override
+  String get ownerQuickActionDevicesSubtitle => 'Create, edit, and manage devices.';
+
+  @override
+  String get ownerQuickActionFeedbackSubtitle => 'Review and resolve open feedback.';
+
+  @override
+  String get ownerQuickActionSurveysSubtitle => 'Create, evaluate, and close surveys.';
+
+  @override
+  String get ownerQuickActionChallengesSubtitle => 'Plan challenges and maintain running campaigns.';
+
+  @override
+  String get ownerQuickActionDealsTitle => 'Deals';
+
+  @override
+  String get ownerQuickActionDealsSubtitle => 'Manage partner offers and promotions.';
+
+  @override
+  String get ownerQuickActionAdminSubtitle => 'Open all admin modules in one overview.';
+
+  @override
+  String get reportOverviewIntro => 'Key metrics for members, usage, and feedback.';
+
+  @override
+  String reportSurveyCountsInline(int openCount, int closedCount) {
+    return 'Active: $openCount · Closed: $closedCount';
+  }
+
+  @override
+  String reportManagementSummarySessions(int count) {
+    return '$count sessions were logged in this period.';
+  }
+
+  @override
+  String get reportManagementSummaryNoSessions => 'No usage sessions are available for the current period yet.';
+
+  @override
+  String reportManagementSummaryTopDevice(Object deviceName) {
+    return 'Most used device: $deviceName.';
+  }
+
+  @override
+  String get reportUsageHeatmapTitle => 'Activity heatmap';
+
+  @override
+  String get reportUsageHeatmapEmpty => 'No log data is available for the selected heatmap period yet.';
+
+  @override
+  String get reportUsageDetailsTitle => 'Details';
+
+  @override
+  String get reportUsageSlotMorning => 'Morning';
+
+  @override
+  String get reportUsageSlotNoon => 'Noon';
+
+  @override
+  String get reportUsageSlotEvening => 'Evening';
+
+  @override
+  String get reportUsageWeekdayMon => 'Mon';
+
+  @override
+  String get reportUsageWeekdayTue => 'Tue';
+
+  @override
+  String get reportUsageWeekdayWed => 'Wed';
+
+  @override
+  String get reportUsageWeekdayThu => 'Thu';
+
+  @override
+  String get reportUsageWeekdayFri => 'Fri';
+
+  @override
+  String get reportUsageWeekdaySat => 'Sat';
+
+  @override
+  String get reportUsageWeekdaySun => 'Sun';
+
+  @override
+  String get reportUsagePatternEmpty => 'No data is available for typical training times yet.';
+
+  @override
+  String reportUsagePatternPeakSummary(Object weekday, Object slot) {
+    return 'Highest load: $weekday $slot.';
+  }
+
+  @override
+  String get reportUsagePatternTitle => 'Pattern by weekday and time of day';
+
+  @override
+  String reportUsagePatternCellLabel(Object weekday, Object slot, int count) {
+    return '$weekday $slot: $count sessions';
+  }
+
+  @override
+  String get reportMembersLoading => 'Loading members...';
+
+  @override
+  String get reportMembersNoRegisteredMembers => 'No members have been registered yet.';
+
+  @override
+  String get reportMembersSummaryTotal => 'Members';
+
+  @override
+  String get reportMembersSummaryActive => 'Active members';
+
+  @override
+  String get reportMembersSummaryInactive => 'Inactive';
+
+  @override
+  String get reportMembersSummaryAtRisk => 'At risk (high)';
+
+  @override
+  String get reportMembersSummaryNewMembers => 'New members';
+
+  @override
+  String get reportMembersSummaryLoyal => 'Loyal members';
+
+  @override
+  String get reportMembersSummaryTrainingDays => 'Training days total';
+
+  @override
+  String get reportMembersSegmentActions => 'Actions for group';
+
+  @override
+  String get reportMembersSegmentAll => 'All members';
+
+  @override
+  String get reportMembersSegmentActive => 'Active members';
+
+  @override
+  String get reportMembersSegmentInactive => 'Inactive members';
+
+  @override
+  String get reportMembersSegmentAtRisk => 'At-risk members';
+
+  @override
+  String get reportMembersSegmentNewMembers => 'New members';
+
+  @override
+  String get reportMembersSegmentLoyal => 'Loyal members';
+
+  @override
+  String get reportMembersSegmentNoNumbers => 'No member numbers in this group.';
+
+  @override
+  String get reportMembersSegmentLargeExportTitle => 'Confirm large export action';
+
+  @override
+  String reportMembersSegmentLargeExportBody(int count) {
+    return 'You are exporting $count member numbers from \"All members\". Please confirm this sharing is required.';
+  }
+
+  @override
+  String get reportMembersSegmentLargeExportConfirm => 'Confirm';
+
+  @override
+  String reportMembersSegmentActionsFor(Object segmentName) {
+    return 'Actions for $segmentName';
+  }
+
+  @override
+  String reportMembersSegmentCount(int count) {
+    return '$count members in this group.';
+  }
+
+  @override
+  String get reportMembersSegmentCopy => 'Copy member numbers';
+
+  @override
+  String get reportMembersSegmentCopied => 'Member numbers copied.';
+
+  @override
+  String get reportMembersSegmentShare => 'Share member numbers';
+
+  @override
+  String reportMembersSegmentShareBody(Object segmentName, int count, Object numbers) {
+    return '$segmentName ($count members)\n\nMember numbers:\n$numbers';
+  }
+
+  @override
+  String get reportMembersSegmentShareSubject => 'Member segment from report';
+
+  @override
+  String get reportMembersSegmentAllShort => 'All';
+
+  @override
+  String get reportMembersSegmentActiveShort => 'Active';
+
+  @override
+  String get reportMembersSegmentInactiveShort => 'Inactive';
+
+  @override
+  String get reportMembersSegmentAtRiskShort => 'At risk';
+
+  @override
+  String get reportMembersSegmentNewMembersShort => 'New';
+
+  @override
+  String get reportMembersSegmentLoyalShort => 'Loyal';
+
+  @override
+  String get reportMembersRiskLow => 'low risk';
+
+  @override
+  String get reportMembersRiskMedium => 'medium risk';
+
+  @override
+  String get reportMembersRiskHigh => 'high risk';
+
+  @override
+  String get reportMembersRiskNewMember => 'new member';
+
+  @override
+  String get reportMembersAdminOnlyHint => 'Only admins of this gym can see training-day counts.';
+
+  @override
+  String get adminNoAccess => 'No access';
+
+  @override
+  String get adminRemoveUsersTitle => 'Remove users';
+
+  @override
+  String get adminSearchUsersHint => 'Search users (name)';
+
+  @override
+  String adminMemberSince(Object date) {
+    return 'Member since: $date';
+  }
+
+  @override
+  String get adminDeleteUserTitle => 'Delete user and data?';
+
+  @override
+  String adminDeleteUserMessage(Object name) {
+    return 'The user \"$name\" and all associated data in this gym will be permanently deleted.';
+  }
+
+  @override
+  String get adminDeleteUserAuditHint => 'This action will be logged in the admin audit and cannot be undone.';
+
+  @override
+  String adminDeleteUserSuccess(Object name, Object warning) {
+    return 'User $name$warning deleted';
+  }
+
+  @override
+  String adminDeleteUserError(Object error) {
+    return 'Error deleting user: $error';
+  }
+
+  @override
+  String brandingSelectedFile(Object filename) {
+    return 'Selected file: $filename';
+  }
+
+  @override
+  String get brandingLogoUrlHint => 'Note: Without Cloud Functions, please enter a public logo URL instead.';
+
+  @override
+  String get brandingLogoUrlLabel => 'Logo URL (optional)';
+
+  @override
+  String get brandingLogoUrlPlaceholder => 'https://...';
+
+  @override
+  String get adminDealsDeleteTitle => 'Delete deal?';
+
+  @override
+  String adminDealsDeleteMessage(Object name) {
+    return 'Do you really want to delete the deal \"$name\"?';
+  }
+
+  @override
+  String get adminDealsTitle => 'Manage deals';
+
+  @override
+  String adminDealsToggleError(Object error) {
+    return 'Error updating deal state: $error';
+  }
+
+  @override
+  String adminDealsLoadError(Object error) {
+    return 'Error loading deals: $error';
+  }
+
+  @override
+  String get adminDealsDeleteAuditHint => 'This change affects deal visibility for members immediately.';
+
+  @override
+  String get adminDealsDeleted => 'Deal deleted.';
+
+  @override
+  String get adminDealsCreateSuccess => 'Deal created.';
+
+  @override
+  String get adminDealsUpdateSuccess => 'Deal updated.';
+
+  @override
+  String get adminDealsStatusActive => 'Deal is now active.';
+
+  @override
+  String get adminDealsStatusInactive => 'Deal is now inactive.';
+
+  @override
+  String get adminDealsRestored => 'Deal restored.';
+
+  @override
+  String get adminDealsUndoErrorPrefix => 'Undo failed';
+
+  @override
+  String adminDealsDeleteError(Object error) {
+    return 'Error deleting deal: $error';
+  }
+
+  @override
+  String get dealFormCategoryDefault => 'Supplements';
+
+  @override
+  String get dealFormCategoryLabel => 'Category';
+
+  @override
+  String get dealFormRequiredFieldsError => 'Please fill in all required fields (Partner, Title, Code, Link).';
+
+  @override
+  String get dealFormInvalidUrlError => 'Shop link is not a valid URL.';
+
+  @override
+  String dealFormSaveError(Object error) {
+    return 'Error saving: $error';
+  }
+
+  @override
+  String get dealFormTitleNew => 'New deal';
+
+  @override
+  String get dealFormTitleEdit => 'Edit deal';
+
+  @override
+  String get dealFormPartnerLabel => 'Partner Name *';
+
+  @override
+  String get dealFormTitleLabel => 'Title *';
+
+  @override
+  String get dealFormCodeLabel => 'Discount code *';
+
+  @override
+  String get dealFormLinkLabel => 'Shop Link *';
+
+  @override
+  String get dealFormImageUrlLabel => 'Image URL';
+
+  @override
+  String get dealFormPartnerLogoLabel => 'Partner logo URL';
+
+  @override
+  String get dealFormDescriptionLabel => 'Description';
+
+  @override
+  String get dealFormPriorityLabel => 'Priority';
+
+  @override
+  String get dealFormActiveLabel => 'Deal active?';
+
+  @override
+  String get adminDeviceEditTitle => 'Edit device';
+
+  @override
+  String get adminDeviceNewTitle => 'Create new device';
+
+  @override
+  String adminDeviceUidLabel(Object uid) {
+    return 'UID: $uid';
+  }
+
+  @override
+  String adminDeviceIdLabel(Object id) {
+    return 'ID: $id';
+  }
+
+  @override
+  String get adminDeviceNameLabel => 'Name';
+
+  @override
+  String get adminDeviceNameHint => 'e.g. Leg press';
+
+  @override
+  String get adminDeviceDescLabel => 'Description';
+
+  @override
+  String get adminDeviceDescHint => 'Optional (Model, etc.)';
+
+  @override
+  String get adminDeviceMultiExerciseLabel => 'Includes multiple exercises?';
+
+  @override
+  String get adminDeviceMultiExerciseSubtitle => 'For cable cross or racks';
+
+  @override
+  String get adminDeviceDeleteAuditHint => 'Device master data will be removed. Downstream evaluations may be affected.';
+
+  @override
+  String get adminDashboardChallengesSubtitle => 'Create & manage challenges';
+
+  @override
+  String get adminDashboardSymbolsSubtitle => 'User symbols & ranks';
+
+  @override
+  String get adminDashboardRemoveUsersTitle => 'Remove users';
+
+  @override
+  String get adminDashboardRemoveUsersSubtitle => 'Clean up test users & data';
+
+  @override
+  String get adminDashboardDealsTitle => 'Manage deals';
+
+  @override
+  String get adminDashboardDealsSubtitle => 'Maintain sponsors & discounts';
+
+  @override
+  String get reportTotalSessions => 'Total sessions';
+
+  @override
+  String get reportTopDevice => 'Top device';
+
+  @override
+  String reportLogsAtDate(Object date, int count) {
+    return 'Logs on $date: $count';
+  }
+
+  @override
+  String get reportSurveysSubtitle => 'Start surveys and evaluate member feedback.';
+
+  @override
+  String get reportFeedbackSubtitle => 'Manage suggestions, complaints, and praise from your members.';
+
+  @override
+  String reportSurveysStatus(int open, int closed) {
+    return 'Active: $open · Closed: $closed';
+  }
+
+  @override
+  String get reportGenericError => 'An error has occurred';
+
+  @override
+  String get reportNoDataAvailable => 'No data available';
+
+  @override
+  String get adminDeviceManufacturerLabel => 'Manufacturer';
+
+  @override
+  String get adminDeviceMuscleGroupsLabel => 'Muscle groups';
+
+  @override
+  String get adminDeviceCreateButton => 'Create';
+
+  @override
+  String get adminDeviceNameError => 'Please enter a name.';
+
+  @override
+  String get adminDeviceLoadingError => 'Error loading';
+
+  @override
+  String get adminDeviceNoManufacturers => 'No manufacturers activated.';
+
+  @override
+  String get adminDeviceManageManufacturers => 'Manage';
+
+  @override
+  String get adminDeviceSelectManufacturer => 'Select manufacturer';
 }

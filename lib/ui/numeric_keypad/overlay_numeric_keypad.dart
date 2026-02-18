@@ -12,7 +12,12 @@ import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 
-void _klog(String m) => debugPrint('🔢 [Keypad] $m');
+const bool _enableVerboseKeypadLogs = false;
+
+void _klog(String m) {
+  if (!_enableVerboseKeypadLogs) return;
+  debugPrint('🔢 [Keypad] $m');
+}
 
 class NumericKeypadTheme {
   final double gap;
@@ -72,8 +77,9 @@ class NumericKeypadTheme {
     }
 
     final gradientColors = brand?.gradient.colors ?? const <Color>[];
-    final accentBase =
-        gradientColors.isNotEmpty ? gradientColors.last : scheme.secondary;
+    final accentBase = gradientColors.isNotEmpty
+        ? gradientColors.last
+        : scheme.secondary;
     final accent = accentBase.computeLuminance() < 0.08
         ? scheme.primary
         : accentBase;
@@ -245,10 +251,8 @@ class OverlayNumericKeypadHost extends StatefulWidget {
 
 final overlayNumericKeypadControllerProvider =
     ChangeNotifierProvider<OverlayNumericKeypadController>((ref) {
-  final controller = OverlayNumericKeypadController();
-  ref.onDispose(controller.dispose);
-  return controller;
-});
+      return OverlayNumericKeypadController();
+    });
 
 class _OverlayNumericKeypadHostState extends State<OverlayNumericKeypadHost>
     with WidgetsBindingObserver {
@@ -455,10 +459,7 @@ class OverlayNumericKeypad extends StatelessWidget {
                     ),
                   ],
                   border: Border(
-                    top: BorderSide(
-                      color: Colors.white24,
-                      width: 0.9,
-                    ),
+                    top: BorderSide(color: Colors.white24, width: 0.9),
                   ),
                 ),
                 padding: EdgeInsets.fromLTRB(
@@ -494,14 +495,17 @@ class OverlayNumericKeypad extends StatelessWidget {
                                 shift: controller.shift,
                                 symbols: controller.symbols,
                                 decimalLabel: decLabel,
-                                onKey: (t) => _applyToken(context, controller, t),
+                                onKey: (t) =>
+                                    _applyToken(context, controller, t),
                               ),
                             ),
                           ),
                           if (controller.railEnabled) ...[
                             SizedBox(width: gap),
                             ConstrainedBox(
-                              constraints: BoxConstraints.tightFor(width: railW),
+                              constraints: BoxConstraints.tightFor(
+                                width: railW,
+                              ),
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: theme.railBg,
@@ -533,16 +537,21 @@ class OverlayNumericKeypad extends StatelessWidget {
                                       context,
                                       listen: false,
                                     );
-                                    final dayController =
-                                        container.read(workoutDayControllerProvider);
+                                    final dayController = container.read(
+                                      workoutDayControllerProvider,
+                                    );
                                     dayController.focusedProvider?.clearFocus();
                                     controller.close();
                                   },
-                                  onNavigate: () => _navigateNext(context, controller),
-                                  onNavigateBack: () => _navigatePrevious(context, controller),
+                                  onNavigate: () =>
+                                      _navigateNext(context, controller),
+                                  onNavigateBack: () =>
+                                      _navigatePrevious(context, controller),
                                   onAddSet: () => _addSet(context),
-                                  onDuplicate: () =>
-                                      _duplicateFromPrevious(context, controller),
+                                  onDuplicate: () => _duplicateFromPrevious(
+                                    context,
+                                    controller,
+                                  ),
                                 ),
                               ),
                             ),
@@ -645,7 +654,9 @@ class OverlayNumericKeypad extends StatelessWidget {
           // Alle Sets erledigt: Fokus löschen, Tastatur aber offen lassen,
           // bis der Nutzer sie explizit schließt.
           prov.clearFocus();
-          elogUi('OVERLAY_NAVIGATE_CLOSE', {'reason': 'all_sets_completed_keep_open'});
+          elogUi('OVERLAY_NAVIGATE_CLOSE', {
+            'reason': 'all_sets_completed_keep_open',
+          });
           _haptic(context);
           return;
         }
@@ -1007,24 +1018,94 @@ class _KeyGrid extends StatelessWidget {
     if (alphaMode && symbols) {
       // Symbols layer
       final symChars = [
-        '1','2','3','4','5','6','7','8','9','0',
-        '!','?','@','#','€','%','&','/','(' ,')',
-        '+','*','"','\'','-','_','=',':',';',
-        '.',',','<','>','[',']','{','}','\\','|',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        '0',
+        '!',
+        '?',
+        '@',
+        '#',
+        '€',
+        '%',
+        '&',
+        '/',
+        '(',
+        ')',
+        '+',
+        '*',
+        '"',
+        '\'',
+        '-',
+        '_',
+        '=',
+        ':',
+        ';',
+        '.',
+        ',',
+        '<',
+        '>',
+        '[',
+        ']',
+        '{',
+        '}',
+        '\\',
+        '|',
       ];
       items = [
-        for (final s in symChars)
-          _KeySpec(token: s, label: s, semantics: s),
+        for (final s in symChars) _KeySpec(token: s, label: s, semantics: s),
         _KeySpec(token: 'space', label: '⎵', semantics: 'space'),
-        _KeySpec(token: 'del', icon: Icons.backspace_outlined, semantics: loc.numericKeypadSemanticsDelete),
-        _KeySpec(token: 'done', icon: Icons.check_circle_outline, semantics: 'done'),
+        _KeySpec(
+          token: 'del',
+          icon: Icons.backspace_outlined,
+          semantics: loc.numericKeypadSemanticsDelete,
+        ),
+        _KeySpec(
+          token: 'done',
+          icon: Icons.check_circle_outline,
+          semantics: 'done',
+        ),
         _KeySpec(token: 'abc', label: 'ABC', semantics: 'abc'),
       ];
     } else if (alphaMode) {
       final letters = [
-        'q','w','e','r','t','y','u','i','o','p','ü',
-        'a','s','d','f','g','h','j','k','l','ö',
-        'shift','z','x','c','v','b','n','m','ä','ß',
+        'q',
+        'w',
+        'e',
+        'r',
+        't',
+        'y',
+        'u',
+        'i',
+        'o',
+        'p',
+        'ü',
+        'a',
+        's',
+        'd',
+        'f',
+        'g',
+        'h',
+        'j',
+        'k',
+        'l',
+        'ö',
+        'shift',
+        'z',
+        'x',
+        'c',
+        'v',
+        'b',
+        'n',
+        'm',
+        'ä',
+        'ß',
       ];
       items = [
         for (final ch in letters)
@@ -1033,27 +1114,43 @@ class _KeyGrid extends StatelessWidget {
             label: ch == 'shift'
                 ? (shift ? '⇧' : '⇪')
                 : (ch.length == 1
-                    ? (shift ? ch.toUpperCase() : ch.toUpperCase())
-                    : ch.toUpperCase()),
+                      ? (shift ? ch.toUpperCase() : ch.toUpperCase())
+                      : ch.toUpperCase()),
             semantics: ch,
             icon: ch == 'shift' ? Icons.keyboard_capslock : null,
           ),
         _KeySpec(token: 'sym', label: '123', semantics: 'symbols'),
         _KeySpec(token: 'space', label: '⎵', semantics: 'space'),
-        _KeySpec(token: 'del', icon: Icons.backspace_outlined, semantics: loc.numericKeypadSemanticsDelete),
-        _KeySpec(token: 'done', icon: Icons.check_circle_outline, semantics: 'done'),
+        _KeySpec(
+          token: 'del',
+          icon: Icons.backspace_outlined,
+          semantics: loc.numericKeypadSemanticsDelete,
+        ),
+        _KeySpec(
+          token: 'done',
+          icon: Icons.check_circle_outline,
+          semantics: 'done',
+        ),
       ];
     } else {
       items = <_KeySpec>[
         for (final n in ['1', '2', '3', '4', '5', '6', '7', '8', '9'])
-          _KeySpec(token: n, label: n, semantics: loc.numericKeypadSemanticsDigit(n)),
+          _KeySpec(
+            token: n,
+            label: n,
+            semantics: loc.numericKeypadSemanticsDigit(n),
+          ),
         _KeySpec(
           token: allowDecimal ? 'dec' : '_',
           label: allowDecimal ? decimalLabel : '',
           disabled: !allowDecimal,
           semantics: loc.numericKeypadSemanticsDecimal,
         ),
-        _KeySpec(token: '0', label: '0', semantics: loc.numericKeypadSemanticsDigit('0')),
+        _KeySpec(
+          token: '0',
+          label: '0',
+          semantics: loc.numericKeypadSemanticsDigit('0'),
+        ),
         _KeySpec(
           token: 'del',
           icon: Icons.backspace_outlined,
@@ -1243,11 +1340,7 @@ class _ActionRailCompact extends StatelessWidget {
           loc.numericKeypadSemanticsNext,
           onNavigate,
         ),
-        _RailAction(
-          Icons.add_rounded,
-          loc.addSetButton,
-          onAddSet,
-        ),
+        _RailAction(Icons.add_rounded, loc.addSetButton, onAddSet),
         _RailAction(
           Icons.copy_all_rounded,
           loc.numericKeypadSemanticsDuplicate,
@@ -1369,12 +1462,7 @@ class _RailAction {
   // internal bookkeeping for layout
   bool _consumed = false;
 
-  _RailAction(
-    this.icon,
-    this.label,
-    this.onTap, {
-    this.wide = false,
-  });
+  _RailAction(this.icon, this.label, this.onTap, {this.wide = false});
 }
 
 class _RailBtnSquare extends StatefulWidget {
@@ -1413,12 +1501,7 @@ class _RailBtnSquareState extends State<_RailBtnSquare> {
             borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.center,
-          child: FittedBox(
-            child: Icon(
-              widget.icon,
-              color: th.railIcon,
-            ),
-          ),
+          child: FittedBox(child: Icon(widget.icon, color: th.railIcon)),
         ),
       ),
     );
@@ -1456,12 +1539,7 @@ class _RailBtnWide extends StatelessWidget {
           ),
           alignment: Alignment.center,
           // Icon only (consistent with compact rail); gets more visual weight
-          child: FittedBox(
-            child: Icon(
-              icon,
-              color: th.railIcon,
-            ),
-          ),
+          child: FittedBox(child: Icon(icon, color: th.railIcon)),
         ),
       ),
     );
@@ -1548,8 +1626,9 @@ class _KeyButtonState extends State<_KeyButton> {
         duration: const Duration(milliseconds: 110),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color: (disabled ? th.keyBg.withOpacity(0.7) : th.keyBg)
-              .withOpacity(0.95),
+          color: (disabled ? th.keyBg.withOpacity(0.7) : th.keyBg).withOpacity(
+            0.95,
+          ),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: disabled ? th.keyBorder.withOpacity(0.2) : th.keyBorder,

@@ -18,6 +18,10 @@ import '../core/push/push_notification_handler.dart';
 import 'navigation.dart';
 
 const bool kEnablePush = true;
+const bool kEnableCloudFunctions = bool.fromEnvironment(
+  'ENABLE_CLOUD_FUNCTIONS',
+  defaultValue: false,
+);
 const bool _logPush = false;
 
 Future<void> ensureFirebaseInitialized() async {
@@ -122,6 +126,9 @@ Future<void> initializePushMessaging() async {
 }
 
 Future<void> _registerToken(String token) async {
+  if (!kEnableCloudFunctions) {
+    return;
+  }
   final platform = defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
   try {
     await FunctionsProvider.instance.httpsCallable('registerPushToken').call({

@@ -1,10 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/features/report/providers/report_providers.dart'
+    as report_providers;
 
 import '../../data/training_day_repository.dart';
 import '../../domain/gym_member.dart';
@@ -19,7 +21,8 @@ class ReportMembersUsageScreen extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
 
     return Scaffold(
       appBar: AppBar(
@@ -37,22 +40,20 @@ class ReportMembersUsageScreen extends StatelessWidget {
   }
 }
 
-class _UsageContent extends StatelessWidget {
+class _UsageContent extends ConsumerWidget {
   const _UsageContent({required this.gymId});
 
   final String gymId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context)!;
-    final query = FirebaseFirestore.instance
-        .collection('gyms')
-        .doc(gymId)
-        .collection('users')
-        .orderBy('memberNumber');
+    final trainingDayRepository = ref.watch(
+      report_providers.trainingDayRepositoryProvider,
+    );
 
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: query.snapshots(),
+    return StreamBuilder<List<GymMember>>(
+      stream: trainingDayRepository.watchGymMembers(gymId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(
@@ -67,12 +68,9 @@ class _UsageContent extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final members = snapshot.data?.docs
-                .map(GymMember.fromSnapshot)
-                .whereType<GymMember>()
-                .where((member) => member.memberNumber.isNotEmpty)
-                .toList() ??
-            [];
+        final members = (snapshot.data ?? const <GymMember>[]).toList(
+          growable: false,
+        );
 
         if (members.isEmpty) {
           return Center(
@@ -83,23 +81,29 @@ class _UsageContent extends StatelessWidget {
           );
         }
 
-        return _UsageDistribution(members: members);
+        return _UsageDistribution(
+          members: members,
+          trainingDayRepository: trainingDayRepository,
+        );
       },
     );
   }
 }
 
 class _UsageDistribution extends StatefulWidget {
-  const _UsageDistribution({required this.members});
+  const _UsageDistribution({
+    required this.members,
+    required this.trainingDayRepository,
+  });
 
   final List<GymMember> members;
+  final TrainingDayRepository trainingDayRepository;
 
   @override
   State<_UsageDistribution> createState() => _UsageDistributionState();
 }
 
 class _UsageDistributionState extends State<_UsageDistribution> {
-  final _trainingDayRepository = TrainingDayRepository();
   Future<Map<String, int>>? _trainingDayCountsFuture;
   List<String> _memberIds = const [];
 
@@ -125,7 +129,7 @@ class _UsageDistributionState extends State<_UsageDistribution> {
     _memberIds = ids;
     _trainingDayCountsFuture = ids.isEmpty
         ? Future.value(const {})
-        : _trainingDayRepository.fetchTrainingDayCounts(members);
+        : widget.trainingDayRepository.fetchTrainingDayCounts(members);
   }
 
   List<String> _extractIds(List<GymMember> members) {
@@ -170,7 +174,9 @@ class _UsageDistributionState extends State<_UsageDistribution> {
               ...results.map((result) {
                 final percentageLabel = percentFormat.format(result.percentage);
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs / 2),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppSpacing.xs / 2,
+                  ),
                   child: Text(
                     loc.reportMembersUsageBucketSummary(
                       result.label,
@@ -195,7 +201,10 @@ class _UsageDistributionState extends State<_UsageDistribution> {
   ) {
     const buckets = <_UsageBucket>[
       _UsageBucket(label: '<1', predicate: _UsagePredicates.lessThanOne),
-      _UsageBucket(label: '≥1', predicate: _UsagePredicates.greaterThanOrEqualOne),
+      _UsageBucket(
+        label: '≥1',
+        predicate: _UsagePredicates.greaterThanOrEqualOne,
+      ),
       _UsageBucket(label: '>3', predicate: _UsagePredicates.greaterThanThree),
       _UsageBucket(label: '>7', predicate: _UsagePredicates.greaterThanSeven),
       _UsageBucket(label: '>20', predicate: _UsagePredicates.greaterThanTwenty),
@@ -207,18 +216,20 @@ class _UsageDistributionState extends State<_UsageDistribution> {
       return const [];
     }
 
-    return buckets.map((bucket) {
-      final matched = members.where((member) {
-        final count = counts[member.id] ?? 0;
-        return bucket.predicate(count);
-      }).length;
-      final percentage = total == 0 ? 0.0 : (matched / total) * 100;
-      return _UsageBucketResult(
-        label: bucket.label,
-        percentage: percentage,
-        memberCount: matched,
-      );
-    }).toList(growable: false);
+    return buckets
+        .map((bucket) {
+          final matched = members.where((member) {
+            final count = counts[member.id] ?? 0;
+            return bucket.predicate(count);
+          }).length;
+          final percentage = total == 0 ? 0.0 : (matched / total) * 100;
+          return _UsageBucketResult(
+            label: bucket.label,
+            percentage: percentage,
+            memberCount: matched,
+          );
+        })
+        .toList(growable: false);
   }
 }
 
@@ -288,8 +299,8 @@ class _UsageBarChart extends StatelessWidget {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: results.map((result) {
-                              final heightFactor =
-                                  (result.percentage / 100).clamp(0.0, 1.0);
+                              final heightFactor = (result.percentage / 100)
+                                  .clamp(0.0, 1.0);
                               final tooltipMessage =
                                   '${result.label}\n${tooltipFormat.format(result.percentage)}%';
                               return Expanded(
@@ -305,10 +316,8 @@ class _UsageBarChart extends StatelessWidget {
                                         AppRadius.card,
                                       ),
                                     ),
-                                    textStyle:
-                                        theme.textTheme.bodyMedium?.copyWith(
-                                      color: onPrimary,
-                                    ),
+                                    textStyle: theme.textTheme.bodyMedium
+                                        ?.copyWith(color: onPrimary),
                                     verticalOffset: AppSpacing.sm,
                                     preferBelow: false,
                                     child: _UsageBar(
@@ -363,10 +372,7 @@ class _UsageBarChart extends StatelessWidget {
 }
 
 class _UsageBar extends StatelessWidget {
-  const _UsageBar({
-    required this.heightFactor,
-    required this.gradientColors,
-  });
+  const _UsageBar({required this.heightFactor, required this.gradientColors});
 
   final double heightFactor;
   final List<Color> gradientColors;

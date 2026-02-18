@@ -1,8 +1,12 @@
 // lib/features/home/presentation/screens/home_screen.dart
 
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/recent_devices_store.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_screen.dart';
 import 'package:tapem/features/report/presentation/screens/report_screen.dart';
@@ -16,20 +20,20 @@ import 'package:tapem/features/training_plan/presentation/widgets/training_plan_
 import 'package:tapem/features/coaching/presentation/screens/coaching_home_screen.dart';
 import 'package:tapem/features/nutrition/presentation/widgets/nutrition_tab_navigator.dart';
 import 'package:tapem/features/auth/presentation/widgets/username_dialog.dart';
-import 'package:tapem/core/config/feature_flags.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import 'package:tapem/ui/timer/timer_app_bar_title.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
+import 'package:tapem/core/services/workout_session_coordinator.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
-import 'package:tapem/core/services/workout_session_duration_service.dart'
-    as wsds;
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
 import 'package:tapem/features/device/presentation/widgets/workout_day_table_card.dart';
 import 'package:tapem/app_router.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
+import 'package:tapem/core/widgets/offline_banner.dart';
+import 'package:tapem/features/device/providers/device_riverpod.dart';
+import 'package:tapem/features/training_details/providers/session_repository_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -39,8 +43,11 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   late int _currentIndex;
+  bool _didResolveRoleDefaultIndex = false;
+  bool _didWarmupWorkoutData = false;
   _HomeTabId? _lastTabId;
   final GlobalKey<NavigatorState> _nutritionNavigatorKey =
       GlobalKey<NavigatorState>();
@@ -59,6 +66,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   _HomeOverlayFeature? _overlayFeature;
   DiscoverInitialPage _discoverInitialPage = DiscoverInitialPage.stats;
 
+  Future<void> _evaluateWorkoutInactivityNow() async {
+    final auth = ref.read(authControllerProvider);
+    final uid = auth.userId;
+    final gymId = auth.gymCode;
+    if (uid == null || gymId == null || gymId.isEmpty) return;
+    final coordinator = ref.read(workoutSessionCoordinatorProvider);
+    await coordinator.evaluateInactivityNow(uid: uid, gymId: gymId);
+  }
+
+  Future<void> _warmupWorkoutData() async {
+    if (_didWarmupWorkoutData) {
+      return;
+    }
+    final auth = ref.read(authControllerProvider);
+    final userId = auth.userId;
+    final gymId = auth.gymCode;
+    if (userId == null || userId.isEmpty || gymId == null || gymId.isEmpty) {
+      return;
+    }
+    _didWarmupWorkoutData = true;
+
+    try {
+      await ref.read(sessionRepositoryProvider).warmupForUser(userId: userId);
+      final recentDeviceIds = await RecentDevicesStore.getOrder(gymId);
+      if (recentDeviceIds.isEmpty) {
+        return;
+      }
+      final getExercises = ref.read(getExercisesForDeviceProvider);
+      for (final deviceId in recentDeviceIds.take(3)) {
+        unawaited(() async {
+          try {
+            await getExercises.execute(gymId, deviceId, userId);
+          } catch (_) {
+            // Warmup is best-effort.
+          }
+        }());
+      }
+    } catch (_) {
+      _didWarmupWorkoutData = false;
+    }
+  }
+
+  Future<void> _maybePromptUsernameOnStartup() async {
+    // Give auth state a brief moment to settle before prompting.
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    if (!mounted) return;
+    final authProv = ref.read(authControllerProvider);
+    if (authProv.isGuest || authProv.isLoading || !authProv.isLoggedIn) {
+      return;
+    }
+    final userName = authProv.userName?.trim();
+    if (userName != null && userName.isNotEmpty) {
+      return;
+    }
+
+    try {
+      final results = await Connectivity().checkConnectivity();
+      final isOffline =
+          results.isNotEmpty &&
+          results.every((result) => result == ConnectivityResult.none);
+      if (isOffline || !mounted) {
+        return;
+      }
+    } catch (_) {
+      // If connectivity cannot be determined, do not force a startup modal.
+      return;
+    }
+
+    if (!mounted) return;
+    await showUsernameDialog(context);
+  }
+
   void _switchToProfileTab() {
     if (!mounted) return;
     setState(() {
@@ -74,9 +153,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final deviceId = devices.isNotEmpty ? devices.first.uid : '';
     final loc = AppLocalizations.of(context)!;
     final auth = ref.watch(authControllerProvider);
-    final wsds.WorkoutSessionDurationService timerService = ref.watch(
-      workoutSessionDurationServiceProvider,
+    final coordinatorRunning = ref.watch(
+      workoutSessionCoordinatorProvider.select((c) => c.isRunning),
     );
+    final durationRunning = ref.watch(
+      workoutSessionDurationServiceProvider.select((s) => s.isRunning),
+    );
+    final isTrainingRunning = coordinatorRunning && durationRunning;
     final WorkoutDayController workoutController = ref.read(
       workoutDayControllerProvider,
     );
@@ -215,14 +298,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Wenn bereits Sessions existieren, wird die zuletzt aktive Session
     // geöffnet. Andernfalls wird ein "leerer" Workout-Tag mit einem
     // Fallback-Gerät gestartet (sofern vorhanden).
-    if (timerService.isRunning) {
+    if (isTrainingRunning || activeWorkoutSession != null) {
       // Wenn eine aktive Session existiert, diese im Workout-Tab öffnen.
       // Ansonsten eine komplett leere Workout-Seite anzeigen, bis der Nutzer
       // über Gym/NFC eine Übung auswählt.
       Widget workoutPage;
       if (activeWorkoutSession != null) {
+        final sessionCoordinator = ref.read(workoutSessionCoordinatorProvider);
         final planContext = workoutController.getPlanContext(
           gymId: activeWorkoutSession.gymId,
+          date: sessionCoordinator.anchorStartAt,
+          dayKey: sessionCoordinator.anchorDayKey,
         );
         workoutPage = WorkoutDayScreen(
           key: const PageStorageKey('Workout'),
@@ -232,6 +318,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           planId: planContext?.$1,
           planName: planContext?.$2,
           sessionBuilder: buildWorkoutDayTableSessionCard,
+          showInlineOfflineBanner: false,
         );
       } else {
         workoutPage = const _EmptyWorkoutScreen();
@@ -403,23 +490,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
-    debugPrint('[Home] initState initialIndex=${widget.initialIndex}');
+    WidgetsBinding.instance.addObserver(this);
+    _currentIndex = widget.initialIndex < 0 ? 0 : widget.initialIndex;
     // Nach Login Gym laden
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProv = ref.read(authControllerProvider);
-      debugPrint(
-        '[Tabs] role=${authProv.role}, isAdmin=${authProv.isAdmin}, restricted=${FF.limitTabsForMembers}',
-      );
       final gymProv = ref.read(gymProvider);
       final code = authProv.gymCode;
       if (code != null && code.isNotEmpty) {
         gymProv.loadGymData(code);
       }
-      if (authProv.userName == null || authProv.userName!.isEmpty) {
-        showUsernameDialog(context);
-      }
+      unawaited(_maybePromptUsernameOnStartup());
+      unawaited(_evaluateWorkoutInactivityNow());
+      unawaited(_warmupWorkoutData());
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_evaluateWorkoutInactivityNow());
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
@@ -433,9 +531,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .where((tab) => allowedSlots.contains(tab.id.slot))
         .toList(growable: false);
 
-    debugPrint(
-      '[Home] build currentIndex=$_currentIndex tabs=${tabs.map((t) => t.id).toList()}',
-    );
+    if (!_didResolveRoleDefaultIndex &&
+        widget.initialIndex == AppRouter.homeInitialIndexByRole) {
+      _didResolveRoleDefaultIndex = true;
+      if (auth.isGymOwner) {
+        final ownerIndex = tabs.indexWhere((tab) => tab.id == _HomeTabId.owner);
+        if (ownerIndex >= 0) {
+          _currentIndex = ownerIndex;
+        }
+      } else {
+        final profileIndex = tabs.indexWhere(
+          (tab) => tab.id == _HomeTabId.profile,
+        );
+        if (profileIndex >= 0) {
+          _currentIndex = profileIndex;
+        }
+      }
+    }
 
     if (_currentIndex >= tabs.length) {
       _currentIndex = 0;
@@ -494,6 +606,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             if (overlayBody != null) Positioned.fill(child: overlayBody),
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(bottom: false, child: OfflineBanner()),
+            ),
           ],
         ),
         bottomNavigationBar: _HomeBottomBar(
@@ -551,15 +669,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         break;
     }
 
-    return TimerAppBarTitle(
-      title: BrandGradientText(
-        titleText,
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.titleLarge,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        softWrap: false,
-      ),
+    return BrandGradientText(
+      titleText,
+      textAlign: TextAlign.center,
+      style: Theme.of(context).textTheme.titleLarge,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      softWrap: false,
     );
   }
 

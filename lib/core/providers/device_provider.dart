@@ -20,14 +20,20 @@ import 'package:tapem/core/providers/challenge_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/providers/xp_provider.dart';
 import 'package:tapem/core/recent_devices_store.dart';
+import 'package:tapem/core/services/workout_session_coordinator.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/core/sync/sync_service.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/community/data/community_stats_writer.dart';
 import 'package:tapem/features/device/data/repositories/device_repository_impl.dart';
+import 'package:tapem/features/device/data/repositories/workout_data_repository_impl.dart';
 import 'package:tapem/features/device/data/sources/firestore_device_source.dart';
+import 'package:tapem/features/device/data/sources/firestore_workout_context_source.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/device_session_snapshot.dart';
+import 'package:tapem/features/device/domain/models/workout_device_xp_state.dart';
 import 'package:tapem/features/device/domain/repositories/device_repository.dart';
+import 'package:tapem/features/device/domain/repositories/workout_data_repository.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/features/device/domain/utils/e1rm_utils.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
@@ -42,12 +48,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../bootstrap/navigation.dart';
 
-enum DeviceSetFieldFocus {
-  weight,
-  reps,
-  dropWeight,
-  dropReps,
-}
+enum DeviceSetFieldFocus { weight, reps, dropWeight, dropReps }
 
 typedef LogFn = void Function(String message, [StackTrace? stack]);
 
@@ -108,7 +109,10 @@ List<Map<String, String>> _cloneDrops(List<Map<String, String>> drops) {
   ];
 }
 
-void _applyDropsToSet(Map<String, dynamic> target, List<Map<String, String>> drops) {
+void _applyDropsToSet(
+  Map<String, dynamic> target,
+  List<Map<String, String>> drops,
+) {
   final normalized = _sanitizeDrops(drops);
   target['drops'] = [
     for (final drop in normalized)
@@ -130,15 +134,10 @@ Map<String, dynamic> _withNormalizedDrops(Map<String, dynamic> set) {
 
 String _setsBrief(List<Map<String, dynamic>> sets) {
   return '[${sets.map((s) {
-        final drops = _dropsFromSet(s);
-        final dropSummary = drops.where(_dropHasValue).isEmpty
-            ? '-'
-            : drops
-                .where(_dropHasValue)
-                .map((d) => '${d['weight']}x${d['reps']}')
-                .join('|');
-        return '{#${s['number']}:w=${s['weight']},r=${s['reps']},drops=$dropSummary,d=${s['done']}}';
-      }).join(', ')}]';
+    final drops = _dropsFromSet(s);
+    final dropSummary = drops.where(_dropHasValue).isEmpty ? '-' : drops.where(_dropHasValue).map((d) => '${d['weight']}x${d['reps']}').join('|');
+    return '{#${s['number']}:w=${s['weight']},r=${s['reps']},drops=$dropSummary,d=${s['done']}}';
+  }).join(', ')}]';
 }
 
 String? resolveDeviceId(DeviceSessionSnapshot snap) {
@@ -158,6 +157,8 @@ class _ResolvedMuscleAssignments {
 
 class DeviceProvider extends ChangeNotifier {
   static const int _defaultInitialSetCount = 3;
+  static const bool _enableVerboseMutationLogs = false;
+  static const Duration _remoteSideEffectTimeout = Duration(seconds: 2);
   final GetDevicesForGym _getDevicesForGym;
   final FirebaseFirestore _firestore;
   final LogFn _log;
@@ -165,12 +166,15 @@ class DeviceProvider extends ChangeNotifier {
   final SessionDraftRepository _draftRepo;
   final DeviceRepository deviceRepository;
   final SessionRepository _sessionRepository;
+  final WorkoutDataRepository _workoutDataRepository;
   final MembershipService _membership;
   final CommunityStatsWriter _communityStatsWriter;
+  final SyncService? _syncService;
   final bool _persistEmptyDrafts;
   XpProvider? _xpProvider;
   ChallengeProvider? _challengeProvider;
   WorkoutSessionDurationService? _sessionDurationService;
+  WorkoutSessionCoordinator? _sessionCoordinator;
 
   List<Device> _devices = [];
 
@@ -204,6 +208,7 @@ class DeviceProvider extends ChangeNotifier {
   String? _loadedContextKey;
   String? _pendingContextKey;
   Future<void>? _inFlightLoad;
+  Future<void> _pendingSetCompletionDispatch = Future<void>.value();
 
   // Snapshots (Historie zum Blättern)
   final List<DeviceSessionSnapshot> _sessionSnapshots = [];
@@ -246,15 +251,23 @@ class DeviceProvider extends ChangeNotifier {
     required FirebaseFirestore firestore,
     DeviceRepository? deviceRepository,
     required SessionRepository sessionRepository,
+    WorkoutDataRepository? workoutDataRepository,
     GetDevicesForGym? getDevicesForGym,
     LogFn? log,
     SessionDraftRepository? draftRepo,
     required MembershipService membership,
     CommunityStatsWriter? communityStatsWriter,
+    SyncService? syncService,
     bool autoFinalizeEnabled = true,
     bool persistEmptyDrafts = false,
-  })  : _firestore = firestore,
-        _sessionRepository = sessionRepository,
+  }) : _firestore = firestore,
+       _sessionRepository = sessionRepository,
+       _workoutDataRepository =
+           workoutDataRepository ??
+           WorkoutDataRepositoryImpl(
+             sessionRepository: sessionRepository,
+             remoteSource: FirestoreWorkoutContextSource(firestore: firestore),
+           ),
        deviceRepository =
            deviceRepository ??
            DeviceRepositoryImpl(FirestoreDeviceSource(firestore: firestore)),
@@ -271,17 +284,25 @@ class DeviceProvider extends ChangeNotifier {
        _membership = membership,
        _communityStatsWriter =
            communityStatsWriter ?? CommunityStatsWriter(firestore: firestore),
+       _syncService = syncService,
        _autoFinalizeEnabled = autoFinalizeEnabled,
        _persistEmptyDrafts = persistEmptyDrafts;
+
+  void _logMutation(String message, [StackTrace? stack]) {
+    if (!_enableVerboseMutationLogs) return;
+    _log(message, stack);
+  }
 
   void attachExternalServices({
     required XpProvider xpProvider,
     required ChallengeProvider challengeProvider,
     required WorkoutSessionDurationService sessionDurationService,
+    required WorkoutSessionCoordinator sessionCoordinator,
   }) {
     _xpProvider = xpProvider;
     _challengeProvider = challengeProvider;
     _sessionDurationService = sessionDurationService;
+    _sessionCoordinator = sessionCoordinator;
   }
 
   void updateAutoSavePreference(bool showInLeaderboard) {
@@ -476,8 +497,7 @@ class DeviceProvider extends ChangeNotifier {
     _error = null;
     final hadDevice = _device != null;
     final hasDraftKey = _draftKey != null;
-    final shouldPersistDraft =
-        hadDevice && hasDraftKey && !_isDraftEmpty();
+    final shouldPersistDraft = hadDevice && hasDraftKey && !_isDraftEmpty();
     _draftSaveTimer?.cancel();
     _draftSaveTimer = null;
     _autoFinalizeTimer?.cancel();
@@ -495,8 +515,9 @@ class DeviceProvider extends ChangeNotifier {
 
       Device? deviceCandidate;
       if (isSameGym) {
-        deviceCandidate =
-            _devices.firstWhereOrNull((device) => device.uid == deviceId);
+        deviceCandidate = _devices.firstWhereOrNull(
+          (device) => device.uid == deviceId,
+        );
       }
 
       if (!isSameGym || _devices.isEmpty || deviceCandidate == null) {
@@ -553,8 +574,11 @@ class DeviceProvider extends ChangeNotifier {
       _snapshotsLoading = false;
       notifyListeners();
 
-      final snapshotsFuture =
-          loadMoreSnapshots(gymId: gymId, deviceId: deviceId, userId: userId);
+      final snapshotsFuture = loadMoreSnapshots(
+        gymId: gymId,
+        deviceId: deviceId,
+        userId: userId,
+      );
 
       var lastSessionChanged = false;
       var noteChanged = false;
@@ -562,25 +586,21 @@ class DeviceProvider extends ChangeNotifier {
 
       final lastSessionFuture =
           _loadLastSession(gymId, deviceId, exerciseId, userId).then((changed) {
-        lastSessionChanged = changed;
-      });
-      final userNoteFuture =
-          _loadUserNote(gymId, deviceId, userId).then((changed) {
+            lastSessionChanged = changed;
+          });
+      final userNoteFuture = _loadUserNote(gymId, deviceId, userId).then((
+        changed,
+      ) {
         noteChanged = changed;
       });
-      final userXpFuture =
-          _loadUserXp(gymId, deviceId, userId).then((changed) {
+      final userXpFuture = _loadUserXp(gymId, deviceId, userId).then((changed) {
         xpChanged = changed;
       });
 
       await lastSessionFuture;
-      
+
       // Fire-and-forget non-critical data to prevent blocking UI
-      unawaited(Future.wait([
-        snapshotsFuture,
-        userNoteFuture,
-        userXpFuture,
-      ]));
+      unawaited(Future.wait([snapshotsFuture, userNoteFuture, userXpFuture]));
       final draftChanged = await _restoreDraft();
       if (_persistEmptyDrafts && _draftCreatedAt == null) {
         await _saveDraftNow();
@@ -591,10 +611,7 @@ class DeviceProvider extends ChangeNotifier {
         exerciseId: exerciseId,
         userId: userId,
       );
-      if (draftChanged ||
-          lastSessionChanged ||
-          noteChanged ||
-          xpChanged) {
+      if (draftChanged || lastSessionChanged || noteChanged || xpChanged) {
         notifyListeners();
       }
       _log(
@@ -610,7 +627,9 @@ class DeviceProvider extends ChangeNotifier {
 
   void addSet() {
     _sets.add(_createEmptySet(number: _sets.length + 1));
-    _log('➕ [Provider] addSet → count=${_sets.length} ${_setsBrief(_sets)}');
+    _logMutation(
+      '➕ [Provider] addSet → count=${_sets.length} ${_setsBrief(_sets)}',
+    );
     notifyListeners();
     _onSessionMutated();
   }
@@ -623,7 +642,7 @@ class DeviceProvider extends ChangeNotifier {
     for (var i = 0; i < _sets.length; i++) {
       _sets[i]['number'] = '${i + 1}';
     }
-    _log(
+    _logMutation(
       '↩️ [Provider] insertSetAt($index) → count=${_sets.length} ${_setsBrief(_sets)}',
     );
     notifyListeners();
@@ -649,10 +668,7 @@ class DeviceProvider extends ChangeNotifier {
     if (dropWeight != null || dropReps != null) {
       if (drops.isEmpty) {
         drops = [
-          {
-            'weight': dropWeight ?? '',
-            'reps': dropReps ?? '',
-          },
+          {'weight': dropWeight ?? '', 'reps': dropReps ?? ''},
         ];
       } else {
         final first = Map<String, String>.from(drops.first);
@@ -672,7 +688,7 @@ class DeviceProvider extends ChangeNotifier {
       return;
     }
     _sets[index] = after;
-    _log('✏️ [Provider] updateSet($index) $before → $after');
+    _logMutation('✏️ [Provider] updateSet($index) $before → $after');
     notifyListeners();
     _onSessionMutated();
   }
@@ -690,7 +706,7 @@ class DeviceProvider extends ChangeNotifier {
     }
 
     _sets[index] = after;
-    _log('➕ [Provider] addDropToSet($index) drops=${drops.length}');
+    _logMutation('➕ [Provider] addDropToSet($index) drops=${drops.length}');
     notifyListeners();
     _onSessionMutated();
     return drops.length - 1;
@@ -711,17 +727,14 @@ class DeviceProvider extends ChangeNotifier {
     }
 
     _sets[setIndex] = after;
-    _log('🗑️ [Provider] removeDropFromSet($setIndex,$dropIndex) drops=${drops.length}');
+    _logMutation(
+      '🗑️ [Provider] removeDropFromSet($setIndex,$dropIndex) drops=${drops.length}',
+    );
     notifyListeners();
     _onSessionMutated();
   }
 
-  void updateDrop(
-    int setIndex,
-    int dropIndex, {
-    String? weight,
-    String? reps,
-  }) {
+  void updateDrop(int setIndex, int dropIndex, {String? weight, String? reps}) {
     final before = Map<String, dynamic>.from(_sets[setIndex]);
     final drops = _cloneDrops(_dropsFromSet(before));
     if (dropIndex >= drops.length) {
@@ -746,7 +759,9 @@ class DeviceProvider extends ChangeNotifier {
     }
 
     _sets[setIndex] = after;
-    _log('✏️ [Provider] updateDrop($setIndex,$dropIndex) $before → $after');
+    _logMutation(
+      '✏️ [Provider] updateDrop($setIndex,$dropIndex) $before → $after',
+    );
     notifyListeners();
     _onSessionMutated();
   }
@@ -765,7 +780,7 @@ class DeviceProvider extends ChangeNotifier {
     for (var i = 0; i < _sets.length; i++) {
       _sets[i]['number'] = '${i + 1}';
     }
-    _log(
+    _logMutation(
       '🗑️ [Provider] removeSet($index) removed=$removed → count=${_sets.length} ${_setsBrief(_sets)}',
     );
     notifyListeners();
@@ -817,9 +832,7 @@ class DeviceProvider extends ChangeNotifier {
   bool toggleSetDone(int index) {
     final s = _sets[index];
     if (!_isFilled(s)) {
-      _log(
-        '⚠️ [Provider] toggleSetDone($index) blocked: invalid',
-      );
+      _log('⚠️ [Provider] toggleSetDone($index) blocked: invalid');
       return false;
     }
 
@@ -834,12 +847,15 @@ class DeviceProvider extends ChangeNotifier {
       s.remove('completedAtMs');
     }
     _sets[index] = Map<String, dynamic>.from(s);
-    _log('☑️ [Provider] toggleSetDone($index) $before → ${_sets[index]}');
+    _logMutation(
+      '☑️ [Provider] toggleSetDone($index) $before → ${_sets[index]}',
+    );
     notifyListeners();
     _onSessionMutated();
     if (toggledToDone) {
-      _maybeStartSessionTimer();
-      _recordSetCompletionForTimer();
+      _recordSetCompletionForTimer(
+        completedAt: _completedAtFromSet(_sets[index]),
+      );
     }
     return true;
   }
@@ -848,9 +864,7 @@ class DeviceProvider extends ChangeNotifier {
     if (index < 0 || index >= _sets.length) return false;
     final s = _sets[index];
     if (!_isFilled(s)) {
-      _log(
-        '⚠️ [Provider] markSetDone($index) blocked: invalid',
-      );
+      _log('⚠️ [Provider] markSetDone($index) blocked: invalid');
       return false;
     }
 
@@ -864,8 +878,7 @@ class DeviceProvider extends ChangeNotifier {
     _log('☑️ [Provider] markSetDone($index)');
     notifyListeners();
     _onSessionMutated();
-    _maybeStartSessionTimer();
-    _recordSetCompletionForTimer();
+    _recordSetCompletionForTimer(completedAt: _completedAtFromSet(after));
     return true;
   }
 
@@ -920,8 +933,7 @@ class DeviceProvider extends ChangeNotifier {
     _log('☑️ [Provider] completeNextFilledSet($idx)');
     notifyListeners();
     _onSessionMutated();
-    _maybeStartSessionTimer();
-    _recordSetCompletionForTimer();
+    _recordSetCompletionForTimer(completedAt: _completedAtFromSet(s));
     return idx;
   }
 
@@ -939,11 +951,13 @@ class DeviceProvider extends ChangeNotifier {
       count++;
     }
     if (count > 0) {
+      final lastCompletedMs = baseMs + count - 1;
       _log('☑️ [Provider] completeAllFilledNotDone count=$count');
       notifyListeners();
       _onSessionMutated();
-      _maybeStartSessionTimer();
-      _recordSetCompletionForTimer();
+      _recordSetCompletionForTimer(
+        completedAt: DateTime.fromMillisecondsSinceEpoch(lastCompletedMs),
+      );
     }
     return count;
   }
@@ -975,7 +989,7 @@ class DeviceProvider extends ChangeNotifier {
 
   void setNote(String text) {
     _note = text;
-    _log('📝 [Provider] setNote "$text"');
+    _logMutation('📝 [Provider] setNote "$text"');
     notifyListeners();
     _onSessionMutated();
   }
@@ -998,24 +1012,67 @@ class DeviceProvider extends ChangeNotifier {
     return _sets.any((s) => s['done'] == true || s['done'] == 'true');
   }
 
-  void _maybeStartSessionTimer() {
-    final durationService = _sessionDurationService;
-    if (durationService == null || durationService.isRunning) return;
-    final uid = _currentUserId;
-    final gymId = _currentGymId;
-    if (uid == null || gymId == null) return;
-    if (!_hasCompletedSets()) return;
-    unawaited(durationService.start(uid: uid, gymId: gymId));
+  DateTime? _completedAtFromSet(Map<String, dynamic> set) {
+    final raw = set['completedAtMs'];
+    if (raw is int) {
+      return DateTime.fromMillisecondsSinceEpoch(raw);
+    }
+    if (raw is num) {
+      return DateTime.fromMillisecondsSinceEpoch(raw.toInt());
+    }
+    if (raw is String) {
+      final parsed = int.tryParse(raw);
+      if (parsed != null) {
+        return DateTime.fromMillisecondsSinceEpoch(parsed);
+      }
+    }
+    return null;
   }
 
-  void _recordSetCompletionForTimer() {
-    final durationService = _sessionDurationService;
-    if (durationService == null) return;
-    unawaited(
-      durationService.registerSetCompletion(
-        completedAt: DateTime.now(),
-      ),
-    );
+  void _recordSetCompletionForTimer({DateTime? completedAt}) {
+    final uid = _currentUserId;
+    final gymId = _currentGymId;
+    if (uid == null || gymId == null) {
+      _log(
+        '⚠️ [Provider] cannot record set completion: missing context uid=$uid gymId=$gymId',
+      );
+      return;
+    }
+    final effectiveCompletedAt = completedAt ?? DateTime.now();
+    _pendingSetCompletionDispatch = _pendingSetCompletionDispatch
+        .catchError((_) {})
+        .then((_) async {
+          final coordinator = _sessionCoordinator;
+          if (coordinator == null || coordinator.isDisposed) {
+            _log(
+              '⚠️ [Provider] cannot record set completion: coordinator missing/disposed',
+            );
+            await _sessionDurationService?.registerSetCompletion(
+              completedAt: effectiveCompletedAt,
+            );
+            return;
+          }
+          try {
+            await coordinator.setActiveContext(uid: uid, gymId: gymId);
+            await coordinator.onSetCompleted(
+              uid: uid,
+              gymId: gymId,
+              completedAt: effectiveCompletedAt,
+            );
+          } catch (e, st) {
+            _log('⚠️ [Provider] set completion dispatch failed: $e', st);
+            try {
+              await _sessionDurationService?.registerSetCompletion(
+                completedAt: effectiveCompletedAt,
+              );
+            } catch (fallbackError, fallbackSt) {
+              _log(
+                '⚠️ [Provider] fallback registerSetCompletion failed: $fallbackError',
+                fallbackSt,
+              );
+            }
+          }
+        });
   }
 
   void _onSessionMutated() {
@@ -1045,10 +1102,12 @@ class DeviceProvider extends ChangeNotifier {
       return;
     }
     _autoFinalizeTimer?.cancel();
-    _autoFinalizeTimer =
-        Timer(Duration(milliseconds: math.max(remaining, 1000)), () {
-      unawaited(_handleAutoFinalizeTimer());
-    });
+    _autoFinalizeTimer = Timer(
+      Duration(milliseconds: math.max(remaining, 1000)),
+      () {
+        unawaited(_handleAutoFinalizeTimer());
+      },
+    );
   }
 
   Future<void> _handleAutoFinalizeTimer() async {
@@ -1103,10 +1162,7 @@ class DeviceProvider extends ChangeNotifier {
               drops: [
                 for (final drop in drops)
                   if (_dropHasValue(drop))
-                    DropDraft(
-                      weight: drop['weight']!,
-                      reps: drop['reps']!,
-                    ),
+                    DropDraft(weight: drop['weight']!, reps: drop['reps']!),
               ],
               done: _sets[i]['done'] == true || _sets[i]['done'] == 'true',
               isBodyweight: _sets[i]['isBodyweight'] == true,
@@ -1124,8 +1180,7 @@ class DeviceProvider extends ChangeNotifier {
     final draft = await _draftRepo.get(key);
     if (draft == null) return false;
     final now = DateTime.now().millisecondsSinceEpoch;
-    final draftHasCompletedSets =
-        draft.sets.any((set) => set.done == true);
+    final draftHasCompletedSets = draft.sets.any((set) => set.done == true);
     if (now - draft.updatedAt > draft.ttlMs && !draftHasCompletedSets) {
       await _draftRepo.delete(key);
       return false;
@@ -1224,10 +1279,7 @@ class DeviceProvider extends ChangeNotifier {
     }
 
     double? parseWeightValue(dynamic raw) {
-      final normalized = (raw ?? '')
-          .toString()
-          .replaceAll(',', '.')
-          .trim();
+      final normalized = (raw ?? '').toString().replaceAll(',', '.').trim();
       if (normalized.isEmpty) {
         return null;
       }
@@ -1247,7 +1299,15 @@ class DeviceProvider extends ChangeNotifier {
       return false;
     }
 
-    final dayKey = logicDayKey(DateTime.now());
+    final now = DateTime.now();
+    final timerStart = _sessionDurationService?.startTime;
+    // Anchor all day-bound writes to the session start to avoid midnight splits.
+    final sessionDate =
+        timerStart ??
+        (_draftCreatedAt != null
+            ? DateTime.fromMillisecondsSinceEpoch(_draftCreatedAt!)
+            : now);
+    final dayKey = logicDayKey(sessionDate);
     if (_device == null) {
       final traceId = XpTrace.buildTraceId(
         dayKey: dayKey,
@@ -1330,20 +1390,18 @@ class DeviceProvider extends ChangeNotifier {
       elogUi('SESSION_SAVE_SET_ORDER', {
         'setsInputOrder': savedSets.map((s) => int.parse(s['number'])).toList(),
         'reps': savedSets.map((s) => parseRepsValue(s['reps']) ?? 0).toList(),
-        'weights': savedSets.map((s) => parseWeightValue(s['weight']) ?? 0.0).toList(),
+        'weights': savedSets
+            .map((s) => parseWeightValue(s['weight']) ?? 0.0)
+            .toList(),
       });
 
-      final now = DateTime.now();
-      final timerStart = _sessionDurationService?.startTime;
       // Session-Datum am Startzeitpunkt festmachen (Timer oder Draft-Erstellung),
       // damit ein über Mitternacht gehendes Training dem Starttag gutgeschrieben wird.
-      final sessionDate = timerStart ??
-          (_draftCreatedAt != null
-              ? DateTime.fromMillisecondsSinceEpoch(_draftCreatedAt!)
-              : now);
-      final startOfDay =
-          DateTime(sessionDate.year, sessionDate.month, sessionDate.day);
-      final endOfDay = startOfDay.add(const Duration(days: 1));
+      final startOfDay = DateTime(
+        sessionDate.year,
+        sessionDate.month,
+        sessionDate.day,
+      );
 
       final existingSessions = await _sessionRepository.getSessionsForDate(
         userId: userId,
@@ -1365,12 +1423,15 @@ class DeviceProvider extends ChangeNotifier {
       double? averageRestMs;
       if (completionTimes.isNotEmpty) {
         final startMs = completionTimes.first;
-        final totalDurationMs =
-            math.max(0, endDate.millisecondsSinceEpoch - startMs);
+        final totalDurationMs = math.max(
+          0,
+          endDate.millisecondsSinceEpoch - startMs,
+        );
         averageRestMs = totalDurationMs / savedSets.length;
       }
-      final plannedRestMs =
-          plannedRestSeconds != null ? plannedRestSeconds * 1000.0 : null;
+      final plannedRestMs = plannedRestSeconds != null
+          ? plannedRestSeconds * 1000.0
+          : null;
       String tz;
       try {
         tz = await FlutterTimezone.getLocalTimezone();
@@ -1382,7 +1443,7 @@ class DeviceProvider extends ChangeNotifier {
       final durationMs = completionTimes.isNotEmpty
           ? math.max(0, endDate.millisecondsSinceEpoch - completionTimes.first)
           : null;
-      
+
       final session = Session(
         sessionId: sessionId,
         gymId: gymId,
@@ -1391,20 +1452,26 @@ class DeviceProvider extends ChangeNotifier {
         deviceName: _device!.name,
         deviceDescription: _device!.description,
         exerciseId: _currentExerciseId,
-        exerciseName:
-            _device!.isMulti ? _lookupExerciseName() : _device!.name, // For progress titles
+        exerciseName: _device!.isMulti
+            ? _lookupExerciseName()
+            : _device!.name, // For progress titles
         isMulti: _device!.isMulti,
         timestamp: sessionTimestamp,
         note: _note,
-        sets: savedSets.map((s) => SessionSet(
-          weight: parseWeightValue(s['weight']) ?? 0.0,
-          reps: parseRepsValue(s['reps']) ?? 0,
-          setNumber: int.parse(s['number']),
-          dropWeightKg: parseWeightValue(s['dropWeight']),
-          dropReps: parseRepsValue(s['dropReps']),
-          isBodyweight: isBodyweightValue(s['isBodyweight']),
-        )).toList(),
-        startTime: timerStart ??
+        sets: savedSets
+            .map(
+              (s) => SessionSet(
+                weight: parseWeightValue(s['weight']) ?? 0.0,
+                reps: parseRepsValue(s['reps']) ?? 0,
+                setNumber: int.parse(s['number']),
+                dropWeightKg: parseWeightValue(s['dropWeight']),
+                dropReps: parseRepsValue(s['dropReps']),
+                isBodyweight: isBodyweightValue(s['isBodyweight']),
+              ),
+            )
+            .toList(),
+        startTime:
+            timerStart ??
             (completionTimes.isNotEmpty
                 ? DateTime.fromMillisecondsSinceEpoch(completionTimes.first)
                 : null),
@@ -1414,22 +1481,35 @@ class DeviceProvider extends ChangeNotifier {
 
       try {
         await _sessionRepository.saveSession(session: session);
-        _log('📚 [Provider] session saved to Hive & queued for sync sessionId=$sessionId');
+        _log(
+          '📚 [Provider] session saved to Hive & queued for sync sessionId=$sessionId',
+        );
+        unawaited(
+          _workoutDataRepository.cacheUserNote(
+            gymId: gymId,
+            deviceId: _device!.uid,
+            userId: userId,
+            note: _note,
+          ),
+        );
       } catch (e) {
-        _log('⚠️ [Provider] Hive save failed (continuing with Firestore): $e');
-        // Continue with Firestore batch even if Hive fails
+        _error =
+            'Lokales Speichern fehlgeschlagen. Training wurde nicht abgeschlossen.';
+        _log('❌ [Provider] local-first save failed, aborting session save: $e');
+        return false;
       }
       // === END OFFLINE-FIRST ===
 
       final batch = _firestore.batch();
       final canWriteAttempts = showInLeaderboard && _device!.isMulti == false;
+      final queuedAttempts = <Map<String, dynamic>>[];
       final attemptsCol = canWriteAttempts
           ? _firestore
-              .collection('gyms')
-              .doc(gymId)
-              .collection('machines')
-              .doc(_device!.uid)
-              .collection('attempts')
+                .collection('gyms')
+                .doc(gymId)
+                .collection('machines')
+                .doc(_device!.uid)
+                .collection('attempts')
           : null;
 
       for (final set in savedSets) {
@@ -1448,7 +1528,9 @@ class DeviceProvider extends ChangeNotifier {
             final attemptRef = attemptsCol!.doc();
             final trimmedName = userName?.trim();
             final resolvedUsername =
-                (trimmedName == null || trimmedName.isEmpty) ? userId : trimmedName;
+                (trimmedName == null || trimmedName.isEmpty)
+                ? userId
+                : trimmedName;
             final attemptData = <String, dynamic>{
               'gymId': gymId,
               'machineId': _device!.uid,
@@ -1464,6 +1546,11 @@ class DeviceProvider extends ChangeNotifier {
                 'bodyWeightKg': bodyWeightKg,
             };
             batch.set(attemptRef, attemptData);
+            queuedAttempts.add({
+              'weight': weight,
+              'reps': repsValue,
+              'e1rm': e1rm,
+            });
           }
         }
       }
@@ -1482,25 +1569,46 @@ class DeviceProvider extends ChangeNotifier {
         exerciseId: _device!.isMulti ? _currentExerciseId : null,
       );
 
-        final snapshot = _buildSnapshot(
-          sessionId: sessionId,
-          device: _device!,
-          exerciseId: _currentExerciseId,
-          userId: userId,
-          primaryMuscleGroupIds: assignments.primary,
-          secondaryMuscleGroupIds: assignments.secondary,
-          sets: savedSets,
-        );
+      final snapshot = _buildSnapshot(
+        sessionId: sessionId,
+        device: _device!,
+        exerciseId: _currentExerciseId,
+        userId: userId,
+        primaryMuscleGroupIds: assignments.primary,
+        secondaryMuscleGroupIds: assignments.secondary,
+        sets: savedSets,
+      );
 
       // Fire and forget aux data - rely on Firestore persistence
       // We do NOT await this, so the UI can finish immediately.
       unawaited(
-        batch.commit().then((_) {
-          _log(
-              '📚 [Provider] aux data (attempts/notes) stored session=$sessionId');
-        }).catchError((e) {
-          _log('⚠️ [Provider] aux data save failed (local/offline?): $e');
-        }),
+        batch
+            .commit()
+            .then((_) {
+              _log(
+                '📚 [Provider] aux data (attempts/notes) stored session=$sessionId',
+              );
+            })
+            .catchError((e) {
+              _log('⚠️ [Provider] aux data save failed (local/offline?): $e');
+              unawaited(
+                _enqueueAuxSyncJob(
+                  docId: sessionId,
+                  action: 'attempts_and_note_upsert',
+                  payload: {
+                    'gymId': gymId,
+                    'deviceId': _device!.uid,
+                    'userId': userId,
+                    'note': _note,
+                    'attempts': queuedAttempts,
+                    'userName': userName,
+                    'gender': gender,
+                    'bodyWeightKg': bodyWeightKg,
+                    'isMulti': _device!.isMulti,
+                  },
+                ),
+              );
+            }),
       );
       XpTrace.log('LOGS_STORED', {
         'sessionId': sessionId,
@@ -1515,29 +1623,60 @@ class DeviceProvider extends ChangeNotifier {
       );
 
       unawaited(
-        deviceRepository.writeSessionSnapshot(gymId, snapshot).then((_) {
-          _log('SNAPSHOT_WRITE($sessionId, ${snapshot.sets.length})');
-        }).catchError((e) {
-          _log('⚠️ [Provider] snapshot write failed (offline?): $e');
-        }),
+        deviceRepository
+            .writeSessionSnapshot(gymId, snapshot)
+            .then((_) {
+              _log('SNAPSHOT_WRITE($sessionId, ${snapshot.sets.length})');
+            })
+            .catchError((e) {
+              _log('⚠️ [Provider] snapshot write failed (offline?): $e');
+              unawaited(
+                _enqueueAuxSyncJob(
+                  docId: sessionId,
+                  action: 'snapshot_upsert',
+                  payload: {
+                    'gymId': gymId,
+                    'snapshot': _snapshotToSyncPayload(snapshot),
+                  },
+                ),
+              );
+            }),
       );
 
       try {
-        await _communityStatsWriter.recordSession(
-          gymId: gymId,
-          sessionId: sessionId,
-          userId: userId,
-          username: userName,
-          avatarUrl: null,
-          localTimestamp: now,
-          sets: savedSets,
-          setCount: savedSets.length,
-          exerciseCount: savedSets.isEmpty ? 0 : 1,
-        );
+        await _communityStatsWriter
+            .recordSession(
+              gymId: gymId,
+              sessionId: sessionId,
+              userId: userId,
+              username: userName,
+              avatarUrl: null,
+              localTimestamp: sessionDate,
+              sets: savedSets,
+              setCount: savedSets.length,
+              exerciseCount: savedSets.isEmpty ? 0 : 1,
+            )
+            .timeout(_remoteSideEffectTimeout);
       } on CommunityStatsAlreadyAppliedException {
         _log('ℹ️ [Provider] community stats already applied ($sessionId)');
       } catch (e, st) {
         _log('⚠️ [Provider] community stats write error: $e', st);
+        unawaited(
+          _enqueueAuxSyncJob(
+            docId: sessionId,
+            action: 'community_record',
+            payload: {
+              'gymId': gymId,
+              'userId': userId,
+              'userName': userName,
+              'avatarUrl': null,
+              'localTimestamp': sessionDate.toIso8601String(),
+              'sets': savedSets,
+              'setCount': savedSets.length,
+              'exerciseCount': savedSets.isEmpty ? 0 : 1,
+            },
+          ),
+        );
       }
 
       final restStatsService = _getRestStatsService();
@@ -1554,11 +1693,27 @@ class DeviceProvider extends ChangeNotifier {
               exerciseName: _lookupExerciseName(),
               averageActualRestMs: averageRestMs!,
               plannedRestMs: plannedRestMs,
-              sessionDate: endDate,
+              sessionDate: sessionDate,
               setCount: savedSets.length,
             );
           } catch (e, st) {
             _log('⚠️ [Provider] rest stats record error: $e', st);
+            await _enqueueAuxSyncJob(
+              docId: sessionId,
+              action: 'rest_stats_record',
+              payload: {
+                'gymId': gymId,
+                'userId': userId,
+                'deviceId': _device!.uid,
+                'deviceName': _device!.name,
+                'exerciseId': _device!.isMulti ? _currentExerciseId : null,
+                'exerciseName': _lookupExerciseName(),
+                'averageActualRestMs': averageRestMs,
+                'plannedRestMs': plannedRestMs,
+                'sessionDate': sessionDate.toIso8601String(),
+                'setCount': savedSets.length,
+              },
+            );
           }
         }());
       }
@@ -1592,57 +1747,144 @@ class DeviceProvider extends ChangeNotifier {
           'isMulti': _device!.isMulti,
           'showInLeaderboard': showInLeaderboard,
         });
-        XpTrace.log('CALL_ADD_SESSION_XP', {'intent': 'credit', 'traceId': traceId});
+        XpTrace.log('CALL_ADD_SESSION_XP', {
+          'intent': 'credit',
+          'traceId': traceId,
+        });
         try {
           final xpProv = _xpProvider;
-          final xpResult = await xpProv?.addSessionXp(
-            gymId: gymId,
-            userId: userId,
-            deviceId: resolvedDeviceId,
-            sessionId: sessionId,
-            showInLeaderboard: showInLeaderboard,
-            isMulti: _device!.isMulti,
-            exerciseId: _currentExerciseId,
-            traceId: traceId,
-            sessionDate: ts.toDate(),
-            timeZone: tz,
-            primaryMuscleGroupIds: assignments.primary,
-            secondaryMuscleGroupIds: assignments.secondary,
-          );
+          DeviceXpResult? xpResult;
+          if (xpProv != null) {
+            xpResult = await xpProv
+                .addSessionXp(
+                  gymId: gymId,
+                  userId: userId,
+                  deviceId: resolvedDeviceId,
+                  sessionId: sessionId,
+                  showInLeaderboard: showInLeaderboard,
+                  isMulti: _device!.isMulti,
+                  exerciseId: _currentExerciseId,
+                  traceId: traceId,
+                  sessionDate: sessionDate,
+                  timeZone: tz,
+                  primaryMuscleGroupIds: assignments.primary,
+                  secondaryMuscleGroupIds: assignments.secondary,
+                )
+                .timeout(
+                  _remoteSideEffectTimeout,
+                  onTimeout: () => DeviceXpResult.error,
+                );
+          }
           if (xpResult != null) {
             XpTrace.log('CALL_RESULT', {
               'result': xpResult.name,
               'deltaXp':
                   xpResult == DeviceXpResult.okAdded ||
-                          xpResult == DeviceXpResult.okAddedNoLeaderboard
-                      ? 50
-                      : 0,
+                      xpResult == DeviceXpResult.okAddedNoLeaderboard
+                  ? 50
+                  : 0,
               'traceId': traceId,
             });
           }
+          if (xpResult == DeviceXpResult.error) {
+            unawaited(
+              _enqueueAuxSyncJob(
+                docId: sessionId,
+                action: 'xp_credit_session',
+                payload: {
+                  'gymId': gymId,
+                  'userId': userId,
+                  'deviceId': resolvedDeviceId,
+                  'showInLeaderboard': showInLeaderboard,
+                  'isMulti': _device!.isMulti,
+                  'exerciseId': _currentExerciseId,
+                  'traceId': traceId,
+                  'sessionDate': sessionDate.toIso8601String(),
+                  'timeZone': tz,
+                  'primaryMuscleGroupIds': assignments.primary,
+                  'secondaryMuscleGroupIds': assignments.secondary,
+                },
+              ),
+            );
+          }
           if (xpResult == DeviceXpResult.okAdded ||
               xpResult == DeviceXpResult.okAddedNoLeaderboard) {
-            final info = LevelService()
-                .addXp(LevelInfo(level: _level, xp: _xp), LevelService.xpPerSession);
+            final info = LevelService().addXp(
+              LevelInfo(level: _level, xp: _xp),
+              LevelService.xpPerSession,
+            );
             _level = info.level;
             _xp = info.xp;
+            unawaited(
+              _workoutDataRepository.cacheUserDeviceXp(
+                gymId: gymId,
+                deviceId: resolvedDeviceId,
+                userId: userId,
+                stats: WorkoutDeviceXpState(xp: _xp, level: _level),
+              ),
+            );
             notifyListeners();
           }
           final challengeProv = _challengeProvider;
           if (challengeProv != null) {
             unawaited(() async {
               try {
-                await challengeProv
-                    .checkChallenges(gymId, userId, resolvedDeviceId);
-              } catch (e) {
-                // Silence known index error in dev environment
-                // _log('⚠️ [Provider] challenge check error: $e', st);
+                await challengeProv.checkChallenges(
+                  gymId,
+                  userId,
+                  resolvedDeviceId,
+                );
+              } catch (e, st) {
+                _log('⚠️ [Provider] challenge check error: $e', st);
+                await _enqueueAuxSyncJob(
+                  docId: sessionId,
+                  action: 'challenge_check',
+                  payload: {
+                    'gymId': gymId,
+                    'userId': userId,
+                    'deviceId': resolvedDeviceId,
+                  },
+                );
               }
             }());
           }
         } catch (e, st) {
-          XpTrace.log('CALL_RESULT', {'result': 'error', 'traceId': traceId, 'error': e.toString()});
+          XpTrace.log('CALL_RESULT', {
+            'result': 'error',
+            'traceId': traceId,
+            'error': e.toString(),
+          });
           _log('⚠️ [Provider] XP/Challenges error: $e', st);
+          unawaited(
+            _enqueueAuxSyncJob(
+              docId: sessionId,
+              action: 'xp_credit_session',
+              payload: {
+                'gymId': gymId,
+                'userId': userId,
+                'deviceId': resolvedDeviceId,
+                'showInLeaderboard': showInLeaderboard,
+                'isMulti': _device!.isMulti,
+                'exerciseId': _currentExerciseId,
+                'traceId': traceId,
+                'sessionDate': sessionDate.toIso8601String(),
+                'timeZone': tz,
+                'primaryMuscleGroupIds': assignments.primary,
+                'secondaryMuscleGroupIds': assignments.secondary,
+              },
+            ),
+          );
+          unawaited(
+            _enqueueAuxSyncJob(
+              docId: sessionId,
+              action: 'challenge_check',
+              payload: {
+                'gymId': gymId,
+                'userId': userId,
+                'deviceId': resolvedDeviceId,
+              },
+            ),
+          );
         }
       }
 
@@ -1661,7 +1903,7 @@ class DeviceProvider extends ChangeNotifier {
             ],
           }),
       ];
-      _lastSessionDate = ts.toDate();
+      _lastSessionDate = sessionDate;
       _lastSessionNote = _note;
       _lastSessionId = sessionId;
 
@@ -1696,6 +1938,58 @@ class DeviceProvider extends ChangeNotifier {
     }
   }
 
+  Map<String, dynamic> _snapshotToSyncPayload(DeviceSessionSnapshot snapshot) {
+    return {
+      'sessionId': snapshot.sessionId,
+      'deviceId': snapshot.deviceId,
+      'exerciseId': snapshot.exerciseId,
+      'createdAt': snapshot.createdAt.toIso8601String(),
+      'userId': snapshot.userId,
+      'note': snapshot.note,
+      'sets': [
+        for (final set in snapshot.sets)
+          {
+            'kg': set.kg,
+            'reps': set.reps,
+            'done': set.done,
+            'isBodyweight': set.isBodyweight,
+            'drops': [
+              for (final drop in set.drops) {'kg': drop.kg, 'reps': drop.reps},
+            ],
+          },
+      ],
+      'renderVersion': snapshot.renderVersion,
+      'uiHints': snapshot.uiHints,
+      'primaryMuscleGroupIds': snapshot.primaryMuscleGroupIds,
+      'secondaryMuscleGroupIds': snapshot.secondaryMuscleGroupIds,
+      'muscleGroupRevision': snapshot.muscleGroupRevision,
+    };
+  }
+
+  Future<void> _enqueueAuxSyncJob({
+    required String docId,
+    required String action,
+    required Map<String, dynamic> payload,
+  }) async {
+    final sync = _syncService;
+    if (sync == null) {
+      return;
+    }
+    try {
+      await sync.addJob(
+        collection: 'workout_aux',
+        docId: docId,
+        action: action,
+        payload: payload,
+      );
+    } catch (error, stackTrace) {
+      _log(
+        '⚠️ [Provider] failed to enqueue aux sync job action=$action doc=$docId error=$error',
+        stackTrace,
+      );
+    }
+  }
+
   DeviceSessionSnapshot _buildSnapshot({
     required String sessionId,
     required Device device,
@@ -1712,35 +2006,29 @@ class DeviceProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
       userId: userId,
       note: _note,
-      sets: sets
-          .map(
-            (s) {
-              final drops = <DropEntry>[];
-              for (final drop in _dropsFromSet(s)) {
-                if (_dropHasValue(drop)) {
-                  final kg = num.tryParse(
-                        drop['weight']!.replaceAll(',', '.'),
-                      ) ??
-                      0;
-                  final reps = int.tryParse(drop['reps']!) ?? 0;
-                  drops.add(DropEntry(kg: kg, reps: reps));
-                }
-              }
-              final weight = double.tryParse(
-                    s['weight']?.toString().replaceAll(',', '.') ?? '',
-                  ) ??
-                  0;
-              final repsValue = int.tryParse(s['reps']?.toString() ?? '') ?? 0;
-              return SetEntry(
-                kg: weight,
-                reps: repsValue,
-                done: true,
-                drops: drops,
-                isBodyweight: s['isBodyweight'] == true,
-              );
-            },
-          )
-          .toList(),
+      sets: sets.map((s) {
+        final drops = <DropEntry>[];
+        for (final drop in _dropsFromSet(s)) {
+          if (_dropHasValue(drop)) {
+            final kg = num.tryParse(drop['weight']!.replaceAll(',', '.')) ?? 0;
+            final reps = int.tryParse(drop['reps']!) ?? 0;
+            drops.add(DropEntry(kg: kg, reps: reps));
+          }
+        }
+        final weight =
+            double.tryParse(
+              s['weight']?.toString().replaceAll(',', '.') ?? '',
+            ) ??
+            0;
+        final repsValue = int.tryParse(s['reps']?.toString() ?? '') ?? 0;
+        return SetEntry(
+          kg: weight,
+          reps: repsValue,
+          done: true,
+          drops: drops,
+          isBodyweight: s['isBodyweight'] == true,
+        );
+      }).toList(),
       renderVersion: 1,
       uiHints: {'plannedTableCollapsed': false},
       primaryMuscleGroupIds: primaryMuscleGroupIds,
@@ -1907,7 +2195,7 @@ class DeviceProvider extends ChangeNotifier {
     String userId,
   ) async {
     try {
-      final lastSession = await _sessionRepository.getLastSession(
+      final lastSession = await _workoutDataRepository.getLastSession(
         gymId: gymId,
         userId: userId,
         deviceId: deviceId,
@@ -1915,7 +2203,8 @@ class DeviceProvider extends ChangeNotifier {
       );
 
       if (lastSession == null) {
-        final hadData = _lastSessionSets.isNotEmpty ||
+        final hadData =
+            _lastSessionSets.isNotEmpty ||
             _lastSessionDate != null ||
             _lastSessionNote.isNotEmpty;
         if (hadData) {
@@ -1949,8 +2238,8 @@ class DeviceProvider extends ChangeNotifier {
 
       final changed =
           !const DeepCollectionEquality().equals(_lastSessionSets, newSets) ||
-              _lastSessionId != lastSession.sessionId ||
-              _lastSessionNote != lastSession.note;
+          _lastSessionId != lastSession.sessionId ||
+          _lastSessionNote != lastSession.note;
       if (changed) {
         _lastSessionSets = newSets;
         _lastSessionDate = lastSession.timestamp;
@@ -1973,15 +2262,11 @@ class DeviceProvider extends ChangeNotifier {
     String userId,
   ) async {
     try {
-      final snap = await _firestore
-          .collection('gyms')
-          .doc(gymId)
-          .collection('devices')
-          .doc(deviceId)
-          .collection('userNotes')
-          .doc(userId)
-          .get();
-      final newNote = snap.exists ? snap.data()!['note'] as String? ?? '' : '';
+      final newNote = await _workoutDataRepository.getUserNote(
+        gymId: gymId,
+        deviceId: deviceId,
+        userId: userId,
+      );
       if (newNote == _note) {
         return false;
       }
@@ -1996,21 +2281,13 @@ class DeviceProvider extends ChangeNotifier {
 
   Future<bool> _loadUserXp(String gymId, String deviceId, String userId) async {
     try {
-      final xpDoc = await _firestore
-          .collection('gyms')
-          .doc(gymId)
-          .collection('devices')
-          .doc(deviceId)
-          .collection('leaderboard')
-          .doc(userId)
-          .get();
-      var newXp = 0;
-      var newLevel = 1;
-      if (xpDoc.exists) {
-        final data = xpDoc.data()!;
-        newXp = data['xp'] as int? ?? 0;
-        newLevel = data['level'] as int? ?? 1;
-      }
+      final stats = await _workoutDataRepository.getUserDeviceXp(
+        gymId: gymId,
+        deviceId: deviceId,
+        userId: userId,
+      );
+      final newXp = stats.xp;
+      final newLevel = stats.level;
       final changed = newXp != _xp || newLevel != _level;
       if (changed) {
         _xp = newXp;

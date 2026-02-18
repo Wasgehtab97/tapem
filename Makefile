@@ -1,11 +1,12 @@
-.PHONY: ios android push ios-dev ios-emu ios-emu-prod ios-mobile-dev ios-mobile-prod android-emu ios-emu-both R rules rules-dev rules-prod ios-wireless ios-wireless-dev-d ios-wireless-prod admin admin-web admin-web-dev admin-web-prod admin-web-avatars admin-web-avatars-dev admin-web-avatars-prod logo ios-prep ios-config-dev ios-config-prod ios-check-space ios-clean-build-cache ios-upload-testflight-prod apk-release aab-release version-show
+.PHONY: ios android push ios-dev ios-emu ios-emu-prod ios-mobile-dev ios-mobile-prod ios-mobile-dev-logs android-emu ios-emu-both R rules rules-dev rules-prod ios-wireless ios-wireless-dev-d ios-wireless-prod admin admin-web admin-web-dev admin-web-prod admin-web-avatars admin-web-avatars-dev admin-web-avatars-prod logo ios-prep ios-config-dev ios-config-prod ios-check-space ios-clean-build-cache ios-upload-testflight-prod apk-release aab-release version-show ios-mobile-dev-guard ios-signing-bootstrap-dev ios-mobile-prod-guard ios-signing-bootstrap-prod
 
 # Local, untracked environment overrides (e.g. ASC_API_* for uploads)
 -include .env
 -include .env.local
 
 # Gerätedefinitionen
-iOS_DEV_ID   := 00008030-001E59420191802E
+iOS_DEV_ID   := 00008130-0010745E1A09001C
+IOS_DEVICE_ID ?= $(iOS_DEV_ID)
 IOS_EMU_ID   := 47B92242-AE5E-489D-9EA0-199C9CAE3003
 ANDROID_ID   := 519e8f06
 ANDROID_EMU_ID := emulator-5554  # Emulator-Name laut `flutter devices`
@@ -21,6 +22,10 @@ IOS_SIM_RESOLVER ?= ./scripts/resolve_ios_simulator.sh
 IOS_EXPORT_OPTIONS_PLIST ?= ios/ExportOptions.plist
 IOS_IPA_DIR ?= build/ios/ipa
 APP_VERSION_SCRIPT ?= ./scripts/pubspec_version.sh
+IOS_SIGNING_BOOTSTRAP ?= 0
+# Dev-only quick test threshold for workout inactivity auto-finish.
+# Set to 60 for production-like behavior.
+WORKOUT_INACTIVITY_MINUTES ?= 60
 # Optional manual override. If empty, build number is read from pubspec.yaml and auto-incremented after successful release.
 APP_BUILD_NUMBER ?=
 ASC_API_KEY_ID ?=
@@ -106,6 +111,98 @@ ios-config-dev:
 ios-config-prod:
 	cp ios/config/prod/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
 
+ios-mobile-dev-guard:
+	@echo "🔒 Running DEV install safety checks..."
+	@if [ "$(IOS_BUNDLE_ID_DEV)" = "$(IOS_BUNDLE_ID_PROD)" ]; then \
+		echo "❌ DEV and PROD bundle IDs are identical ($(IOS_BUNDLE_ID_DEV)). Aborting to protect PROD app."; \
+		exit 1; \
+	fi
+	@if ! grep -Eq '^BUNDLE_ID_SUFFIX=.dev$$' ios/Flutter/Release-dev.xcconfig; then \
+		echo "❌ Release-dev.xcconfig missing BUNDLE_ID_SUFFIX=.dev. Aborting to protect PROD app."; \
+		exit 1; \
+	fi
+	@if ! grep -Eq '^FLUTTER_FLAVOR=dev$$' ios/Flutter/Release-dev.xcconfig; then \
+		echo "❌ Release-dev.xcconfig missing FLUTTER_FLAVOR=dev. Aborting to protect PROD app."; \
+		exit 1; \
+	fi
+	@IOS_IDENTITIES_COUNT="$$(security find-identity -v -p codesigning 2>/dev/null | grep -E 'Apple (Development|Distribution)|iPhone (Developer|Distribution)' | wc -l | tr -d ' ')"; \
+	if [ "$$IOS_IDENTITIES_COUNT" = "0" ]; then \
+		echo "❌ No valid iOS code-signing identities found on this Mac."; \
+		echo "ℹ️  Open Xcode → Settings → Accounts and sign in with your Apple ID."; \
+		echo "ℹ️  Then open ios/Runner.xcworkspace once and let Xcode create certificates/profiles."; \
+		exit 1; \
+	fi
+	@DEVICES_OUT="$$($(FLUTTER) devices)"; \
+	if ! printf "%s\n" "$$DEVICES_OUT" | grep -Fq "$(IOS_DEVICE_ID)"; then \
+		echo "❌ iPhone device ID $(IOS_DEVICE_ID) not found in 'flutter devices'."; \
+		echo "ℹ️  Connect/unlock your iPhone, trust this Mac, enable Developer Mode."; \
+		echo "ℹ️  Then rerun with the correct device id, e.g.:"; \
+		echo "ℹ️  make ios-mobile-dev IOS_DEVICE_ID=<your-device-id>"; \
+		exit 1; \
+	fi
+
+ios-signing-bootstrap-dev:
+	@echo "🪪 Bootstrapping iOS signing/provisioning for DEV..."
+	@echo "ℹ️  This may show Apple/Xcode prompts on first run."
+	@cd ios && xcodebuild \
+		-workspace Runner.xcworkspace \
+		-scheme dev \
+		-configuration Release-dev \
+		-destination 'id=$(IOS_DEVICE_ID)' \
+		-allowProvisioningUpdates \
+		-allowProvisioningDeviceRegistration \
+		build || { \
+			echo "⚠️  xcodebuild signing bootstrap did not complete."; \
+			echo "ℹ️  Ensure Xcode account + team are configured and device trust prompts are accepted."; \
+			exit 1; \
+		}
+
+ios-mobile-prod-guard:
+	@echo "🔒 Running PROD install safety checks..."
+	@if ! grep -Eq '^BUNDLE_ID_SUFFIX=$$' ios/Flutter/Release-prod.xcconfig; then \
+		echo "❌ Release-prod.xcconfig must set empty BUNDLE_ID_SUFFIX for PROD."; \
+		exit 1; \
+	fi
+	@if ! grep -Eq '^FLUTTER_FLAVOR=prod$$' ios/Flutter/Release-prod.xcconfig; then \
+		echo "❌ Release-prod.xcconfig missing FLUTTER_FLAVOR=prod."; \
+		exit 1; \
+	fi
+	@if ! grep -q "<string>$(IOS_BUNDLE_ID_PROD)</string>" ios/config/prod/GoogleService-Info.plist; then \
+		echo "❌ ios/config/prod/GoogleService-Info.plist does not match bundle id $(IOS_BUNDLE_ID_PROD)."; \
+		exit 1; \
+	fi
+	@IOS_IDENTITIES_COUNT="$$(security find-identity -v -p codesigning 2>/dev/null | grep -E 'Apple (Development|Distribution)|iPhone (Developer|Distribution)' | wc -l | tr -d ' ')"; \
+	if [ "$$IOS_IDENTITIES_COUNT" = "0" ]; then \
+		echo "❌ No valid iOS code-signing identities found on this Mac."; \
+		echo "ℹ️  Open Xcode → Settings → Accounts and sign in with your Apple ID."; \
+		echo "ℹ️  Then open ios/Runner.xcworkspace once and let Xcode create certificates/profiles."; \
+		exit 1; \
+	fi
+	@DEVICES_OUT="$$($(FLUTTER) devices)"; \
+	if ! printf "%s\n" "$$DEVICES_OUT" | grep -Fq "$(IOS_DEVICE_ID)"; then \
+		echo "❌ iPhone device ID $(IOS_DEVICE_ID) not found in 'flutter devices'."; \
+		echo "ℹ️  Connect/unlock your iPhone, trust this Mac, enable Developer Mode."; \
+		echo "ℹ️  Then rerun with the correct device id, e.g.:"; \
+		echo "ℹ️  make ios-mobile-prod IOS_DEVICE_ID=<your-device-id>"; \
+		exit 1; \
+	fi
+
+ios-signing-bootstrap-prod:
+	@echo "🪪 Bootstrapping iOS signing/provisioning for PROD..."
+	@echo "ℹ️  This may show Apple/Xcode prompts on first run."
+	@cd ios && xcodebuild \
+		-workspace Runner.xcworkspace \
+		-scheme prod \
+		-configuration Release-prod \
+		-destination 'id=$(IOS_DEVICE_ID)' \
+		-allowProvisioningUpdates \
+		-allowProvisioningDeviceRegistration \
+		build || { \
+			echo "⚠️  xcodebuild signing bootstrap did not complete."; \
+			echo "ℹ️  Ensure Xcode account + team are configured and device trust prompts are accepted."; \
+			exit 1; \
+		}
+
 # ═════════════════════════════════════════════════════
 # iOS Emulator Targets
 # ═════════════════════════════════════════════════════
@@ -120,6 +217,7 @@ ios-emu-dev-d:
 	@echo "═════════════════════════════════════════════════════"
 	@echo "📋 Using Dev Firebase config..."
 	@echo "📦 Bundle ID: $(IOS_BUNDLE_ID_DEV)"
+	@echo "⏱️  Workout inactivity threshold: $(WORKOUT_INACTIVITY_MINUTES) min"
 	cp ios/config/dev/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
 	@open -a Simulator >/dev/null 2>&1 || true
 	@sleep 2
@@ -130,21 +228,18 @@ ios-emu-dev-d:
 	$(MAKE) ios-prep
 	@EMU_ID=$$($(IOS_SIM_RESOLVER) "$(IOS_EMU_ID)") && \
 	echo "🚀 Launching DEV app with flavor on $$EMU_ID..." && \
-	$(FLUTTER) run --flavor dev -d "$$EMU_ID" --dart-define=ENV=dev
+	$(FLUTTER) run --flavor dev -d "$$EMU_ID" --dart-define=ENV=dev --dart-define=WORKOUT_INACTIVITY_MINUTES=$(WORKOUT_INACTIVITY_MINUTES)
 
-# iOS Emulator (Dev - Release mode) - WITH HOT RESTART ✅
+# iOS Emulator (Dev - Release mode) - NOT SUPPORTED
 ios-emu-dev:
 	@echo "═════════════════════════════════════════════════════"
-	@echo "🔧 iOS Emulator - DEV (Release)"
+	@echo "❌ iOS Emulator - DEV (Release) not supported"
 	@echo "═════════════════════════════════════════════════════"
-	@echo "📋 Using Dev Firebase config..."
-	@echo "📦 Bundle ID: $(IOS_BUNDLE_ID_DEV)"
-	$(MAKE) ios-config-dev
-	open -a Simulator
-	@sleep 5
-	$(MAKE) ios-prep
-	@echo "🚀 Launching DEV app with flavor (Release)..."
-	fvm flutter run --release --flavor dev -d $(IOS_EMU_ID) --dart-define=ENV=dev
+	@echo "ℹ️  Flutter iOS simulators support Debug only."
+	@echo "ℹ️  Use: make ios-emu-dev-d (DEV debug on simulator)"
+	@echo "ℹ️  Use: make ios-mobile-dev (DEV release on real iPhone)"
+	@echo "═════════════════════════════════════════════════════"
+	@exit 1
 
 # iOS Emulator (Prod - Debug mode) - WITH HOT RESTART ✅
 ios-emu-prod-d:
@@ -185,10 +280,25 @@ ios-mobile-dev:
 	@echo "═════════════════════════════════════════════════════"
 	@echo "📋 Using Dev Firebase config..."
 	@echo "📦 Bundle ID: $(IOS_BUNDLE_ID_DEV)"
+	@echo "📲 Target iPhone ID: $(IOS_DEVICE_ID)"
+	$(MAKE) ios-mobile-dev-guard
 	$(MAKE) ios-config-dev
 	$(MAKE) ios-prep
+	@if [ "$(IOS_SIGNING_BOOTSTRAP)" = "1" ]; then \
+		$(MAKE) ios-signing-bootstrap-dev; \
+	else \
+		echo "⏭️  Skipping signing bootstrap (IOS_SIGNING_BOOTSTRAP=$(IOS_SIGNING_BOOTSTRAP))."; \
+	fi
 	@echo "🚀 Launching DEV app on iPhone (Release Build)..."
-	fvm flutter run --release --flavor dev -d $(iOS_DEV_ID) --dart-define=ENV=dev
+	$(FLUTTER) run --release --flavor dev -d $(IOS_DEVICE_ID) --dart-define=ENV=dev
+
+# iOS Mobile (Dev - log stream for physical iPhone)
+ios-mobile-dev-logs:
+	@echo "═════════════════════════════════════════════════════"
+	@echo "📜 Streaming logs from iPhone (DEV app)"
+	@echo "ℹ️  Run this in a second terminal while app is open."
+	@echo "═════════════════════════════════════════════════════"
+	$(FLUTTER) logs -d $(IOS_DEVICE_ID)
 
 # iOS Mobile (Dev - on physical iPhone - DEBUG)
 ios-mobile-dev-d:
@@ -201,7 +311,7 @@ ios-mobile-dev-d:
 	$(MAKE) ios-config-dev
 	$(MAKE) ios-prep
 	@echo "🚀 Launching DEV app on iPhone (Debug Build)..."
-	fvm flutter run --flavor dev -d $(iOS_DEV_ID) --dart-define=ENV=dev
+	fvm flutter run --flavor dev -d $(IOS_DEVICE_ID) --dart-define=ENV=dev
 
 # iOS Mobile (Prod - on physical iPhone)
 ios-mobile-prod:
@@ -211,10 +321,23 @@ ios-mobile-prod:
 	@echo "═════════════════════════════════════════════════════"
 	@echo "📋 Using Prod Firebase config..."
 	@echo "📦 Bundle ID: $(IOS_BUNDLE_ID_PROD)"
+	@echo "📲 Target iPhone ID: $(IOS_DEVICE_ID)"
+	$(MAKE) ios-mobile-prod-guard
 	$(MAKE) ios-config-prod
 	$(MAKE) ios-prep
-	@echo "🚀 Launching PROD app on iPhone (Release Build)..."
-	fvm flutter run -d $(iOS_DEV_ID) --release --flavor prod --dart-define=ENV=prod
+	@if [ "$(IOS_SIGNING_BOOTSTRAP)" = "1" ]; then \
+		$(MAKE) ios-signing-bootstrap-prod; \
+	else \
+		echo "⏭️  Skipping signing bootstrap (IOS_SIGNING_BOOTSTRAP=$(IOS_SIGNING_BOOTSTRAP))."; \
+	fi
+	@MARKETING_VERSION=$$($(APP_VERSION_SCRIPT) marketing); \
+	BUILD_NUMBER="$(APP_BUILD_NUMBER)"; \
+	if [ -z "$$BUILD_NUMBER" ]; then \
+		BUILD_NUMBER=$$($(APP_VERSION_SCRIPT) build); \
+	fi; \
+	echo "🔢 Building PROD iPhone app version $$MARKETING_VERSION ($$BUILD_NUMBER)"; \
+	echo "🚀 Launching PROD app on iPhone (Release Build)..."; \
+	$(FLUTTER) run --release --flavor prod -d $(IOS_DEVICE_ID) --dart-define=ENV=prod
 
 # iOS Mobile (Prod - on physical iPhone - DEBUG) - CLEAN BUILD
 ios-mobile-prod-d:
@@ -231,11 +354,11 @@ ios-mobile-prod-d:
 	cd ios && xcodebuild -workspace Runner.xcworkspace \
 		-scheme prod \
 		-configuration Debug-prod \
-		-destination 'id=$(iOS_DEV_ID)' \
+		-destination 'id=$(IOS_DEVICE_ID)' \
 		-derivedDataPath build \
 		build > /dev/null 2>&1 && cd ..
 	@echo "📲 Installing PROD app on iPhone..."
-	cd ios && ios-deploy --id $(iOS_DEV_ID) --bundle build/Build/Products/Debug-prod-iphoneos/Runner.app --justlaunch && cd ..
+	cd ios && ios-deploy --id $(IOS_DEVICE_ID) --bundle build/Build/Products/Debug-prod-iphoneos/Runner.app --justlaunch && cd ..
 
 # iOS Emulator (BOTH Dev & Prod in parallel)
 ios-emu-both:
@@ -322,7 +445,7 @@ ios-wireless-prod:
 	@echo "🔧 Installing CocoaPods dependencies..."
 	cd ios && pod install && cd ..
 	@echo "🚀 Launching PROD app on iPhone (Wireless Release)..."
-	fvm flutter run --release --flavor prod -d $(iOS_DEV_ID) --dart-define=ENV=prod --device-timeout=30
+	$(FLUTTER) run --release --flavor prod -d $(IOS_DEVICE_ID) --dart-define=ENV=prod --device-timeout=30
 
 # App Store Connect Upload (Prod -> TestFlight)
 # Required env vars:

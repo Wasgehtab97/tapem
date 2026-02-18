@@ -80,7 +80,7 @@ LinearGradient _gradientWithAverageLuminance(
 /// 8-pixel grid for consistency.
 class AppColors {
   /// Main page background (deep anthracite).
-  static const Color background = Color(0xFF121212);
+  static const Color background = Color(0xFF0A0A0A);
 
   /// Card and panel background (dark grey).
   static const Color surface = Color(0xFF1E1E1E);

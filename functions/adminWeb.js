@@ -7,12 +7,12 @@ function requireAdminContext(context, targetGymId) {
   }
   const role = context.auth.token.role;
   const gymIdClaim = context.auth.token.gymId || null;
-  const allowed = role === 'global_admin' || role === 'gym_admin';
+  const allowed = role === 'admin' || role === 'gymowner';
   if (!allowed) {
     throw new functions.https.HttpsError('permission-denied', 'Kein Admin.');
   }
-  if (role === 'gym_admin' && targetGymId && gymIdClaim && targetGymId !== gymIdClaim) {
-    throw new functions.https.HttpsError('permission-denied', 'Gym-Admin darf nur eigenes Gym sehen.');
+  if (role === 'gymowner' && targetGymId && gymIdClaim && targetGymId !== gymIdClaim) {
+    throw new functions.https.HttpsError('permission-denied', 'GymOwner darf nur eigenes Gym sehen.');
   }
   return { role, gymIdClaim };
 }
@@ -24,7 +24,7 @@ exports.adminListGyms = functions.https.onCall(async (data, context) => {
 
   try {
     let ref = db.collection('gyms');
-    if (role === 'gym_admin' && gymIdClaim) {
+    if (role === 'gymowner' && gymIdClaim) {
       ref = ref.where(admin.firestore.FieldPath.documentId(), '==', gymIdClaim);
     }
     const snap = await ref.limit(limit).get();
@@ -46,7 +46,7 @@ exports.adminListUsers = functions.https.onCall(async (data, context) => {
 
   try {
     let ref = db.collection('users');
-    if (role === 'gym_admin' && gymIdClaim) {
+    if (role === 'gymowner' && gymIdClaim) {
       ref = ref.where('gymCodes', 'array-contains', gymIdClaim);
     }
     const snap = await ref.limit(limit).get();

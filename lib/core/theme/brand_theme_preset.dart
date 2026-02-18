@@ -25,6 +25,7 @@ enum BrandThemeId {
   waterTribe,
   airNomads,
   earthKingdom,
+  midnightGold,
 }
 
 extension BrandThemeIdX on BrandThemeId {
@@ -70,6 +71,8 @@ extension BrandThemeIdX on BrandThemeId {
         return 'airNomads';
       case BrandThemeId.earthKingdom:
         return 'earthKingdom';
+      case BrandThemeId.midnightGold:
+        return 'midnightGold';
     }
   }
 
@@ -115,6 +118,8 @@ extension BrandThemeIdX on BrandThemeId {
         return BrandThemeId.airNomads;
       case 'earthKingdom':
         return BrandThemeId.earthKingdom;
+      case 'midnightGold':
+        return BrandThemeId.midnightGold;
     }
     return null;
   }
@@ -138,6 +143,7 @@ class BrandThemePreset {
     this.useWaterTokens = false,
     this.useAirTokens = false,
     this.useEarthTokens = false,
+    this.useMidnightTokens = false,
     this.onColors,
     this.background,
   });
@@ -157,6 +163,7 @@ class BrandThemePreset {
   final bool useWaterTokens;
   final bool useAirTokens;
   final bool useEarthTokens;
+  final bool useMidnightTokens;
   final BrandOnColors? onColors;
   final Color? background;
 }
@@ -446,6 +453,25 @@ class BrandThemePresets {
     ),
     background: Color(0xFF020B06),
   );
+  
+  /// Midnight Gold - Premium deep black & gold theme.
+  static const BrandThemePreset midnightGold = BrandThemePreset(
+    id: BrandThemeId.midnightGold,
+    nameKey: 'settingsThemeMidnightGold',
+    primary: Color(0xFFC5A059),
+    secondary: Color(0xFF8C6E4A),
+    gradientStart: Color(0xFFD4AF37),
+    gradientEnd: Color(0xFF704214),
+    focus: Color(0xFFFFDF00),
+    useMidnightTokens: true,
+    onColors: BrandOnColors(
+      onPrimary: Colors.black,
+      onSecondary: Colors.black,
+      onGradient: Colors.black,
+      onCta: Colors.black,
+    ),
+    background: Color(0xFF050505),
+  );
 
   static const List<BrandThemePreset> all = [
     mintTurquoise,
@@ -468,6 +494,7 @@ class BrandThemePresets {
     waterTribe,
     airNomads,
     earthKingdom,
+    midnightGold,
   ];
 
   static BrandThemePreset of(BrandThemeId id) {
@@ -512,6 +539,8 @@ class BrandThemePresets {
         return airNomads;
       case BrandThemeId.earthKingdom:
         return earthKingdom;
+      case BrandThemeId.midnightGold:
+        return midnightGold;
     }
   }
 }

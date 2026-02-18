@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
-import 'package:tapem/ui/timer/timer_app_bar_title.dart';
 
 /// BaseScreen: Gemeinsamer Scaffold mit AppBar-Titel und NFC-Scan-Button.
 /// Alle Screens, die diese Basisklasse nutzen, erhalten automatisch den NFC-Button.
@@ -15,14 +14,12 @@ class BaseScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: TimerAppBarTitle(
-          title: Text(
-            title,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            softWrap: false,
-          ),
+        title: Text(
+          title,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
         ),
         actions: const [
           NfcScanButton(), // Button-getriggertes NFC-Scanning

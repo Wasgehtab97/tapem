@@ -19,7 +19,7 @@ import 'report_members_screen.dart';
 import 'report_surveys_screen.dart';
 import 'report_usage_screen.dart';
 
-class ReportScreenNew extends ConsumerWidget {
+class ReportScreenNew extends ConsumerStatefulWidget {
   final String gymId;
   final PreferredSizeWidget? appBar;
 
@@ -27,25 +27,59 @@ class ReportScreenNew extends ConsumerWidget {
     : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ReportScreenNew> createState() => _ReportScreenNewState();
+}
+
+class _ReportScreenNewState extends ConsumerState<ReportScreenNew> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final reportNotifier = ref.read(report_providers.reportProvider);
+      if (reportNotifier.shouldLoadReport(widget.gymId)) {
+        await reportNotifier.loadReport(widget.gymId);
+      }
+      ref
+          .read(survey_riverpod.surveyProvider)
+          .listen(widget.gymId, subscriber: this);
+      await ref
+          .read(feedback_riverpod.feedbackProvider)
+          .loadFeedback(widget.gymId);
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant ReportScreenNew oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.gymId == widget.gymId) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final reportNotifier = ref.read(report_providers.reportProvider);
+      await reportNotifier.loadReport(widget.gymId, force: true);
+      ref
+          .read(survey_riverpod.surveyProvider)
+          .listen(widget.gymId, subscriber: this);
+      await ref
+          .read(feedback_riverpod.feedbackProvider)
+          .loadFeedback(widget.gymId, force: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    ref.read(survey_riverpod.surveyProvider).cancel(subscriber: this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final reportProvider = ref.watch(report_providers.reportProvider);
 
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
-
-    // Usage-Report lazy laden, sobald der Screen sichtbar wird.
-    if (reportProvider.shouldLoadReport(gymId)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(report_providers.reportProvider).loadReport(gymId);
-      });
-    }
-
-    // Offene/abgeschlossene Umfragen anhören.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(survey_riverpod.surveyProvider).listen(gymId);
-    });
 
     final usageStats = reportProvider.usageStats;
     final usageRange = reportProvider.usageRange;
@@ -56,7 +90,7 @@ class ReportScreenNew extends ConsumerWidget {
     final closedSurveysCount = surveyState.closedSurveys.length;
 
     return Scaffold(
-      appBar: appBar,
+      appBar: widget.appBar,
       body: Container(
         color: theme.scaffoldBackgroundColor,
         child: SafeArea(
@@ -72,7 +106,7 @@ class ReportScreenNew extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Center(
                   child: Text(
-                    'Kennzahlen zu Mitgliedern, Nutzung und Feedback.',
+                    loc.reportOverviewIntro,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
@@ -87,29 +121,11 @@ class ReportScreenNew extends ConsumerWidget {
                   child: Row(
                     children: DeviceUsageRange.values.map((range) {
                       final isSelected = usageRange == range;
-                      String label;
-                      switch (range) {
-                        case DeviceUsageRange.last7Days:
-                          label = '7 Tage';
-                          break;
-                        case DeviceUsageRange.last30Days:
-                          label = '30 Tage';
-                          break;
-                        case DeviceUsageRange.last90Days:
-                          label = '90 Tage';
-                          break;
-                        case DeviceUsageRange.last365Days:
-                          label = 'Jahr';
-                          break;
-                        case DeviceUsageRange.all:
-                          label = 'Gesamt';
-                          break;
-                      }
 
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ChoiceChip(
-                          label: Text(label),
+                          label: Text(_labelForRange(range, loc)),
                           selected: isSelected,
                           onSelected: (selected) {
                             if (selected) {
@@ -153,14 +169,16 @@ class ReportScreenNew extends ConsumerWidget {
                   child: Row(
                     children: [
                       _ReportChip(
-                        label: 'Offenes Feedback',
+                        label: loc.reportFeedbackButtonTitle,
                         value: '$openFeedbackCount',
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       _ReportChip(
-                        label: 'Umfragen',
-                        value:
-                            'Aktiv: $openSurveysCount · Abgeschlossen: $closedSurveysCount',
+                        label: loc.reportSurveysButtonTitle,
+                        value: loc.reportSurveyCountsInline(
+                          openSurveysCount,
+                          closedSurveysCount,
+                        ),
                       ),
                     ],
                   ),
@@ -196,7 +214,8 @@ class ReportScreenNew extends ConsumerWidget {
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => ReportMembersScreen(gymId: gymId),
+                              builder: (_) =>
+                                  ReportMembersScreen(gymId: widget.gymId),
                             ),
                           );
                         },
@@ -212,7 +231,8 @@ class ReportScreenNew extends ConsumerWidget {
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => ReportUsageScreen(gymId: gymId),
+                              builder: (_) =>
+                                  ReportUsageScreen(gymId: widget.gymId),
                             ),
                           );
                         },
@@ -231,7 +251,7 @@ class ReportScreenNew extends ConsumerWidget {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) =>
-                                  ReportFeedbackScreen(gymId: gymId),
+                                  ReportFeedbackScreen(gymId: widget.gymId),
                             ),
                           );
                         },
@@ -244,12 +264,16 @@ class ReportScreenNew extends ConsumerWidget {
                         leading: const Icon(Icons.poll),
                         title: loc.reportSurveysButtonTitle,
                         subtitle: openSurveysCount > 0 || closedSurveysCount > 0
-                            ? 'Aktiv: $openSurveysCount · Abgeschlossen: $closedSurveysCount'
+                            ? loc.reportSurveyCountsInline(
+                                openSurveysCount,
+                                closedSurveysCount,
+                              )
                             : loc.reportSurveysButtonSubtitle,
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => ReportSurveysScreen(gymId: gymId),
+                              builder: (_) =>
+                                  ReportSurveysScreen(gymId: widget.gymId),
                             ),
                           );
                         },
@@ -279,19 +303,16 @@ class _ManagementSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final onSurface = theme.colorScheme.onSurface;
+    final loc = AppLocalizations.of(context)!;
 
     final List<String> lines = [];
     if (totalSessions > 0) {
-      lines.add(
-        'In diesem Zeitraum wurden $totalSessions Sessions dokumentiert.',
-      );
+      lines.add(loc.reportManagementSummarySessions(totalSessions));
     } else {
-      lines.add(
-        'Für den aktuellen Zeitraum liegen noch keine Nutzungssessions vor.',
-      );
+      lines.add(loc.reportManagementSummaryNoSessions);
     }
     if (topDeviceName.isNotEmpty) {
-      lines.add('Am häufigsten genutzt: $topDeviceName.');
+      lines.add(loc.reportManagementSummaryTopDevice(topDeviceName));
     }
 
     return Container(
@@ -317,6 +338,21 @@ class _ManagementSummary extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+String _labelForRange(DeviceUsageRange range, AppLocalizations loc) {
+  switch (range) {
+    case DeviceUsageRange.last7Days:
+      return loc.reportUsageRange7Days;
+    case DeviceUsageRange.last30Days:
+      return loc.reportUsageRange30Days;
+    case DeviceUsageRange.last90Days:
+      return loc.reportUsageRange90Days;
+    case DeviceUsageRange.last365Days:
+      return loc.reportUsageRange365Days;
+    case DeviceUsageRange.all:
+      return loc.reportUsageRangeAll;
   }
 }
 

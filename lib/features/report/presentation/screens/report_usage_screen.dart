@@ -60,29 +60,11 @@ class ReportUsageScreen extends ConsumerWidget {
                   child: Row(
                     children: DeviceUsageRange.values.map((range) {
                       final isSelected = reportProvider.usageRange == range;
-                      String label;
-                      switch (range) {
-                        case DeviceUsageRange.last7Days:
-                          label = '7 Tage';
-                          break;
-                        case DeviceUsageRange.last30Days:
-                          label = '30 Tage';
-                          break;
-                        case DeviceUsageRange.last90Days:
-                          label = '90 Tage';
-                          break;
-                        case DeviceUsageRange.last365Days:
-                          label = 'Jahr';
-                          break;
-                        case DeviceUsageRange.all:
-                          label = 'Gesamt';
-                          break;
-                      }
-                      
+
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: AppChip(
-                          label: label,
+                          label: _labelForRange(range, loc),
                           selected: isSelected,
                           onSelected: (selected) {
                             if (selected) {
@@ -108,7 +90,7 @@ class ReportUsageScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                   child: Text(
-                    'Aktivitäts-Heatmap',
+                    loc.reportUsageHeatmapTitle,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -120,7 +102,7 @@ class ReportUsageScreen extends ConsumerWidget {
                       const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                   child: reportProvider.heatmapDates.isEmpty
                       ? Text(
-                          'Noch keine Log-Daten für die Heatmap im ausgewählten Zeitraum.',
+                          loc.reportUsageHeatmapEmpty,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color:
                                 theme.colorScheme.onSurface.withOpacity(0.7),
@@ -157,7 +139,7 @@ class ReportUsageScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                   child: Text(
-                    'Details',
+                    loc.reportUsageDetailsTitle,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -190,9 +172,22 @@ class _WeeklyPatternHeatmap extends StatelessWidget {
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final loc = AppLocalizations.of(context)!;
 
-    const slotLabels = ['Morgen', 'Mittag', 'Abend'];
-    const weekdayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    final slotLabels = <String>[
+      loc.reportUsageSlotMorning,
+      loc.reportUsageSlotNoon,
+      loc.reportUsageSlotEvening,
+    ];
+    final weekdayLabels = <String>[
+      loc.reportUsageWeekdayMon,
+      loc.reportUsageWeekdayTue,
+      loc.reportUsageWeekdayWed,
+      loc.reportUsageWeekdayThu,
+      loc.reportUsageWeekdayFri,
+      loc.reportUsageWeekdaySat,
+      loc.reportUsageWeekdaySun,
+    ];
 
     final counts = List.generate(
       7,
@@ -226,7 +221,7 @@ class _WeeklyPatternHeatmap extends StatelessWidget {
     }
     if (maxCount == 0) {
       return Text(
-        'Zu den typischen Trainingszeiten liegen noch keine Daten vor.',
+        loc.reportUsagePatternEmpty,
         style: theme.textTheme.bodySmall?.copyWith(
           color: colorScheme.onSurface.withOpacity(0.7),
         ),
@@ -254,14 +249,16 @@ class _WeeklyPatternHeatmap extends StatelessWidget {
       }
     }
 
-    final summary =
-        'Stärkste Auslastung: ${weekdayLabels[bestWeekday]} ${slotLabels[bestSlot]}.';
+    final summary = loc.reportUsagePatternPeakSummary(
+      weekdayLabels[bestWeekday],
+      slotLabels[bestSlot],
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Muster nach Wochentag & Tageszeit',
+          loc.reportUsagePatternTitle,
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -296,8 +293,11 @@ class _WeeklyPatternHeatmap extends StatelessWidget {
               cellSize: 20,
               onCellTap: (row, col, value) {
                 final count = counts[row][col];
-                final label =
-                    '${weekdayLabels[row]} ${slotLabels[col]}: $count Sessions';
+                final label = loc.reportUsagePatternCellLabel(
+                  weekdayLabels[row],
+                  slotLabels[col],
+                  count,
+                );
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(label)),
                 );
@@ -330,5 +330,20 @@ class _WeeklyPatternHeatmap extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+String _labelForRange(DeviceUsageRange range, AppLocalizations loc) {
+  switch (range) {
+    case DeviceUsageRange.last7Days:
+      return loc.reportUsageRange7Days;
+    case DeviceUsageRange.last30Days:
+      return loc.reportUsageRange30Days;
+    case DeviceUsageRange.last90Days:
+      return loc.reportUsageRange90Days;
+    case DeviceUsageRange.last365Days:
+      return loc.reportUsageRange365Days;
+    case DeviceUsageRange.all:
+      return loc.reportUsageRangeAll;
   }
 }

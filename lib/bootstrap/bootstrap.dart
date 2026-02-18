@@ -17,6 +17,7 @@ import '../features/report/domain/usecases/get_all_log_timestamps.dart';
 import '../features/report/domain/usecases/get_device_usage_stats.dart';
 import '../core/database/database_service.dart';
 import '../core/sync/sync_service.dart';
+import '../core/migrations/offline_session_backfill_migration.dart';
 import '../core/migrations/session_duplicate_cleanup_migration.dart';
 import 'firebase.dart';
 import 'providers.dart';
@@ -109,6 +110,24 @@ Future<BootstrapResult> bootstrapApp() async {
     }
   } catch (e) {
     debugPrint('⚠️  Failed to run duplicate cleanup migration: $e');
+  }
+
+  // Run one-time migration to backfill local training days + missing sync jobs.
+  try {
+    final migrationResult = await OfflineSessionBackfillMigration.run(
+      databaseService,
+    );
+    if (migrationResult['success'] == true) {
+      debugPrint('✅ Offline backfill migration completed successfully');
+    } else if (migrationResult['skipped'] == true) {
+      debugPrint('⏭️  Offline backfill migration already completed');
+    } else {
+      debugPrint(
+        '⚠️  Offline backfill migration failed: ${migrationResult['error']}',
+      );
+    }
+  } catch (e) {
+    debugPrint('⚠️  Failed to run offline backfill migration: $e');
   }
 
   final syncService = SyncService(databaseService);

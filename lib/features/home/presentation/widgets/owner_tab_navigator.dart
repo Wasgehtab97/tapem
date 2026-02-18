@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tapem/core/widgets/admin_access_guard.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:tapem/features/home/presentation/screens/owner_screen.dart';
@@ -56,7 +57,9 @@ class OwnerTabNavigator extends ConsumerWidget {
       case ownerReport:
         return MaterialPageRoute(builder: (_) => const _OwnerReportPage());
       case ownerAdmin:
-        return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AdminAccessGuard(child: AdminDashboardScreen()),
+        );
       case ownerHome:
       default:
         return MaterialPageRoute(

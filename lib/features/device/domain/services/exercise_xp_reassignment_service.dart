@@ -16,8 +16,8 @@ class ExerciseXpReassignmentService {
   ExerciseXpReassignmentService({
     FirebaseFirestore? firestore,
     SessionMetaSource? metaSource,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _metaSource = metaSource ?? SessionMetaSource(firestore: firestore);
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _metaSource = metaSource ?? SessionMetaSource(firestore: firestore);
 
   Future<void> reassign({
     required String gymId,
@@ -62,7 +62,10 @@ class ExerciseXpReassignmentService {
         exclude: sessionPrimary,
       );
       if (MuscleXpCalculator.listsEqual(sessionPrimary, normalizedPrimary) &&
-          MuscleXpCalculator.listsEqual(sessionSecondary, normalizedSecondary)) {
+          MuscleXpCalculator.listsEqual(
+            sessionSecondary,
+            normalizedSecondary,
+          )) {
         continue;
       }
       adjustments.add(
@@ -80,18 +83,20 @@ class ExerciseXpReassignmentService {
       return;
     }
 
-    final metas = await Future.wait(adjustments.map((adj) async {
-      try {
-        return await _metaSource.getMetaBySessionId(
-          gymId: gymId,
-          uid: userId,
-          sessionId: adj.sessionId,
-        );
-      } catch (e) {
-        debugPrint('⚠️ Failed to load session meta for ${adj.sessionId}: $e');
-        return null;
-      }
-    }));
+    final metas = await Future.wait(
+      adjustments.map((adj) async {
+        try {
+          return await _metaSource.getMetaBySessionId(
+            gymId: gymId,
+            uid: userId,
+            sessionId: adj.sessionId,
+          );
+        } catch (e) {
+          debugPrint('⚠️ Failed to load session meta for ${adj.sessionId}: $e');
+          return null;
+        }
+      }),
+    );
 
     final globalDelta = <String, int>{};
     final historyDelta = <String, Map<String, int>>{};
@@ -116,7 +121,9 @@ class ExerciseXpReassignmentService {
     for (var i = 0; i < adjustments.length; i++) {
       final adj = adjustments[i];
       final meta = metas[i];
-      final dayKey = (meta?['dayKey'] as String?) ??
+      final dayKey =
+          (meta?['anchorDayKey'] as String?) ??
+          (meta?['dayKey'] as String?) ??
           logicDayKey((adj.createdAt ?? DateTime.now()).toLocal());
 
       final oldDelta = MuscleXpCalculator.calculateDelta(

@@ -8,21 +8,20 @@ class UsageKeyMetrics extends StatelessWidget {
   final List<DeviceUsageStat> stats;
   final DeviceUsageRange range;
 
-  const UsageKeyMetrics({
-    super.key,
-    required this.stats,
-    required this.range,
-  });
+  const UsageKeyMetrics({super.key, required this.stats, required this.range});
 
   @override
   Widget build(BuildContext context) {
-    final totalSessions = stats.fold<int>(0, (sum, item) => sum + item.sessions);
-    
+    final totalSessions = stats.fold<int>(
+      0,
+      (sum, item) => sum + item.sessions,
+    );
+
     final sortedStats = List<DeviceUsageStat>.from(stats)
       ..sort((a, b) => b.sessions.compareTo(a.sessions));
     final topDevice = sortedStats.isNotEmpty ? sortedStats.first : null;
 
-    int days = 30;
+    int? days;
     switch (range) {
       case DeviceUsageRange.last7Days:
         days = 7;
@@ -37,12 +36,16 @@ class UsageKeyMetrics extends StatelessWidget {
         days = 365;
         break;
       case DeviceUsageRange.all:
-        days = 1; // Avoid division by zero, though "all" implies total history
+        days = null;
         break;
     }
-    
-    // Simple average calculation
-    final dailyAvg = (totalSessions / days).toStringAsFixed(1);
+
+    final dailyAvg = days == null
+        ? '—'
+        : (totalSessions / days).toStringAsFixed(1);
+    final avgLabel = days == null
+        ? 'Ø Sessions / Tag (N/A)'
+        : 'Ø Sessions / Tag';
 
     return SizedBox(
       height: 110,
@@ -66,7 +69,7 @@ class UsageKeyMetrics extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.md),
           _MetricCard(
-            label: 'Ø Sessions / Tag',
+            label: avgLabel,
             value: dailyAvg,
             icon: Icons.timelapse_rounded,
             color: Colors.purple,

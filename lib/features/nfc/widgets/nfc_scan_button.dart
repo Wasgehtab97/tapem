@@ -11,9 +11,10 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
+import 'package:tapem/features/device/providers/workout_entry_orchestrator_provider.dart';
 import 'package:tapem/services/membership_service.dart';
 import 'package:tapem/l10n/app_localizations.dart';
-import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/core/services/workout_session_coordinator.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/features/nfc/providers/nfc_providers.dart';
@@ -78,25 +79,25 @@ class NfcScanButton extends ConsumerWidget {
               }
 
               if (code.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(loc.nfcNoCode)),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(loc.nfcNoCode)));
                 return;
               }
 
               final gymId = authProv.gymCode;
               if (gymId == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(loc.nfcNoGymSelected)),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(loc.nfcNoGymSelected)));
                 return;
               }
 
               final dev = await getDeviceUC.execute(gymId, code);
               if (dev == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(loc.deviceNotFound)),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(loc.deviceNotFound)));
                 return;
               }
 
@@ -114,13 +115,15 @@ class NfcScanButton extends ConsumerWidget {
                     deviceId: dev.uid,
                     exerciseId: dev.isMulti ? null : dev.uid,
                   );
-                  unawaited(AnalyticsService.logWorkoutNfcScan(
-                    userId: userId,
-                    gymId: gymId,
-                    deviceId: dev.uid,
-                    isMulti: dev.isMulti,
-                    status: 'success',
-                  ));
+                  unawaited(
+                    AnalyticsService.logWorkoutNfcScan(
+                      userId: userId,
+                      gymId: gymId,
+                      deviceId: dev.uid,
+                      isMulti: dev.isMulti,
+                      status: 'success',
+                    ),
+                  );
                 } catch (_) {
                   // Telemetrie darf den Flow nicht blockieren.
                 }
@@ -135,48 +138,62 @@ class NfcScanButton extends ConsumerWidget {
                 if (selectionHandler != null) {
                   final selection = await Navigator.of(context)
                       .push<WorkoutDeviceSelection>(
-                    MaterialPageRoute(
-                      builder: (ctx) => ExerciseListScreen(
-                        gymId: gymId,
-                        deviceId: resolvedDeviceId,
-                        onSelect: (result) => Navigator.of(ctx).pop(result),
-                      ),
-                    ),
-                  );
+                        MaterialPageRoute(
+                          builder: (ctx) => ExerciseListScreen(
+                            gymId: gymId,
+                            deviceId: resolvedDeviceId,
+                            onSelect: (result) => Navigator.of(ctx).pop(result),
+                          ),
+                        ),
+                      );
                   if (selection != null) {
                     await selectionHandler(selection);
                   }
                 } else {
                   Navigator.of(context).pushNamed(
                     AppRouter.exerciseList,
-                    arguments: {
-                      'gymId': gymId,
-                      'deviceId': resolvedDeviceId,
-                    },
+                    arguments: {'gymId': gymId, 'deviceId': resolvedDeviceId},
                   );
                 }
               } else {
+                final selection = WorkoutDeviceSelection(
+                  gymId: gymId,
+                  deviceId: resolvedDeviceId,
+                  exerciseId: resolvedExerciseId,
+                  exerciseName: dev.name,
+                );
+
+                // If a screen-level handler is present (e.g. WorkoutDay),
+                // delegate selection handling to avoid duplicate add/focus logic.
+                if (selectionHandler != null) {
+                  await selectionHandler(selection);
+                  return;
+                }
+
                 if (userId != null) {
-                  final controller = ref.read(workoutDayControllerProvider);
-                  controller.addOrFocusSession(
-                    gymId: gymId,
-                    deviceId: resolvedDeviceId,
-                    exerciseId: resolvedExerciseId,
-                    exerciseName: dev.name,
-                    userId: userId,
+                  final orchestrator = ref.read(
+                    workoutEntryOrchestratorProvider,
                   );
+                  final controller = ref.read(workoutDayControllerProvider);
+                  final coordinator = ref.read(
+                    workoutSessionCoordinatorProvider,
+                  );
+                  final result = await orchestrator
+                      .addOrFocusFromExternalSource(
+                        controller: controller,
+                        coordinator: coordinator,
+                        gymId: gymId,
+                        deviceId: resolvedDeviceId,
+                        exerciseId: resolvedExerciseId,
+                        exerciseName: dev.name,
+                        userId: userId,
+                      );
 
                   // LUX: Physical feedback
                   HapticFeedback.mediumImpact();
 
-                  // LUX: Auto-Start Timer
-                  final timer = ref.read(workoutSessionDurationServiceProvider);
-                  if (!timer.isRunning) {
-                    await timer.start(uid: userId, gymId: gymId);
-                  }
-
                   // LUX: Visual confirmation
-                  if (context.mounted) {
+                  if (!result.isDuplicate && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Übung "${dev.name}" wurde hinzugefügt'),
@@ -187,34 +204,11 @@ class NfcScanButton extends ConsumerWidget {
                   }
                 }
 
-                final selection = WorkoutDeviceSelection(
-                  gymId: gymId,
-                  deviceId: resolvedDeviceId,
-                  exerciseId: resolvedExerciseId,
-                  exerciseName: dev.name,
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  AppRouter.home,
+                  (route) => false,
+                  arguments: 2,
                 );
-
-                if (selectionHandler != null) {
-                  await selectionHandler(selection);
-                } else {
-                  final timer = ref.read(workoutSessionDurationServiceProvider);
-                  if (timer.isRunning) {
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      AppRouter.home,
-                      (route) => false,
-                      arguments: 2,
-                    );
-                  } else {
-                    Navigator.of(context).pushNamed(
-                      AppRouter.workoutDay,
-                      arguments: {
-                        'gymId': gymId,
-                        'deviceId': resolvedDeviceId,
-                        'exerciseId': resolvedExerciseId,
-                      },
-                    );
-                  }
-                }
               }
             },
           );
@@ -223,9 +217,9 @@ class NfcScanButton extends ConsumerWidget {
           try {
             await NfcManager.instance.stopSession();
           } catch (_) {}
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(loc.nfcError(error.toString()))));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.nfcError(error.toString()))),
+          );
         }
       },
     );

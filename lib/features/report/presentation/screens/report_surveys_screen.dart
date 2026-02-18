@@ -9,24 +9,52 @@ import '../../../survey/presentation/screens/survey_overview_screen.dart';
 import '../../../survey/presentation/widgets/create_survey_sheet.dart';
 import '../../../survey/survey_provider.dart' as survey_riverpod;
 
-class ReportSurveysScreen extends ConsumerWidget {
+class ReportSurveysScreen extends ConsumerStatefulWidget {
   final String gymId;
 
   const ReportSurveysScreen({super.key, required this.gymId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ReportSurveysScreen> createState() =>
+      _ReportSurveysScreenState();
+}
+
+class _ReportSurveysScreenState extends ConsumerState<ReportSurveysScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(survey_riverpod.surveyProvider)
+          .listen(widget.gymId, subscriber: this);
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant ReportSurveysScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.gymId != widget.gymId) {
+      ref
+          .read(survey_riverpod.surveyProvider)
+          .listen(widget.gymId, subscriber: this);
+    }
+  }
+
+  @override
+  void dispose() {
+    ref.read(survey_riverpod.surveyProvider).cancel(subscriber: this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
 
     final surveyState = ref.watch(survey_riverpod.surveyProvider);
-
-    // Sicherstellen, dass wir offene/abgeschlossene Umfragen hören.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(survey_riverpod.surveyProvider).listen(gymId);
-    });
 
     final openCount = surveyState.openSurveys.length;
     final closedCount = surveyState.closedSurveys.length;
@@ -80,7 +108,7 @@ class ReportSurveysScreen extends ConsumerWidget {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) =>
-                              SurveyOverviewScreen(gymId: gymId),
+                              SurveyOverviewScreen(gymId: widget.gymId),
                         ),
                       );
                     },
@@ -98,7 +126,7 @@ class ReportSurveysScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => CreateSurveySheet(gymId: gymId),
+      builder: (_) => CreateSurveySheet(gymId: widget.gymId),
     );
   }
 }

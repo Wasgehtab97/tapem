@@ -1,64 +1,74 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
-import 'package:tapem/core/providers/functions_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:tapem/l10n/app_localizations.dart';
+import 'package:tapem/features/admin/data/services/branding_admin_service.dart';
 
 import 'package:tapem/core/providers/auth_providers.dart';
 
 class BrandingScreen extends StatefulWidget {
-  const BrandingScreen({Key? key}) : super(key: key);
+  const BrandingScreen({super.key, this.brandingService, this.firestore});
+
+  final BrandingAdminService? brandingService;
+  final FirebaseFirestore? firestore;
 
   @override
   State<BrandingScreen> createState() => _BrandingScreenState();
 }
 
 class _BrandingScreenState extends State<BrandingScreen> {
-  Uint8List? _logoBytes;
+  String? _logoFileName;
   final _primaryCtrl = TextEditingController();
   final _accentCtrl = TextEditingController();
+  final _logoUrlCtrl = TextEditingController();
+  late final BrandingAdminService _brandingService;
   bool _loading = false;
   String? _error;
 
   final _hexReg = RegExp(r'^[0-9a-fA-F]{6}\$');
 
+  @override
+  void initState() {
+    super.initState();
+    _brandingService =
+        widget.brandingService ??
+        BrandingAdminService(firestore: widget.firestore);
+  }
+
+  @override
+  void dispose() {
+    _primaryCtrl.dispose();
+    _accentCtrl.dispose();
+    _logoUrlCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _pickLogo() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      withData: true,
-    );
+    final result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result == null) return;
-    final bytes = result.files.single.bytes;
-    if (bytes == null) return;
-    if (bytes.length > 500 * 1024) {
-      final loc = AppLocalizations.of(context)!;
-      setState(() => _error = loc.brandingImageTooLarge);
-      return;
-    }
     setState(() {
-      _logoBytes = bytes;
+      _logoFileName = result.files.single.name;
       _error = null;
     });
   }
 
   Future<void> _save() async {
     final loc = AppLocalizations.of(context)!;
-    final gymId = riverpod.ProviderScope.containerOf(context, listen: false)
-        .read(authControllerProvider)
-        .gymCode;
+    final auth = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(authControllerProvider);
+    final gymId = auth.gymCode;
     if (gymId == null) {
       setState(() => _error = loc.invalidGymSelectionError);
       return;
     }
     final primary = _primaryCtrl.text.replaceAll('#', '');
     final accent = _accentCtrl.text.replaceAll('#', '');
+    final logoUrl = _logoUrlCtrl.text.trim();
 
-    if (!_hexReg.hasMatch(primary) ||
-        !_hexReg.hasMatch(accent) ||
-        _logoBytes == null) {
+    if (!_hexReg.hasMatch(primary) || !_hexReg.hasMatch(accent)) {
       setState(() => _error = loc.brandingInvalidConfig);
       return;
     }
@@ -68,14 +78,16 @@ class _BrandingScreenState extends State<BrandingScreen> {
       _error = null;
     });
 
-    final callable = FunctionsProvider.instance.httpsCallable('updateBranding');
     try {
-      await callable.call(<String, dynamic>{
-        'gymId': gymId,
-        'logo': base64Encode(_logoBytes!),
-        'primaryColor': primary,
-        'accentColor': accent,
-      });
+      await _brandingService.saveBranding(
+        BrandingSaveInput(
+          gymId: gymId,
+          actorUid: auth.userId ?? '',
+          primaryHex: primary,
+          accentHex: accent,
+          logoUrl: logoUrl,
+        ),
+      );
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       setState(() => _error = '${loc.errorPrefix}: $e');
@@ -94,20 +106,37 @@ class _BrandingScreenState extends State<BrandingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (_logoBytes != null) Image.memory(_logoBytes!, height: 100),
             ElevatedButton(
               onPressed: _pickLogo,
               child: Text(loc.brandingPickLogo),
             ),
+            if (_logoFileName != null) ...[
+              const SizedBox(height: 8),
+              Text(loc.brandingSelectedFile(_logoFileName!)),
+              const SizedBox(height: 8),
+              Text(loc.brandingLogoUrlHint),
+            ],
             const SizedBox(height: 16),
             TextField(
               controller: _primaryCtrl,
-              decoration: InputDecoration(labelText: loc.brandingPrimaryColorLabel),
+              decoration: InputDecoration(
+                labelText: loc.brandingPrimaryColorLabel,
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _accentCtrl,
-              decoration: InputDecoration(labelText: loc.brandingAccentColorLabel),
+              decoration: InputDecoration(
+                labelText: loc.brandingAccentColorLabel,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _logoUrlCtrl,
+              decoration: InputDecoration(
+                labelText: loc.brandingLogoUrlLabel,
+                hintText: loc.brandingLogoUrlPlaceholder,
+              ),
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
@@ -119,14 +148,13 @@ class _BrandingScreenState extends State<BrandingScreen> {
             const Spacer(),
             ElevatedButton(
               onPressed: _loading ? null : _save,
-              child:
-                  _loading
-                      ? const SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                      : Text(loc.commonSave),
+              child: _loading
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(loc.commonSave),
             ),
           ],
         ),

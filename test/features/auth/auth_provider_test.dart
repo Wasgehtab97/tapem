@@ -634,11 +634,12 @@ void main() {
 
       final takenRepo = FakeAuthRepository(
         onGetCurrentUser: () async => storedUser,
-        onIsUsernameAvailable: (_) async => false,
         onSetPublicProfile: (_, __) async {},
         onSetShowInLeaderboard: (_, __) async {},
         onSetAvatarKey: (_, __) async {},
-        onSetUsername: (_, __) async {},
+        onSetUsername: (_, __) => Future<void>.error(
+          FirebaseException(plugin: 'firestore', code: 'username_taken'),
+        ),
         onSendPasswordResetEmail: (_) async {},
         onLogout: () async {},
       );
@@ -649,8 +650,8 @@ void main() {
       );
       await _pumpEventQueue();
 
-      final available = await providerTaken.setUsername('Other');
-      expect(available, isFalse);
+      final taken = await providerTaken.setUsername('Other');
+      expect(taken, isFalse);
       expect(providerTaken.error, 'username_taken');
 
       final errorRepo = FakeAuthRepository(

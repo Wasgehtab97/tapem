@@ -10,7 +10,13 @@ service cloud.firestore {
     }
 
     function isAdminLikeRole(role) {
-      return role == 'admin' || role == 'gymowner' || role == 'gym_admin';
+      return role == 'admin' || role == 'gymowner';
+    }
+
+    function isGymOwnerClaimForGym(gymId) {
+      return isAuthed() &&
+        request.auth.token.role == 'gymowner' &&
+        request.auth.token.gymId == gymId;
     }
 
     // Membership: either custom claim gymId or membership doc under gym
@@ -21,14 +27,14 @@ service cloud.firestore {
       );
     }
 
-    // Admin if claim says admin (global/gym) oder Membership-Role == admin
+    // Admin if app-owner role or gym management role for this gym.
     function isAdmin(gymId) {
       return isGlobalAdmin() ||
         isGymAdmin(gymId) ||
         (
           inGym(gymId) &&
           (
-            isAdminLikeRole(request.auth.token.role) ||
+            isGymOwnerClaimForGym(gymId) ||
             isAdminLikeRole(get(/databases/$(database)/documents/gyms/$(gymId)/users/$(request.auth.uid)).data.role)
           )
         );
@@ -49,16 +55,14 @@ service cloud.firestore {
              get(path).data.status == 'active';
     }
 
-    // Custom claim based gym admin
+    // Gym management claim (legacy name kept for compatibility).
     function isGymAdmin(gymId) {
-      return isAuthed() &&
-             request.auth.token.role == 'gym_admin' &&
-             request.auth.token.gymId == gymId;
+      return isGymOwnerClaimForGym(gymId);
     }
 
-    // Global admin claim
+    // App owner claim (legacy name kept for compatibility).
     function isGlobalAdmin() {
-      return isAuthed() && request.auth.token.role == 'global_admin';
+      return isAuthed() && request.auth.token.role == 'admin';
     }
 
     // Membership check
@@ -123,6 +127,58 @@ service cloud.firestore {
             resource.data.memberNumberCounter is int &&
             request.resource.data.memberNumberCounter == resource.data.memberNumberCounter + 1
           )
+        );
+    }
+
+    function canGlobalAdminAdjustGymCodes(uid) {
+      let changed = request.resource.data.diff(resource.data).changedKeys();
+      let prevCodes = resource.data.gymCodes;
+      let nextCodes = request.resource.data.gymCodes;
+      return isAuthed() &&
+        isGlobalAdmin() &&
+        prevCodes is list &&
+        nextCodes is list &&
+        changed.hasOnly(['gymCodes', 'activeGymId', 'updatedAt']) &&
+        nextCodes.size() <= 50 &&
+        nextCodes.hasOnly(prevCodes) &&
+        (
+          !('activeGymId' in request.resource.data) ||
+          (
+            request.resource.data.activeGymId is string &&
+            nextCodes.hasAny([request.resource.data.activeGymId])
+          )
+        ) &&
+        (
+          !('updatedAt' in request.resource.data) ||
+          request.resource.data.updatedAt is timestamp
+        );
+    }
+
+    function canGymAdminDetachUserFromGym(uid, gymId) {
+      let changed = request.resource.data.diff(resource.data).changedKeys();
+      let prevCodes = resource.data.gymCodes;
+      let nextCodes = request.resource.data.gymCodes;
+      return isAuthed() &&
+        gymId is string &&
+        isGymAdminFor(uid, gymId) &&
+        prevCodes is list &&
+        nextCodes is list &&
+        prevCodes.hasAny([gymId]) &&
+        !nextCodes.hasAny([gymId]) &&
+        nextCodes.size() == prevCodes.size() - 1 &&
+        nextCodes.size() <= 50 &&
+        nextCodes.hasOnly(prevCodes) &&
+        changed.hasOnly(['gymCodes', 'activeGymId', 'updatedAt']) &&
+        (
+          !('activeGymId' in request.resource.data) ||
+          (
+            request.resource.data.activeGymId is string &&
+            nextCodes.hasAny([request.resource.data.activeGymId])
+          )
+        ) &&
+        (
+          !('updatedAt' in request.resource.data) ||
+          request.resource.data.updatedAt is timestamp
         );
     }
 
@@ -362,13 +418,8 @@ service cloud.firestore {
     // ─────────────────────────
     match /manufacturers/{manufacturerId} {
       allow read: if isAuthed();
-      // Allow write if global admin OR if they are an admin in the gym they are currently in
-      // Since seeding happens from the client, we trust gym admins to initialize the list
-      allow write: if isAuthed() && (
-        isGlobalAdmin() || 
-        isAdminLikeRole(request.auth.token.role) ||
-        (activeGymId() is string && isAdmin(activeGymId()))
-      );
+      // Global catalog writes are server/app-owner only.
+      allow write: if isGlobalAdmin();
     }
 
     // ─────────────────────────
@@ -464,11 +515,13 @@ service cloud.firestore {
           )
         );
       allow update: if isGymAdminFor(uid, request.auth.token.gymId) &&
-        request.resource.data.keys().hasOnly(['avatarKey']) &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(['avatarKey']) &&
         request.resource.data.avatarKey is string;
       allow update: if isGymAdminFor(uid, request.auth.token.gymId) &&
-        request.resource.data.keys().hasOnly(['coachEnabled']) &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(['coachEnabled']) &&
         request.resource.data.coachEnabled is bool;
+      allow update: if canGlobalAdminAdjustGymCodes(uid);
+      allow update: if canGymAdminDetachUserFromGym(uid, request.auth.token.gymId);
 
       // Friends list (symmetrische Kante)
       match /friends/{fid} {
@@ -709,8 +762,28 @@ service cloud.firestore {
           ]);
       }
 
-      match /{document=**} {
-        allow read, write: if isOwner(uid);
+      match /{collection}/{document=**} {
+        allow read, write: if isOwner(uid) &&
+          ![
+            'friends',
+            'avatarsOwned',
+            'avatarInventory',
+            'publicCalendar',
+            'friendMeta',
+            'friendChats',
+            'pushTokens',
+            'settings',
+            'creatine_intakes',
+            'nutrition_goal_templates',
+            'nutrition_goals',
+            'nutrition_logs',
+            'nutrition_year_summary',
+            'training_plans',
+            'trainingDayXP',
+            'training_schedule',
+            'nfc_scan_stats',
+            'nutrition_recipes'
+          ].hasAny([collection]);
       }
     }
 
@@ -918,7 +991,7 @@ service cloud.firestore {
       // Avatar catalog per gym
       match /avatarCatalog/{avatarId} {
         allow read: if inGym(gymId) || isAdmin(gymId);
-        allow write: if isGymAdmin(gymId);
+        allow write: if isAdmin(gymId);
       }
 
       // Devices
@@ -1049,7 +1122,8 @@ service cloud.firestore {
               ['m', 'w', 'divers'].hasAny([request.resource.data.gender])) &&
             request.resource.data.createdAt == request.time &&
             isSingleDevice(gymId, machineId);
-          allow update, delete: if false;
+          allow update: if false;
+          allow delete: if isAdmin(gymId);
         }
       }
 
@@ -1078,6 +1152,16 @@ service cloud.firestore {
       match /challenges/{type}/{docId}/{sub=**} {
         allow read: if inGym(gymId);
         allow write: if isAdmin(gymId);
+      }
+
+      // Report daily aggregates (read model built by Cloud Functions)
+      match /reportDaily/{dayKey} {
+        allow read: if inGym(gymId) || isAdmin(gymId);
+        allow write: if false;
+
+        match /{sub=**} {
+          allow read, write: if false;
+        }
       }
 
       // Users subcollection under gym
@@ -1153,10 +1237,10 @@ service cloud.firestore {
         allow delete: if false;
       }
 
-      // Fallback inside gyms
-      match /{document=**} {
+      // Fallback inside gyms (reportDaily is read-only by dedicated rule above)
+      match /{collection}/{document=**} {
         allow read: if inGym(gymId);
-        allow write: if isAdmin(gymId);
+        allow write: if isAdmin(gymId) && collection != 'reportDaily';
       }
     }
 
@@ -1172,7 +1256,7 @@ service cloud.firestore {
       allow read: if true;
       
       // Only gym admins can create codes
-      allow create: if (isAdmin(gymId) || isGymAdmin(gymId)) &&
+      allow create: if isAdmin(gymId) &&
         request.resource.data.keys().hasOnly([
           'code',
           'gymId',
@@ -1190,7 +1274,7 @@ service cloud.firestore {
         request.resource.data.createdBy is string;
       
       // Only allow updating isActive field (for deactivation)
-      allow update: if (isAdmin(gymId) || isGymAdmin(gymId)) &&
+      allow update: if isAdmin(gymId) &&
         request.resource.data.keys().hasOnly([
           'code',
           'gymId',
@@ -1210,13 +1294,11 @@ service cloud.firestore {
     }
 
     // Public deals (readable by any authenticated user)
-    // Public deals (readable by any authenticated user)
     match /deals/{dealId} {
       allow read: if isAuthed();
       allow write: if isAuthed() && (
         isGlobalAdmin() || 
         isAdminLikeRole(request.auth.token.role) ||
-        request.auth.token.role == 'gym_admin' ||
         isAdminLikeRole(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role) ||
         isAdmin(activeGymId())
       );

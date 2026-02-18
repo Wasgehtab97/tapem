@@ -29,5 +29,20 @@ class HiveSyncJob extends HiveObject {
   @HiveField(7)
   DateTime? lastAttempt;
 
+  @HiveField(8)
+  bool isDeadLetter = false;
+
+  @HiveField(9)
+  String? deadLetterReason;
+
+  @HiveField(10)
+  String? deadLetterErrorCode;
+
+  @HiveField(11)
+  DateTime? firstFailureAt;
+
+  @HiveField(12)
+  DateTime? deadLetterAt;
+
   HiveSyncJob();
 }

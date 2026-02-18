@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/providers/database_provider.dart';
 import 'package:tapem/core/providers/firebase_provider.dart';
+import 'package:tapem/core/providers/offline_flow_observability_provider.dart';
 import 'package:tapem/features/training_details/data/repositories/session_repository_impl.dart';
 import 'package:tapem/features/training_details/data/session_meta_source.dart';
 import 'package:tapem/features/training_details/domain/repositories/session_repository.dart';
@@ -14,10 +15,12 @@ final sessionRepositoryProvider = Provider<SessionRepository>((ref) {
   final databaseService = ref.watch(databaseServiceProvider);
   final syncService = ref.watch(syncServiceProvider);
   final metaSource = ref.watch(sessionMetaSourceProvider);
-  
+  final observability = ref.watch(offlineFlowObservabilityProvider);
+
   return SessionRepositoryImpl(
     databaseService,
     syncService,
     metaSource,
+    observability: observability,
   );
 });

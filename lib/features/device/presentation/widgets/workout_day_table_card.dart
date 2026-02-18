@@ -31,8 +31,8 @@ const _cardPanelTop = Color(0xFF0A0C13);
 const _cardPanelBottom = Color(0xFF06070C);
 const _rowBgStart = Color(0xFF0C0E16);
 const _rowBgEnd = Color(0xFF090B12);
-const _strokeLight = Color(0x10FFFFFF); // ~6% white tint
-const _strokeStrong = Color(0x1AFFFFFF); // ~10% white tint
+const _strokeLight = Colors.transparent;
+const _strokeStrong = Colors.transparent;
 
 enum _SessionOptionAction {
   remove,
@@ -1419,9 +1419,6 @@ class _TableInputCellState extends State<_TableInputCell> {
     final brandColor =
         theme.extension<AppBrandTheme>()?.outline ??
         theme.colorScheme.primary;
-    final borderColor = widget.isFocused
-        ? brandColor.withOpacity(0.7)
-        : Colors.white.withOpacity(0.08);
     final fillColor = widget.isFocused
         ? brandColor.withOpacity(0.08)
         : Colors.white.withOpacity(0.02);
@@ -1436,12 +1433,6 @@ class _TableInputCellState extends State<_TableInputCell> {
         decoration: BoxDecoration(
           color: fillColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border(
-            bottom: BorderSide(
-              color: borderColor,
-              width: widget.isFocused ? 1.4 : 1.0,
-            ),
-          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1827,13 +1818,7 @@ class _WorkoutRoundButtonState extends State<_WorkoutRoundButton> {
                       ),
                     ]
                   : [],
-              border: isFilled
-                  ? null
-                  : Border.all(
-                      color: Colors.white.withOpacity(
-                        isEnabled ? 0.12 : 0.06,
-                      ),
-                    ),
+              border: null,
             ),
             child: Icon(
               widget.icon,

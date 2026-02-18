@@ -83,7 +83,7 @@ class ProfileCacheEntry {
 class ProfileCacheStore {
   const ProfileCacheStore();
 
-  static String _key(String userId) => 'profileCache/\$userId';
+  static String _key(String userId) => 'profileCache/$userId';
 
   Future<ProfileCacheEntry?> read(String userId) async {
     final prefs = await SharedPreferences.getInstance();

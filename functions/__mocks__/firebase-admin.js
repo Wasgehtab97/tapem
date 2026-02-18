@@ -129,6 +129,24 @@ class DocumentReferenceMock {
   async delete() {
     this._db._delete(this._pathSegments);
   }
+
+  async listCollections() {
+    const prefix = `${this.path}/`;
+    const names = new Set();
+    for (const key of this._db._store.keys()) {
+      if (!key.startsWith(prefix)) {
+        continue;
+      }
+      const remainder = key.slice(prefix.length);
+      const segments = remainder.split('/');
+      if (segments.length >= 2) {
+        names.add(segments[0]);
+      }
+    }
+    return Array.from(names).map(
+      (id) => new CollectionReferenceMock(this._db, [...this._pathSegments, id])
+    );
+  }
 }
 
 class CollectionReferenceMock {
@@ -156,6 +174,16 @@ class CollectionReferenceMock {
       ([segments, data]) => new DocumentSnapshotMock(new DocumentReferenceMock(this._db, segments), data)
     );
     return new QuerySnapshotMock(docs);
+  }
+
+  limit(count) {
+    const self = this;
+    return {
+      async get() {
+        const snap = await self.get();
+        return new QuerySnapshotMock(snap.docs.slice(0, count));
+      },
+    };
   }
 }
 

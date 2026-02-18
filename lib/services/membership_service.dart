@@ -24,8 +24,8 @@ class FirestoreMembershipService implements MembershipService {
   final Set<String> _ensured = {};
 
   FirestoreMembershipService({FirebaseFirestore? firestore, LogFn? log})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _log = log ?? _defaultLog;
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _log = log ?? _defaultLog;
 
   @override
   Future<void> ensureMembership(String gymId, String uid) async {
@@ -40,7 +40,8 @@ class FirestoreMembershipService implements MembershipService {
         final membershipSnap = await tx.get(membershipRef);
         final updates = <String, dynamic>{};
 
-        final hasRole = membershipSnap.exists &&
+        final hasRole =
+            membershipSnap.exists &&
             membershipSnap.data() != null &&
             (membershipSnap.data() as Map<String, dynamic>).containsKey('role');
         if (!hasRole) {
@@ -67,14 +68,44 @@ class FirestoreMembershipService implements MembershipService {
       _ensured.add(key);
       _log('ENSURE_MEMBERSHIP success gymId=$gymId uid=$uid');
     } catch (e, st) {
+      if (_isTransientNetworkFailure(e)) {
+        // Offline mode: do not block read paths that can fall back to local
+        // caches. Remote writes will retry once connectivity is restored.
+        _log(
+          'ENSURE_MEMBERSHIP skipped (transient/offline) gymId=$gymId uid=$uid error=$e',
+        );
+        return;
+      }
       _log('ENSURE_MEMBERSHIP fail gymId=$gymId uid=$uid error=$e', st);
       rethrow;
     }
   }
+
+  bool _isTransientNetworkFailure(Object error) {
+    if (error is FirebaseException) {
+      final code = _normalizeErrorCode(error.code);
+      return code == 'unavailable' ||
+          code == 'deadline-exceeded' ||
+          code == 'aborted' ||
+          code == 'network-request-failed' ||
+          code == 'timeout';
+    }
+    final message = error.toString().toLowerCase();
+    return message.contains('network error') ||
+        message.contains('unavailable') ||
+        message.contains('unreachable host') ||
+        message.contains('timeout');
+  }
+
+  String _normalizeErrorCode(String raw) {
+    final code = raw.trim().toLowerCase();
+    if (code.contains('/')) {
+      return code.split('/').last;
+    }
+    return code;
+  }
 }
 
 final membershipServiceProvider = Provider<MembershipService>((ref) {
-  return FirestoreMembershipService(
-    firestore: FirebaseFirestore.instance,
-  );
+  return FirestoreMembershipService(firestore: FirebaseFirestore.instance);
 });

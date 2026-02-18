@@ -24,6 +24,7 @@ class SelectGymScreen extends ConsumerStatefulWidget {
 class _SelectGymScreenState extends ConsumerState<SelectGymScreen> {
   String? _claimingGymCode;
   String? _localErrorMessage;
+  bool _redirectingHome = false;
 
   String? _mapError(AppLocalizations loc, String? code) {
     switch (code) {
@@ -51,11 +52,9 @@ class _SelectGymScreenState extends ConsumerState<SelectGymScreen> {
     if (result.success) {
       final prefs = ref.read(sharedPreferencesProvider);
       await prefs.setString(StorageKeys.lastUsedGymId, code);
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRouter.home,
-        (route) => false,
-        arguments: 1,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(AppRouter.home, (route) => false, arguments: 1);
     } else {
       final loc = AppLocalizations.of(context)!;
       final latestError =
@@ -77,6 +76,21 @@ class _SelectGymScreenState extends ConsumerState<SelectGymScreen> {
     final auth = ref.watch(authControllerProvider);
     final gyms = auth.gymCodes ?? [];
     final loc = AppLocalizations.of(context)!;
+
+    if (!_redirectingHome &&
+        _claimingGymCode == null &&
+        auth.gymContextStatus == GymContextStatus.ready &&
+        (auth.gymCode?.isNotEmpty ?? false)) {
+      _redirectingHome = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRouter.home,
+          (route) => false,
+          arguments: 1,
+        );
+      });
+    }
 
     final errorMessage = _localErrorMessage;
     final isInitialLoading =
@@ -203,7 +217,7 @@ class _GymSelectionList extends ConsumerWidget {
                 color: Colors.white,
               ),
             ),
-            onTap: null,
+            onTap: isProcessing ? null : () => onSelectGym(code),
           ),
           error: (_, __) => ListTile(
             title: Text(code, style: AuthTheme.bodyStyle),

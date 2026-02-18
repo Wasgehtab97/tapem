@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
+import 'package:tapem/l10n/app_localizations.dart';
 
 class CalendarHeatmap extends StatelessWidget {
   final List<DateTime> dates;
@@ -36,10 +37,14 @@ class CalendarHeatmap extends StatelessWidget {
       // Klick-Handler
       onClick: (date) {
         final count = counts[date] ?? 0;
+        final loc = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Logs am ${date.toLocal().toIso8601String().split("T")[0]}: $count',
+              loc.reportCalendarLogCount(
+                date.toLocal().toIso8601String().split('T')[0],
+                count,
+              ),
             ),
           ),
         );

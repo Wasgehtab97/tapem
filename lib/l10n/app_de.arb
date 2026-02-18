@@ -1294,6 +1294,8 @@
   "@settingsThemeAirNomads": {"description": "Name des von den Luftnomaden inspirierten Themes"},
   "settingsThemeEarthKingdom": "Erdkönigreich",
   "@settingsThemeEarthKingdom": {"description": "Name des vom Erdkönigreich inspirierten Themes"},
+  "settingsThemeMidnightGold": "Mitternachtsgold",
+  "@settingsThemeMidnightGold": {"description": "Exklusives Premium-Theme in Tiefschwarz und edlem Gold."},
   "settingsThemeSaveError": "Theme konnte nicht gespeichert werden.",
   "@settingsThemeSaveError": {"description": "Fehlermeldung wenn Theme nicht gespeichert werden konnte"},
   "settingsOptionPublicProfile": "Öffentliches Profil",
@@ -1915,6 +1917,8 @@
   ,"@reportDeviceUsageError": {"description": "Hinweis, wenn das Laden der Nutzungsdaten fehlschlägt"}
   ,"reportDeviceUsageSessions": "{count} Sessions"
   ,"@reportDeviceUsageSessions": {"description": "Tooltip-Zeile mit der Anzahl an Sessions","placeholders": {"count": {"type": "int"}}}
+  ,"reportCalendarLogCount": "Logs am {date}: {count}"
+  ,"@reportCalendarLogCount": {"description": "Snackbar-Text beim Tippen auf einen Tag im Report-Kalender","placeholders": {"date": {},"count": {"type": "int"}}}
   ,"exerciseDeleteTitle": "Übung löschen"
   ,"@exerciseDeleteTitle": {"description": "Dialogtitel zum Löschen einer Übung"}
   ,"exerciseDeleteMessage": "Übung \"{name}\" wirklich löschen?"
@@ -1963,8 +1967,22 @@
   ,"@challengeAdminFieldRequiredSets": {"description": "Label für das Feld der benötigten Sätze"}
   ,"challengeAdminFieldXpReward": "XP-Reward"
   ,"@challengeAdminFieldXpReward": {"description": "Label für das XP-Reward-Feld"}
+  ,"challengeAdminFieldGoalType": "Challenge-Art"
+  ,"@challengeAdminFieldGoalType": {"description": "Label für die Art bzw. das Ziel einer Challenge"}
+  ,"challengeAdminGoalTypeDeviceSets": "Geräte-Sätze"
+  ,"@challengeAdminGoalTypeDeviceSets": {"description": "Option für satzbasierte Geräte-Challenges"}
+  ,"challengeAdminGoalTypeWorkoutFrequency": "Trainingshäufigkeit"
+  ,"@challengeAdminGoalTypeWorkoutFrequency": {"description": "Option für Challenge über Trainingshäufigkeit"}
   ,"challengeAdminFieldType": "Typ"
   ,"@challengeAdminFieldType": {"description": "Label für den Challenge-Typ"}
+  ,"challengeAdminFieldWorkoutCount": "Trainings pro Zeitraum"
+  ,"@challengeAdminFieldWorkoutCount": {"description": "Label für die benötigte Anzahl an Trainings"}
+  ,"challengeAdminFieldWorkoutWindow": "Zeitraum"
+  ,"@challengeAdminFieldWorkoutWindow": {"description": "Label für die Zeitfenster-Auswahl bei Trainingshäufigkeit"}
+  ,"challengeAdminWorkoutWindowOneWeek": "1 Kalenderwoche"
+  ,"@challengeAdminWorkoutWindowOneWeek": {"description": "Option für ein Zeitfenster von einer Kalenderwoche"}
+  ,"challengeAdminWorkoutWindowFourWeeks": "4 Kalenderwochen"
+  ,"@challengeAdminWorkoutWindowFourWeeks": {"description": "Option für ein Zeitfenster von vier Kalenderwochen"}
   ,"challengeTabActive": "Aktiv"
   ,"@challengeTabActive": {"description": "Tab-Label für aktive Challenges"}
   ,"challengeTabCompleted": "Abgeschlossen"
@@ -1975,6 +1993,10 @@
   ,"@challengeEmptyCompleted": {"description": "Meldung wenn keine abgeschlossenen Challenges vorhanden sind"}
   ,"challengeDetailXpReward": "XP: {xp}"
   ,"@challengeDetailXpReward": {"description": "XP-Belohnung im Challenge-Dialog","placeholders": {"xp": {"type": "int"}}}
+  ,"challengeDetailGoalDeviceSets": "Ziel: {count} Sätze"
+  ,"@challengeDetailGoalDeviceSets": {"description": "Zieltext für satzbasierte Challenges","placeholders": {"count": {"type": "int"}}}
+  ,"challengeDetailGoalWorkoutFrequency": "Ziel: {count} Trainings in {weeks} Kalenderwochen"
+  ,"@challengeDetailGoalWorkoutFrequency": {"description": "Zieltext für Trainingshäufigkeits-Challenges","placeholders": {"count": {"type": "int"},"weeks": {"type": "int"}}}
   ,"challengeDetailDevices": "Geräte: {devices}"
   ,"@challengeDetailDevices": {"description": "Geräteliste im Challenge-Dialog","placeholders": {"devices": {}}}
   ,"challengeAdminTypeWeekly": "Wöchentlich"
@@ -1991,6 +2013,8 @@
   ,"@challengeAdminMonthLabel": {"description": "Anzeigetext für einen bestimmten Monat","placeholders": {"month": {"type": "int"}}}
   ,"challengeAdminFieldDevices": "Geräte"
   ,"@challengeAdminFieldDevices": {"description": "Bereichsüberschrift für die Geräteliste"}
+  ,"challengeAdminCreateButton": "Challenge anlegen"
+  ,"@challengeAdminCreateButton": {"description": "Button-Label zum Anlegen einer Challenge"}
   ,"adminAreaTitle": "Adminbereich"
   ,"@adminAreaTitle": {"description": "AppBar-Titel beim Betreten des Adminbereichs"}
   ,"adminAreaNoPermission": "Keine Admin-Rechte"
@@ -2035,6 +2059,16 @@
   ,"@adminSymbolsAllGlobalAssigned": {"description": "Hinweis wenn alle globalen Symbole vergeben wurden"}
   ,"adminSymbolsAllTitleAssigned": "Alle {title}-Symbole bereits zugewiesen."
   ,"@adminSymbolsAllTitleAssigned": {"description": "Hinweis wenn alle Symbole eines Bereichs vergeben wurden","placeholders": {"title": {}}}
+  ,"adminSymbolsBackfillTooltip": "usernameLower nachziehen"
+  ,"@adminSymbolsBackfillTooltip": {"description": "Tooltip für das Backfill von usernameLower im Debug-Modus"}
+  ,"adminSymbolsBackfillSuccess": "usernameLower aktualisiert: {count}"
+  ,"@adminSymbolsBackfillSuccess": {"description": "Snackbar nach usernameLower-Backfill","placeholders": {"count": {"type": "int"}}}
+  ,"adminSymbolsGlobalTitle": "Global"
+  ,"@adminSymbolsGlobalTitle": {"description": "Bereichstitel für globale Symbole"}
+  ,"userSymbolsAddTooltip": "Symbole hinzufügen"
+  ,"@userSymbolsAddTooltip": {"description": "Tooltip zum Hinzufügen von Symbolen"}
+  ,"userSymbolsInventoryTitle": "Inventar von {username}"
+  ,"@userSymbolsInventoryTitle": {"description": "Titel für den Nutzer-Inventarbereich","placeholders": {"username": {}}}
   ,"brandingImageTooLarge": "Bild zu groß (max 500KB)"
   ,"@brandingImageTooLarge": {"description": "Fehler wenn das Logo zu groß ist"}
   ,"brandingInvalidConfig": "Bitte gültige Farben und Logo wählen"
@@ -2137,4 +2171,328 @@
   ,"@communityCalendarCountOne": {"description": "Hinweis für einen aktiven Nutzer im Community-Kalender"}
   ,"communityCalendarCountOther": "{count} Personen haben an diesem Tag trainiert."
   ,"@communityCalendarCountOther": {"description": "Hinweis für mehrere aktive Nutzer im Community-Kalender", "placeholders": {"count": {}}}
+  ,"ownerWorkspaceTitle": "Owner Workspace"
+  ,"@ownerWorkspaceTitle": {"description": "Überschrift des Owner-Workspaces"}
+  ,"ownerWorkspaceActiveGym": "Aktives Gym: {gymId}"
+  ,"@ownerWorkspaceActiveGym": {"description": "Zeile mit dem aktiven Gym im Owner-Header","placeholders": {"gymId": {}}}
+  ,"ownerWorkspaceGeneratedAt": "Stand: {timeLabel}"
+  ,"@ownerWorkspaceGeneratedAt": {"description": "Zeile mit dem Erstellungszeitpunkt im Owner-Header","placeholders": {"timeLabel": {}}}
+  ,"ownerSectionKpiTitle": "Studio-Überblick"
+  ,"@ownerSectionKpiTitle": {"description": "Titel des KPI-Bereichs im Owner-Workspace"}
+  ,"ownerSectionKpiSubtitle": "Die wichtigsten Studio-Signale kompakt auf einen Blick."
+  ,"@ownerSectionKpiSubtitle": {"description": "Untertitel des KPI-Bereichs im Owner-Workspace"}
+  ,"ownerSectionTasksTitle": "Heute priorisieren"
+  ,"@ownerSectionTasksTitle": {"description": "Titel des Aufgabenbereichs im Owner-Workspace"}
+  ,"ownerSectionTasksSubtitle": "Diese Punkte erzeugen direkt operative Wirkung im Studio."
+  ,"@ownerSectionTasksSubtitle": {"description": "Untertitel des Aufgabenbereichs im Owner-Workspace"}
+  ,"ownerSectionQuickActionsTitle": "Schnellaktionen"
+  ,"@ownerSectionQuickActionsTitle": {"description": "Titel des Schnellaktionen-Bereichs im Owner-Workspace"}
+  ,"ownerSectionQuickActionsSubtitle": "Direkter Zugriff auf alle Owner-Module ohne Routing-Umwege."
+  ,"@ownerSectionQuickActionsSubtitle": {"description": "Untertitel des Schnellaktionen-Bereichs im Owner-Workspace"}
+  ,"ownerTasksNone": "Keine offenen Prioritäten. Studio-Betrieb ist stabil."
+  ,"@ownerTasksNone": {"description": "Neutraler Text, wenn keine Owner-Aufgaben vorliegen"}
+  ,"ownerPriorityHigh": "hoch"
+  ,"@ownerPriorityHigh": {"description": "Chip-Label für hohe Owner-Priorität"}
+  ,"ownerPriorityMedium": "mittel"
+  ,"@ownerPriorityMedium": {"description": "Chip-Label für mittlere Owner-Priorität"}
+  ,"ownerPriorityLow": "niedrig"
+  ,"@ownerPriorityLow": {"description": "Chip-Label für niedrige Owner-Priorität"}
+  ,"ownerNoAccessSubtitle": "Für diesen Bereich sind gymowner- oder admin-Rechte erforderlich."
+  ,"@ownerNoAccessSubtitle": {"description": "Untertitel im Owner-Screen, wenn kein Zugriff besteht"}
+  ,"ownerGymContextMissingTitle": "Gym-Kontext fehlt"
+  ,"@ownerGymContextMissingTitle": {"description": "Titel, wenn im Owner-Screen kein aktives Gym gesetzt ist"}
+  ,"ownerGymContextMissingSubtitle": "Wähle zuerst ein aktives Gym aus, damit Owner-Daten geladen werden können."
+  ,"@ownerGymContextMissingSubtitle": {"description": "Untertitel, wenn im Owner-Screen kein aktives Gym gesetzt ist"}
+  ,"ownerDashboardLoadErrorTitle": "Owner-Dashboard konnte nicht geladen werden"
+  ,"@ownerDashboardLoadErrorTitle": {"description": "Titel bei Fehlern beim Laden des Owner-Snapshots"}
+  ,"ownerDashboardLoadErrorSubtitle": "Bitte aktualisiere die Daten. Fehler: {error}"
+  ,"@ownerDashboardLoadErrorSubtitle": {"description": "Untertitel bei Fehlern beim Laden des Owner-Snapshots","placeholders": {"error": {}}}
+  ,"ownerNoDataTitle": "Noch keine Owner-Daten vorhanden"
+  ,"@ownerNoDataTitle": {"description": "Titel wenn der Owner-Snapshot leer ist"}
+  ,"ownerNoDataSubtitle": "Lege zuerst Geräte und erste Studio-Aktionen an, damit das Dashboard verwertbare Signale zeigt."
+  ,"@ownerNoDataSubtitle": {"description": "Untertitel wenn der Owner-Snapshot leer ist"}
+  ,"ownerMetricMembersLabel": "Mitglieder"
+  ,"@ownerMetricMembersLabel": {"description": "Label der Owner-Kennzahl für Mitglieder"}
+  ,"ownerMetricMembersHelper": "Registrierte Mitglieder im aktiven Gym."
+  ,"@ownerMetricMembersHelper": {"description": "Hilfetext der Owner-Kennzahl für Mitglieder"}
+  ,"ownerMetricDevicesLabel": "Geräte"
+  ,"@ownerMetricDevicesLabel": {"description": "Label der Owner-Kennzahl für Geräte"}
+  ,"ownerMetricDevicesHelper": "Anzahl verfügbarer Trainingsgeräte."
+  ,"@ownerMetricDevicesHelper": {"description": "Hilfetext der Owner-Kennzahl für Geräte"}
+  ,"ownerMetricOpenFeedbackLabel": "Offenes Feedback"
+  ,"@ownerMetricOpenFeedbackLabel": {"description": "Label der Owner-Kennzahl für offenes Feedback"}
+  ,"ownerMetricOpenFeedbackHelper": "Rückmeldungen mit Bearbeitungsbedarf."
+  ,"@ownerMetricOpenFeedbackHelper": {"description": "Hilfetext der Owner-Kennzahl für offenes Feedback"}
+  ,"ownerMetricOpenSurveysLabel": "Aktive Umfragen"
+  ,"@ownerMetricOpenSurveysLabel": {"description": "Label der Owner-Kennzahl für aktive Umfragen"}
+  ,"ownerMetricOpenSurveysHelper": "Laufende Umfragen in deinem Gym."
+  ,"@ownerMetricOpenSurveysHelper": {"description": "Hilfetext der Owner-Kennzahl für aktive Umfragen"}
+  ,"ownerMetricActiveChallengesLabel": "Aktive Challenges"
+  ,"@ownerMetricActiveChallengesLabel": {"description": "Label der Owner-Kennzahl für aktive Challenges"}
+  ,"ownerMetricActiveChallengesHelper": "Aktuell laufende Wochen-/Monats-Challenges."
+  ,"@ownerMetricActiveChallengesHelper": {"description": "Hilfetext der Owner-Kennzahl für aktive Challenges"}
+  ,"ownerTaskOpenFeedbackTitle": "{count} offenes Feedback bearbeiten"
+  ,"@ownerTaskOpenFeedbackTitle": {"description": "Titel der Owner-Aufgabe für offenes Feedback","placeholders": {"count": {"type": "int"}}}
+  ,"ownerTaskOpenFeedbackSubtitle": "Unerledigtes Feedback reduziert Servicequalität."
+  ,"@ownerTaskOpenFeedbackSubtitle": {"description": "Untertitel der Owner-Aufgabe für offenes Feedback"}
+  ,"ownerTaskPlanChallengeTitle": "Neue Challenge planen"
+  ,"@ownerTaskPlanChallengeTitle": {"description": "Titel der Owner-Aufgabe zur Challenge-Planung"}
+  ,"ownerTaskPlanChallengeSubtitle": "Aktive Challenges steigern Trainingsfrequenz und Bindung."
+  ,"@ownerTaskPlanChallengeSubtitle": {"description": "Untertitel der Owner-Aufgabe zur Challenge-Planung"}
+  ,"ownerTaskStartSurveyTitle": "Umfrage starten"
+  ,"@ownerTaskStartSurveyTitle": {"description": "Titel der Owner-Aufgabe zum Start einer Umfrage"}
+  ,"ownerTaskStartSurveySubtitle": "Sammle heute aktiv Mitgliedsfeedback mit einer kurzen Umfrage."
+  ,"@ownerTaskStartSurveySubtitle": {"description": "Untertitel der Owner-Aufgabe zum Start einer Umfrage"}
+  ,"ownerTaskCreateFirstDeviceTitle": "Erstes Gerät anlegen"
+  ,"@ownerTaskCreateFirstDeviceTitle": {"description": "Titel der Owner-Aufgabe für das erste Gerät"}
+  ,"ownerTaskCreateFirstDeviceSubtitle": "Ohne Geräte fehlen zentrale Tracking- und Report-Daten."
+  ,"@ownerTaskCreateFirstDeviceSubtitle": {"description": "Untertitel der Owner-Aufgabe für das erste Gerät"}
+  ,"ownerTaskCheckMembersTitle": "Mitgliederdaten prüfen"
+  ,"@ownerTaskCheckMembersTitle": {"description": "Titel der Owner-Aufgabe zur Mitgliederprüfung"}
+  ,"ownerTaskCheckMembersSubtitle": "Wenige Mitglieder im Report können auf unvollständige Daten hinweisen."
+  ,"@ownerTaskCheckMembersSubtitle": {"description": "Untertitel der Owner-Aufgabe zur Mitgliederprüfung"}
+  ,"ownerQuickActionReportSubtitle": "Nutzung, Mitgliedertrends und Studio-Kennzahlen analysieren."
+  ,"@ownerQuickActionReportSubtitle": {"description": "Untertitel der Report-Schnellaktion im Owner-Workspace"}
+  ,"ownerQuickActionMembersSubtitle": "Mitgliederbasis prüfen und Bereinigung starten."
+  ,"@ownerQuickActionMembersSubtitle": {"description": "Untertitel der Mitglieder-Schnellaktion im Owner-Workspace"}
+  ,"ownerQuickActionDevicesSubtitle": "Geräte anlegen, bearbeiten und verwalten."
+  ,"@ownerQuickActionDevicesSubtitle": {"description": "Untertitel der Geräte-Schnellaktion im Owner-Workspace"}
+  ,"ownerQuickActionFeedbackSubtitle": "Offene Rückmeldungen sichten und erledigen."
+  ,"@ownerQuickActionFeedbackSubtitle": {"description": "Untertitel der Feedback-Schnellaktion im Owner-Workspace"}
+  ,"ownerQuickActionSurveysSubtitle": "Umfragen erstellen, auswerten und schließen."
+  ,"@ownerQuickActionSurveysSubtitle": {"description": "Untertitel der Umfragen-Schnellaktion im Owner-Workspace"}
+  ,"ownerQuickActionChallengesSubtitle": "Challenges planen und laufende Aktionen pflegen."
+  ,"@ownerQuickActionChallengesSubtitle": {"description": "Untertitel der Challenges-Schnellaktion im Owner-Workspace"}
+  ,"ownerQuickActionDealsTitle": "Deals"
+  ,"@ownerQuickActionDealsTitle": {"description": "Titel der Deals-Schnellaktion im Owner-Workspace"}
+  ,"ownerQuickActionDealsSubtitle": "Partnerangebote und Promotions steuern."
+  ,"@ownerQuickActionDealsSubtitle": {"description": "Untertitel der Deals-Schnellaktion im Owner-Workspace"}
+  ,"ownerQuickActionAdminSubtitle": "Alle Admin-Module in einer Übersicht."
+  ,"@ownerQuickActionAdminSubtitle": {"description": "Untertitel der Admin-Schnellaktion im Owner-Workspace"}
+  ,"reportMembersNoRegisteredMembers": "Bisher wurden noch keine Mitglieder registriert."
+  ,"@reportMembersNoRegisteredMembers": {"description": "Sekundärer Text für leeren Zustand im Mitglieder-Report"}
+  ,"reportMembersSummaryTotal": "Mitglieder"
+  ,"@reportMembersSummaryTotal": {"description": "Label für Summe aller Mitglieder"}
+  ,"reportMembersSummaryActive": "Aktive Mitglieder"
+  ,"@reportMembersSummaryActive": {"description": "Label für aktive Mitglieder"}
+  ,"reportMembersSummaryInactive": "Inaktiv"
+  ,"@reportMembersSummaryInactive": {"description": "Label für inaktive Mitglieder"}
+  ,"reportMembersSummaryAtRisk": "Gefährdet (hoch)"
+  ,"@reportMembersSummaryAtRisk": {"description": "Label für gefährdete Mitglieder"}
+  ,"reportMembersSummaryNewMembers": "Neue Mitglieder"
+  ,"@reportMembersSummaryNewMembers": {"description": "Label für neue Mitglieder"}
+  ,"reportMembersSummaryLoyal": "Treue Mitglieder"
+  ,"@reportMembersSummaryLoyal": {"description": "Label für treue Mitglieder"}
+  ,"reportMembersSummaryTrainingDays": "Trainingstage gesamt"
+  ,"@reportMembersSummaryTrainingDays": {"description": "Label für Summe aller Trainingstage"}
+  ,"reportMembersSegmentActions": "Aktionen für Gruppe"
+  ,"@reportMembersSegmentActions": {"description": "Button-Label für Segment-Aktionen"}
+  ,"reportMembersSegmentAll": "Alle Mitglieder"
+  ,"@reportMembersSegmentAll": {"description": "Segment-Label für alle Mitglieder"}
+  ,"reportMembersSegmentActive": "Aktive Mitglieder"
+  ,"@reportMembersSegmentActive": {"description": "Segment-Label für aktive Mitglieder"}
+  ,"reportMembersSegmentInactive": "Inaktive Mitglieder"
+  ,"@reportMembersSegmentInactive": {"description": "Segment-Label für inaktive Mitglieder"}
+  ,"reportMembersSegmentAtRisk": "Gefährdete Mitglieder"
+  ,"@reportMembersSegmentAtRisk": {"description": "Segment-Label für gefährdete Mitglieder"}
+  ,"reportMembersSegmentNewMembers": "Neue Mitglieder"
+  ,"@reportMembersSegmentNewMembers": {"description": "Segment-Label für neue Mitglieder"}
+  ,"reportMembersSegmentLoyal": "Treue Mitglieder"
+  ,"@reportMembersSegmentLoyal": {"description": "Segment-Label für treue Mitglieder"}
+  ,"reportMembersSegmentNoNumbers": "Keine Mitgliedsnummern in dieser Gruppe."
+  ,"@reportMembersSegmentNoNumbers": {"description": "Snackbar-Text wenn ein Segment keine Nummern hat"}
+  ,"reportMembersSegmentLargeExportTitle": "Große Export-Aktion bestätigen"
+  ,"@reportMembersSegmentLargeExportTitle": {"description": "Dialog-Titel vor Export eines großen Segments"}
+  ,"reportMembersSegmentLargeExportBody": "Du exportierst {count} Mitgliedsnummern aus \"Alle Mitglieder\". Bitte bestätige, dass dieser Export gewünscht ist."
+  ,"@reportMembersSegmentLargeExportBody": {"description": "Dialog-Titel vor Export eines großen Segments","placeholders": {"count": {"type": "int"}}}
+  ,"reportMembersSegmentLargeExportConfirm": "Bestätigen"
+  ,"@reportMembersSegmentLargeExportConfirm": {"description": "CTA für Export-Bestätigung"}
+  ,"reportMembersSegmentActionsFor": "Aktionen für {segmentName}"
+  ,"@reportMembersSegmentActionsFor": {"description": "Bottom-Sheet Titel für Segment-Aktionen","placeholders": {"segmentName": {}}}
+  ,"reportMembersSegmentCount": "{count} Mitglieder in dieser Gruppe."
+  ,"@reportMembersSegmentCount": {"description": "Anzahl der Mitglieder im Segment","placeholders": {"count": {"type": "int"}}}
+  ,"reportMembersSegmentCopy": "Mitgliedsnummern kopieren"
+  ,"@reportMembersSegmentCopy": {"description": "Aktion zum Kopieren der Nummern"}
+  ,"reportMembersSegmentCopied": "Mitgliedsnummern kopiert."
+  ,"@reportMembersSegmentCopied": {"description": "Snackbar nach Kopieren"}
+  ,"reportMembersSegmentShare": "Mitgliedsnummern teilen"
+  ,"@reportMembersSegmentShare": {"description": "Aktion zum Teilen der Nummern"}
+  ,"reportMembersSegmentShareBody": "{segmentName} ({count} Mitglieder)\n\nMitgliedsnummern:\n{numbers}"
+  ,"@reportMembersSegmentShareBody": {"description": "Inhalt der geteilten Nachricht","placeholders": {"segmentName": {},"count": {"type": "int"},"numbers": {}}}
+  ,"reportMembersSegmentShareSubject": "Mitglieder-Segment aus Report"
+  ,"@reportMembersSegmentShareSubject": {"description": "Betreff beim Teilen"}
+  ,"reportMembersSegmentAllShort": "Alle"
+  ,"@reportMembersSegmentAllShort": {"description": "Kurz-Label für alle Mitglieder"}
+  ,"reportMembersSegmentActiveShort": "Aktiv"
+  ,"@reportMembersSegmentActiveShort": {"description": "Kurz-Label für aktive Mitglieder"}
+  ,"reportMembersSegmentInactiveShort": "Inaktiv"
+  ,"@reportMembersSegmentInactiveShort": {"description": "Kurz-Label für inaktive Mitglieder"}
+  ,"reportMembersSegmentAtRiskShort": "Risiko"
+  ,"@reportMembersSegmentAtRiskShort": {"description": "Kurz-Label für gefährdete Mitglieder"}
+  ,"reportMembersSegmentNewMembersShort": "Neu"
+  ,"@reportMembersSegmentNewMembersShort": {"description": "Kurz-Label für neue Mitglieder"}
+  ,"reportMembersSegmentLoyalShort": "Treu"
+  ,"@reportMembersSegmentLoyalShort": {"description": "Kurz-Label für treue Mitglieder"}
+  ,"reportMembersRiskLow": "geringes Risiko"
+  ,"@reportMembersRiskLow": {"description": "Risiko-Label gering"}
+  ,"reportMembersRiskMedium": "mittleres Risiko"
+  ,"@reportMembersRiskMedium": {"description": "Risiko-Label mittel"}
+  ,"reportMembersRiskHigh": "hohes Risiko"
+  ,"@reportMembersRiskHigh": {"description": "Risiko-Label hoch"}
+  ,"reportMembersRiskNewMember": "neues Mitglied"
+  ,"@reportMembersRiskNewMember": {"description": "Risiko-Label neu"}
+  ,"reportMembersAdminOnlyHint": "Nur Admins dieses Studios können die Trainingstage einsehen."
+  ,"@reportMembersAdminOnlyHint": {"description": "Hinweis bei Zugriffsbeschränkung"}
+  ,"adminNoAccess": "Kein Zugriff"
+  ,"@adminNoAccess": {"description": "Generische Nachricht bei fehlendem Zugriff"}
+  ,"adminRemoveUsersTitle": "Nutzer entfernen"
+  ,"@adminRemoveUsersTitle": {"description": "Titel für den Nutzer-entfernen-Screen"}
+  ,"adminSearchUsersHint": "Nutzer suchen (Name)"
+  ,"@adminSearchUsersHint": {"description": "Hinweis für das Suchfeld"}
+  ,"adminMemberSince": "Mitglied seit: {date}"
+  ,"@adminMemberSince": {"description": "Label für das Beitrittsdatum","placeholders": {"date": {}}}
+  ,"adminDeleteUserTitle": "Nutzer und Daten löschen?"
+  ,"@adminDeleteUserTitle": {"description": "Bestätigungstitel Nutzerlöschung"}
+  ,"adminDeleteUserMessage": "Der Nutzer \"{name}\" und alle zugehörigen Daten in diesem Studio werden unwiderruflich gelöscht."
+  ,"@adminDeleteUserMessage": {"description": "Bestätigungstext Nutzerlöschung","placeholders": {"name": {}}}
+  ,"adminDeleteUserAuditHint": "Diese Aktion wird serverseitig im Admin-Audit protokolliert und kann nicht rückgängig gemacht werden."
+  ,"@adminDeleteUserAuditHint": {"description": "Audit-Hinweis im Dialog"}
+  ,"adminDeleteUserSuccess": "Nutzer {name}{warning} gelöscht"
+  ,"@adminDeleteUserSuccess": {"description": "Erfolgsmeldung nach Löschung","placeholders": {"name": {},"warning": {}}}
+  ,"adminDeleteUserError": "Fehler beim Löschen: {error}"
+  ,"@adminDeleteUserError": {"description": "Fehlermeldung nach Löschung","placeholders": {"error": {}}}
+  ,"brandingSelectedFile": "Ausgewählte Datei: {filename}"
+  ,"@brandingSelectedFile": {"description": "Label für ausgewählte Logo-Datei","placeholders": {"filename": {}}}
+  ,"brandingLogoUrlHint": "Hinweis: Ohne Cloud Functions bitte stattdessen eine öffentliche Logo-URL eintragen."
+  ,"@brandingLogoUrlHint": {"description": "Hinweis für Branding-Logo-URL"}
+  ,"brandingLogoUrlLabel": "Logo URL (optional)"
+  ,"@brandingLogoUrlLabel": {"description": "Label für Logo-URL-Feld"}
+  ,"brandingLogoUrlPlaceholder": "https://..."
+  ,"@brandingLogoUrlPlaceholder": {"description": "Placeholder für die Logo-URL-Eingabe"}
+  ,"adminDealsDeleteTitle": "Deal löschen?"
+  ,"@adminDealsDeleteTitle": {"description": "Bestätigungstitel Deallöschung"}
+  ,"adminDealsDeleteMessage": "Möchtest du den Deal \"{name}\" wirklich löschen?"
+  ,"@adminDealsDeleteMessage": {"description": "Bestätigungstext Deallöschung","placeholders": {"name": {}}}
+  ,"adminDealsTitle": "Deals verwalten"
+  ,"@adminDealsTitle": {"description": "AppBar-Titel für den Deals-Management-Screen"}
+  ,"adminDealsToggleError": "Fehler beim Aktualisieren des Deal-Status: {error}"
+  ,"@adminDealsToggleError": {"description": "Fehler-Snackbar beim Umschalten des Deal-Status","placeholders": {"error": {}}}
+  ,"adminDealsLoadError": "Fehler beim Laden der Deals: {error}"
+  ,"@adminDealsLoadError": {"description": "Fehlertext wenn Deals nicht geladen werden können","placeholders": {"error": {}}}
+  ,"adminDealsDeleteAuditHint": "Diese Änderung wirkt sofort auf die Deal-Ausspielung für Mitglieder."
+  ,"@adminDealsDeleteAuditHint": {"description": "Audit-Hinweis beim Löschen von Deals"}
+  ,"adminDealsDeleted": "Deal gelöscht."
+  ,"@adminDealsDeleted": {"description": "Snackbar nach dem Löschen eines Deals"}
+  ,"adminDealsCreateSuccess": "Deal angelegt."
+  ,"@adminDealsCreateSuccess": {"description": "Snackbar nach dem Anlegen eines Deals"}
+  ,"adminDealsUpdateSuccess": "Deal aktualisiert."
+  ,"@adminDealsUpdateSuccess": {"description": "Snackbar nach dem Aktualisieren eines Deals"}
+  ,"adminDealsStatusActive": "Deal ist jetzt aktiv."
+  ,"@adminDealsStatusActive": {"description": "Snackbar nach dem Aktivieren eines Deals"}
+  ,"adminDealsStatusInactive": "Deal ist jetzt inaktiv."
+  ,"@adminDealsStatusInactive": {"description": "Snackbar nach dem Deaktivieren eines Deals"}
+  ,"adminDealsRestored": "Deal wiederhergestellt."
+  ,"@adminDealsRestored": {"description": "Snackbar nach dem Rückgängigmachen einer Deal-Löschung"}
+  ,"adminDealsUndoErrorPrefix": "Rückgängig fehlgeschlagen"
+  ,"@adminDealsUndoErrorPrefix": {"description": "Präfix für Fehler beim Rückgängigmachen einer Deal-Löschung"}
+  ,"adminDealsDeleteError": "Fehler beim Löschen des Deals: {error}"
+  ,"@adminDealsDeleteError": {"description": "Fehler-Snackbar wenn Deal-Löschen fehlschlägt","placeholders": {"error": {}}}
+  ,"dealFormCategoryDefault": "Supplements"
+  ,"@dealFormCategoryDefault": {"description": "Standardkategorie für neue Deals"}
+  ,"dealFormCategoryLabel": "Kategorie"
+  ,"@dealFormCategoryLabel": {"description": "Label für Kategorie-Feld"}
+  ,"dealFormRequiredFieldsError": "Bitte alle Pflichtfelder ausfüllen (Partner, Titel, Code, Link)."
+  ,"@dealFormRequiredFieldsError": {"description": "Fehler bei fehlenden Pflichtfeldern"}
+  ,"dealFormInvalidUrlError": "Shop-Link ist keine gültige URL."
+  ,"@dealFormInvalidUrlError": {"description": "Fehler bei ungültiger Shop-URL"}
+  ,"dealFormSaveError": "Fehler beim Speichern: {error}"
+  ,"@dealFormSaveError": {"description": "Fehler beim Speichern eines Deals","placeholders": {"error": {}}}
+  ,"dealFormTitleNew": "Neuer Deal"
+  ,"@dealFormTitleNew": {"description": "Titel für neuen Deal"}
+  ,"dealFormTitleEdit": "Deal bearbeiten"
+  ,"@dealFormTitleEdit": {"description": "Titel zum Bearbeiten eines Deals"}
+  ,"dealFormPartnerLabel": "Partner Name *"
+  ,"@dealFormPartnerLabel": {"description": "Label für Partner-Feld"}
+  ,"dealFormTitleLabel": "Titel *"
+  ,"@dealFormTitleLabel": {"description": "Label für Titel-Feld"}
+  ,"dealFormCodeLabel": "Rabattcode *"
+  ,"@dealFormCodeLabel": {"description": "Label für Code-Feld"}
+  ,"dealFormLinkLabel": "Shop Link *"
+  ,"@dealFormLinkLabel": {"description": "Label für Shop-Link-Feld"}
+  ,"dealFormImageUrlLabel": "Bild URL"
+  ,"@dealFormImageUrlLabel": {"description": "Label für Bild-URL-Feld"}
+  ,"dealFormPartnerLogoLabel": "Partner-Logo URL"
+  ,"@dealFormPartnerLogoLabel": {"description": "Label für Logo-URL-Feld"}
+  ,"dealFormDescriptionLabel": "Beschreibung"
+  ,"@dealFormDescriptionLabel": {"description": "Label für Beschreibungs-Feld"}
+  ,"dealFormPriorityLabel": "Priorität"
+  ,"@dealFormPriorityLabel": {"description": "Label für Prioritäts-Feld"}
+  ,"dealFormActiveLabel": "Deal aktiv?"
+  ,"@dealFormActiveLabel": {"description": "Label für Aktiv-Schalter"}
+  ,"adminDeviceEditTitle": "Gerät bearbeiten"
+  ,"@adminDeviceEditTitle": {"description": "Titel zum Bearbeiten eines Geräts"}
+  ,"adminDeviceNewTitle": "Neues Gerät anlegen"
+  ,"@adminDeviceNewTitle": {"description": "Titel für neues Gerät"}
+  ,"adminDeviceUidLabel": "UID: {uid}"
+  ,"@adminDeviceUidLabel": {"description": "Label für Geräte-UID","placeholders": {"uid": {}}}
+  ,"adminDeviceIdLabel": "ID: {id}"
+  ,"@adminDeviceIdLabel": {"description": "Label für Geräte-ID","placeholders": {"id": {}}}
+  ,"adminDeviceNameLabel": "Name"
+  ,"@adminDeviceNameLabel": {"description": "Label für Name-Feld"}
+  ,"adminDeviceNameHint": "z. B. Beinpresse"
+  ,"@adminDeviceNameHint": {"description": "Hinweistext für das Geräte-Namensfeld"}
+  ,"adminDeviceDescLabel": "Beschreibung"
+  ,"@adminDeviceDescLabel": {"description": "Label für Beschreibungs-Feld"}
+  ,"adminDeviceDescHint": "Optional (Model etc.)"
+  ,"@adminDeviceDescHint": {"description": "Platzhalter für Beschreibungs-Feld"}
+  ,"adminDeviceMultiExerciseLabel": "Inkludiert mehrere Übungen?"
+  ,"@adminDeviceMultiExerciseLabel": {"description": "Label für Multi-Übung-Schalter"}
+  ,"adminDeviceMultiExerciseSubtitle": "Für Kabelzüge oder Racks"
+  ,"@adminDeviceMultiExerciseSubtitle": {"description": "Untertitel für Multi-Übung-Schalter"}
+  ,"adminDeviceDeleteAuditHint": "Gerätestammdaten werden entfernt. Nachgelagerte Auswertungen können davon betroffen sein."
+  ,"@adminDeviceDeleteAuditHint": {"description": "Audit-Hinweis beim Löschen eines Geräts"}
+  ,"adminDashboardChallengesSubtitle": "Challenges erstellen & verwalten"
+  ,"@adminDashboardChallengesSubtitle": {"description": "Untertitel für Challenges im Admin-Dashboard"}
+  ,"adminDashboardSymbolsSubtitle": "Benutzer-Symbole & Ränge"
+  ,"@adminDashboardSymbolsSubtitle": {"description": "Untertitel für Symbole im Admin-Dashboard"}
+  ,"adminDashboardRemoveUsersTitle": "Nutzer entfernen"
+  ,"@adminDashboardRemoveUsersTitle": {"description": "Titel für Nutzer-entfernen im Admin-Dashboard"}
+  ,"adminDashboardRemoveUsersSubtitle": "Testnutzer & Daten bereinigen"
+  ,"@adminDashboardRemoveUsersSubtitle": {"description": "Untertitel für Nutzer-entfernen im Admin-Dashboard"}
+  ,"adminDashboardDealsTitle": "Deals verwalten"
+  ,"@adminDashboardDealsTitle": {"description": "Titel für Deals im Admin-Dashboard"}
+  ,"adminDashboardDealsSubtitle": "Sponsoren & Rabatte pflegen"
+  ,"@adminDashboardDealsSubtitle": {"description": "Untertitel für Deals im Admin-Dashboard"}
+  ,"reportTotalSessions": "Gesamt Sessions"
+  ,"@reportTotalSessions": {"description": "Label für Gesamt-Sessions Kennzahl"}
+  ,"reportTopDevice": "Top Gerät"
+  ,"@reportTopDevice": {"description": "Label für Top-Gerät Kennzahl"}
+  ,"reportLogsAtDate": "Logs am {date}: {count}"
+  ,"@reportLogsAtDate": {"description": "Tooltip für Heatmap","placeholders": {"date": {},"count": {"type": "int"}}}
+  ,"reportSurveysSubtitle": "Starte Umfragen und werte das Feedback deiner Mitglieder aus."
+  ,"@reportSurveysSubtitle": {"description": "Untertitel für Umfragen-Report"}
+  ,"reportFeedbackSubtitle": "Verwalte Vorschläge, Beschwerden und Lob deiner Mitglieder."
+  ,"@reportFeedbackSubtitle": {"description": "Untertitel für Feedback-Report"}
+  ,"reportSurveysStatus": "Aktiv: {open} · Abgeschlossen: {closed}"
+  ,"@reportSurveysStatus": {"description": "Status-Zusammenfassung für Umfragen","placeholders": {"open": {"type": "int"},"closed": {"type": "int"}}}
+  ,"reportGenericError": "Ein Fehler ist aufgetreten"
+  ,"@reportGenericError": {"description": "Generische Fehlermeldung für Reports"}
+  ,"reportNoDataAvailable": "Keine Daten verfügbar"
+  ,"@reportNoDataAvailable": {"description": "Leerer Zustand für Reports"}
+  ,"adminDeviceManufacturerLabel": "Hersteller"
+  ,"@adminDeviceManufacturerLabel": {"description": "Label für Hersteller-Dropdown"}
+  ,"adminDeviceMuscleGroupsLabel": "Muskelgruppen"
+  ,"@adminDeviceMuscleGroupsLabel": {"description": "Label für Muskelgruppen-Bereich"}
+  ,"adminDeviceCreateButton": "Erstellen"
+  ,"@adminDeviceCreateButton": {"description": "Button-Label zum Erstellen eines Geräts"}
+  ,"adminDeviceNameError": "Bitte gib einen Namen ein."
+  ,"@adminDeviceNameError": {"description": "Fehler wenn Gerätename leer ist"}
+  ,"adminDeviceLoadingError": "Fehler beim Laden"
+  ,"@adminDeviceLoadingError": {"description": "Fehlermeldung beim Laden der Hersteller"}
+  ,"adminDeviceNoManufacturers": "Keine Hersteller aktiviert."
+  ,"@adminDeviceNoManufacturers": {"description": "Meldung wenn Herstellerliste leer ist"}
+  ,"adminDeviceManageManufacturers": "Verwalten"
+  ,"@adminDeviceManageManufacturers": {"description": "Button-Label zum Verwalten der Hersteller"}
+  ,"adminDeviceSelectManufacturer": "Hersteller wählen"
+  ,"@adminDeviceSelectManufacturer": {"description": "Platzhalter für Hersteller-Dropdown"}
 }

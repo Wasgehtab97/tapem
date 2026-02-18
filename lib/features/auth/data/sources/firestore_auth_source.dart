@@ -98,9 +98,21 @@ class FirestoreAuthSource {
   Future<UserDataDto?> getCurrentUser() async {
     final user = _auth.currentUser;
     if (user == null) return null;
-    final doc = await _firestore.collection('users').doc(user.uid).get();
-    if (!doc.exists) return null;
-    return UserDataDto.fromDocument(doc);
+    final userRef = _firestore.collection('users').doc(user.uid);
+    try {
+      final doc = await userRef.get();
+      if (!doc.exists) return null;
+      return UserDataDto.fromDocument(doc);
+    } on FirebaseException catch (e) {
+      if (!_isTransientNetworkError(e)) {
+        rethrow;
+      }
+      final cachedDoc = await userRef.get(
+        const GetOptions(source: Source.cache),
+      );
+      if (!cachedDoc.exists) return null;
+      return UserDataDto.fromDocument(cachedDoc);
+    }
   }
 
   Future<bool> isUsernameAvailable(String username) async {
@@ -172,5 +184,14 @@ class FirestoreAuthSource {
     // Use default Firebase password reset email
     // This avoids "Domain not allowlisted" errors
     return _auth.sendPasswordResetEmail(email: email);
+  }
+
+  bool _isTransientNetworkError(FirebaseException error) {
+    final code = error.code.toLowerCase();
+    return code == 'unavailable' ||
+        code == 'deadline-exceeded' ||
+        code == 'aborted' ||
+        code == 'network-request-failed' ||
+        code == 'timeout';
   }
 }

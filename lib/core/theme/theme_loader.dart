@@ -160,6 +160,7 @@ class ThemeLoader extends ChangeNotifier {
       useWater: preset.useWaterTokens,
       useAir: preset.useAirTokens,
       useEarth: preset.useEarthTokens,
+      useMidnight: preset.useMidnightTokens,
       onColors: preset.onColors,
       background: preset.background,
     );
@@ -214,6 +215,7 @@ class ThemeLoader extends ChangeNotifier {
     bool useWater = false,
     bool useAir = false,
     bool useEarth = false,
+    bool useMidnight = false,
     BrandOnColors? onColors,
     Color? background,
   }) {
@@ -242,6 +244,10 @@ class ThemeLoader extends ChangeNotifier {
       resolvedBackground ??= background ?? AppColors.background;
       resolvedSurface = Tone.color(resolvedBackground, 0.04);
       resolvedSurface2 = Tone.color(resolvedBackground, 0.07);
+    } else if (useMidnight) {
+      resolvedBackground ??= const Color(0xFF050505);
+      resolvedSurface = Tone.color(resolvedBackground, 0.05);
+      resolvedSurface2 = Tone.color(resolvedBackground, 0.08);
     }
 
     _currentTheme = AppTheme.customTheme(
@@ -281,6 +287,7 @@ class ThemeLoader extends ChangeNotifier {
       useWater: useWater,
       useAir: useAir,
       useEarth: useEarth,
+      useMidnight: useMidnight,
     );
 
     if (useMagenta) {
@@ -301,6 +308,7 @@ class ThemeLoader extends ChangeNotifier {
     bool useWater = false,
     bool useAir = false,
     bool useEarth = false,
+    bool useMidnight = false,
     bool useNeutral = false,
   }) {
     final ext = useMagenta
@@ -347,7 +355,9 @@ class ThemeLoader extends ChangeNotifier {
                                     ? AppBrandTheme.air()
                                     : useEarth
                                         ? AppBrandTheme.earth()
-                                        : AppBrandTheme.defaultTheme().copyWith(
+                                        : useMidnight
+                                            ? AppBrandTheme.midnight()
+                                            : AppBrandTheme.defaultTheme().copyWith(
                                             gradient: AppGradients.brandGradient,
                                             outlineGradient:
                                                 AppGradients.brandGradient,

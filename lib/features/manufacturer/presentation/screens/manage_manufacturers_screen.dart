@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/core/widgets/app_loading_view.dart';
+import 'package:tapem/core/widgets/destructive_action.dart';
 import 'package:tapem/core/widgets/brand_modal.dart';
 import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/features/manufacturer/domain/models/manufacturer.dart';
@@ -14,19 +15,12 @@ class ManageManufacturersScreen extends ConsumerStatefulWidget {
   const ManageManufacturersScreen({super.key});
 
   @override
-  ConsumerState<ManageManufacturersScreen> createState() => _ManageManufacturersScreenState();
+  ConsumerState<ManageManufacturersScreen> createState() =>
+      _ManageManufacturersScreenState();
 }
 
-class _ManageManufacturersScreenState extends ConsumerState<ManageManufacturersScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // Seed global manufacturers if empty (admin convenience for now)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(seedGlobalManufacturersProvider)();
-    });
-  }
-
+class _ManageManufacturersScreenState
+    extends ConsumerState<ManageManufacturersScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -47,13 +41,14 @@ class _ManageManufacturersScreenState extends ConsumerState<ManageManufacturersS
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                theme.colorScheme.surface,
-                theme.colorScheme.surface.withOpacity(0.95),
-                theme.colorScheme.background,
-              ]),
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.colorScheme.surface,
+              theme.colorScheme.surface.withOpacity(0.95),
+              theme.colorScheme.background,
+            ],
+          ),
         ),
         child: gymManufacturersAsync.when(
           loading: () => const AppLoadingView(message: 'Lade Hersteller...'),
@@ -64,7 +59,11 @@ class _ManageManufacturersScreenState extends ConsumerState<ManageManufacturersS
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.factory_outlined, size: 64, color: Colors.white24),
+                    Icon(
+                      Icons.factory_outlined,
+                      size: 64,
+                      color: Colors.white24,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Keine Hersteller aktiviert',
@@ -89,12 +88,17 @@ class _ManageManufacturersScreenState extends ConsumerState<ManageManufacturersS
                 final manufacturer = manufacturers[index];
                 return BrandModalOptionCard(
                   title: manufacturer.name,
-                  subtitle: manufacturer.isGlobal ? 'Globaler Hersteller' : 'Individueller Hersteller',
+                  subtitle: manufacturer.isGlobal
+                      ? 'Globaler Hersteller'
+                      : 'Individueller Hersteller',
                   icon: Icons.business_rounded,
                   accent: accent,
                   onTap: () {}, // Maybe edit later
                   trailing: IconButton(
-                    icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: theme.colorScheme.error,
+                    ),
                     onPressed: () => _removeManufacturer(manufacturer),
                   ),
                 );
@@ -118,25 +122,33 @@ class _ManageManufacturersScreenState extends ConsumerState<ManageManufacturersS
     final gymId = ref.read(authControllerProvider).gymCode;
     if (gymId == null) return;
 
-    final confirm = await showDialog<bool>(
+    final confirm = await showDestructiveActionDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Hersteller entfernen?'),
-        content: Text('Möchtest du "${manufacturer.name}" wirklich entfernen?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Entfernen'),
-          ),
-        ],
-      ),
+      title: 'Hersteller entfernen?',
+      message: 'Möchtest du "${manufacturer.name}" wirklich entfernen?',
+      confirmLabel: 'Entfernen',
+      auditHint:
+          'Der Hersteller ist danach im Gym nicht mehr auswählbar, bis er erneut hinzugefügt wird.',
     );
 
     if (confirm == true) {
-      await ref.read(manufacturerRepositoryProvider).removeManufacturerFromGym(gymId, manufacturer.id);
-      ref.refresh(gymManufacturersProvider);
+      await ref
+          .read(manufacturerRepositoryProvider)
+          .removeManufacturerFromGym(gymId, manufacturer.id);
+      ref.invalidate(gymManufacturersProvider);
+      if (!mounted) return;
+      showUndoSnackBar(
+        context: context,
+        message: '${manufacturer.name} entfernt.',
+        onUndo: () async {
+          await ref
+              .read(manufacturerRepositoryProvider)
+              .addManufacturerToGym(gymId, manufacturer);
+          ref.invalidate(gymManufacturersProvider);
+        },
+        undoSuccessMessage: '${manufacturer.name} wiederhergestellt.',
+        undoErrorPrefix: 'Rückgängig fehlgeschlagen',
+      );
     }
   }
 }
@@ -146,10 +158,12 @@ class _AddManufacturerDialog extends ConsumerStatefulWidget {
   const _AddManufacturerDialog({required this.accent});
 
   @override
-  ConsumerState<_AddManufacturerDialog> createState() => _AddManufacturerDialogState();
+  ConsumerState<_AddManufacturerDialog> createState() =>
+      _AddManufacturerDialogState();
 }
 
-class _AddManufacturerDialogState extends ConsumerState<_AddManufacturerDialog> {
+class _AddManufacturerDialogState
+    extends ConsumerState<_AddManufacturerDialog> {
   // We fetch global list
   // We can filter locally for now since the list is small (15 items)
   String _searchQuery = '';
@@ -168,14 +182,16 @@ class _AddManufacturerDialogState extends ConsumerState<_AddManufacturerDialog> 
             BrandModalHeader(
               title: 'Hersteller hinzufügen',
               subtitle: 'Wähle aus der globalen Liste',
-              icon: Icons.add_home_work_rounded, // Better available icon or just domain
+              icon: Icons
+                  .add_home_work_rounded, // Better available icon or just domain
               accent: widget.accent,
               onClose: () => Navigator.pop(context),
             ),
             const SizedBox(height: 16),
             // Search Field
             TextField(
-              onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+              onChanged: (val) =>
+                  setState(() => _searchQuery = val.toLowerCase()),
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Suchen...',
@@ -196,10 +212,17 @@ class _AddManufacturerDialogState extends ConsumerState<_AddManufacturerDialog> 
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, st) => Text('Fehler: $err'),
                 data: (allData) {
-                  final filtered = allData.where((m) => m.name.toLowerCase().contains(_searchQuery)).toList();
+                  final filtered = allData
+                      .where((m) => m.name.toLowerCase().contains(_searchQuery))
+                      .toList();
                   if (filtered.isEmpty) {
-                     // Option to create custom? Maybe later.
-                     return const Center(child: Text('Keine Hersteller gefunden.', style: TextStyle(color: Colors.white54)));
+                    // Option to create custom? Maybe later.
+                    return const Center(
+                      child: Text(
+                        'Keine Hersteller gefunden.',
+                        style: TextStyle(color: Colors.white54),
+                      ),
+                    );
                   }
                   return ListView.separated(
                     itemCount: filtered.length,
@@ -207,10 +230,18 @@ class _AddManufacturerDialogState extends ConsumerState<_AddManufacturerDialog> 
                     itemBuilder: (ctx, idx) {
                       final m = filtered[idx];
                       return ListTile(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         tileColor: Colors.white.withOpacity(0.05),
-                        title: Text(m.name, style: const TextStyle(color: Colors.white)),
-                        trailing: Icon(Icons.add_circle_outline, color: widget.accent),
+                        title: Text(
+                          m.name,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        trailing: Icon(
+                          Icons.add_circle_outline,
+                          color: widget.accent,
+                        ),
                         onTap: () => _add(m),
                       );
                     },
@@ -227,15 +258,17 @@ class _AddManufacturerDialogState extends ConsumerState<_AddManufacturerDialog> 
   Future<void> _add(Manufacturer m) async {
     final gymId = ref.read(authControllerProvider).gymCode;
     if (gymId == null) return;
-    
+
     // Add to gym
-    await ref.read(manufacturerRepositoryProvider).addManufacturerToGym(gymId, m);
+    await ref
+        .read(manufacturerRepositoryProvider)
+        .addManufacturerToGym(gymId, m);
     // Refresh local
-    ref.refresh(gymManufacturersProvider);
+    ref.invalidate(gymManufacturersProvider);
     if (mounted) Navigator.pop(context);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${m.name} aktiviert.')),
-    );
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${m.name} aktiviert.')));
   }
 }

@@ -37,9 +37,7 @@ class TrainingDoneOverlay {
     overlayState.insert(entry);
   }
 
-  static Future<void> hide({
-    Duration minVisible = Duration.zero,
-  }) async {
+  static Future<void> hide({Duration minVisible = Duration.zero}) async {
     final shownAt = _shownAt;
     if (shownAt != null && minVisible > Duration.zero) {
       final elapsed = DateTime.now().difference(shownAt);
@@ -68,9 +66,7 @@ class TrainingDoneOverlay {
 }
 
 class _TrainingDoneOverlayWidget extends StatefulWidget {
-  const _TrainingDoneOverlayWidget({
-    required this.visibilityListenable,
-  });
+  const _TrainingDoneOverlayWidget({required this.visibilityListenable});
 
   final ValueListenable<bool> visibilityListenable;
 
@@ -105,16 +101,10 @@ class _TrainingDoneOverlayWidgetState extends State<_TrainingDoneOverlayWidget>
       curve: const Interval(0.0, 0.45, curve: Curves.easeOut),
     );
     _entryScaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _entryController,
-        curve: Curves.elasticOut,
-      ),
+      CurvedAnimation(parent: _entryController, curve: Curves.elasticOut),
     );
     _pulseScaleAnimation = Tween<double>(begin: 1.0, end: 1.035).animate(
-      CurvedAnimation(
-        parent: _pulseController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
     _statusTimer = Timer(const Duration(milliseconds: 1400), () {
       if (!mounted) return;
@@ -163,10 +153,12 @@ class _TrainingDoneOverlayWidgetState extends State<_TrainingDoneOverlayWidget>
             animation: Listenable.merge([_entryController, _pulseController]),
             builder: (context, _) {
               final opacity = disableAnimations ? 1.0 : _fadeAnimation.value;
-              final baseScale =
-                  disableAnimations ? 1.0 : _entryScaleAnimation.value;
-              final pulseScale =
-                  disableAnimations ? 1.0 : _pulseScaleAnimation.value;
+              final baseScale = disableAnimations
+                  ? 1.0
+                  : _entryScaleAnimation.value;
+              final pulseScale = disableAnimations
+                  ? 1.0
+                  : _pulseScaleAnimation.value;
               return Opacity(
                 opacity: opacity,
                 child: Stack(
@@ -195,8 +187,9 @@ class _TrainingDoneOverlayWidgetState extends State<_TrainingDoneOverlayWidget>
                                             shape: BoxShape.circle,
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.white
-                                                    .withOpacity(0.22),
+                                                color: Colors.white.withOpacity(
+                                                  0.22,
+                                                ),
                                                 blurRadius: logoSize * 0.24,
                                                 spreadRadius: logoSize * 0.04,
                                               ),
@@ -223,14 +216,15 @@ class _TrainingDoneOverlayWidgetState extends State<_TrainingDoneOverlayWidget>
                                   switchOutCurve: Curves.easeOut,
                                   child: Text(
                                     _showPreparingState
-                                        ? 'Highlights werden vorbereitet...'
+                                        ? 'Lokal gespeichert, wird synchronisiert...'
                                         : 'Training wird gespeichert...',
                                     key: ValueKey<bool>(_showPreparingState),
                                     textAlign: TextAlign.center,
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      color: Colors.white.withOpacity(0.95),
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          color: Colors.white.withOpacity(0.95),
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                   ),
                                 ),
                               ],
@@ -263,10 +257,7 @@ class _TrainingDoneBackdrop extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xF2080A10),
-                Color(0xF7020305),
-              ],
+              colors: [Color(0xF2080A10), Color(0xF7020305)],
             ),
           ),
         ),
@@ -275,10 +266,7 @@ class _TrainingDoneBackdrop extends StatelessWidget {
             gradient: RadialGradient(
               center: const Alignment(0, -0.28),
               radius: 0.9,
-              colors: [
-                Colors.white.withOpacity(0.12),
-                Colors.transparent,
-              ],
+              colors: [Colors.white.withOpacity(0.12), Colors.transparent],
             ),
           ),
         ),

@@ -45,14 +45,14 @@ class _DeviceUsageChartState extends State<DeviceUsageChart> {
     if (widget.state == ReportState.error) {
       return SizedBox(
         height: 250,
-        child: Center(child: Text(widget.errorMessage ?? 'Ein Fehler ist aufgetreten')),
+        child: Center(child: Text(widget.errorMessage ?? loc.reportDeviceUsageError)),
       );
     }
 
     if (widget.usageData.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 250,
-        child: Center(child: Text('Keine Daten verfügbar')),
+        child: Center(child: Text(loc.reportDeviceUsageEmpty)),
       );
     }
 

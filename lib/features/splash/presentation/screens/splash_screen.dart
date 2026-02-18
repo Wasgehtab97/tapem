@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app_router.dart';
 import '../../../../bootstrap/providers.dart';
 import '../../../../core/constants.dart';
+import '../../../../core/observability/offline_flow_observability_service.dart';
 import '../../../../core/theme/design_tokens.dart';
 import '../../application/splash_flow.dart';
 import '../widgets/premium_splash_logo.dart';
@@ -31,6 +33,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
     _startedAt = DateTime.now();
+    unawaited(_trackOfflineStartIfNeeded());
     _authStateSubscription = ref.listenManual<AuthViewState>(
       authViewStateProvider,
       (previous, next) => _handleAuthState(next),
@@ -41,15 +44,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     });
   }
 
+  Future<void> _trackOfflineStartIfNeeded() async {
+    try {
+      final results = await Connectivity().checkConnectivity();
+      final isOffline = results.every((r) => r == ConnectivityResult.none);
+      if (!isOffline) {
+        return;
+      }
+      await OfflineFlowObservabilityService.instance.recordOfflineStart();
+    } catch (_) {
+      // Observability must never block splash startup.
+    }
+  }
+
   void _handleAuthState(AuthViewState state) {
     if (!mounted || _didNavigate) return;
-    if (state.hasError && !state.isLoggedIn) {
-      setState(() {
-        _errorMessage = state.error;
-      });
-      return;
-    }
-    if (_errorMessage != null && (!state.hasError || state.isLoggedIn)) {
+    if (_errorMessage != null) {
       setState(() {
         _errorMessage = null;
       });
@@ -101,7 +111,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     }
     Navigator.of(context).pushReplacementNamed(
       routeName,
-      arguments: destination == SplashDestination.home ? 1 : arguments,
+      arguments: destination == SplashDestination.home
+          ? AppRouter.homeInitialIndexByRole
+          : arguments,
     );
   }
 
@@ -141,8 +153,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline,
-                      size: 64, color: Colors.redAccent),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.redAccent,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Fehler beim Laden deines Accounts',
@@ -180,15 +195,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF121212),
-              Color(0xFF0A0A0A),
-            ],
+            colors: [Color(0xFF121212), Color(0xFF0A0A0A)],
           ),
         ),
-        child: const Center(
-          child: PremiumSplashLogo(),
-        ),
+        child: const Center(child: PremiumSplashLogo()),
       ),
     );
   }

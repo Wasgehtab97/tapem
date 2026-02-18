@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
@@ -43,15 +44,14 @@ import 'package:tapem/features/friends/presentation/screens/friends_home_screen.
 import 'package:tapem/app_router.dart';
 import 'package:tapem/features/training_plan/presentation/widgets/plan_color_palette.dart';
 import 'package:tapem/features/profile/presentation/screens/profile_stats_screen.dart';
+import 'package:tapem/core/services/workout_session_coordinator.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
-import 'package:tapem/features/device/presentation/workout_finish_flow.dart';
+import 'package:tapem/features/device/presentation/workout_manual_stop_flow.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/bootstrap/navigation.dart';
 
 const bool enableFriends = true;
-
-enum _ActiveTrainingAction { save, discard }
 
 class ProfileScreen extends riverpod.ConsumerStatefulWidget {
   const ProfileScreen({
@@ -283,87 +283,42 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
 
   Future<void> _handleStartTraining() async {
     final auth = ref.read(authControllerProvider);
-    final gymId = auth.gymCode;
+    final gymCodes = auth.gymCodes ?? const <String>[];
+    final gymId = (auth.gymCode != null && auth.gymCode!.isNotEmpty)
+        ? auth.gymCode!
+        : (gymCodes.length == 1 ? gymCodes.first : '');
     final uid = auth.userId;
-    if (uid == null || gymId == null || gymId.isEmpty) {
+    if (uid == null || gymId.isEmpty) {
       return;
     }
+    const startupLookupTimeout = Duration(seconds: 2);
 
-    final timerService = ref.read(workoutSessionDurationServiceProvider);
-    final isTimerRunning = timerService.isRunning;
+    final coordinator = ref.read(workoutSessionCoordinatorProvider);
+    final durationService = ref.read(workoutSessionDurationServiceProvider);
+    if (coordinator.isRunning && !durationService.isRunning) {
+      // Heal stale coordinator markers from previous buggy states.
+      await coordinator.finishManuallyFromWorkoutSave(
+        finalizedAt: DateTime.now(),
+      );
+    }
+    final isTrainingRunning =
+        ref.read(workoutSessionCoordinatorProvider).isRunning &&
+        ref.read(workoutSessionDurationServiceProvider).isRunning;
     WorkoutDayController workoutController = ref.read(
       workoutDayControllerProvider,
     );
 
     // Wenn Timer läuft, biete Speichern oder Verwerfen an.
-    if (isTimerRunning) {
-      final sessions = workoutController.sessionsFor(userId: uid, gymId: gymId);
-      final canSave = sessions.any((session) => session.canShowSaveAction);
-      final action = await showDialog<_ActiveTrainingAction>(
+    if (isTrainingRunning) {
+      await WorkoutManualStopFlow.run(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Aktives Training'),
-          content: Text(
-            canSave
-                ? 'Du kannst den Trainingstag jetzt speichern oder komplett verwerfen.'
-                : 'Es gibt aktuell nichts zum Speichern. Du kannst den Trainingstag nur verwerfen oder zurückgehen.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Zurück'),
-            ),
-            TextButton(
-              onPressed: () =>
-                  Navigator.of(ctx).pop(_ActiveTrainingAction.discard),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(ctx).colorScheme.error,
-              ),
-              child: const Text('Verwerfen'),
-            ),
-            FilledButton(
-              onPressed: canSave
-                  ? () => Navigator.of(ctx).pop(_ActiveTrainingAction.save)
-                  : null,
-              child: const Text('Speichern'),
-            ),
-          ],
-        ),
+        auth: auth,
+        controller: workoutController,
+        settings: ref.read(settingsProvider),
+        sessionCoordinator: ref.read(workoutSessionCoordinatorProvider),
+        navigateToHomeProfileOnSuccess: false,
+        container: riverpod.ProviderScope.containerOf(context, listen: false),
       );
-
-      if (!mounted || action == null) {
-        return;
-      }
-
-      if (action == _ActiveTrainingAction.save) {
-        // Für identisches Verhalten zur WorkoutDay-Page:
-        // derselbe Finish-Flow (Bestätigung, offene Sätze, Save, Overlay, Highlights),
-        // aber ohne zusätzliche Navigation zurück zur Profilseite.
-        final planContext = workoutController.getPlanContext(gymId: gymId);
-        await WorkoutFinishFlow.saveAndFinish(
-          context: context,
-          navigatorKey: navigatorKey,
-          controller: workoutController,
-          auth: auth,
-          settings: ref.read(settingsProvider),
-          sessions: sessions,
-          fallbackGymId: gymId,
-          navigateToHomeProfileOnSuccess: false,
-          planId: planContext?.$1,
-          planName: planContext?.$2,
-        );
-        return;
-      }
-
-      // Verwerfen: Timer + offene Sessions verwerfen.
-      await timerService.discard();
-      workoutController.cancelActivePlan(userId: uid, gymId: gymId);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trainingstag wurde abgebrochen.')),
-        );
-      }
       return;
     }
 
@@ -378,13 +333,14 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     String? planName;
     TrainingPlan? selectedPlan;
     try {
-      final assignment = await scheduleRepo.getAssignment(
-        userId: uid,
-        dateKey: dateKey,
-      );
+      final assignment = await scheduleRepo
+          .getAssignment(userId: uid, dateKey: dateKey)
+          .timeout(startupLookupTimeout, onTimeout: () => null);
       if (assignment != null) {
         final planRepo = ref.read(trainingPlanRepositoryProvider);
-        final plans = await planRepo.getPlans(gymId: gymId, userId: uid);
+        final plans = await planRepo
+            .getPlans(gymId: gymId, userId: uid)
+            .timeout(startupLookupTimeout, onTimeout: () => <TrainingPlan>[]);
         for (final p in plans) {
           if (p.id == assignment.planId) {
             selectedPlan = p;
@@ -403,18 +359,32 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       // Falls für heute ein Plan zugewiesen war, wird die Zuweisung
       // beim Wechsel auf Freestyle entfernt, damit der Trainingstage-
       // Kalender den Tag nicht länger als "geplant" markiert.
-      try {
-        await scheduleRepo.clearAssignment(userId: uid, dateKey: dateKey);
-      } catch (_) {
-        // Bei Fehlern Freestyle trotzdem starten; Kalendersync ist sekundär.
-      }
+      unawaited(
+        scheduleRepo
+            .clearAssignment(userId: uid, dateKey: dateKey)
+            .timeout(const Duration(milliseconds: 900))
+            .catchError((_) {}),
+      );
 
-      final timer = ref.read(workoutSessionDurationServiceProvider);
-      await timer.start(uid: uid, gymId: gymId);
+      final coordinator = ref.read(workoutSessionCoordinatorProvider);
+      await coordinator.startFromProfilePlay(uid: uid, gymId: gymId);
       if (!mounted) return;
-      // Freestyle-Start: Gym-Tab (Index 0) anzeigen, Workout-Tab ist
-      // dennoch sichtbar, aber zunächst ohne aktive Session.
-      Navigator.pushNamed(context, AppRouter.home, arguments: 0);
+      // Freestyle-Start: deterministisch auf Home/Gym wechseln und alte
+      // Route-Stacks entfernen, damit wir nicht auf dem Profil-Tab hängenbleiben.
+      final rootNav = navigatorKey.currentState;
+      if (rootNav != null) {
+        rootNav.pushNamedAndRemoveUntil(
+          AppRouter.home,
+          (route) => false,
+          arguments: 0,
+        );
+      } else {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRouter.home,
+          (route) => false,
+          arguments: 0,
+        );
+      }
     }
 
     Future<void> startPlan(TrainingPlan plan) async {
@@ -443,11 +413,17 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       // Plan-Zuweisung für HEUTE aktualisieren, damit der Trainingstage-
       // Kalender sofort die richtige Farbe zeigt (auch wenn heute zuvor
       // ein anderer Plan zugewiesen war oder gar keiner geplant war).
-      await scheduleRepo.setAssignment(
-        userId: uid,
-        dateKey: dateKey,
-        planId: effectivePlanId,
-      );
+      try {
+        await scheduleRepo
+            .setAssignment(
+              userId: uid,
+              dateKey: dateKey,
+              planId: effectivePlanId,
+            )
+            .timeout(const Duration(seconds: 2));
+      } catch (_) {
+        // Offline darf den Plan-Start nicht blockieren.
+      }
 
       controller.setPlanContext(
         gymId: gymId,
@@ -456,16 +432,25 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
         date: now,
       );
 
-      await timerService.start(uid: uid, gymId: gymId);
+      final coordinator = ref.read(workoutSessionCoordinatorProvider);
+      await coordinator.startFromProfilePlay(uid: uid, gymId: gymId);
       if (!mounted) return;
 
-      if (plan.exercises.isNotEmpty) {
-        // Plan-Sessions wurden im WorkoutDayController angelegt.
-        // Navigiere in den Home-Screen und aktiviere dort den Workout-Tab,
-        // der die zuletzt aktive Session öffnet.
-        Navigator.pushNamed(context, AppRouter.home, arguments: 2);
+      // Nach Plan-Start immer auf den Workout-Tab wechseln; ebenfalls
+      // mit Stack-Reset fuer deterministische Navigation.
+      final rootNav = navigatorKey.currentState;
+      if (rootNav != null) {
+        rootNav.pushNamedAndRemoveUntil(
+          AppRouter.home,
+          (route) => false,
+          arguments: 2,
+        );
       } else {
-        Navigator.pushNamed(context, AppRouter.home, arguments: 2);
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRouter.home,
+          (route) => false,
+          arguments: 2,
+        );
       }
     }
 
@@ -479,7 +464,16 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
 
     Future<List<TrainingPlan>> loadAvailablePlans() async {
       final planRepo = ref.read(trainingPlanRepositoryProvider);
-      return planRepo.getPlans(gymId: gymId, userId: uid);
+      try {
+        return await planRepo
+            .getPlans(gymId: gymId, userId: uid)
+            .timeout(
+              const Duration(seconds: 2),
+              onTimeout: () => <TrainingPlan>[],
+            );
+      } catch (_) {
+        return <TrainingPlan>[];
+      }
     }
 
     // Start-Dialog je nach Situation:
@@ -837,9 +831,13 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
     final auth = ref.watch(authControllerProvider);
     final xp = ref.watch(xpProvider);
     final userId = auth.userId ?? '';
-    final isActiveTraining = ref
-        .watch(workoutSessionDurationServiceProvider)
-        .isRunning;
+    final coordinatorRunning = ref.watch(
+      workoutSessionCoordinatorProvider.select((c) => c.isRunning),
+    );
+    final durationRunning = ref.watch(
+      workoutSessionDurationServiceProvider.select((s) => s.isRunning),
+    );
+    final isActiveTraining = coordinatorRunning && durationRunning;
     const avatarSize = 52.0;
 
     final theme = Theme.of(context);

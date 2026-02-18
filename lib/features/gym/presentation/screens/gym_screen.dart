@@ -7,12 +7,13 @@ import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/favorite_devices_provider.dart';
 import 'package:tapem/core/providers/muscle_group_provider.dart';
 import 'package:tapem/core/recent_devices_store.dart';
-import 'package:tapem/core/services/workout_session_duration_service.dart';
+import 'package:tapem/core/services/workout_session_coordinator.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
 import 'package:tapem/features/device/providers/device_exercise_preview_provider.dart';
+import 'package:tapem/features/device/providers/workout_entry_orchestrator_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -153,13 +154,17 @@ class _GymScreenState extends ConsumerState<GymScreen>
       return;
     }
 
-    final timer = ref.read(workoutSessionDurationServiceProvider);
-    if (timer.isRunning) {
-      final userId = ref.read(authControllerProvider).userId;
+    final coordinator = ref.read(workoutSessionCoordinatorProvider);
+    if (coordinator.isRunning) {
+      final auth = ref.read(authControllerProvider);
+      final userId = auth.userId;
       if (userId != null) {
         try {
+          final orchestrator = ref.read(workoutEntryOrchestratorProvider);
           final controller = ref.read(workoutDayControllerProvider);
-          controller.addOrFocusSession(
+          await orchestrator.addOrFocusFromExternalSource(
+            controller: controller,
+            coordinator: coordinator,
             gymId: gymId,
             deviceId: deviceId,
             exerciseId: exerciseId,
@@ -180,6 +185,7 @@ class _GymScreenState extends ConsumerState<GymScreen>
         'gymId': gymId,
         'deviceId': deviceId,
         'exerciseId': exerciseId,
+        'entryRequestedAtMs': DateTime.now().millisecondsSinceEpoch,
       },
     );
   }

@@ -51,6 +51,9 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
   /// Used by widgets that opt into flame-specific visuals (e.g. `FlameBadge`).
   final bool isFlame;
 
+  /// Whether the current brand theme is the "midnight gold" preset.
+  final bool isMidnight;
+
   const AppBrandTheme({
     required this.gradient,
     required this.radius,
@@ -72,6 +75,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
     this.surfaceColor,
     this.flickerIntensity = 0.0,
     this.isFlame = false,
+    this.isMidnight = false,
   });
 
   @override
@@ -96,6 +100,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
     Color? surfaceColor,
     double? flickerIntensity,
     bool? isFlame,
+    bool? isMidnight,
   }) {
     return AppBrandTheme(
       gradient: gradient ?? this.gradient,
@@ -119,6 +124,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       surfaceColor: surfaceColor ?? this.surfaceColor,
       flickerIntensity: flickerIntensity ?? this.flickerIntensity,
       isFlame: isFlame ?? this.isFlame,
+      isMidnight: isMidnight ?? this.isMidnight,
     );
   }
 
@@ -180,6 +186,7 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
           lerpDouble(flickerIntensity, other.flickerIntensity, t) ??
               flickerIntensity,
       isFlame: t < 0.5 ? isFlame : other.isFlame,
+      isMidnight: t < 0.5 ? isMidnight : other.isMidnight,
     );
   }
 
@@ -612,6 +619,63 @@ class AppBrandTheme extends ThemeExtension<AppBrandTheme> {
       outlineDisabledOpacity: 0.3,
       surfaceColor: surface,
       flickerIntensity: 0.08,
+    );
+  }
+
+  /// Midnight Gold CTA preset with premium liquid corners and golden glow.
+  static AppBrandTheme midnight() {
+    final gradient = AppGradients.brandGradient;
+    final lums = gradient.colors.map((c) => c.computeLuminance());
+    final lum = lums.reduce((a, b) => a + b) / gradient.colors.length;
+    final outlineColor = gradient.colors.first;
+    // Deep midnight surface with a hint of gold.
+    final surface = Color.lerp(
+      const Color(0xFF050505),
+      gradient.colors.first,
+      0.08,
+    )!;
+    return AppBrandTheme(
+      gradient: gradient,
+      // Premium "Liquid" Feel mit stärker abgerundeten Ecken.
+      radius: BorderRadius.circular(AppRadius.button * 1.5),
+      shadow: [
+        BoxShadow(
+          color: gradient.colors.first.withOpacity(0.4),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+        ),
+        BoxShadow(
+          color: const Color(0xFFFFD700).withOpacity(0.15),
+          blurRadius: 30,
+          offset: const Offset(0, 15),
+        ),
+      ],
+      pressedOverlay: gradient.colors.first.withOpacity(0.15),
+      focusRing: const Color(0xFFFFDF00),
+      textStyle: const TextStyle(
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.8,
+      ),
+      height: 54,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md + 8),
+      luminanceRef: lum,
+      onBrand: Colors.black,
+      outline: outlineColor,
+      outlineGradient: gradient,
+      outlineColorFallback: outlineColor,
+      outlineWidth: 2.8,
+      outlineRadius: BorderRadius.circular(AppRadius.cardLg * 1.2),
+      outlineShadow: [
+        BoxShadow(
+          color: gradient.colors.first.withOpacity(0.5),
+          blurRadius: 20,
+          offset: const Offset(0, 10),
+        ),
+      ],
+      outlineDisabledOpacity: 0.3,
+      surfaceColor: surface,
+      flickerIntensity: 0.15,
+      isMidnight: true,
     );
   }
 }

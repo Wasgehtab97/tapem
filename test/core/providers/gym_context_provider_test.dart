@@ -22,8 +22,7 @@ class _FakeGymRepository implements GymRepository {
   Future<GymConfig?> getGymByCode(String code) async => null;
 
   @override
-  Future<GymConfig?> getGymById(String id) async =>
-      id == _gym.id ? _gym : null;
+  Future<GymConfig?> getGymById(String id) async => id == _gym.id ? _gym : null;
 
   @override
   Future<List<GymConfig>> listGyms() async => [_gym];
@@ -34,7 +33,16 @@ class _FakeDeviceRepository implements DeviceRepository {
   Future<List<Device>> getDevicesForGym(String gymId) async => const [];
 
   @override
+  Future<int> allocateNextDeviceId(
+    String gymId, {
+    required int minimumExistingId,
+  }) async => minimumExistingId + 1;
+
+  @override
   Future<void> createDevice(String gymId, Device device) async {}
+
+  @override
+  Future<void> updateDevice(String gymId, Device device) async {}
 
   @override
   Future<void> deleteDevice(String gymId, String deviceId) async {}
@@ -47,19 +55,18 @@ class _FakeDeviceRepository implements DeviceRepository {
     required int limit,
     String? exerciseId,
     DocumentSnapshot? startAfter,
-  }) async =>
-      const [];
+  }) async => const [];
 
   @override
-  Future<Device?> getDeviceByNfcCode(String gymId, String nfcCode) async => null;
+  Future<Device?> getDeviceByNfcCode(String gymId, String nfcCode) async =>
+      null;
 
   @override
   Future<DeviceSessionSnapshot?> getSnapshotBySessionId({
     required String gymId,
     required String deviceId,
     required String sessionId,
-  }) async =>
-      null;
+  }) async => null;
 
   @override
   DocumentSnapshot? get lastSnapshotCursor => null;

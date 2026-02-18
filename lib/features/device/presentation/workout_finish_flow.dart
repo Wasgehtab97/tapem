@@ -1,10 +1,15 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tapem/app_router.dart';
+import 'package:tapem/core/navigation/workout_flow_navigation.dart';
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
+import 'package:tapem/core/services/workout_session_coordinator.dart';
 import 'package:tapem/core/time/logic_day.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/device/presentation/workout_flow_error.dart';
 import 'package:tapem/features/story_session/presentation/widgets/training_done_overlay.dart';
 import 'package:tapem/features/training_details/data/session_meta_source.dart';
 import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
@@ -18,17 +23,20 @@ class WorkoutFinishResult {
     required this.status,
     this.saveResult,
     this.activeGymId,
+    this.errorCode,
   });
 
   final WorkoutFinishStatus status;
   final SaveAllSessionsResult? saveResult;
   final String? activeGymId;
+  final WorkoutFlowErrorCode? errorCode;
 
   bool get savedAny => (saveResult?.saved ?? 0) > 0;
 }
 
 class WorkoutFinishFlow {
   const WorkoutFinishFlow._();
+  static const Duration _endDayTimeout = Duration(seconds: 15);
 
   static Future<WorkoutFinishResult> saveAndFinish({
     required BuildContext context,
@@ -42,11 +50,28 @@ class WorkoutFinishFlow {
     ProviderContainer? container,
     String? planId,
     String? planName,
+    String? sessionAnchorDayKey,
+    DateTime? sessionAnchorStartTime,
   }) async {
     final loc = AppLocalizations.of(context)!;
     final userId = auth.userId;
     if (userId == null || userId.isEmpty) {
-      return const WorkoutFinishResult(status: WorkoutFinishStatus.failed);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              workoutFlowErrorMessage(
+                loc,
+                WorkoutFlowErrorCode.missingUserContext,
+              ),
+            ),
+          ),
+        );
+      }
+      return const WorkoutFinishResult(
+        status: WorkoutFinishStatus.failed,
+        errorCode: WorkoutFlowErrorCode.missingUserContext,
+      );
     }
 
     final confirmFinish = await showDialog<bool>(
@@ -73,9 +98,6 @@ class WorkoutFinishFlow {
       return const WorkoutFinishResult(status: WorkoutFinishStatus.cancelled);
     }
 
-    final sessionsByKey = <String, WorkoutDaySession>{
-      for (final session in sessions) session.key: session,
-    };
     final sessionsWithPendingSets = <WorkoutDaySession>[
       for (final session in sessions)
         if (session.provider.getSetCounts().filledNotDone > 0) session,
@@ -118,28 +140,48 @@ class WorkoutFinishFlow {
 
     SaveAllSessionsResult result;
     try {
-      await settings.load(userId);
-      result = await controller.saveAllSessions(
-        userId: userId,
-        gymId: activeGymId,
-        showInLeaderboard: auth.showInLeaderboard ?? true,
-        userName: auth.userName,
-        gender: settings.gender,
-        bodyWeightKg: settings.bodyWeightKg,
-      );
+      try {
+        await settings.load(userId).timeout(const Duration(seconds: 1));
+      } catch (error, stackTrace) {
+        debugPrint(
+          '⚠️ [WorkoutFinishFlow] settings load skipped (offline/timeout): $error',
+        );
+        debugPrint('$stackTrace');
+      }
+      result = await controller
+          .endDay(
+            userId: userId,
+            gymId: activeGymId,
+            showInLeaderboard: auth.showInLeaderboard ?? true,
+            userName: auth.userName,
+            gender: settings.gender,
+            bodyWeightKg: settings.bodyWeightKg,
+            finalizeReason: WorkoutFinalizeReason.manualSave,
+            sessionAnchorStartTime: sessionAnchorStartTime,
+            sessionAnchorDayKey: sessionAnchorDayKey,
+          )
+          .timeout(_endDayTimeout);
     } catch (error, stackTrace) {
       await TrainingDoneOverlay.hide();
       debugPrint('❌ saveAllSessions failed unexpectedly: $error');
       debugPrint('$stackTrace');
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('${loc.errorPrefix}: $error')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              workoutFlowErrorMessage(loc, WorkoutFlowErrorCode.saveFailed),
+            ),
+          ),
+        );
       }
-      return const WorkoutFinishResult(status: WorkoutFinishStatus.failed);
+      return const WorkoutFinishResult(
+        status: WorkoutFinishStatus.failed,
+        errorCode: WorkoutFlowErrorCode.saveFailed,
+      );
     }
 
     if (result.saved > 0) {
+      TrainingDoneOverlay.clear();
       final resolvedPlanId = (planId != null && planId.isNotEmpty)
           ? planId
           : null;
@@ -152,17 +194,37 @@ class WorkoutFinishFlow {
           if (container != null) {
             container.refresh(trainingPlanStatsProvider(resolvedPlanId));
           }
-          final dayKey = logicDayKey(DateTime.now());
-          await SessionMetaSource().upsertMeta(
-            gymId: activeGymId,
-            uid: userId,
-            sessionId: dayKey,
-            meta: {
-              'dayKey': dayKey,
-              'planId': resolvedPlanId,
-              if (planName != null && planName.isNotEmpty) 'planName': planName,
-            },
-          );
+          final resolvedAnchorStart = sessionAnchorStartTime;
+          final dayKey =
+              (sessionAnchorDayKey != null &&
+                  sessionAnchorDayKey.trim().isNotEmpty)
+              ? sessionAnchorDayKey.trim()
+              : (resolvedAnchorStart != null
+                    ? logicDayKey(resolvedAnchorStart)
+                    : null);
+          if (dayKey != null) {
+            await SessionMetaSource().upsertMeta(
+              gymId: activeGymId,
+              uid: userId,
+              sessionId: dayKey,
+              meta: {
+                'dayKey': dayKey,
+                'anchorDayKey': dayKey,
+                if (resolvedAnchorStart != null)
+                  'anchorStartTime': Timestamp.fromDate(resolvedAnchorStart),
+                if (resolvedAnchorStart != null)
+                  'anchorStartEpochMs':
+                      resolvedAnchorStart.millisecondsSinceEpoch,
+                'planId': resolvedPlanId,
+                if (planName != null && planName.isNotEmpty)
+                  'planName': planName,
+              },
+            );
+          } else {
+            debugPrint(
+              '⚠️ Skipping training plan session_meta upsert because no session anchor day is available.',
+            );
+          }
         } catch (error, stackTrace) {
           debugPrint(
             '❌ Failed to update training plan meta for planId=$resolvedPlanId gym=$activeGymId: $error',
@@ -171,31 +233,14 @@ class WorkoutFinishFlow {
         }
       }
 
-      for (final key in result.savedSessionKeys) {
-        final session = sessionsByKey[key];
-        if (session == null) continue;
-        controller.closeSession(key);
-      }
-
-      if (resolvedPlanId != null) {
-        controller.clearPlanContextForDay(gymId: activeGymId);
-      }
-
       if (navigateToHomeProfileOnSuccess) {
-        navigatorKey.currentState?.pushNamedAndRemoveUntil(
-          AppRouter.home,
-          (route) => false,
-          arguments: 1,
+        await navigateToHomeProfile(
+          navigatorKey: navigatorKey,
+          source: 'manual_finish_flow',
         );
       }
     } else {
       await TrainingDoneOverlay.hide();
-    }
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_buildResultMessage(loc, result))));
     }
 
     return WorkoutFinishResult(
@@ -203,35 +248,5 @@ class WorkoutFinishFlow {
       saveResult: result,
       activeGymId: activeGymId,
     );
-  }
-
-  static String _buildResultMessage(
-    AppLocalizations loc,
-    SaveAllSessionsResult result,
-  ) {
-    if (result.attempted == 0) {
-      return loc.noCompletedSets;
-    }
-    if (result.saved == 0) {
-      final firstError = result.failedSessions.values.firstWhere(
-        (error) => error != null && error.isNotEmpty,
-        orElse: () => null,
-      );
-      return firstError ??
-          '${loc.errorPrefix}: ${result.failedSessions.length}';
-    }
-    final savedText = result.saved == result.attempted
-        ? loc.sessionSaved
-        : '${loc.sessionSaved} (${result.saved}/${result.attempted})';
-    if (!result.hasFailures) {
-      return savedText;
-    }
-    final firstError = result.failedSessions.values.firstWhere(
-      (error) => error != null && error.isNotEmpty,
-      orElse: () => null,
-    );
-    final failureText =
-        firstError ?? '${loc.errorPrefix}: ${result.failedSessions.length}';
-    return '$savedText\n$failureText';
   }
 }

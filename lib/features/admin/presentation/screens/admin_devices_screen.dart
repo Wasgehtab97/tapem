@@ -17,7 +17,6 @@ import 'package:tapem/features/admin/presentation/widgets/device_list_item.dart'
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/usecases/create_device_usecase.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
-import 'package:tapem/features/device/domain/usecases/update_device_usecase.dart'; // NEW
 import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -46,7 +45,6 @@ class _AdminDevicesScreenState extends ConsumerState<AdminDevicesScreen> {
   };
 
   late final CreateDeviceUseCase _createUC;
-  late final UpdateDeviceUseCase _updateUC; // NEW
   late final GetDevicesForGym _getUC;
   bool _dependenciesLoaded = false;
 
@@ -60,7 +58,6 @@ class _AdminDevicesScreenState extends ConsumerState<AdminDevicesScreen> {
     if (!_dependenciesLoaded) {
       final container = ProviderScope.containerOf(context, listen: false);
       _createUC = container.read(createDeviceUseCaseProvider);
-      _updateUC = container.read(updateDeviceUseCaseProvider); // NEW
       _getUC = container.read(getDevicesForGymProvider);
       _loadDevices();
       _dependenciesLoaded = true;

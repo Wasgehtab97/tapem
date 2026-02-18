@@ -24,6 +24,17 @@ class DeviceRepositoryImpl implements DeviceRepository {
   }
 
   @override
+  Future<int> allocateNextDeviceId(
+    String gymId, {
+    required int minimumExistingId,
+  }) {
+    return _source.allocateNextDeviceId(
+      gymId,
+      minimumExistingId: minimumExistingId,
+    );
+  }
+
+  @override
   Future<void> createDevice(String gymId, Device device) {
     return _source.createDevice(gymId, device);
   }
@@ -80,7 +91,10 @@ class DeviceRepositoryImpl implements DeviceRepository {
   }
 
   @override
-  Future<void> writeSessionSnapshot(String gymId, DeviceSessionSnapshot snapshot) {
+  Future<void> writeSessionSnapshot(
+    String gymId,
+    DeviceSessionSnapshot snapshot,
+  ) {
     return _source.writeSessionSnapshot(gymId, snapshot);
   }
 

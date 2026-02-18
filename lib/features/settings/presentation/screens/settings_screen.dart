@@ -4,11 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/logging/elog.dart';
+import 'package:tapem/core/observability/offline_flow_observability_service.dart';
 import 'package:tapem/core/providers/app_provider.dart' as app;
 import 'package:tapem/core/providers/auth_provider.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
+import 'package:tapem/core/providers/database_provider.dart';
+import 'package:tapem/core/providers/offline_flow_observability_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/core/providers/theme_preference_provider.dart';
+import 'package:tapem/core/sync/sync_service.dart';
 import 'package:tapem/core/theme/brand_theme_preset.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
@@ -396,6 +400,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return loc.settingsThemeAirNomads;
       case BrandThemeId.earthKingdom:
         return loc.settingsThemeEarthKingdom;
+      case BrandThemeId.midnightGold:
+        return loc.settingsThemeMidnightGold;
     }
   }
 
@@ -822,6 +828,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Future<void> _triggerSyncNow() async {
+    final syncService = ref.read(syncServiceProvider);
+    await syncService.syncPendingJobs();
+    if (!mounted) {
+      return;
+    }
+    final status = syncService.status;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Sync gestartet. Ausstehend: ${status.pendingCount}, Dead-Letter: ${status.deadLetterCount}',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _replayDeadLetterJobs() async {
+    final syncService = ref.read(syncServiceProvider);
+    final replayed = await syncService.replayDeadLetterJobs();
+    if (replayed > 0) {
+      await syncService.syncPendingJobs();
+    }
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Dead-Letter neu eingeplant: $replayed')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -829,6 +865,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final auth = ref.watch(authControllerProvider);
     final settings = ref.watch(settingsProvider);
     final themePref = ref.watch(themePreferenceProvider);
+    final syncService = ref.watch(syncServiceProvider);
+    final offlineObservability = ref.watch(offlineFlowObservabilityProvider);
     final appProv = ref.watch(app.appProvider);
     final locale = appProv.locale ?? Localizations.localeOf(context);
     final languageLabel = _languageLabel(loc, appProv.locale, locale);
@@ -943,6 +981,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ],
           ),
+          _SettingsSection(
+            title: 'Offline & Sync',
+            children: [
+              _SyncDiagnosticsCard(
+                syncService: syncService,
+                observability: offlineObservability,
+                onSyncNow: _triggerSyncNow,
+                onReplayDeadLetters: _replayDeadLetterJobs,
+              ),
+            ],
+          ),
           const SizedBox(height: AppSpacing.xl),
           Text(
             DateFormat.yMMMMd(localeName).format(DateTime.now()),
@@ -1003,6 +1052,160 @@ class _SettingsSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SyncDiagnosticsCard extends StatelessWidget {
+  const _SyncDiagnosticsCard({
+    required this.syncService,
+    required this.observability,
+    required this.onSyncNow,
+    required this.onReplayDeadLetters,
+  });
+
+  final SyncService syncService;
+  final OfflineFlowObservabilityService observability;
+  final VoidCallback onSyncNow;
+  final VoidCallback onReplayDeadLetters;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brandTheme = theme.extension<AppBrandTheme>();
+    final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
+
+    return ValueListenableBuilder<SyncQueueStatus>(
+      valueListenable: syncService.statusListenable,
+      builder: (context, status, _) {
+        return ValueListenableBuilder<OfflineFlowMetricsSnapshot>(
+          valueListenable: observability.metricsListenable,
+          builder: (context, metrics, __) {
+            final hasError =
+                status.lastErrorReason != null &&
+                status.lastErrorReason!.isNotEmpty;
+            final stateLabel = hasError
+                ? 'Fehler'
+                : (status.isSyncing ? 'Synchronisiert...' : 'Bereit');
+            final lastSyncText = status.lastSyncedAt != null
+                ? DateFormat.Hm().format(status.lastSyncedAt!)
+                : '-';
+            final deadLetterRate = (metrics.deadLetterRate * 100)
+                .toStringAsFixed(1);
+            final avgQueueLatency = metrics.avgQueueLatencyMs.toStringAsFixed(
+              0,
+            );
+            final lastReconcileMs = metrics.lastReconcileDurationMs;
+            final activeAlert = metrics.activeAlert;
+
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    brandColor.withOpacity(0.08),
+                    brandColor.withOpacity(0.02),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.05),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Queue: ${status.pendingCount} ausstehend, ${status.deadLetterCount} dead-letter',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Status: $stateLabel · Letzter Sync: $lastSyncText',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                  if (hasError) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Letzter Fehler: ${status.lastErrorReason}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  Text(
+                    'Metriken: Offline-Starts ${metrics.offlineStarts} · lokale Saves ${metrics.localSaveSuccesses}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.75),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Ø Queue-Latenz ${avgQueueLatency}ms · Dead-Letter-Rate $deadLetterRate% · Reconcile $lastReconcileMs ms',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.75),
+                    ),
+                  ),
+                  if (activeAlert != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.error.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: theme.colorScheme.error.withOpacity(0.35),
+                        ),
+                      ),
+                      child: Text(
+                        'Alert: ${activeAlert.message}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: onSyncNow,
+                          icon: const Icon(Icons.sync),
+                          label: const Text('Jetzt syncen'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: status.deadLetterCount > 0
+                              ? onReplayDeadLetters
+                              : null,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Dead-Letter retry'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
