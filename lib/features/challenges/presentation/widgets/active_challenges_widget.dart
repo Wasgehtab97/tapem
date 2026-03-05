@@ -13,7 +13,8 @@ class ActiveChallengesWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final challenges = ref.watch(challengeProvider).challenges;
+    final challengeState = ref.watch(challengeProvider);
+    final challenges = challengeState.challenges;
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
@@ -46,6 +47,9 @@ class ActiveChallengesWidget extends ConsumerWidget {
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
       itemBuilder: (_, i) {
         final c = challenges[i];
+        final progress = challengeState.progressFor(c.id);
+        final target = c.targetCount;
+        final ratio = target <= 0 ? 0.0 : (progress / target).clamp(0.0, 1.0);
         return BrandInteractiveCard(
           onTap: () {
             showDialog(
@@ -60,15 +64,10 @@ class ActiveChallengesWidget extends ConsumerWidget {
                     const SizedBox(height: 8),
                     Text(loc.challengeDetailXpReward(c.xpReward)),
                     const SizedBox(height: 8),
-                    if (c.isWorkoutChallenge)
-                      Text(
-                        loc.challengeDetailGoalWorkoutFrequency(
-                          c.targetWorkouts,
-                          c.durationWeeks,
-                        ),
-                      )
-                    else ...[
-                      Text(loc.challengeDetailGoalDeviceSets(c.minSets)),
+                    Text(loc.challengeProgressValue(progress, target)),
+                    const SizedBox(height: 8),
+                    Text(_goalLabel(loc, c)),
+                    if (c.deviceIds.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(loc.challengeDetailDevices(c.deviceIds.join(', '))),
                     ],
@@ -127,6 +126,25 @@ class ActiveChallengesWidget extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        minHeight: 7,
+                        value: ratio,
+                        backgroundColor: theme.colorScheme.onSurface
+                            .withOpacity(0.12),
+                        valueColor: AlwaysStoppedAnimation<Color>(brandColor),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      loc.challengeProgressValue(progress, target),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -158,12 +176,22 @@ class ActiveChallengesWidget extends ConsumerWidget {
   }
 
   String _goalLabel(AppLocalizations loc, Challenge challenge) {
-    if (challenge.isWorkoutChallenge) {
-      return loc.challengeDetailGoalWorkoutFrequency(
-        challenge.targetWorkouts,
-        challenge.durationWeeks,
-      );
+    switch (challenge.goalType) {
+      case ChallengeGoalType.deviceSets:
+        return loc.challengeDetailGoalDeviceSets(challenge.minSets);
+      case ChallengeGoalType.workoutDays:
+        return loc.challengeDetailGoalWorkoutFrequency(
+          challenge.targetWorkouts,
+          challenge.durationWeeks,
+        );
+      case ChallengeGoalType.totalReps:
+        return loc.challengeDetailGoalTotalReps(challenge.targetReps);
+      case ChallengeGoalType.totalVolume:
+        return loc.challengeDetailGoalTotalVolume(challenge.targetVolume);
+      case ChallengeGoalType.deviceVariety:
+        return loc.challengeDetailGoalDeviceVariety(
+          challenge.targetDistinctDevices,
+        );
     }
-    return loc.challengeDetailGoalDeviceSets(challenge.minSets);
   }
 }

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'story_achievement.dart';
+import 'story_challenge_highlight.dart';
 import 'story_daily_xp.dart';
 
 class StorySessionStats extends Equatable {
@@ -15,17 +16,17 @@ class StorySessionStats extends Equatable {
   });
 
   const StorySessionStats.empty()
-      : exerciseCount = 0,
-        setCount = 0,
-        durationMs = 0;
+    : exerciseCount = 0,
+      setCount = 0,
+      durationMs = 0;
 
   Duration get duration => Duration(milliseconds: durationMs);
 
   Map<String, dynamic> toJson() => {
-        'exerciseCount': exerciseCount,
-        'setCount': setCount,
-        'durationMs': durationMs,
-      };
+    'exerciseCount': exerciseCount,
+    'setCount': setCount,
+    'durationMs': durationMs,
+  };
 
   factory StorySessionStats.fromJson(Map<String, dynamic> json) {
     return StorySessionStats(
@@ -58,6 +59,7 @@ class StorySessionSummary extends Equatable {
   final int totalXp;
   final DateTime generatedAt;
   final List<StoryAchievement> achievements;
+  final List<StoryChallengeHighlight> challengeHighlights;
   final StorySessionStats stats;
   final StoryDailyXp dailyXp;
 
@@ -68,20 +70,24 @@ class StorySessionSummary extends Equatable {
     required this.totalXp,
     required this.generatedAt,
     required this.achievements,
+    this.challengeHighlights = const [],
     required this.stats,
     required this.dailyXp,
   });
 
   Map<String, dynamic> toJson() => {
-        'gymId': gymId,
-        'userId': userId,
-        'dayKey': dayKey,
-        'totalXp': totalXp,
-        'generatedAt': generatedAt.toIso8601String(),
-        'achievements': achievements.map((a) => a.toJson()).toList(),
-        'stats': stats.toJson(),
-        'dailyXp': dailyXp.toJson(),
-      };
+    'gymId': gymId,
+    'userId': userId,
+    'dayKey': dayKey,
+    'totalXp': totalXp,
+    'generatedAt': generatedAt.toIso8601String(),
+    'achievements': achievements.map((a) => a.toJson()).toList(),
+    'challengeHighlights': challengeHighlights
+        .map((entry) => entry.toJson())
+        .toList(),
+    'stats': stats.toJson(),
+    'dailyXp': dailyXp.toJson(),
+  };
 
   factory StorySessionSummary.fromJson(Map<String, dynamic> json) {
     final statsJson = json['stats'];
@@ -90,6 +96,12 @@ class StorySessionSummary extends Equatable {
         .whereType<Map<String, dynamic>>()
         .map(StoryAchievement.fromJson)
         .toList();
+    final challengeHighlights =
+        (json['challengeHighlights'] as List<dynamic>? ?? [])
+            .whereType<Map>()
+            .map((entry) => entry.map((key, value) => MapEntry('$key', value)))
+            .map(StoryChallengeHighlight.fromJson)
+            .toList();
     final dailyXpJson = json['dailyXp'];
     StoryDailyXp resolvedDailyXp;
     if (dailyXpJson is Map<String, dynamic>) {
@@ -112,8 +124,10 @@ class StorySessionSummary extends Equatable {
       dayKey: json['dayKey'] as String,
       totalXp: rawXp,
       generatedAt:
-          DateTime.tryParse(json['generatedAt'] as String? ?? '') ?? DateTime.now(),
+          DateTime.tryParse(json['generatedAt'] as String? ?? '') ??
+          DateTime.now(),
       achievements: achievements,
+      challengeHighlights: challengeHighlights,
       stats: statsJson is Map<String, dynamic>
           ? StorySessionStats.fromJson(statsJson)
           : const StorySessionStats.empty(),
@@ -125,6 +139,7 @@ class StorySessionSummary extends Equatable {
     int? totalXp,
     DateTime? generatedAt,
     List<StoryAchievement>? achievements,
+    List<StoryChallengeHighlight>? challengeHighlights,
     StorySessionStats? stats,
     StoryDailyXp? dailyXp,
   }) {
@@ -135,6 +150,7 @@ class StorySessionSummary extends Equatable {
       totalXp: totalXp ?? this.totalXp,
       generatedAt: generatedAt ?? this.generatedAt,
       achievements: achievements ?? this.achievements,
+      challengeHighlights: challengeHighlights ?? this.challengeHighlights,
       stats: stats ?? this.stats,
       dailyXp: dailyXp ?? this.dailyXp,
     );
@@ -142,13 +158,14 @@ class StorySessionSummary extends Equatable {
 
   @override
   List<Object?> get props => [
-        gymId,
-        userId,
-        dayKey,
-        totalXp,
-        generatedAt,
-        achievements,
-        stats,
-        dailyXp,
-      ];
+    gymId,
+    userId,
+    dayKey,
+    totalXp,
+    generatedAt,
+    achievements,
+    challengeHighlights,
+    stats,
+    dailyXp,
+  ];
 }

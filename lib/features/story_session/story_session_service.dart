@@ -5,6 +5,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tapem/core/storage/daily_stats_cache_store.dart';
 import 'package:tapem/core/time/logic_day.dart';
+import 'package:tapem/features/challenges/data/repositories/challenge_repository_impl.dart';
+import 'package:tapem/features/challenges/data/sources/firestore_challenge_source.dart';
+import 'package:tapem/features/challenges/domain/models/challenge.dart';
+import 'package:tapem/features/challenges/domain/repositories/challenge_repository.dart';
 import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 
@@ -12,6 +16,7 @@ import 'data/story_session_history_store.dart';
 import 'data/story_session_pr_store.dart';
 import 'data/story_session_summary_store.dart';
 import 'domain/models/story_achievement.dart';
+import 'domain/models/story_challenge_highlight.dart';
 import 'domain/models/story_daily_xp.dart';
 import 'domain/models/story_session_summary.dart';
 
@@ -22,12 +27,20 @@ class StorySessionService {
     StorySessionSummaryStore? summaryStore,
     StorySessionHistoryStore? historyStore,
     StorySessionPrStore? prStore,
+    ChallengeRepository? challengeRepository,
     DateTime Function()? now,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _dailyStatsCache = dailyStatsCache ?? const DailyStatsCacheStore(),
        _summaryStore = summaryStore ?? const StorySessionSummaryStore(),
        _historyStore = historyStore ?? const StorySessionHistoryStore(),
        _prStore = prStore ?? const StorySessionPrStore(),
+       _challengeRepository =
+           challengeRepository ??
+           ChallengeRepositoryImpl(
+             FirestoreChallengeSource(
+               firestore: firestore ?? FirebaseFirestore.instance,
+             ),
+           ),
        _now = now ?? DateTime.now;
 
   final FirebaseFirestore _firestore;
@@ -35,6 +48,7 @@ class StorySessionService {
   final StorySessionSummaryStore _summaryStore;
   final StorySessionHistoryStore _historyStore;
   final StorySessionPrStore _prStore;
+  final ChallengeRepository _challengeRepository;
   final DateTime Function() _now;
 
   Future<StorySessionSummary?> getSummary({
@@ -158,10 +172,17 @@ class StorySessionService {
       dayXp: dayXp,
       fallbackDurationMs: fallbackDurationMs,
     );
-    if (ensured != normalized) {
-      await _summaryStore.write(ensured);
-      await _persistRemoteSummary(ensured);
-      return ensured;
+    final enriched = await _ensureChallengeHighlights(
+      summary: ensured,
+      gymId: gymId,
+      userId: userId,
+      date: date,
+      sessions: sessions,
+    );
+    if (enriched != normalized) {
+      await _summaryStore.write(enriched);
+      await _persistRemoteSummary(enriched);
+      return enriched;
     }
     return normalized;
   }
@@ -238,6 +259,91 @@ class StorySessionService {
       return summary;
     }
     return _normalizeSummary(summary: rebuilt, dayXp: dayXp);
+  }
+
+  Future<StorySessionSummary> _ensureChallengeHighlights({
+    required StorySessionSummary summary,
+    required String gymId,
+    required String userId,
+    required DateTime date,
+    required List<Session> sessions,
+  }) async {
+    if (sessions.isEmpty) {
+      if (summary.challengeHighlights.isEmpty) {
+        return summary;
+      }
+      return summary.copyWith(challengeHighlights: const []);
+    }
+
+    final referenceDate = _latestActivityTimestamp(sessions) ?? date;
+    List<StoryChallengeHighlight> challengeHighlights;
+    try {
+      challengeHighlights = await _buildChallengeHighlights(
+        gymId: gymId,
+        userId: userId,
+        referenceDate: referenceDate,
+      );
+    } catch (_) {
+      // Keep existing summary if challenge enrichment fails temporarily.
+      return summary;
+    }
+
+    if (_listsEqual(summary.challengeHighlights, challengeHighlights)) {
+      return summary;
+    }
+    return summary.copyWith(challengeHighlights: challengeHighlights);
+  }
+
+  Future<List<StoryChallengeHighlight>> _buildChallengeHighlights({
+    required String gymId,
+    required String userId,
+    required DateTime referenceDate,
+  }) async {
+    final activeChallenges = await _challengeRepository
+        .getActiveChallengesForUser(
+          gymId: gymId,
+          userId: userId,
+          at: referenceDate,
+        );
+    if (activeChallenges.isEmpty) {
+      return const [];
+    }
+
+    final entries = await Future.wait(
+      activeChallenges.map((challenge) async {
+        final progress = await _challengeRepository.getChallengeProgress(
+          challenge: challenge,
+          userId: userId,
+        );
+        return StoryChallengeHighlight(
+          challengeId: challenge.id,
+          title: challenge.title,
+          description: challenge.description,
+          goalType: challenge.goalType.toFirestoreValue(),
+          progress: max(0, progress),
+          target: max(0, challenge.targetCount),
+          xpReward: challenge.xpReward,
+          durationWeeks: challenge.durationWeeks,
+          start: challenge.start,
+          end: challenge.end,
+        );
+      }),
+    );
+
+    entries.sort((a, b) {
+      final completionA = a.isCompleted ? 1 : 0;
+      final completionB = b.isCompleted ? 1 : 0;
+      if (completionA != completionB) {
+        return completionA.compareTo(completionB);
+      }
+      final ratioCompare = b.progressRatio.compareTo(a.progressRatio);
+      if (ratioCompare != 0) {
+        return ratioCompare;
+      }
+      return a.end.compareTo(b.end);
+    });
+
+    return List.unmodifiable(entries);
   }
 
   Future<bool> _hasIncorrectFirstTimeBadges({
@@ -769,12 +875,15 @@ class StorySessionService {
       query = query.where('exerciseId', isEqualTo: exerciseId);
     }
     try {
-      final snap = await query.limit(1).get().timeout(
-        const Duration(seconds: 2),
-        onTimeout: () {
-          throw FirebaseException(plugin: 'firestore', code: 'timeout');
-        },
-      );
+      final snap = await query
+          .limit(1)
+          .get()
+          .timeout(
+            const Duration(seconds: 2),
+            onTimeout: () {
+              throw FirebaseException(plugin: 'firestore', code: 'timeout');
+            },
+          );
       return snap.docs.isNotEmpty;
     } on FirebaseException catch (_) {
       return null;
@@ -913,6 +1022,14 @@ class StorySessionService {
           .whereType<Map<String, dynamic>>()
           .map(StoryAchievement.fromJson)
           .toList();
+      final challengeHighlights =
+          (data['challengeHighlights'] as List<dynamic>? ?? [])
+              .whereType<Map>()
+              .map(
+                (entry) => entry.map((key, value) => MapEntry('$key', value)),
+              )
+              .map(StoryChallengeHighlight.fromJson)
+              .toList(growable: false);
       final rawDailyXp = data['dailyXp'];
       StoryDailyXp dailyXp;
       if (rawDailyXp is Map) {
@@ -939,6 +1056,7 @@ class StorySessionService {
         generatedAt:
             (data['generatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         achievements: achievements,
+        challengeHighlights: challengeHighlights,
         stats: data['stats'] is Map<String, dynamic>
             ? StorySessionStats.fromJson(data['stats'] as Map<String, dynamic>)
             : const StorySessionStats.empty(),
@@ -962,6 +1080,9 @@ class StorySessionService {
         'totalXp': summary.totalXp,
         'generatedAt': Timestamp.fromDate(summary.generatedAt),
         'achievements': summary.achievements.map((a) => a.toJson()).toList(),
+        'challengeHighlights': summary.challengeHighlights
+            .map((entry) => entry.toJson())
+            .toList(),
         'stats': summary.stats.toJson(),
         'dailyXp': summary.dailyXp.toJson(),
       }, SetOptions(merge: true));

@@ -4115,6 +4115,24 @@ abstract class AppLocalizations {
   /// **'Workout frequency'**
   String get challengeAdminGoalTypeWorkoutFrequency;
 
+  /// Option for challenges based on total reps
+  ///
+  /// In en, this message translates to:
+  /// **'Total reps'**
+  String get challengeAdminGoalTypeTotalReps;
+
+  /// Option for challenges based on total lifted volume
+  ///
+  /// In en, this message translates to:
+  /// **'Total volume'**
+  String get challengeAdminGoalTypeTotalVolume;
+
+  /// Option for challenges based on different devices
+  ///
+  /// In en, this message translates to:
+  /// **'Device variety'**
+  String get challengeAdminGoalTypeDeviceVariety;
+
   /// Label for the challenge type field
   ///
   /// In en, this message translates to:
@@ -4126,6 +4144,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Workouts in period'**
   String get challengeAdminFieldWorkoutCount;
+
+  /// Label for the target number of reps
+  ///
+  /// In en, this message translates to:
+  /// **'Target reps'**
+  String get challengeAdminFieldTargetReps;
+
+  /// Label for target lifted volume in kilograms
+  ///
+  /// In en, this message translates to:
+  /// **'Target volume (kg)'**
+  String get challengeAdminFieldTargetVolume;
+
+  /// Label for target number of different devices
+  ///
+  /// In en, this message translates to:
+  /// **'Different devices'**
+  String get challengeAdminFieldTargetDistinctDevices;
 
   /// Label for selecting workout challenge window
   ///
@@ -4144,6 +4180,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'4 calendar weeks'**
   String get challengeAdminWorkoutWindowFourWeeks;
+
+  /// Title for quick challenge templates in admin screen
+  ///
+  /// In en, this message translates to:
+  /// **'Quick templates'**
+  String get challengeAdminTemplatesTitle;
+
+  /// Helper text below quick template chips
+  ///
+  /// In en, this message translates to:
+  /// **'A template pre-fills useful default values.'**
+  String get challengeAdminTemplatesHint;
 
   /// Tab label for active challenges
   ///
@@ -4186,6 +4234,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Goal: {count} workouts in {weeks} calendar weeks'**
   String challengeDetailGoalWorkoutFrequency(int count, int weeks);
+
+  /// Goal label for total reps challenges
+  ///
+  /// In en, this message translates to:
+  /// **'Goal: {count} reps'**
+  String challengeDetailGoalTotalReps(int count);
+
+  /// Goal label for total volume challenges
+  ///
+  /// In en, this message translates to:
+  /// **'Goal: {count} kg volume'**
+  String challengeDetailGoalTotalVolume(int count);
+
+  /// Goal label for device variety challenges
+  ///
+  /// In en, this message translates to:
+  /// **'Goal: {count} different devices'**
+  String challengeDetailGoalDeviceVariety(int count);
+
+  /// Progress label for a challenge
+  ///
+  /// In en, this message translates to:
+  /// **'Progress: {current}/{target}'**
+  String challengeProgressValue(int current, int target);
 
   /// Device list shown in the challenge dialog
   ///

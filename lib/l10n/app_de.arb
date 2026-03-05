@@ -1973,16 +1973,32 @@
   ,"@challengeAdminGoalTypeDeviceSets": {"description": "Option für satzbasierte Geräte-Challenges"}
   ,"challengeAdminGoalTypeWorkoutFrequency": "Trainingshäufigkeit"
   ,"@challengeAdminGoalTypeWorkoutFrequency": {"description": "Option für Challenge über Trainingshäufigkeit"}
+  ,"challengeAdminGoalTypeTotalReps": "Wiederholungen"
+  ,"@challengeAdminGoalTypeTotalReps": {"description": "Option für Challenges basierend auf Gesamtwiederholungen"}
+  ,"challengeAdminGoalTypeTotalVolume": "Trainingsvolumen"
+  ,"@challengeAdminGoalTypeTotalVolume": {"description": "Option für Challenges basierend auf Gesamtvolumen"}
+  ,"challengeAdminGoalTypeDeviceVariety": "Gerätevielfalt"
+  ,"@challengeAdminGoalTypeDeviceVariety": {"description": "Option für Challenges mit verschiedenen Geräten"}
   ,"challengeAdminFieldType": "Typ"
   ,"@challengeAdminFieldType": {"description": "Label für den Challenge-Typ"}
   ,"challengeAdminFieldWorkoutCount": "Trainings pro Zeitraum"
   ,"@challengeAdminFieldWorkoutCount": {"description": "Label für die benötigte Anzahl an Trainings"}
+  ,"challengeAdminFieldTargetReps": "Ziel-Wiederholungen"
+  ,"@challengeAdminFieldTargetReps": {"description": "Label für die Zielanzahl an Wiederholungen"}
+  ,"challengeAdminFieldTargetVolume": "Ziel-Volumen (kg)"
+  ,"@challengeAdminFieldTargetVolume": {"description": "Label für das Zielvolumen in Kilogramm"}
+  ,"challengeAdminFieldTargetDistinctDevices": "Anzahl verschiedene Geräte"
+  ,"@challengeAdminFieldTargetDistinctDevices": {"description": "Label für die Zielanzahl unterschiedlicher Geräte"}
   ,"challengeAdminFieldWorkoutWindow": "Zeitraum"
   ,"@challengeAdminFieldWorkoutWindow": {"description": "Label für die Zeitfenster-Auswahl bei Trainingshäufigkeit"}
   ,"challengeAdminWorkoutWindowOneWeek": "1 Kalenderwoche"
   ,"@challengeAdminWorkoutWindowOneWeek": {"description": "Option für ein Zeitfenster von einer Kalenderwoche"}
   ,"challengeAdminWorkoutWindowFourWeeks": "4 Kalenderwochen"
   ,"@challengeAdminWorkoutWindowFourWeeks": {"description": "Option für ein Zeitfenster von vier Kalenderwochen"}
+  ,"challengeAdminTemplatesTitle": "Schnellvorlagen"
+  ,"@challengeAdminTemplatesTitle": {"description": "Titel für die Challenge-Vorlagen im Admin-Screen"}
+  ,"challengeAdminTemplatesHint": "Eine Vorlage füllt sinnvolle Standardwerte aus."
+  ,"@challengeAdminTemplatesHint": {"description": "Hilfetext unter der Vorlagen-Auswahl"}
   ,"challengeTabActive": "Aktiv"
   ,"@challengeTabActive": {"description": "Tab-Label für aktive Challenges"}
   ,"challengeTabCompleted": "Abgeschlossen"
@@ -1997,6 +2013,14 @@
   ,"@challengeDetailGoalDeviceSets": {"description": "Zieltext für satzbasierte Challenges","placeholders": {"count": {"type": "int"}}}
   ,"challengeDetailGoalWorkoutFrequency": "Ziel: {count} Trainings in {weeks} Kalenderwochen"
   ,"@challengeDetailGoalWorkoutFrequency": {"description": "Zieltext für Trainingshäufigkeits-Challenges","placeholders": {"count": {"type": "int"},"weeks": {"type": "int"}}}
+  ,"challengeDetailGoalTotalReps": "Ziel: {count} Wiederholungen"
+  ,"@challengeDetailGoalTotalReps": {"description": "Zieltext für Wiederholungs-Challenges","placeholders": {"count": {"type": "int"}}}
+  ,"challengeDetailGoalTotalVolume": "Ziel: {count} kg Volumen"
+  ,"@challengeDetailGoalTotalVolume": {"description": "Zieltext für Volumen-Challenges","placeholders": {"count": {"type": "int"}}}
+  ,"challengeDetailGoalDeviceVariety": "Ziel: {count} verschiedene Geräte"
+  ,"@challengeDetailGoalDeviceVariety": {"description": "Zieltext für Gerätevielfalt-Challenges","placeholders": {"count": {"type": "int"}}}
+  ,"challengeProgressValue": "Fortschritt: {current}/{target}"
+  ,"@challengeProgressValue": {"description": "Fortschrittsanzeige einer Challenge","placeholders": {"current": {"type": "int"},"target": {"type": "int"}}}
   ,"challengeDetailDevices": "Geräte: {devices}"
   ,"@challengeDetailDevices": {"description": "Geräteliste im Challenge-Dialog","placeholders": {"devices": {}}}
   ,"challengeAdminTypeWeekly": "Wöchentlich"

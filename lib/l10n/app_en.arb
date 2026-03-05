@@ -1989,16 +1989,32 @@
   ,"@challengeAdminGoalTypeDeviceSets": {"description": "Option for set-based device challenges"}
   ,"challengeAdminGoalTypeWorkoutFrequency": "Workout frequency"
   ,"@challengeAdminGoalTypeWorkoutFrequency": {"description": "Option for workout frequency challenges"}
+  ,"challengeAdminGoalTypeTotalReps": "Total reps"
+  ,"@challengeAdminGoalTypeTotalReps": {"description": "Option for challenges based on total reps"}
+  ,"challengeAdminGoalTypeTotalVolume": "Total volume"
+  ,"@challengeAdminGoalTypeTotalVolume": {"description": "Option for challenges based on total lifted volume"}
+  ,"challengeAdminGoalTypeDeviceVariety": "Device variety"
+  ,"@challengeAdminGoalTypeDeviceVariety": {"description": "Option for challenges based on different devices"}
   ,"challengeAdminFieldType": "Type"
   ,"@challengeAdminFieldType": {"description": "Label for the challenge type field"}
   ,"challengeAdminFieldWorkoutCount": "Workouts in period"
   ,"@challengeAdminFieldWorkoutCount": {"description": "Label for required workouts in a period"}
+  ,"challengeAdminFieldTargetReps": "Target reps"
+  ,"@challengeAdminFieldTargetReps": {"description": "Label for the target number of reps"}
+  ,"challengeAdminFieldTargetVolume": "Target volume (kg)"
+  ,"@challengeAdminFieldTargetVolume": {"description": "Label for target lifted volume in kilograms"}
+  ,"challengeAdminFieldTargetDistinctDevices": "Different devices"
+  ,"@challengeAdminFieldTargetDistinctDevices": {"description": "Label for target number of different devices"}
   ,"challengeAdminFieldWorkoutWindow": "Time window"
   ,"@challengeAdminFieldWorkoutWindow": {"description": "Label for selecting workout challenge window"}
   ,"challengeAdminWorkoutWindowOneWeek": "1 calendar week"
   ,"@challengeAdminWorkoutWindowOneWeek": {"description": "Option for one calendar week window"}
   ,"challengeAdminWorkoutWindowFourWeeks": "4 calendar weeks"
   ,"@challengeAdminWorkoutWindowFourWeeks": {"description": "Option for four calendar weeks window"}
+  ,"challengeAdminTemplatesTitle": "Quick templates"
+  ,"@challengeAdminTemplatesTitle": {"description": "Title for quick challenge templates in admin screen"}
+  ,"challengeAdminTemplatesHint": "A template pre-fills useful default values."
+  ,"@challengeAdminTemplatesHint": {"description": "Helper text below quick template chips"}
   ,"challengeTabActive": "Active"
   ,"@challengeTabActive": {"description": "Tab label for active challenges"}
   ,"challengeTabCompleted": "Completed"
@@ -2013,6 +2029,14 @@
   ,"@challengeDetailGoalDeviceSets": {"description": "Goal label for set-based challenges","placeholders": {"count": {"type": "int"}}}
   ,"challengeDetailGoalWorkoutFrequency": "Goal: {count} workouts in {weeks} calendar weeks"
   ,"@challengeDetailGoalWorkoutFrequency": {"description": "Goal label for workout frequency challenges","placeholders": {"count": {"type": "int"},"weeks": {"type": "int"}}}
+  ,"challengeDetailGoalTotalReps": "Goal: {count} reps"
+  ,"@challengeDetailGoalTotalReps": {"description": "Goal label for total reps challenges","placeholders": {"count": {"type": "int"}}}
+  ,"challengeDetailGoalTotalVolume": "Goal: {count} kg volume"
+  ,"@challengeDetailGoalTotalVolume": {"description": "Goal label for total volume challenges","placeholders": {"count": {"type": "int"}}}
+  ,"challengeDetailGoalDeviceVariety": "Goal: {count} different devices"
+  ,"@challengeDetailGoalDeviceVariety": {"description": "Goal label for device variety challenges","placeholders": {"count": {"type": "int"}}}
+  ,"challengeProgressValue": "Progress: {current}/{target}"
+  ,"@challengeProgressValue": {"description": "Progress label for a challenge","placeholders": {"current": {"type": "int"},"target": {"type": "int"}}}
   ,"challengeDetailDevices": "Devices: {devices}"
   ,"@challengeDetailDevices": {"description": "Device list shown in the challenge dialog","placeholders": {"devices": {}}}
   ,"challengeAdminTypeWeekly": "Weekly"

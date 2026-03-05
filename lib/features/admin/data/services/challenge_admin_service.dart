@@ -5,7 +5,13 @@ import 'package:tapem/features/challenges/domain/models/challenge.dart';
 
 enum AdminChallengePeriod { weekly, monthly }
 
-enum AdminChallengeGoalType { deviceSets, workoutFrequency }
+enum AdminChallengeGoalType {
+  deviceSets,
+  workoutFrequency,
+  totalReps,
+  totalVolume,
+  deviceVariety,
+}
 
 class ChallengeAdminCreateInput {
   const ChallengeAdminCreateInput({
@@ -21,6 +27,9 @@ class ChallengeAdminCreateInput {
     this.deviceIds = const <String>[],
     this.minSets,
     this.targetWorkouts,
+    this.targetReps,
+    this.targetVolume,
+    this.targetDistinctDevices,
     this.durationWeeks = 1,
   });
 
@@ -31,6 +40,9 @@ class ChallengeAdminCreateInput {
   final List<String> deviceIds;
   final int? minSets;
   final int? targetWorkouts;
+  final int? targetReps;
+  final int? targetVolume;
+  final int? targetDistinctDevices;
   final int durationWeeks;
   final int xpReward;
   final AdminChallengeGoalType goalType;
@@ -43,6 +55,18 @@ class ChallengeAdminCreateResult {
   const ChallengeAdminCreateResult({required this.challengeId});
 
   final String challengeId;
+}
+
+class AdminChallengeCampaign {
+  const AdminChallengeCampaign({
+    required this.id,
+    required this.period,
+    required this.challenge,
+  });
+
+  final String id;
+  final AdminChallengePeriod period;
+  final Challenge challenge;
 }
 
 class ChallengeAdminService {
@@ -91,6 +115,50 @@ class ChallengeAdminService {
     return ChallengeAdminCreateResult(challengeId: docRef.id);
   }
 
+  Future<List<AdminChallengeCampaign>> loadChallengeCampaigns({
+    required String gymId,
+  }) async {
+    if (gymId.trim().isEmpty) {
+      throw ArgumentError('gymId must not be empty.');
+    }
+
+    final weeklyCollection = _collectionForPeriod(
+      gymId: gymId,
+      period: AdminChallengePeriod.weekly,
+    );
+    final monthlyCollection = _collectionForPeriod(
+      gymId: gymId,
+      period: AdminChallengePeriod.monthly,
+    );
+
+    final snapshots = await Future.wait([
+      weeklyCollection.get(),
+      monthlyCollection.get(),
+    ]);
+    final weekly = snapshots[0];
+    final monthly = snapshots[1];
+
+    final campaigns = <AdminChallengeCampaign>[
+      ...weekly.docs.map(
+        (doc) => AdminChallengeCampaign(
+          id: doc.id,
+          period: AdminChallengePeriod.weekly,
+          challenge: Challenge.fromMap(doc.id, doc.data()),
+        ),
+      ),
+      ...monthly.docs.map(
+        (doc) => AdminChallengeCampaign(
+          id: doc.id,
+          period: AdminChallengePeriod.monthly,
+          challenge: Challenge.fromMap(doc.id, doc.data()),
+        ),
+      ),
+    ];
+
+    campaigns.sort((a, b) => b.challenge.start.compareTo(a.challenge.start));
+    return campaigns;
+  }
+
   void _validateInput(ChallengeAdminCreateInput input) {
     if (input.gymId.trim().isEmpty) {
       throw ArgumentError('gymId must not be empty.');
@@ -127,6 +195,21 @@ class ChallengeAdminService {
           throw ArgumentError('durationWeeks must be either 1 or 4.');
         }
         break;
+      case AdminChallengeGoalType.totalReps:
+        if ((input.targetReps ?? 0) <= 0) {
+          throw ArgumentError('targetReps must be > 0.');
+        }
+        break;
+      case AdminChallengeGoalType.totalVolume:
+        if ((input.targetVolume ?? 0) <= 0) {
+          throw ArgumentError('targetVolume must be > 0.');
+        }
+        break;
+      case AdminChallengeGoalType.deviceVariety:
+        if ((input.targetDistinctDevices ?? 0) <= 1) {
+          throw ArgumentError('targetDistinctDevices must be > 1.');
+        }
+        break;
     }
 
     switch (input.period) {
@@ -154,9 +237,7 @@ class ChallengeAdminService {
       'title': title,
       'description': description,
       'xpReward': input.xpReward,
-      'goalType': input.goalType == AdminChallengeGoalType.workoutFrequency
-          ? ChallengeGoalType.workoutDays.toFirestoreValue()
-          : ChallengeGoalType.deviceSets.toFirestoreValue(),
+      'goalType': _mapGoalType(input.goalType).toFirestoreValue(),
     };
 
     if (input.goalType == AdminChallengeGoalType.workoutFrequency) {
@@ -177,8 +258,12 @@ class ChallengeAdminService {
           .subtract(const Duration(milliseconds: 1));
       payload['startWeek'] = input.periodValue;
       payload['endWeek'] = input.periodValue;
-      payload['deviceIds'] = deviceIds;
-      payload['minSets'] = input.minSets;
+      payload['deviceIds'] = input.goalType == AdminChallengeGoalType.deviceSets
+          ? deviceIds
+          : <String>[];
+      payload['minSets'] = input.goalType == AdminChallengeGoalType.deviceSets
+          ? (input.minSets ?? 0)
+          : 0;
       payload['durationWeeks'] = 1;
       payload['targetWorkouts'] = 0;
     } else {
@@ -190,15 +275,38 @@ class ChallengeAdminService {
       ).subtract(const Duration(milliseconds: 1));
       payload['startMonth'] = input.periodValue;
       payload['endMonth'] = input.periodValue;
-      payload['deviceIds'] = deviceIds;
-      payload['minSets'] = input.minSets;
+      payload['deviceIds'] = input.goalType == AdminChallengeGoalType.deviceSets
+          ? deviceIds
+          : <String>[];
+      payload['minSets'] = input.goalType == AdminChallengeGoalType.deviceSets
+          ? (input.minSets ?? 0)
+          : 0;
       payload['durationWeeks'] = 1;
       payload['targetWorkouts'] = 0;
     }
 
+    payload['targetReps'] = input.targetReps ?? 0;
+    payload['targetVolume'] = input.targetVolume ?? 0;
+    payload['targetDistinctDevices'] = input.targetDistinctDevices ?? 0;
+
     payload['start'] = Timestamp.fromDate(start);
     payload['end'] = Timestamp.fromDate(end);
     return payload;
+  }
+
+  ChallengeGoalType _mapGoalType(AdminChallengeGoalType value) {
+    switch (value) {
+      case AdminChallengeGoalType.deviceSets:
+        return ChallengeGoalType.deviceSets;
+      case AdminChallengeGoalType.workoutFrequency:
+        return ChallengeGoalType.workoutDays;
+      case AdminChallengeGoalType.totalReps:
+        return ChallengeGoalType.totalReps;
+      case AdminChallengeGoalType.totalVolume:
+        return ChallengeGoalType.totalVolume;
+      case AdminChallengeGoalType.deviceVariety:
+        return ChallengeGoalType.deviceVariety;
+    }
   }
 
   CollectionReference<Map<String, dynamic>> _collectionForPeriod({

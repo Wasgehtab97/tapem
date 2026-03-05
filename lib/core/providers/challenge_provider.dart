@@ -13,6 +13,9 @@ class ChallengeProvider extends ChangeNotifier {
   List<Challenge> _challenges = [];
   List<CompletedChallenge> _completed = [];
   List<Badge> _badges = [];
+  Map<String, int> _progressByChallengeId = const {};
+  String? _activeUserId;
+  int _progressToken = 0;
   StreamSubscription? _chSub;
   StreamSubscription? _badgeSub;
   StreamSubscription? _completedSub;
@@ -23,15 +26,19 @@ class ChallengeProvider extends ChangeNotifier {
   List<Challenge> get challenges => _challenges;
   List<CompletedChallenge> get completed => _completed;
   List<Badge> get badges => _badges;
+  int progressFor(String challengeId) =>
+      _progressByChallengeId[challengeId] ?? 0;
 
   void watchChallenges(String gymId, String userId) {
     debugPrint('👀 watchChallenges gymId=$gymId userId=$userId');
+    _activeUserId = userId;
     _chSub?.cancel();
     _chSub = _repo.watchActiveChallenges(gymId).listen((list) {
       final completedIds = _completed.map((c) => c.id).toSet();
       _challenges = list.where((c) => !completedIds.contains(c.id)).toList();
       debugPrint('🔄 activeChallenges=${_challenges.length}');
       notifyListeners();
+      unawaited(_refreshProgress());
     });
     watchCompletedChallenges(gymId, userId);
   }
@@ -46,9 +53,11 @@ class ChallengeProvider extends ChangeNotifier {
       debugPrint('🔄 completedChallenges=${list.length}');
       // Remove completed from active list
       final completedIds = _completed.map((c) => c.id).toSet();
-      _challenges =
-          _challenges.where((c) => !completedIds.contains(c.id)).toList();
+      _challenges = _challenges
+          .where((c) => !completedIds.contains(c.id))
+          .toList();
       notifyListeners();
+      unawaited(_refreshProgress());
     });
   }
 
@@ -62,8 +71,50 @@ class ChallengeProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> checkChallenges(String gymId, String userId, String deviceId) {
-    return _repo.checkChallenges(gymId, userId, deviceId);
+  Future<void> checkChallenges(
+    String gymId,
+    String userId,
+    String deviceId,
+  ) async {
+    await _repo.checkChallenges(gymId, userId, deviceId);
+    await _refreshProgress();
+  }
+
+  Future<void> _refreshProgress() async {
+    final userId = _activeUserId;
+    if (userId == null || _challenges.isEmpty) {
+      if (_progressByChallengeId.isNotEmpty) {
+        _progressByChallengeId = const {};
+        notifyListeners();
+      }
+      return;
+    }
+
+    final token = ++_progressToken;
+    final challenges = List<Challenge>.from(_challenges);
+    final entries = await Future.wait(
+      challenges.map((challenge) async {
+        try {
+          final value = await _repo.getChallengeProgress(
+            challenge: challenge,
+            userId: userId,
+          );
+          return MapEntry(challenge.id, value);
+        } catch (error) {
+          debugPrint('⚠️ challenge progress error for ${challenge.id}: $error');
+          return MapEntry(challenge.id, 0);
+        }
+      }),
+    );
+
+    if (token != _progressToken) {
+      return;
+    }
+
+    _progressByChallengeId = <String, int>{
+      for (final entry in entries) entry.key: entry.value,
+    };
+    notifyListeners();
   }
 
   @override

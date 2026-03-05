@@ -2,26 +2,57 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:tapem/core/utils/duration_format.dart';
+import 'package:tapem/features/challenges/domain/models/challenge.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/story_session/domain/models/story_achievement.dart';
+import 'package:tapem/features/story_session/domain/models/story_challenge_highlight.dart';
 import 'package:tapem/features/story_session/domain/models/story_daily_xp.dart';
 import 'package:tapem/features/story_session/domain/models/story_session_summary.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class StorySessionDialog extends StatelessWidget {
+class StorySessionDialog extends StatefulWidget {
   const StorySessionDialog({super.key, required this.summary, this.onShare});
 
   final StorySessionSummary summary;
   final VoidCallback? onShare;
 
   @override
+  State<StorySessionDialog> createState() => _StorySessionDialogState();
+}
+
+class _StorySessionDialogState extends State<StorySessionDialog> {
+  bool _didCelebrateChallengeCompletion = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didCelebrateChallengeCompletion) {
+      return;
+    }
+    final hasCompletedChallenge = widget.summary.challengeHighlights.any(
+      (challenge) => challenge.isCompleted,
+    );
+    if (!hasCompletedChallenge) {
+      return;
+    }
+    _didCelebrateChallengeCompletion = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      HapticFeedback.mediumImpact();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final viewModel = _StorySessionViewModel.fromSummary(
-      summary: summary,
+      summary: widget.summary,
       loc: loc,
     );
 
@@ -41,7 +72,7 @@ class StorySessionDialog extends StatelessWidget {
                 viewModel: viewModel,
                 maxHeight: maxHeight,
                 compact: compact,
-                onShare: onShare,
+                onShare: widget.onShare,
               ),
             ),
           );
@@ -221,13 +252,22 @@ class _SessionHighlightsPanel extends StatelessWidget {
                       ],
                     ),
                     SizedBox(height: spacing),
+                    if (viewModel.challengeHighlights.isNotEmpty) ...[
+                      _ChallengeHighlightsCard(
+                        viewModel: viewModel,
+                        palette: palette,
+                        title: loc.leaderboardChallengesTab,
+                      ),
+                      SizedBox(height: spacing),
+                    ],
                     if (viewModel.highlights.isNotEmpty)
                       _HighlightsCard(
                         viewModel: viewModel,
                         palette: palette,
                         title: loc.storySessionBadgesTitle,
                       ),
-                    SizedBox(height: spacing),
+                    if (viewModel.highlights.isNotEmpty)
+                      SizedBox(height: spacing),
                     Row(
                       children: [
                         Expanded(
@@ -552,6 +592,235 @@ class _HighlightRow extends StatelessWidget {
                   ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChallengeHighlightsCard extends StatelessWidget {
+  const _ChallengeHighlightsCard({
+    required this.viewModel,
+    required this.palette,
+    required this.title,
+  });
+
+  final _StorySessionViewModel viewModel;
+  final _SessionHighlightsPalette palette;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final challenges = viewModel.challengeHighlights;
+    final hasManyChallenges = challenges.length > 1;
+    final cardWidth = math.min(MediaQuery.sizeOf(context).width * 0.74, 316.0);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: palette.card,
+        border: Border.all(color: palette.outlineSoft),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (challenges.length > 1)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    color: palette.softSurface,
+                    border: Border.all(color: palette.outlineSoft),
+                  ),
+                  child: Text(
+                    '${challenges.length}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.72),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (!hasManyChallenges)
+            for (var i = 0; i < challenges.length; i++) ...[
+              if (i > 0) const SizedBox(height: 8),
+              _ChallengeHighlightRow(item: challenges[i], palette: palette),
+            ]
+          else
+            SizedBox(
+              height: 136,
+              child: ListView.separated(
+                key: const ValueKey('challenge-highlights-horizontal-list'),
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: challenges.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) => SizedBox(
+                  width: cardWidth,
+                  child: _ChallengeHighlightRow(
+                    item: challenges[index],
+                    palette: palette,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChallengeHighlightRow extends StatelessWidget {
+  const _ChallengeHighlightRow({required this.item, required this.palette});
+
+  final _ChallengeHighlightItem item;
+  final _SessionHighlightsPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: item.isCompleted
+            ? Color.alphaBlend(
+                item.accent.withOpacity(0.08),
+                palette.softSurface,
+              )
+            : palette.softSurface,
+        border: Border.all(
+          color: item.isCompleted
+              ? item.accent.withOpacity(0.55)
+              : palette.outlineSoft,
+          width: item.isCompleted ? 1.2 : 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: item.accent.withOpacity(0.2),
+                ),
+                child: Icon(
+                  item.isCompleted
+                      ? Icons.emoji_events_rounded
+                      : Icons.local_fire_department_rounded,
+                  size: 16,
+                  color: item.accent,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  color: item.accent.withOpacity(0.14),
+                ),
+                child: Text(
+                  item.xpLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: item.accent,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (item.goalText.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              item.goalText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 700),
+              curve: Curves.easeOutCubic,
+              tween: Tween<double>(begin: 0, end: item.progressRatio),
+              builder: (context, value, _) {
+                return LinearProgressIndicator(
+                  minHeight: 7,
+                  value: value,
+                  backgroundColor: theme.colorScheme.onSurface.withOpacity(
+                    0.12,
+                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(item.accent),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Text(
+                item.progressText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.72),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              if (item.periodText != null && item.periodText!.isNotEmpty)
+                Text(
+                  item.periodText!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.58),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -895,6 +1164,7 @@ class _StorySessionViewModel {
     required this.penaltyText,
     required this.rewardRows,
     required this.penaltyRows,
+    required this.challengeHighlights,
     required this.highlights,
   });
 
@@ -914,6 +1184,7 @@ class _StorySessionViewModel {
   final String penaltyText;
   final List<_XpBreakdownItem> rewardRows;
   final List<_XpBreakdownItem> penaltyRows;
+  final List<_ChallengeHighlightItem> challengeHighlights;
   final List<_HighlightItem> highlights;
 
   factory _StorySessionViewModel.fromSummary({
@@ -945,6 +1216,31 @@ class _StorySessionViewModel {
       loc,
       numberFormat,
     );
+    final challengeHighlightsRaw = List<StoryChallengeHighlight>.from(
+      summary.challengeHighlights,
+    )..sort(_challengePriorityCompare);
+    final challengeHighlights = challengeHighlightsRaw
+        .map((challenge) {
+          final target = math.max(0, challenge.target);
+          final progress = math.max(0, challenge.progress);
+          final ratio = target <= 0 ? 0.0 : (progress / target).clamp(0.0, 1.0);
+          final accent = challenge.isCompleted
+              ? const Color(0xFF85F9B7)
+              : const Color(0xFF35D0FF);
+          return _ChallengeHighlightItem(
+            title: challenge.title.trim().isNotEmpty
+                ? challenge.title.trim()
+                : _challengeFallbackTitle(loc),
+            goalText: _challengeGoalText(challenge, loc),
+            progressText: loc.challengeProgressValue(progress, target),
+            progressRatio: ratio,
+            xpLabel: '+${numberFormat.format(challenge.xpReward)} XP',
+            periodText: _challengePeriodText(challenge, loc),
+            isCompleted: challenge.isCompleted,
+            accent: accent,
+          );
+        })
+        .toList(growable: false);
 
     final highlightsRaw =
         summary.achievements
@@ -1010,6 +1306,7 @@ class _StorySessionViewModel {
       penaltyText: '${numberFormat.format(penaltiesResolved)} XP',
       rewardRows: componentRows.where((item) => item.amount > 0).toList(),
       penaltyRows: penaltyRows,
+      challengeHighlights: challengeHighlights,
       highlights: highlights,
     );
   }
@@ -1226,6 +1523,48 @@ class _StorySessionViewModel {
     return 'New device';
   }
 
+  static String _challengeFallbackTitle(AppLocalizations loc) {
+    final locale = loc.localeName.toLowerCase();
+    if (locale.startsWith('de')) {
+      return 'Challenge';
+    }
+    return 'Challenge';
+  }
+
+  static String _challengeGoalText(
+    StoryChallengeHighlight challenge,
+    AppLocalizations loc,
+  ) {
+    final target = math.max(0, challenge.target);
+    switch (challengeGoalTypeFromFirestore(challenge.goalType)) {
+      case ChallengeGoalType.deviceSets:
+        return loc.challengeDetailGoalDeviceSets(target);
+      case ChallengeGoalType.workoutDays:
+        return loc.challengeDetailGoalWorkoutFrequency(
+          target,
+          math.max(1, challenge.durationWeeks),
+        );
+      case ChallengeGoalType.totalReps:
+        return loc.challengeDetailGoalTotalReps(target);
+      case ChallengeGoalType.totalVolume:
+        return loc.challengeDetailGoalTotalVolume(target);
+      case ChallengeGoalType.deviceVariety:
+        return loc.challengeDetailGoalDeviceVariety(target);
+    }
+  }
+
+  static String _challengePeriodText(
+    StoryChallengeHighlight challenge,
+    AppLocalizations loc,
+  ) {
+    final until = DateFormat.Md(loc.localeName).format(challenge.end.toLocal());
+    final locale = loc.localeName.toLowerCase();
+    if (locale.startsWith('de')) {
+      return 'bis $until';
+    }
+    return 'until $until';
+  }
+
   static int _achievementPriorityCompare(
     StoryAchievement a,
     StoryAchievement b,
@@ -1249,6 +1588,22 @@ class _StorySessionViewModel {
     final e1rmA = a.e1rm ?? 0;
     final e1rmB = b.e1rm ?? 0;
     return e1rmB.compareTo(e1rmA);
+  }
+
+  static int _challengePriorityCompare(
+    StoryChallengeHighlight a,
+    StoryChallengeHighlight b,
+  ) {
+    final completionA = a.isCompleted ? 1 : 0;
+    final completionB = b.isCompleted ? 1 : 0;
+    if (completionA != completionB) {
+      return completionA.compareTo(completionB);
+    }
+    final ratioCompare = b.progressRatio.compareTo(a.progressRatio);
+    if (ratioCompare != 0) {
+      return ratioCompare;
+    }
+    return a.end.compareTo(b.end);
   }
 
   static String? _prSubtitle(
@@ -1292,6 +1647,28 @@ class _HighlightItem {
   final IconData icon;
   final String title;
   final String? subtitle;
+  final Color accent;
+}
+
+class _ChallengeHighlightItem {
+  const _ChallengeHighlightItem({
+    required this.title,
+    required this.goalText,
+    required this.progressText,
+    required this.progressRatio,
+    required this.xpLabel,
+    required this.periodText,
+    required this.isCompleted,
+    required this.accent,
+  });
+
+  final String title;
+  final String goalText;
+  final String progressText;
+  final double progressRatio;
+  final String xpLabel;
+  final String? periodText;
+  final bool isCompleted;
   final Color accent;
 }
 

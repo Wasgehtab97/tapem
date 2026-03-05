@@ -6,10 +6,13 @@ Scope: App-Client (Flutter) mit Spark-Plan (ohne produktive Cloud Functions)
 ## Kurzfazit
 
 Das aktuelle Challenge-System war primär auf geraetegebundene Satz-Ziele ausgelegt.  
-Jetzt ist zusaetzlich eine zweite Challenge-Variante eingebaut:
+Jetzt sind mehrere Challenge-Varianten eingebaut:
 
-- `Geraete-Saetze` (bestehend)
-- `Trainingshaeufigkeit` (neu): z. B. `2x/3x/4x in 1 Kalenderwoche` oder `4x/8x/12x/16x in 4 Kalenderwochen`
+- `Geraete-Saetze`
+- `Trainingshaeufigkeit` (z. B. `2x/3x/4x in 1 Kalenderwoche` oder `4x/8x/12x/16x in 4 Kalenderwochen`)
+- `Gesamt-Wiederholungen` im Zeitraum
+- `Gesamt-Volumen (kg)` im Zeitraum
+- `Geraetevielfalt` (X verschiedene Geräte)
 
 Wichtig fuer dein Setup: Die Completion-Logik bleibt rein clientseitig (Spark-kompatibel), keine neue Abhaengigkeit von Cloud Functions.
 
@@ -61,11 +64,17 @@ In `lib/features/challenges/domain/models/challenge.dart`:
 - Neues Zieltyp-Konzept:
   - `device_sets`
   - `workout_days`
+  - `total_reps`
+  - `total_volume`
+  - `device_variety`
 - Neue Felder:
   - `targetWorkouts`
+  - `targetReps`
+  - `targetVolume`
+  - `targetDistinctDevices`
   - `durationWeeks`
 
-Damit sind beide Challenge-Arten in einem Modell abbildbar.
+Damit sind mehrere Challenge-Arten in einem gemeinsamen Modell abbildbar.
 
 ## Neu im Admin-Flow
 
@@ -75,6 +84,9 @@ In `lib/features/admin/data/services/challenge_admin_service.dart` und
 - Neue Goal-Auswahl:
   - `Geraete-Saetze`
   - `Trainingshaeufigkeit`
+- `Wiederholungen`
+- `Volumen`
+- `Geraetevielfalt`
 - Trainingshaeufigkeit:
   - Zielanzahl Trainings (`targetWorkouts`)
   - Zeitfenster (`1` oder `4` Kalenderwochen)
@@ -92,6 +104,12 @@ In `lib/features/challenges/data/sources/firestore_challenge_source.dart`:
 - Trainingshaeufigkeit:
   - zaehlt eindeutige Trainingstage im Zeitraum
   - damit zaehlt ein langer Workout-Tag nicht unnoetig mehrfach
+- Wiederholungs-Challenge:
+  - summiert `reps` ueber alle Logs im Zeitraum
+- Volumen-Challenge:
+  - summiert `weight * reps` ueber alle Logs im Zeitraum
+- Geraetevielfalt-Challenge:
+  - zaehlt eindeutige `deviceId` im Zeitraum
 
 ## UI-Anzeige verbessert
 
@@ -100,6 +118,32 @@ In `lib/features/challenges/presentation/widgets/active_challenges_widget.dart`:
 - Zieltext im Active-Card/Detaildialog jetzt typabhaengig:
   - `Ziel: X Saetze`
   - `Ziel: X Trainings in Y Kalenderwochen`
+- Neu: sichtbarer Progress pro Challenge (`Fortschritt: x/y`) inkl. Progress-Bar.
+
+## Neu: Session Highlights Integration (nach Training)
+
+In `lib/features/story_session/...`:
+
+- `StorySessionSummary` wurde um `challengeHighlights` erweitert (inkl. Local-Cache + Firestore-Persistenz).
+- Nach jedem erfolgreichen Training werden aktive Challenges (ohne bereits abgeschlossene) inkl. aktuellem Fortschritt berechnet.
+- Im Session-Highlights-Dialog gibt es jetzt einen eigenen `Challenges`-Bereich:
+  - eigener Card-Block
+  - Goal-Text je Challenge-Typ
+  - Progress-Bar + `x/y`
+  - XP-Badge pro Challenge
+  - Anzeige fuer den gesamten aktiven Challenge-Zeitraum (solange aktiv)
+
+## Admin-UX verbessert (Schnellvorlagen)
+
+In `lib/features/admin/presentation/screens/challenge_admin_screen.dart`:
+
+- Neue `Schnellvorlagen` als Chips, die Felder direkt vorbelegen.
+- Enthalten sind sowohl Einsteiger- als auch ambitionierte Vorlagen fuer:
+  - Trainingshaeufigkeit (1 und 4 Kalenderwochen)
+  - Satz-Challenges
+  - Reps-Challenges
+  - Volumen-Challenges
+  - Geraetevielfalt-Challenges
 
 ## Tests
 
@@ -107,6 +151,7 @@ Aktualisiert in `test/features/admin/data/services/challenge_admin_service_test.
 
 - Bestehende Weekly/Monthly Satz-Challenges
 - Neuer Workout-Frequenz-Case (4 Wochen)
+- Neue Cases fuer Reps, Volumen und Gerätevielfalt
 - Validierungsfall: Workout-Frequenz + Monatsmodus wird abgelehnt
 
 ## Lokalisierung
@@ -126,8 +171,10 @@ Generierung aktualisiert via `gen-l10n`.
 - [x] Admin-UI fuer 1 oder 4 Kalenderwochen erweitern
 - [x] Spark-kompatible clientseitige Auswertung sicherstellen
 - [x] Zielanzeige in Active Challenges verbessern
-- [ ] Progress-Balken live pro Challenge anzeigen (x/y)
-- [ ] Completion-Animation + Reward-Moment staerker inszenieren
+- [x] Progress-Balken live pro Challenge anzeigen (x/y)
+- [x] Schnellvorlagen im Admin-Flow integrieren
+- [x] Challenge-Fortschritt in Session Highlights integrieren (eigener Bereich)
+- [x] Completion-Animation + Reward-Moment staerker inszenieren
 
 ## Phase 2: Motivation und Variety
 

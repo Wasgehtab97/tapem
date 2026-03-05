@@ -118,6 +118,49 @@ void main() {
       expect(data['endMonth'], 11);
     });
 
+    test('loads campaigns from weekly and monthly collections', () async {
+      await service.createChallenge(
+        const ChallengeAdminCreateInput(
+          gymId: 'gym-a',
+          actorUid: 'owner-1',
+          title: 'Weekly One',
+          description: 'Weekly challenge',
+          goalType: AdminChallengeGoalType.deviceSets,
+          deviceIds: <String>['d1'],
+          minSets: 10,
+          xpReward: 60,
+          period: AdminChallengePeriod.weekly,
+          periodValue: 8,
+          year: 2026,
+        ),
+      );
+      await service.createChallenge(
+        const ChallengeAdminCreateInput(
+          gymId: 'gym-a',
+          actorUid: 'owner-1',
+          title: 'Monthly One',
+          description: 'Monthly challenge',
+          goalType: AdminChallengeGoalType.totalReps,
+          targetReps: 900,
+          xpReward: 100,
+          period: AdminChallengePeriod.monthly,
+          periodValue: 3,
+          year: 2026,
+        ),
+      );
+
+      final campaigns = await service.loadChallengeCampaigns(gymId: 'gym-a');
+      expect(campaigns.length, 2);
+      expect(
+        campaigns.any((entry) => entry.period == AdminChallengePeriod.weekly),
+        isTrue,
+      );
+      expect(
+        campaigns.any((entry) => entry.period == AdminChallengePeriod.monthly),
+        isTrue,
+      );
+    });
+
     test('creates workout frequency challenge for 4 calendar weeks', () async {
       final result = await service.createChallenge(
         const ChallengeAdminCreateInput(
@@ -154,6 +197,100 @@ void main() {
       final start = (data['start'] as Timestamp).toDate();
       final end = (data['end'] as Timestamp).toDate();
       expect(end.difference(start).inDays, 27);
+    });
+
+    test('creates total reps challenge', () async {
+      final result = await service.createChallenge(
+        const ChallengeAdminCreateInput(
+          gymId: 'gym-a',
+          actorUid: 'owner-1',
+          title: 'Rep Storm',
+          description: 'Collect 1200 reps',
+          goalType: AdminChallengeGoalType.totalReps,
+          targetReps: 1200,
+          xpReward: 140,
+          period: AdminChallengePeriod.monthly,
+          periodValue: 3,
+          year: 2026,
+        ),
+      );
+
+      final challengeDoc = await firestore
+          .collection('gyms')
+          .doc('gym-a')
+          .collection('challenges')
+          .doc('monthly')
+          .collection('items')
+          .doc(result.challengeId)
+          .get();
+      final data = challengeDoc.data()!;
+      expect(data['goalType'], 'total_reps');
+      expect(data['targetReps'], 1200);
+      expect(data['targetVolume'], 0);
+      expect(data['targetDistinctDevices'], 0);
+      expect(data['deviceIds'], isEmpty);
+    });
+
+    test('creates total volume challenge', () async {
+      final result = await service.createChallenge(
+        const ChallengeAdminCreateInput(
+          gymId: 'gym-a',
+          actorUid: 'owner-1',
+          title: 'Volume Storm',
+          description: 'Collect volume',
+          goalType: AdminChallengeGoalType.totalVolume,
+          targetVolume: 24000,
+          xpReward: 160,
+          period: AdminChallengePeriod.weekly,
+          periodValue: 7,
+          year: 2026,
+        ),
+      );
+
+      final challengeDoc = await firestore
+          .collection('gyms')
+          .doc('gym-a')
+          .collection('challenges')
+          .doc('weekly')
+          .collection('items')
+          .doc(result.challengeId)
+          .get();
+      final data = challengeDoc.data()!;
+      expect(data['goalType'], 'total_volume');
+      expect(data['targetVolume'], 24000);
+      expect(data['targetReps'], 0);
+      expect(data['targetDistinctDevices'], 0);
+    });
+
+    test('creates device variety challenge', () async {
+      final result = await service.createChallenge(
+        const ChallengeAdminCreateInput(
+          gymId: 'gym-a',
+          actorUid: 'owner-1',
+          title: 'Explorer',
+          description: 'Use many devices',
+          goalType: AdminChallengeGoalType.deviceVariety,
+          targetDistinctDevices: 6,
+          xpReward: 125,
+          period: AdminChallengePeriod.weekly,
+          periodValue: 14,
+          year: 2026,
+        ),
+      );
+
+      final challengeDoc = await firestore
+          .collection('gyms')
+          .doc('gym-a')
+          .collection('challenges')
+          .doc('weekly')
+          .collection('items')
+          .doc(result.challengeId)
+          .get();
+      final data = challengeDoc.data()!;
+      expect(data['goalType'], 'device_variety');
+      expect(data['targetDistinctDevices'], 6);
+      expect(data['targetReps'], 0);
+      expect(data['targetVolume'], 0);
     });
 
     test('rejects invalid input before write', () async {
@@ -202,6 +339,26 @@ void main() {
             durationWeeks: 4,
             xpReward: 100,
             period: AdminChallengePeriod.monthly,
+            periodValue: 2,
+            year: 2026,
+          ),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('rejects device variety challenge with invalid target', () async {
+      await expectLater(
+        () => service.createChallenge(
+          const ChallengeAdminCreateInput(
+            gymId: 'gym-a',
+            actorUid: 'owner-1',
+            title: 'Invalid Variety',
+            description: 'Should fail',
+            goalType: AdminChallengeGoalType.deviceVariety,
+            targetDistinctDevices: 1,
+            xpReward: 100,
+            period: AdminChallengePeriod.weekly,
             periodValue: 2,
             year: 2026,
           ),

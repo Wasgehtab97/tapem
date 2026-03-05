@@ -34,4 +34,25 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
       deviceId: deviceId,
     );
   }
+
+  @override
+  Future<List<Challenge>> getActiveChallengesForUser({
+    required String gymId,
+    required String userId,
+    DateTime? at,
+  }) {
+    return _source.getActiveChallengesForUser(
+      gymId: gymId,
+      userId: userId,
+      at: at,
+    );
+  }
+
+  @override
+  Future<int> getChallengeProgress({
+    required Challenge challenge,
+    required String userId,
+  }) {
+    return _source.getChallengeProgress(challenge: challenge, userId: userId);
+  }
 }

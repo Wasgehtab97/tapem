@@ -2171,10 +2171,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get challengeAdminGoalTypeWorkoutFrequency => 'Workout frequency';
 
   @override
+  String get challengeAdminGoalTypeTotalReps => 'Total reps';
+
+  @override
+  String get challengeAdminGoalTypeTotalVolume => 'Total volume';
+
+  @override
+  String get challengeAdminGoalTypeDeviceVariety => 'Device variety';
+
+  @override
   String get challengeAdminFieldType => 'Type';
 
   @override
   String get challengeAdminFieldWorkoutCount => 'Workouts in period';
+
+  @override
+  String get challengeAdminFieldTargetReps => 'Target reps';
+
+  @override
+  String get challengeAdminFieldTargetVolume => 'Target volume (kg)';
+
+  @override
+  String get challengeAdminFieldTargetDistinctDevices => 'Different devices';
 
   @override
   String get challengeAdminFieldWorkoutWindow => 'Time window';
@@ -2184,6 +2202,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get challengeAdminWorkoutWindowFourWeeks => '4 calendar weeks';
+
+  @override
+  String get challengeAdminTemplatesTitle => 'Quick templates';
+
+  @override
+  String get challengeAdminTemplatesHint => 'A template pre-fills useful default values.';
 
   @override
   String get challengeTabActive => 'Active';
@@ -2210,6 +2234,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String challengeDetailGoalWorkoutFrequency(int count, int weeks) {
     return 'Goal: $count workouts in $weeks calendar weeks';
+  }
+
+  @override
+  String challengeDetailGoalTotalReps(int count) {
+    return 'Goal: $count reps';
+  }
+
+  @override
+  String challengeDetailGoalTotalVolume(int count) {
+    return 'Goal: $count kg volume';
+  }
+
+  @override
+  String challengeDetailGoalDeviceVariety(int count) {
+    return 'Goal: $count different devices';
+  }
+
+  @override
+  String challengeProgressValue(int current, int target) {
+    return 'Progress: $current/$target';
   }
 
   @override

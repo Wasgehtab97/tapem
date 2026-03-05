@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyC3ob7jwi7B-1uyPeRVFPLCLuo5y0TtVI8</string>
+	<string>AIzaSyAx1f8Y6CaRoWBEfmAJzdIIALd0Hfg6x9c</string>
 	<key>GCM_SENDER_ID</key>
-	<string>397332415566</string>
+	<string>380604353667</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.tapem.dev</string>
+	<string>com.example.tapem</string>
 	<key>PROJECT_ID</key>
-	<string>tap-em-dev</string>
+	<string>tap-em</string>
 	<key>STORAGE_BUCKET</key>
-	<string>tap-em-dev.firebasestorage.app</string>
+	<string>tap-em.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:397332415566:ios:99fd94ba38bfe0a3a12f1f</string>
+	<string>1:380604353667:ios:c8884bfd4535e40b229fb6</string>
 </dict>
 </plist>

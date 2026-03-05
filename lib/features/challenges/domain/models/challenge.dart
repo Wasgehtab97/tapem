@@ -1,6 +1,12 @@
 import "package:cloud_firestore/cloud_firestore.dart";
 
-enum ChallengeGoalType { deviceSets, workoutDays }
+enum ChallengeGoalType {
+  deviceSets,
+  workoutDays,
+  totalReps,
+  totalVolume,
+  deviceVariety,
+}
 
 extension ChallengeGoalTypeCodec on ChallengeGoalType {
   String toFirestoreValue() {
@@ -9,6 +15,12 @@ extension ChallengeGoalTypeCodec on ChallengeGoalType {
         return 'device_sets';
       case ChallengeGoalType.workoutDays:
         return 'workout_days';
+      case ChallengeGoalType.totalReps:
+        return 'total_reps';
+      case ChallengeGoalType.totalVolume:
+        return 'total_volume';
+      case ChallengeGoalType.deviceVariety:
+        return 'device_variety';
     }
   }
 }
@@ -19,6 +31,12 @@ ChallengeGoalType challengeGoalTypeFromFirestore(dynamic raw) {
     case 'workout_days':
     case 'workout_frequency':
       return ChallengeGoalType.workoutDays;
+    case 'total_reps':
+      return ChallengeGoalType.totalReps;
+    case 'total_volume':
+      return ChallengeGoalType.totalVolume;
+    case 'device_variety':
+      return ChallengeGoalType.deviceVariety;
     case 'device_sets':
     default:
       return ChallengeGoalType.deviceSets;
@@ -35,6 +53,9 @@ class Challenge {
   final List<String> deviceIds;
   final int minSets;
   final int targetWorkouts;
+  final int targetReps;
+  final int targetVolume;
+  final int targetDistinctDevices;
   final int durationWeeks;
   final int xpReward;
 
@@ -48,13 +69,29 @@ class Challenge {
     required this.deviceIds,
     this.minSets = 0,
     this.targetWorkouts = 0,
+    this.targetReps = 0,
+    this.targetVolume = 0,
+    this.targetDistinctDevices = 0,
     this.durationWeeks = 1,
     this.xpReward = 0,
   });
 
   bool get isWorkoutChallenge => goalType == ChallengeGoalType.workoutDays;
 
-  int get targetCount => isWorkoutChallenge ? targetWorkouts : minSets;
+  int get targetCount {
+    switch (goalType) {
+      case ChallengeGoalType.deviceSets:
+        return minSets;
+      case ChallengeGoalType.workoutDays:
+        return targetWorkouts;
+      case ChallengeGoalType.totalReps:
+        return targetReps;
+      case ChallengeGoalType.totalVolume:
+        return targetVolume;
+      case ChallengeGoalType.deviceVariety:
+        return targetDistinctDevices;
+    }
+  }
 
   Challenge copyWith({
     String? id,
@@ -66,6 +103,9 @@ class Challenge {
     List<String>? deviceIds,
     int? minSets,
     int? targetWorkouts,
+    int? targetReps,
+    int? targetVolume,
+    int? targetDistinctDevices,
     int? durationWeeks,
     int? xpReward,
   }) {
@@ -79,6 +119,10 @@ class Challenge {
       deviceIds: deviceIds ?? this.deviceIds,
       minSets: minSets ?? this.minSets,
       targetWorkouts: targetWorkouts ?? this.targetWorkouts,
+      targetReps: targetReps ?? this.targetReps,
+      targetVolume: targetVolume ?? this.targetVolume,
+      targetDistinctDevices:
+          targetDistinctDevices ?? this.targetDistinctDevices,
       durationWeeks: durationWeeks ?? this.durationWeeks,
       xpReward: xpReward ?? this.xpReward,
     );
@@ -98,6 +142,9 @@ class Challenge {
           .toList(),
       minSets: _parseInt(map['minSets']),
       targetWorkouts: _parseInt(map['targetWorkouts']),
+      targetReps: _parseInt(map['targetReps']),
+      targetVolume: _parseInt(map['targetVolume']),
+      targetDistinctDevices: _parseInt(map['targetDistinctDevices']),
       durationWeeks: parsedDurationWeeks <= 0 ? 1 : parsedDurationWeeks,
       xpReward: _parseInt(map['xpReward']),
     );
@@ -112,6 +159,9 @@ class Challenge {
     'deviceIds': deviceIds,
     'minSets': minSets,
     'targetWorkouts': targetWorkouts,
+    'targetReps': targetReps,
+    'targetVolume': targetVolume,
+    'targetDistinctDevices': targetDistinctDevices,
     'durationWeeks': durationWeeks,
     'xpReward': xpReward,
   };

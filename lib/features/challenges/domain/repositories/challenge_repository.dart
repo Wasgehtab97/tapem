@@ -11,4 +11,13 @@ abstract class ChallengeRepository {
   );
 
   Future<void> checkChallenges(String gymId, String userId, String deviceId);
+  Future<List<Challenge>> getActiveChallengesForUser({
+    required String gymId,
+    required String userId,
+    DateTime? at,
+  });
+  Future<int> getChallengeProgress({
+    required Challenge challenge,
+    required String userId,
+  });
 }
