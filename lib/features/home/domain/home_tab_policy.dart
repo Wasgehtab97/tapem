@@ -28,13 +28,10 @@ Set<HomeTabSlot> visibleHomeTabSlotsForAccessTier(UserAccessTier tier) {
     UserAccessTier.admin => const {
       HomeTabSlot.gym,
       HomeTabSlot.profile,
-      HomeTabSlot.nutrition,
       HomeTabSlot.workout,
-      HomeTabSlot.report,
-      HomeTabSlot.admin,
+      HomeTabSlot.owner,
       HomeTabSlot.rank,
       HomeTabSlot.deals,
-      HomeTabSlot.plan,
       HomeTabSlot.coaching,
     },
     UserAccessTier.gymOwner => const {

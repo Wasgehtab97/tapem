@@ -134,6 +134,7 @@ class AppRouter {
   static const nutritionSearch = '/nutrition/search';
   static const nutritionRecipes = '/nutrition/recipes';
   static const nutritionRecipeEdit = '/nutrition/recipes/edit';
+  static const nutritionWeight = '/nutrition/weight';
   static const adminDeals = '/admin/deals';
   static const manageManufacturers = '/admin/manufacturers'; // NEW
 

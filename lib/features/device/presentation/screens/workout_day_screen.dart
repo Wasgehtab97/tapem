@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/core/navigation/workout_flow_navigation.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/services/workout_session_coordinator.dart';
@@ -22,6 +23,7 @@ import 'package:tapem/bootstrap/navigation.dart';
 import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/ui/timer/active_workout_timer.dart';
+import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/device/providers/workout_entry_orchestrator_provider.dart';
@@ -63,12 +65,18 @@ class WorkoutDayScreen extends riverpod.ConsumerStatefulWidget {
 }
 
 class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
+  static const double _headerRestTimerWidth = 80;
+  static const double _headerTimerGap = 6;
   final ScrollController _scrollController = ScrollController();
   String? _sessionKey;
   bool _isInitializing = true;
   bool _ownsSession = false;
   String? _planId;
   String? _planName;
+  int? _globalRestSeconds;
+  String? _loadedRestTimerUserId;
+  final GlobalKey<SessionRestTimerState> _globalRestTimerKey =
+      GlobalKey<SessionRestTimerState>();
 
   Future<void> _handleSelection(WorkoutDeviceSelection selection) async {
     final auth = ref.read(authControllerProvider);
@@ -121,6 +129,62 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
     });
   }
 
+  String _globalRestPrefKey(String userId) => 'restTimer/$userId/global';
+
+  Future<void> _ensureGlobalRestTimerLoaded(String userId) async {
+    if (_loadedRestTimerUserId == userId) return;
+    _loadedRestTimerUserId = userId;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getInt(_globalRestPrefKey(userId));
+      if (!mounted) return;
+      setState(() => _globalRestSeconds = stored);
+      if (stored != null) {
+        _globalRestTimerKey.currentState?.applyInitialSeconds(stored);
+      }
+    } catch (_) {
+      // fail silently; timer just falls back to default
+    }
+  }
+
+  Future<void> _persistGlobalRestSeconds(int seconds) async {
+    setState(() => _globalRestSeconds = seconds);
+    final userId = ref.read(authControllerProvider).userId;
+    if (userId == null || userId.isEmpty) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_globalRestPrefKey(userId), seconds);
+    } catch (_) {
+      // ignore persistence failure
+    }
+  }
+
+  void _handleGlobalRestTimerInteraction() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final keypad = ref.read(overlayNumericKeypadControllerProvider);
+    if (keypad.isOpen) {
+      keypad.close();
+    }
+  }
+
+  Widget _buildHeaderRestTimer() {
+    return SizedBox(
+      width: _headerRestTimerWidth,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SessionRestTimer(
+          key: _globalRestTimerKey,
+          initialSeconds: _globalRestSeconds,
+          onInteraction: _handleGlobalRestTimerInteraction,
+          onDurationChanged: (seconds) => _persistGlobalRestSeconds(seconds),
+          compact: true,
+          inline: true,
+          showLabel: true,
+        ),
+      ),
+    );
+  }
+
   void _syncSessionKey(List<WorkoutDaySession> sessions) {
     final currentKey = _sessionKey;
     if (currentKey == null) return;
@@ -162,6 +226,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
       }
       return;
     }
+    await _ensureGlobalRestTimerLoaded(userId);
     final contextKey = WorkoutDayController.contextKey(
       gymId: widget.gymId,
       deviceId: widget.deviceId,
@@ -392,20 +457,23 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
         toolbarHeight: kToolbarHeight + 8,
         title: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize
-                .min, // Keep min to allow centering if space permits
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Flexible(
-                child: ActiveWorkoutTimer(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize
+                  .min, // Keep min to allow centering if space permits
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ActiveWorkoutTimer(
                   key: ValueKey('workoutDayTimer-${_sessionKey ?? 'global'}'),
                   compact: true,
                   padding: EdgeInsets.zero,
                   sessionKey: _sessionKey,
                 ),
-              ),
-            ],
+                const SizedBox(width: _headerTimerGap),
+                _buildHeaderRestTimer(),
+              ],
+            ),
           ),
         ),
         bottom: const PreferredSize(

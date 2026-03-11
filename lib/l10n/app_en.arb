@@ -1707,6 +1707,10 @@
   ,"@nutritionHomeCalendarTitle": {"description": "Nutrition home card title for calendar"}
   ,"nutritionHomeCalendarSubtitle": "See days under/on/over target."
   ,"@nutritionHomeCalendarSubtitle": {"description": "Nutrition home card subtitle for calendar"}
+  ,"nutritionHomeWeightTitle": "Weight"
+  ,"@nutritionHomeWeightTitle": {"description": "Nutrition home card title for weight"}
+  ,"nutritionHomeWeightSubtitle": "Log your daily weight and view the trend."
+  ,"@nutritionHomeWeightSubtitle": {"description": "Nutrition home card subtitle for weight"}
   ,"nutritionDayTitle": "Daily overview"
   ,"@nutritionDayTitle": {"description": "Title of the nutrition day screen"}
   ,"nutritionTargetLabel": "Target"
@@ -1819,6 +1823,48 @@
   ,"@nutritionGoalsSaved": {"description": "Snackbar text when goals are saved"}
   ,"nutritionGoalsSaveError": "Could not save goals."
   ,"@nutritionGoalsSaveError": {"description": "Snackbar text when goals saving failed"}
+  ,"nutritionWeightTitle": "Weight"
+  ,"@nutritionWeightTitle": {"description": "Title of the weight screen"}
+  ,"nutritionWeightHeroTitle": "Daily weight"
+  ,"@nutritionWeightHeroTitle": {"description": "Hero title on the weight screen"}
+  ,"nutritionWeightHeroSubtitle": "Quick entry right after weighing"
+  ,"@nutritionWeightHeroSubtitle": {"description": "Hero subtitle on the weight screen"}
+  ,"nutritionWeightTodayLabel": "Today · {date}"
+  ,"@nutritionWeightTodayLabel": {"description": "Today label with date on the weight screen", "placeholders": {"date": {}}}
+  ,"nutritionWeightInputLabel": "Enter weight"
+  ,"@nutritionWeightInputLabel": {"description": "Label for the weight input field"}
+  ,"nutritionWeightInputHint": "e.g. 82.4"
+  ,"@nutritionWeightInputHint": {"description": "Hint for the weight input field"}
+  ,"nutritionWeightSaveCta": "Save daily weight"
+  ,"@nutritionWeightSaveCta": {"description": "CTA to save daily weight"}
+  ,"nutritionWeightRangeWeek": "Week"
+  ,"@nutritionWeightRangeWeek": {"description": "Range label for weekly view"}
+  ,"nutritionWeightRangeMonth": "Month"
+  ,"@nutritionWeightRangeMonth": {"description": "Range label for monthly view"}
+  ,"nutritionWeightRangeQuarter": "Quarter"
+  ,"@nutritionWeightRangeQuarter": {"description": "Range label for quarterly view"}
+  ,"nutritionWeightRangeYear": "Year"
+  ,"@nutritionWeightRangeYear": {"description": "Range label for yearly view"}
+  ,"nutritionWeightTrendTitle": "Average trend"
+  ,"@nutritionWeightTrendTitle": {"description": "Title of the weight trend chart"}
+  ,"nutritionWeightTrendSubtitle": "Automatically aggregated from your entries"
+  ,"@nutritionWeightTrendSubtitle": {"description": "Subtitle of the weight trend chart"}
+  ,"nutritionWeightEmptyState": "No data yet. Enter your first weight above."
+  ,"@nutritionWeightEmptyState": {"description": "Empty-state text on the weight screen"}
+  ,"nutritionWeightAuthRequired": "Sign-in required to save weight."
+  ,"@nutritionWeightAuthRequired": {"description": "Hint when user is not logged in"}
+  ,"nutritionWeightLoadError": "Failed to load weight data."
+  ,"@nutritionWeightLoadError": {"description": "Error message for weight screen loading issues"}
+  ,"nutritionWeightInvalidInput": "Please enter a valid weight (e.g. 82.4)."
+  ,"@nutritionWeightInvalidInput": {"description": "Snackbar hint for invalid weight input"}
+  ,"nutritionWeightSaved": "Weight saved: {kg} kg"
+  ,"@nutritionWeightSaved": {"description": "Snackbar after weight has been saved", "placeholders": {"kg": {}}}
+  ,"nutritionWeightSaveError": "Could not save weight."
+  ,"@nutritionWeightSaveError": {"description": "Snackbar when saving weight fails"}
+  ,"nutritionWeightInputSemantics": "Input field for your daily body weight in kilograms"
+  ,"@nutritionWeightInputSemantics": {"description": "Semantics label for the weight input field"}
+  ,"nutritionWeightChartSemantics": "Chart showing average weight values over the selected period"
+  ,"@nutritionWeightChartSemantics": {"description": "Semantics label for the weight chart"}
   ,"nutritionGoalsCaloriesLabel": "Calories"
   ,"@nutritionGoalsCaloriesLabel": {"description": "Label for calories goal"}
   ,"nutritionGoalsProteinLabel": "Protein (g)"

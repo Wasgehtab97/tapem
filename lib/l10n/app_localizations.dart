@@ -3269,6 +3269,18 @@ abstract class AppLocalizations {
   /// **'See days under/on/over target.'**
   String get nutritionHomeCalendarSubtitle;
 
+  /// Nutrition home card title for weight
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get nutritionHomeWeightTitle;
+
+  /// Nutrition home card subtitle for weight
+  ///
+  /// In en, this message translates to:
+  /// **'Log your daily weight and view the trend.'**
+  String get nutritionHomeWeightSubtitle;
+
   /// Title of the nutrition day screen
   ///
   /// In en, this message translates to:
@@ -3604,6 +3616,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save goals.'**
   String get nutritionGoalsSaveError;
+
+  /// Title of the weight screen
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get nutritionWeightTitle;
+
+  /// Hero title on the weight screen
+  ///
+  /// In en, this message translates to:
+  /// **'Daily weight'**
+  String get nutritionWeightHeroTitle;
+
+  /// Hero subtitle on the weight screen
+  ///
+  /// In en, this message translates to:
+  /// **'Quick entry right after weighing'**
+  String get nutritionWeightHeroSubtitle;
+
+  /// Today label with date on the weight screen
+  ///
+  /// In en, this message translates to:
+  /// **'Today · {date}'**
+  String nutritionWeightTodayLabel(Object date);
+
+  /// Label for the weight input field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter weight'**
+  String get nutritionWeightInputLabel;
+
+  /// Hint for the weight input field
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 82.4'**
+  String get nutritionWeightInputHint;
+
+  /// CTA to save daily weight
+  ///
+  /// In en, this message translates to:
+  /// **'Save daily weight'**
+  String get nutritionWeightSaveCta;
+
+  /// Range label for weekly view
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get nutritionWeightRangeWeek;
+
+  /// Range label for monthly view
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get nutritionWeightRangeMonth;
+
+  /// Range label for quarterly view
+  ///
+  /// In en, this message translates to:
+  /// **'Quarter'**
+  String get nutritionWeightRangeQuarter;
+
+  /// Range label for yearly view
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get nutritionWeightRangeYear;
+
+  /// Title of the weight trend chart
+  ///
+  /// In en, this message translates to:
+  /// **'Average trend'**
+  String get nutritionWeightTrendTitle;
+
+  /// Subtitle of the weight trend chart
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically aggregated from your entries'**
+  String get nutritionWeightTrendSubtitle;
+
+  /// Empty-state text on the weight screen
+  ///
+  /// In en, this message translates to:
+  /// **'No data yet. Enter your first weight above.'**
+  String get nutritionWeightEmptyState;
+
+  /// Hint when user is not logged in
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in required to save weight.'**
+  String get nutritionWeightAuthRequired;
+
+  /// Error message for weight screen loading issues
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load weight data.'**
+  String get nutritionWeightLoadError;
+
+  /// Snackbar hint for invalid weight input
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid weight (e.g. 82.4).'**
+  String get nutritionWeightInvalidInput;
+
+  /// Snackbar after weight has been saved
+  ///
+  /// In en, this message translates to:
+  /// **'Weight saved: {kg} kg'**
+  String nutritionWeightSaved(Object kg);
+
+  /// Snackbar when saving weight fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save weight.'**
+  String get nutritionWeightSaveError;
+
+  /// Semantics label for the weight input field
+  ///
+  /// In en, this message translates to:
+  /// **'Input field for your daily body weight in kilograms'**
+  String get nutritionWeightInputSemantics;
+
+  /// Semantics label for the weight chart
+  ///
+  /// In en, this message translates to:
+  /// **'Chart showing average weight values over the selected period'**
+  String get nutritionWeightChartSemantics;
 
   /// Label for calories goal
   ///

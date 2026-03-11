@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tapem/core/analytics/analytics_service.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/providers/device_provider.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
@@ -12,7 +13,6 @@ import 'package:tapem/features/device/presentation/controllers/workout_day_contr
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/models/session_set_vm.dart';
 import 'package:tapem/features/device/presentation/widgets/machine_leaderboard_sheet.dart';
-import 'package:tapem/features/device/presentation/widgets/session_rest_timer.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
@@ -23,7 +23,6 @@ import 'package:tapem/core/widgets/brand_outline.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart'
     show showFeedbackDialog;
 import 'package:tapem/app_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 // Fixed dark palette for workout table cards (theme-independent)
 const _cardSurface = Color(0xFF07080D); // near‑black with slight blue hue
@@ -33,11 +32,13 @@ const _rowBgStart = Color(0xFF0C0E16);
 const _rowBgEnd = Color(0xFF090B12);
 const _strokeLight = Colors.transparent;
 const _strokeStrong = Colors.transparent;
+const _dropSetUiEnabled = false;
+const _setNumberColWidth = 30.0;
+const _tableColumnGap = 10.0;
 
-enum _SessionOptionAction {
-  remove,
-  replace,
-}
+enum _SessionOptionAction { remove, replace }
+
+enum _WorkoutToolType { leaderboard, history, bodyweight, feedback, note }
 
 /// Builder function used by [WorkoutDayScreen.sessionBuilder] to render
 /// sessions with the new table-style UI that mirrors the marketing website.
@@ -46,10 +47,7 @@ Widget buildWorkoutDayTableSessionCard(
   WorkoutDaySession session,
   int displayIndex,
 ) {
-  return WorkoutDayTableCard(
-    session: session,
-    displayIndex: displayIndex,
-  );
+  return WorkoutDayTableCard(session: session, displayIndex: displayIndex);
 }
 
 /// Workout-day specific session card with a compact, table-like layout.
@@ -78,6 +76,7 @@ class WorkoutDayTableCard extends riverpod.ConsumerStatefulWidget {
 class _WorkoutDayTableCardState
     extends riverpod.ConsumerState<WorkoutDayTableCard> {
   bool _didLoad = false;
+  bool _noteNudgeShown = false;
   final List<TextEditingController> _weightCtrls = [];
   final List<TextEditingController> _repsCtrls = [];
   final List<FocusNode> _weightFocusNodes = [];
@@ -90,9 +89,6 @@ class _WorkoutDayTableCardState
   bool _muteCtrls = false;
   int _lastFocusRequestId = -1;
   final Set<int> _expandedDropRows = <int>{};
-  int? _restSeconds;
-  final GlobalKey<SessionRestTimerState> _rowRestTimerKey =
-      GlobalKey<SessionRestTimerState>();
 
   DeviceProvider get _provider => widget.session.provider;
 
@@ -101,7 +97,6 @@ class _WorkoutDayTableCardState
     super.initState();
     _provider.addListener(_handleProviderChanged);
     _syncControllersFromProvider();
-    _loadPersistedRestSeconds();
   }
 
   @override
@@ -161,9 +156,7 @@ class _WorkoutDayTableCardState
         return Container(
           decoration: BoxDecoration(
             color: theme.scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.35),
@@ -190,8 +183,8 @@ class _WorkoutDayTableCardState
                 ListTile(
                   leading: const Icon(Icons.swap_horiz_rounded),
                   title: const Text('Übung austauschen'),
-                  onTap: () => Navigator.of(context)
-                      .pop(_SessionOptionAction.replace),
+                  onTap: () =>
+                      Navigator.of(context).pop(_SessionOptionAction.replace),
                 ),
                 ListTile(
                   leading: const Icon(Icons.delete_outline_rounded),
@@ -236,12 +229,10 @@ class _WorkoutDayTableCardState
   }
 
   Future<void> _replaceSession() async {
-    final selection =
-        await Navigator.of(context).push<WorkoutDeviceSelection>(
+    final selection = await Navigator.of(context).push<WorkoutDeviceSelection>(
       MaterialPageRoute(
-        builder: (ctx) => GymScreen(
-          onSelect: (result) => Navigator.of(ctx).pop(result),
-        ),
+        builder: (ctx) =>
+            GymScreen(onSelect: (result) => Navigator.of(ctx).pop(result)),
       ),
     );
     if (!mounted || selection == null) return;
@@ -322,13 +313,15 @@ class _WorkoutDayTableCardState
       final drops = _dropsFromSet(set);
       if (_weightCtrls[i].text != weight) {
         _weightCtrls[i].text = weight;
-        _weightCtrls[i].selection =
-            TextSelection.collapsed(offset: _weightCtrls[i].text.length);
+        _weightCtrls[i].selection = TextSelection.collapsed(
+          offset: _weightCtrls[i].text.length,
+        );
       }
       if (_repsCtrls[i].text != reps) {
         _repsCtrls[i].text = reps;
-        _repsCtrls[i].selection =
-            TextSelection.collapsed(offset: _repsCtrls[i].text.length);
+        _repsCtrls[i].selection = TextSelection.collapsed(
+          offset: _repsCtrls[i].text.length,
+        );
       }
 
       final dropWeightRow = _dropWeightCtrls[i];
@@ -367,13 +360,15 @@ class _WorkoutDayTableCardState
         final dropReps = drops[d]['reps'] ?? '';
         if (dropWeightRow[d].text != dropWeight) {
           dropWeightRow[d].text = dropWeight;
-          dropWeightRow[d].selection =
-              TextSelection.collapsed(offset: dropWeightRow[d].text.length);
+          dropWeightRow[d].selection = TextSelection.collapsed(
+            offset: dropWeightRow[d].text.length,
+          );
         }
         if (dropRepsRow[d].text != dropReps) {
           dropRepsRow[d].text = dropReps;
-          dropRepsRow[d].selection =
-              TextSelection.collapsed(offset: dropRepsRow[d].text.length);
+          dropRepsRow[d].selection = TextSelection.collapsed(
+            offset: dropRepsRow[d].text.length,
+          );
         }
       }
     }
@@ -390,11 +385,7 @@ class _WorkoutDayTableCardState
     if (index >= _provider.sets.length) return;
     final set = _provider.sets[index];
     final isBw = set['isBodyweight'] == true;
-    _provider.updateSet(
-      index,
-      weight: controller.text,
-      isBodyweight: isBw,
-    );
+    _provider.updateSet(index, weight: controller.text, isBodyweight: isBw);
   }
 
   void _handleRepsChanged(TextEditingController controller) {
@@ -412,11 +403,7 @@ class _WorkoutDayTableCardState
     final index = indices.$1;
     final dropIndex = indices.$2;
     if (index >= _provider.sets.length) return;
-    _provider.updateDrop(
-      index,
-      dropIndex,
-      weight: controller.text,
-    );
+    _provider.updateDrop(index, dropIndex, weight: controller.text);
   }
 
   void _handleDropRepsChanged(TextEditingController controller) {
@@ -426,19 +413,17 @@ class _WorkoutDayTableCardState
     final index = indices.$1;
     final dropIndex = indices.$2;
     if (index >= _provider.sets.length) return;
-    _provider.updateDrop(
-      index,
-      dropIndex,
-      reps: controller.text,
-    );
+    _provider.updateDrop(index, dropIndex, reps: controller.text);
   }
 
   Future<void> _ensureSessionLoaded() async {
     if (_didLoad) return;
     _didLoad = true;
 
-    final container =
-        riverpod.ProviderScope.containerOf(context, listen: false);
+    final container = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
     final auth = container.read(authControllerProvider);
     final settings = container.read(settingsProvider);
 
@@ -456,9 +441,10 @@ class _WorkoutDayTableCardState
   }
 
   void _focusSession() {
-    final controller =
-        riverpod.ProviderScope.containerOf(context, listen: false)
-            .read(workoutDayControllerProvider);
+    final controller = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(workoutDayControllerProvider);
     controller.focusSession(widget.session.key);
   }
 
@@ -509,8 +495,10 @@ class _WorkoutDayTableCardState
     _ensureRowVisible(setIndex);
     _focusSession();
 
-    final container =
-        riverpod.ProviderScope.containerOf(context, listen: false);
+    final container = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
     final dayController = container.read(workoutDayControllerProvider);
     final prov = dayController.providerForKey(widget.session.key);
     if (prov == null) return;
@@ -537,8 +525,7 @@ class _WorkoutDayTableCardState
         break;
       case DeviceSetFieldFocus.dropWeight:
         if (setIndex < 0 || setIndex >= _dropWeightCtrls.length) return;
-        if (dropIndex < 0 ||
-            dropIndex >= _dropWeightCtrls[setIndex].length) {
+        if (dropIndex < 0 || dropIndex >= _dropWeightCtrls[setIndex].length) {
           return;
         }
         controller = _dropWeightCtrls[setIndex][dropIndex];
@@ -557,7 +544,8 @@ class _WorkoutDayTableCardState
     _lastFocusRequestId = prov.requestFocus(
       index: setIndex,
       field: field,
-      dropIndex: field == DeviceSetFieldFocus.dropWeight ||
+      dropIndex:
+          field == DeviceSetFieldFocus.dropWeight ||
               field == DeviceSetFieldFocus.dropReps
           ? dropIndex
           : null,
@@ -567,15 +555,16 @@ class _WorkoutDayTableCardState
       focusNode.requestFocus();
     }
 
-    final keypad =
-        container.read(overlayNumericKeypadControllerProvider);
+    final keypad = container.read(overlayNumericKeypadControllerProvider);
     keypad.openFor(controller, allowDecimal: true);
   }
 
   void _toggleDone(int index) {
     _focusSession();
-    final container =
-        riverpod.ProviderScope.containerOf(context, listen: false);
+    final container = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
     final dayController = container.read(workoutDayControllerProvider);
     final prov = dayController.providerForKey(widget.session.key);
     if (prov == null) return;
@@ -584,15 +573,46 @@ class _WorkoutDayTableCardState
     if (!ok) {
       return;
     }
+    _maybeShowNoteNudge(prov, setIndex: index);
 
     prov.clearFocus();
     container.read(overlayNumericKeypadControllerProvider).close();
   }
 
+  void _maybeShowNoteNudge(DeviceProvider prov, {required int setIndex}) {
+    if (!mounted || _noteNudgeShown) return;
+    if (prov.note.trim().isNotEmpty) return;
+    if (setIndex < 0 || setIndex >= prov.sets.length) return;
+    final doneValue = prov.sets[setIndex]['done'];
+    final isDone = doneValue == true || doneValue == 'true';
+    if (!isDone) return;
+
+    _noteNudgeShown = true;
+    _logToolsEvent(action: 'show_note_nudge');
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.showSnackBar(
+      SnackBar(
+        content: const Text('Tipp: Hinterlege eine kurze Übungsnotiz.'),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'Notiz',
+          onPressed: () {
+            _logToolsEvent(action: 'open_note_from_nudge');
+            _openNote(prov);
+          },
+        ),
+      ),
+    );
+  }
+
   void _openDropEditor(int index) {
+    if (!_dropSetUiEnabled) return;
     _focusSession();
-    final container =
-        riverpod.ProviderScope.containerOf(context, listen: false);
+    final container = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
     final dayController = container.read(workoutDayControllerProvider);
     final prov = dayController.providerForKey(widget.session.key);
     if (prov == null) return;
@@ -652,9 +672,10 @@ class _WorkoutDayTableCardState
 
     String? exerciseName = widget.session.exerciseName;
     if (exerciseName == null && (deviceProv.device?.isMulti ?? false)) {
-      final exProv =
-          riverpod.ProviderScope.containerOf(context, listen: false)
-              .read(exerciseProvider);
+      final exProv = riverpod.ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(exerciseProvider);
       exerciseName = exProv.exercises
           .firstWhere(
             (e) => e.id == widget.session.exerciseId,
@@ -690,28 +711,6 @@ class _WorkoutDayTableCardState
       ref,
       gymId: widget.session.gymId,
       deviceId: widget.session.deviceId,
-    );
-  }
-
-  void _handleRestTimerInteraction() {
-    _focusSession();
-    final keypad =
-        riverpod.ProviderScope.containerOf(context, listen: false)
-            .read(overlayNumericKeypadControllerProvider);
-    if (keypad.isOpen) {
-      keypad.close();
-    }
-  }
-
-  Widget _buildRestTimerChip({bool inline = false}) {
-    return SessionRestTimer(
-      key: _rowRestTimerKey,
-      initialSeconds: _restSeconds,
-      onInteraction: _handleRestTimerInteraction,
-      onDurationChanged: (secs) => _persistRestSeconds(secs),
-      compact: true,
-      inline: inline,
-      showLabel: true,
     );
   }
 
@@ -778,10 +777,96 @@ class _WorkoutDayTableCardState
     );
   }
 
-  String _resolveExerciseTitle(
-    DeviceProvider prov,
-    AppLocalizations loc,
-  ) {
+  void _openToolsSheet({required DeviceProvider prov, required String title}) {
+    _focusSession();
+    FocusManager.instance.primaryFocus?.unfocus();
+    final keypad = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(overlayNumericKeypadControllerProvider);
+    if (keypad.isOpen) {
+      keypad.close();
+    }
+    final theme = Theme.of(context);
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
+    _logToolsEvent(action: 'open_sheet');
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.7),
+      builder: (sheetContext) {
+        void closeAndRun(_WorkoutToolType tool, VoidCallback action) {
+          Navigator.of(sheetContext).pop();
+          _logToolsEvent(action: 'open_tool', tool: tool);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            action();
+          });
+        }
+
+        final onOpenLeaderboardAction = prov.device == null
+            ? null
+            : () => closeAndRun(
+                _WorkoutToolType.leaderboard,
+                () => _openLeaderboard(prov, title),
+              );
+        final onOpenHistoryAction = prov.device == null
+            ? null
+            : () => closeAndRun(
+                _WorkoutToolType.history,
+                () => _openHistory(prov),
+              );
+        void onToggleBodyweightAction() {
+          closeAndRun(
+            _WorkoutToolType.bodyweight,
+            () => _toggleBodyweight(prov),
+          );
+        }
+
+        void onFeedbackAction() {
+          closeAndRun(_WorkoutToolType.feedback, _handleFeedback);
+        }
+
+        void onOpenNoteAction() {
+          closeAndRun(_WorkoutToolType.note, () => _openNote(prov));
+        }
+
+        return _WorkoutToolsSheet(
+          brandColor: brandColor,
+          isBodyweightMode: prov.isBodyweightMode,
+          level: prov.level,
+          xp: prov.xp,
+          hasNote: prov.note.trim().isNotEmpty,
+          onOpenLeaderboard: onOpenLeaderboardAction,
+          onOpenHistory: onOpenHistoryAction,
+          onToggleBodyweight: onToggleBodyweightAction,
+          onFeedback: onFeedbackAction,
+          onOpenNote: onOpenNoteAction,
+        );
+      },
+    );
+  }
+
+  void _logToolsEvent({required String action, _WorkoutToolType? tool}) {
+    unawaited(
+      AnalyticsService.logEvent(
+        'workout_tools_interaction',
+        parameters: {
+          'action': action,
+          if (tool != null) 'tool': tool.name,
+          'gym_id': widget.session.gymId,
+          'device_id': widget.session.deviceId,
+          'exercise_id': widget.session.exerciseId,
+        },
+      ),
+    );
+  }
+
+  String _resolveExerciseTitle(DeviceProvider prov, AppLocalizations loc) {
     final device = prov.device;
     if (device == null) {
       return loc.newSessionTitle;
@@ -793,47 +878,17 @@ class _WorkoutDayTableCardState
         widget.session.exerciseName!.isNotEmpty) {
       return widget.session.exerciseName!;
     }
-    final availableExercises =
-        riverpod.ProviderScope.containerOf(context, listen: false)
-            .read(exerciseProvider)
-            .exercises;
-    final match =
-        availableExercises.where((e) => e.id == widget.session.exerciseId);
+    final availableExercises = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(exerciseProvider).exercises;
+    final match = availableExercises.where(
+      (e) => e.id == widget.session.exerciseId,
+    );
     if (match.isNotEmpty) {
       return match.first.name;
     }
     return device.name;
-  }
-
-  String _restPrefKey() {
-    final exerciseKey = widget.session.exerciseId.isNotEmpty
-        ? widget.session.exerciseId
-        : widget.session.deviceId;
-    return 'restTimer/${widget.session.userId}/$exerciseKey';
-  }
-
-  Future<void> _loadPersistedRestSeconds() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final stored = prefs.getInt(_restPrefKey());
-      if (!mounted) return;
-      setState(() => _restSeconds = stored);
-      if (stored != null) {
-        _rowRestTimerKey.currentState?.applyInitialSeconds(stored);
-      }
-    } catch (_) {
-      // fail silently; timer just falls back to default
-    }
-  }
-
-  Future<void> _persistRestSeconds(int seconds) async {
-    setState(() => _restSeconds = seconds);
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_restPrefKey(), seconds);
-    } catch (_) {
-      // ignore persistence failure
-    }
   }
 
   @override
@@ -847,17 +902,19 @@ class _WorkoutDayTableCardState
     if (prov.isLoading || prov.device == null) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 96),
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
     final title = _resolveExerciseTitle(prov, loc);
     final deviceDescription = prov.device?.description;
+    final activeToolSignals =
+        (prov.isBodyweightMode ? 1 : 0) + (prov.note.trim().isNotEmpty ? 1 : 0);
+    final compactToolsTrigger = MediaQuery.sizeOf(context).width <= 390;
 
-    final snapshot =
-        prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
+    final snapshot = prov.sessionSnapshots.isNotEmpty
+        ? prov.sessionSnapshots.first
+        : null;
     late final List<SessionSetVM> lastSets;
     if (snapshot != null && snapshot.sets.isNotEmpty) {
       lastSets = mapSnapshotToVM(snapshot);
@@ -896,6 +953,7 @@ class _WorkoutDayTableCardState
           }
           break;
         case DeviceSetFieldFocus.dropWeight:
+          if (!_dropSetUiEnabled) break;
           final dropIndex = prov.focusedDropIndex ?? 0;
           if (focusIndex < _dropWeightCtrls.length &&
               dropIndex >= 0 &&
@@ -905,6 +963,7 @@ class _WorkoutDayTableCardState
           }
           break;
         case DeviceSetFieldFocus.dropReps:
+          if (!_dropSetUiEnabled) break;
           final dropIndex = prov.focusedDropIndex ?? 0;
           if (focusIndex < _dropRepsCtrls.length &&
               dropIndex >= 0 &&
@@ -960,10 +1019,7 @@ class _WorkoutDayTableCardState
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [
-                      brandColor,
-                      brandColor.withOpacity(0.7),
-                    ],
+                    colors: [brandColor, brandColor.withOpacity(0.7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -1006,8 +1062,6 @@ class _WorkoutDayTableCardState
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        _buildRestTimerChip(inline: true),
                       ],
                     ),
                     if (deviceDescription != null &&
@@ -1024,6 +1078,13 @@ class _WorkoutDayTableCardState
                       ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              _WorkoutToolsTriggerButton(
+                isHighlighted: activeToolSignals > 0,
+                activeCount: activeToolSignals,
+                compact: compactToolsTrigger,
+                onTap: () => _openToolsSheet(prov: prov, title: title),
               ),
               SizedBox(
                 height: 26,
@@ -1042,45 +1103,20 @@ class _WorkoutDayTableCardState
             ],
           ),
           const SizedBox(height: 8),
-          // Swipeable content: table + actions
-          _WorkoutSwipeableSessionContent(
-            setsPage: _buildTableSection(
-              context: context,
-              loc: loc,
-              prov: prov,
-              lastSets: lastSets,
-            ),
-            actionsPage: _WorkoutActionsGrid(
-              prov: prov,
-              onOpenLeaderboard: prov.device == null
-                  ? null
-                  : () => _openLeaderboard(prov, title),
-              onOpenHistory:
-                  prov.device == null ? null : () => _openHistory(prov),
-              onToggleBodyweight: () => _toggleBodyweight(prov),
-              onFeedback: _handleFeedback,
-              onOpenNote: () => _openNote(prov),
-            ),
-            visibleRowCount: prov.sets.length +
-                prov.sets.asMap().entries.fold<int>(0, (count, entry) {
-                  final idx = entry.key;
-                  final drops = _dropsFromSet(entry.value);
-                  if (_expandedDropRows.contains(idx) || drops.isNotEmpty) {
-                    return count + (drops.isEmpty ? 1 : drops.length);
-                  }
-                  return count;
-                }),
-            trailing: null,
+          _buildTableSection(
+            context: context,
+            loc: loc,
+            prov: prov,
+            lastSets: lastSets,
           ),
           const SizedBox(height: 4),
           Center(
             child: GestureDetector(
               onTap: () {
                 _focusSession();
-                final prov =
-                    ref.read(workoutDayControllerProvider).providerForKey(
-                          widget.session.key,
-                        );
+                final prov = ref
+                    .read(workoutDayControllerProvider)
+                    .providerForKey(widget.session.key);
                 if (prov == null) return;
                 prov.addSet();
               },
@@ -1119,8 +1155,8 @@ class _WorkoutDayTableCardState
         child: Text(
           'Noch keine Sätze angelegt.',
           style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.white.withOpacity(0.72),
-              ),
+            color: Colors.white.withOpacity(0.72),
+          ),
         ),
       );
     }
@@ -1131,6 +1167,7 @@ class _WorkoutDayTableCardState
       letterSpacing: 0.1,
       color: Colors.white.withOpacity(0.62),
     );
+    final headerTrailingWidth = _dropSetUiEnabled ? 76.0 : 38.0;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -1155,59 +1192,57 @@ class _WorkoutDayTableCardState
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   SizedBox(
-                    width: 28,
-                    child: Text(
-                      'Satz',
-                      style: headerStyle,
-                    ),
+                    width: _setNumberColWidth,
+                    child: Text('Satz', style: headerStyle),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: _tableColumnGap),
                   Expanded(
                     flex: 3,
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Vorher',
-                        style: headerStyle,
-                      ),
+                      child: Text('Vorher', style: headerStyle),
                     ),
                   ),
                   Expanded(
                     flex: 2,
                     child: Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: Alignment.center,
                       child: Text(
                         'kg',
                         style: headerStyle,
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),
                   Expanded(
                     flex: 2,
                     child: Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: Alignment.center,
                       child: Text(
                         loc.tableHeaderReps,
                         style: headerStyle,
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 52),
+                  SizedBox(width: headerTrailingWidth),
                 ],
               ),
             ),
             const SizedBox(height: 2),
             for (var i = 0; i < sets.length; i++)
               () {
-                final dropsForSet = _dropsFromSet(sets[i]);
-                final dropExpanded = _expandedDropRows.contains(i) ||
-                    dropsForSet.isNotEmpty;
+                final dropsForSet = _dropSetUiEnabled
+                    ? _dropsFromSet(sets[i])
+                    : const <Map<String, String>>[];
+                final dropExpanded =
+                    _dropSetUiEnabled &&
+                    (_expandedDropRows.contains(i) || dropsForSet.isNotEmpty);
                 final dropRows = <_DropRowView>[
                   for (var d = 0; d < dropsForSet.length; d++)
                     _DropRowView(
@@ -1218,12 +1253,12 @@ class _WorkoutDayTableCardState
                       repsFocusNode: _dropRepsFocusNodes[i][d],
                       isWeightFocused:
                           prov.focusedField == DeviceSetFieldFocus.dropWeight &&
-                              prov.focusedIndex == i &&
-                              (prov.focusedDropIndex ?? 0) == d,
+                          prov.focusedIndex == i &&
+                          (prov.focusedDropIndex ?? 0) == d,
                       isRepsFocused:
                           prov.focusedField == DeviceSetFieldFocus.dropReps &&
-                              prov.focusedIndex == i &&
-                              (prov.focusedDropIndex ?? 0) == d,
+                          prov.focusedIndex == i &&
+                          (prov.focusedDropIndex ?? 0) == d,
                       onTapWeight: () {
                         _openKeypadForField(
                           setIndex: i,
@@ -1268,10 +1303,7 @@ class _WorkoutDayTableCardState
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     color: Colors.red.withOpacity(0.18),
-                    child: const Icon(
-                      Icons.delete,
-                      semanticLabel: 'Löschen',
-                    ),
+                    child: const Icon(Icons.delete, semanticLabel: 'Löschen'),
                   ),
                   onDismissed: (_) {
                     final removed = Map<String, dynamic>.from(sets[i]);
@@ -1307,10 +1339,11 @@ class _WorkoutDayTableCardState
                     previous: i < lastSets.length ? lastSets[i] : null,
                     isWeightFocused:
                         prov.focusedField == DeviceSetFieldFocus.weight &&
-                            prov.focusedIndex == i,
+                        prov.focusedIndex == i,
                     isRepsFocused:
                         prov.focusedField == DeviceSetFieldFocus.reps &&
-                            prov.focusedIndex == i,
+                        prov.focusedIndex == i,
+                    showDropControl: _dropSetUiEnabled,
                     dropExpanded: dropExpanded,
                     onTapWeight: () {
                       _openKeypadForField(
@@ -1322,19 +1355,19 @@ class _WorkoutDayTableCardState
                       _openKeypadForField(
                         setIndex: i,
                         field: DeviceSetFieldFocus.reps,
-                  );
-                },
-                onToggleDone: () => _toggleDone(i),
-                onOpenDrop: () => _openDropEditor(i),
-                weightController: _weightCtrls[i],
-                repsController: _repsCtrls[i],
-                weightFocusNode: _weightFocusNodes[i],
-                repsFocusNode: _repsFocusNodes[i],
-                dropRows: dropRows,
-                rowKey: _rowKeys[i],
-              ),
-            );
-          }(),
+                      );
+                    },
+                    onToggleDone: () => _toggleDone(i),
+                    onOpenDrop: () => _openDropEditor(i),
+                    weightController: _weightCtrls[i],
+                    repsController: _repsCtrls[i],
+                    weightFocusNode: _weightFocusNodes[i],
+                    repsFocusNode: _repsFocusNodes[i],
+                    dropRows: dropRows,
+                    rowKey: _rowKeys[i],
+                  ),
+                );
+              }(),
           ],
         ),
       ),
@@ -1414,11 +1447,11 @@ class _TableInputCellState extends State<_TableInputCell> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final controller = widget.controller;
-    final display =
-        controller.text.trim().isEmpty ? widget.placeholder : controller.text.trim();
+    final display = controller.text.trim().isEmpty
+        ? widget.placeholder
+        : controller.text.trim();
     final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ??
-        theme.colorScheme.primary;
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.primary;
     final fillColor = widget.isFocused
         ? brandColor.withOpacity(0.08)
         : Colors.white.withOpacity(0.02);
@@ -1428,11 +1461,11 @@ class _TableInputCellState extends State<_TableInputCell> {
       onTap: widget.onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 6),
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: fillColor,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1471,6 +1504,7 @@ class _WorkoutTableRow extends StatelessWidget {
     required this.previous,
     required this.isWeightFocused,
     required this.isRepsFocused,
+    required this.showDropControl,
     required this.dropExpanded,
     required this.onTapWeight,
     required this.onTapReps,
@@ -1489,6 +1523,7 @@ class _WorkoutTableRow extends StatelessWidget {
   final SessionSetVM? previous;
   final bool isWeightFocused;
   final bool isRepsFocused;
+  final bool showDropControl;
   final bool dropExpanded;
   final VoidCallback onTapWeight;
   final VoidCallback onTapReps;
@@ -1518,8 +1553,7 @@ class _WorkoutTableRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ??
-        theme.colorScheme.primary;
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.primary;
 
     final doneVal = set['done'];
     final done = doneVal == true || doneVal == 'true';
@@ -1548,29 +1582,20 @@ class _WorkoutTableRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _strokeLight, width: 0.6),
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               SizedBox(
-                width: 30,
-                child: Text(
-                  '${index + 1}',
-                  style: secondaryStyle,
-                ),
+                width: _setNumberColWidth,
+                child: Text('${index + 1}', style: secondaryStyle),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: _tableColumnGap),
               Expanded(
                 flex: 3,
-                child: Text(
-                  _formatPrevious(previous),
-                  style: secondaryStyle,
-                ),
+                child: Text(_formatPrevious(previous), style: secondaryStyle),
               ),
               Expanded(
                 flex: 2,
@@ -1595,16 +1620,18 @@ class _WorkoutTableRow extends StatelessWidget {
                   onTap: onTapReps,
                 ),
               ),
-              const SizedBox(width: 6),
-              _WorkoutRoundButton(
-                icon: dropExpanded
-                    ? Icons.keyboard_arrow_up_rounded
-                    : Icons.keyboard_arrow_down_rounded,
-                semantics: 'Dropsätze',
-                filled: false,
-                color: brandColor,
-                onTap: onOpenDrop,
-              ),
+              if (showDropControl) ...[
+                const SizedBox(width: 6),
+                _WorkoutRoundButton(
+                  icon: dropExpanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  semantics: 'Dropsätze',
+                  filled: false,
+                  color: brandColor,
+                  onTap: onOpenDrop,
+                ),
+              ],
               const SizedBox(width: 6),
               _WorkoutRoundButton(
                 icon: Icons.check_rounded,
@@ -1653,29 +1680,14 @@ class _WorkoutTableRow extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         color: Colors.red.withOpacity(0.18),
-        child: const Icon(
-          Icons.delete,
-          semanticLabel: 'Dropsatz löschen',
-        ),
+        child: const Icon(Icons.delete, semanticLabel: 'Dropsatz löschen'),
       ),
       onDismissed: (_) => drop.onRemove(),
       child: Row(
         children: [
-          SizedBox(
-            width: 30,
-            child: Text(
-              '↘︎',
-              style: secondaryStyle,
-            ),
-          ),
+          SizedBox(width: 30, child: Text('↘︎', style: secondaryStyle)),
           const SizedBox(width: 10),
-          Expanded(
-            flex: 3,
-            child: Text(
-              '-',
-              style: secondaryStyle,
-            ),
-          ),
+          Expanded(flex: 3, child: Text('-', style: secondaryStyle)),
           Expanded(
             flex: 2,
             child: _TableInputCell(
@@ -1780,14 +1792,12 @@ class _WorkoutRoundButtonState extends State<_WorkoutRoundButton> {
     final bgColor = isFilled
         ? widget.color
         : (isEnabled
-            ? Colors.white.withOpacity(0.12)
-            : Colors.white.withOpacity(0.06));
+              ? Colors.white.withOpacity(0.12)
+              : Colors.white.withOpacity(0.06));
 
     final iconColor = isFilled
         ? Colors.white
-        : (isEnabled
-            ? Colors.white
-            : Colors.white.withOpacity(0.4));
+        : (isEnabled ? Colors.white : Colors.white.withOpacity(0.4));
 
     return Semantics(
       label: widget.semantics,
@@ -1795,8 +1805,7 @@ class _WorkoutRoundButtonState extends State<_WorkoutRoundButton> {
       child: GestureDetector(
         onTapDown: isEnabled ? (_) => setState(() => _pressed = true) : null,
         onTapUp: isEnabled ? (_) => setState(() => _pressed = false) : null,
-        onTapCancel:
-            isEnabled ? () => setState(() => _pressed = false) : null,
+        onTapCancel: isEnabled ? () => setState(() => _pressed = false) : null,
         onTap: widget.onTap,
         child: AnimatedScale(
           scale: scale,
@@ -1820,11 +1829,7 @@ class _WorkoutRoundButtonState extends State<_WorkoutRoundButton> {
                   : [],
               border: null,
             ),
-            child: Icon(
-              widget.icon,
-              color: iconColor,
-              size: size * 0.5,
-            ),
+            child: Icon(widget.icon, color: iconColor, size: size * 0.5),
           ),
         ),
       ),
@@ -1832,374 +1837,431 @@ class _WorkoutRoundButtonState extends State<_WorkoutRoundButton> {
   }
 }
 
-class _WorkoutSwipeableSessionContent extends StatefulWidget {
-  const _WorkoutSwipeableSessionContent({
-    required this.setsPage,
-    required this.actionsPage,
-    required this.visibleRowCount,
-    this.trailing,
+class _WorkoutToolsTriggerButton extends StatelessWidget {
+  const _WorkoutToolsTriggerButton({
+    required this.onTap,
+    this.isHighlighted = false,
+    this.activeCount = 0,
+    this.compact = false,
   });
 
-  final Widget setsPage;
-  final Widget actionsPage;
-  final int visibleRowCount;
-  final Widget? trailing;
-
-  @override
-  State<_WorkoutSwipeableSessionContent> createState() =>
-      _WorkoutSwipeableSessionContentState();
-}
-
-class _WorkoutSwipeableSessionContentState
-    extends State<_WorkoutSwipeableSessionContent>
-    with SingleTickerProviderStateMixin {
-  int _currentPage = 0;
-  double _dragAccum = 0;
-
-  void _goToPage(int target) {
-    if (target == _currentPage) return;
-    setState(() {
-      _currentPage = target;
-    });
-  }
+  final VoidCallback onTap;
+  final bool isHighlighted;
+  final int activeCount;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ??
-        theme.colorScheme.secondary;
+        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.primary;
+    final iconSize = compact ? 13.0 : 14.0;
+    final horizontalPadding = compact ? 7.0 : 8.0;
+    final verticalPadding = compact ? 4.0 : 5.0;
+    final fontSize = compact ? 10.0 : 10.5;
+    final spacing = compact ? 4.0 : 5.0;
 
-    const rowHeight = 36.0;
-    const baseHeight = 70.0;
-    final setsHeight =
-        baseHeight + widget.visibleRowCount.clamp(1, 20) * rowHeight;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Stack(
+      clipBehavior: Clip.none,
       children: [
-        SizedBox(
-          height: 32,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _goToPage(_currentPage == 0 ? 1 : 0),
-                onHorizontalDragStart: (_) => _dragAccum = 0,
-                onHorizontalDragUpdate: (details) {
-                  _dragAccum += details.delta.dx;
-                  const threshold = 24.0;
-                  if (_dragAccum.abs() >= threshold) {
-                    _goToPage(_dragAccum < 0 ? 1 : 0);
-                    _dragAccum = 0;
-                  }
-                },
-                onHorizontalDragEnd: (_) => _dragAccum = 0,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 18, minWidth: 88),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _WorkoutPageIndicator(
-                        isActive: _currentPage == 0,
-                        color: brandColor,
-                      ),
-                      const SizedBox(width: 8),
-                      _WorkoutPageIndicator(
-                        isActive: _currentPage == 1,
-                        color: brandColor,
-                      ),
-                    ],
-                  ),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: isHighlighted
+                    ? brandColor.withOpacity(0.18)
+                    : Colors.white.withOpacity(0.04),
+                border: Border.all(
+                  color: isHighlighted
+                      ? brandColor.withOpacity(0.5)
+                      : Colors.white.withOpacity(0.1),
+                  width: 0.9,
                 ),
               ),
-              if (widget.trailing != null)
-                Positioned(
-                  right: 0,
-                  child: widget.trailing!,
-                ),
-            ],
-          ),
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          alignment: Alignment.topCenter,
-          child: SizedBox(
-            height: _currentPage == 0 ? setsHeight : 240,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeOutCubic,
-              transitionBuilder: (child, animation) {
-                final offsetTween = Tween<Offset>(
-                  begin: Offset(_currentPage == 0 ? -0.06 : 0.06, 0),
-                  end: Offset.zero,
-                );
-                return SlideTransition(
-                  position: offsetTween.animate(animation),
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: child,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.tune_rounded,
+                    size: iconSize,
+                    color: isHighlighted
+                        ? brandColor
+                        : Colors.white.withOpacity(0.75),
                   ),
-                );
-              },
-              child: _currentPage == 0
-                  ? KeyedSubtree(
-                      key: const ValueKey('sets'),
-                      child: SingleChildScrollView(
-                        physics: const NeverScrollableScrollPhysics(),
-                        child: widget.setsPage,
-                      ),
-                    )
-                  : KeyedSubtree(
-                      key: const ValueKey('actions'),
-                      child: SingleChildScrollView(
-                        physics: const ClampingScrollPhysics(),
-                        child: widget.actionsPage,
-                      ),
+                  SizedBox(width: spacing),
+                  Text(
+                    'Mehr',
+                    style: GoogleFonts.inter(
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
+                      color: isHighlighted
+                          ? brandColor
+                          : Colors.white.withOpacity(0.78),
                     ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
+        if (activeCount > 0)
+          Positioned(
+            top: -5,
+            right: -6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                color: brandColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: brandColor.withOpacity(0.8),
+                    blurRadius: 7,
+                    spreadRadius: 0.4,
+                  ),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                activeCount > 9 ? '9+' : '$activeCount',
+                style: GoogleFonts.inter(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
 }
 
-class _WorkoutPageIndicator extends StatelessWidget {
-  const _WorkoutPageIndicator({
-    required this.isActive,
-    required this.color,
+class _WorkoutToolsSheet extends StatelessWidget {
+  const _WorkoutToolsSheet({
+    required this.brandColor,
+    required this.isBodyweightMode,
+    required this.level,
+    required this.xp,
+    required this.hasNote,
+    required this.onOpenLeaderboard,
+    required this.onOpenHistory,
+    required this.onToggleBodyweight,
+    required this.onFeedback,
+    required this.onOpenNote,
   });
 
-  final bool isActive;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      width: isActive ? 24 : 8,
-      height: 8,
-      decoration: BoxDecoration(
-        color: isActive ? color : color.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(4),
-      ),
-    );
-  }
-}
-
-class _WorkoutActionsGrid extends StatelessWidget {
-  const _WorkoutActionsGrid({
-    required this.prov,
-    this.onOpenLeaderboard,
-    this.onOpenHistory,
-    this.onToggleBodyweight,
-    this.onFeedback,
-    this.onOpenNote,
-  });
-
-  final DeviceProvider prov;
+  final Color brandColor;
+  final bool isBodyweightMode;
+  final int level;
+  final int xp;
+  final bool hasNote;
   final VoidCallback? onOpenLeaderboard;
   final VoidCallback? onOpenHistory;
-  final VoidCallback? onToggleBodyweight;
-  final VoidCallback? onFeedback;
-  final VoidCallback? onOpenNote;
+  final VoidCallback onToggleBodyweight;
+  final VoidCallback onFeedback;
+  final VoidCallback onOpenNote;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ??
-        theme.colorScheme.secondary;
-
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 3,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 1.0,
-        children: [
-          if (onOpenLeaderboard != null)
-            _WorkoutActionGridButton(
-              icon: Icons.emoji_events_rounded,
-              label: 'Bestenliste',
-              color: brandColor,
-              onTap: onOpenLeaderboard!,
+    final isNarrow = MediaQuery.sizeOf(context).width <= 390;
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: EdgeInsets.fromLTRB(10, 0, 10, isNarrow ? 10 : 12),
+        padding: EdgeInsets.fromLTRB(
+          isNarrow ? 13 : 16,
+          12,
+          isNarrow ? 13 : 16,
+          isNarrow ? 16 : 18,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A0D15),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
             ),
-          if (onOpenHistory != null)
-            _WorkoutActionGridButton(
-              icon: Icons.history_rounded,
-              label: 'Verlauf',
-              color: brandColor,
-              onTap: onOpenHistory!,
-            ),
-          if (onToggleBodyweight != null)
-            _WorkoutActionGridButton(
-              icon: Icons.accessibility_new_rounded,
-              label: 'Körpergewicht',
-              color: brandColor,
-              onTap: onToggleBodyweight!,
-              isActive: prov.isBodyweightMode,
-            ),
-          _WorkoutActionGridButton(
-            icon: Icons.military_tech_rounded,
-            label: 'Level ${prov.level}',
-            subtitle: '${prov.xp} XP',
-            color: brandColor,
-            onTap: () {},
+          ],
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    color: Colors.white.withOpacity(0.24),
+                  ),
+                ),
+              ),
+              Text(
+                'Übungs-Extras',
+                style: GoogleFonts.inter(
+                  fontSize: isNarrow ? 16 : 17,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Alles rund um diese Übung an einem Ort.',
+                style: GoogleFonts.inter(
+                  fontSize: isNarrow ? 11.5 : 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withOpacity(0.62),
+                ),
+              ),
+              const SizedBox(height: 14),
+              _WorkoutToolsSection(
+                title: 'Leistung',
+                children: [
+                  _WorkoutToolsActionTile(
+                    icon: Icons.emoji_events_rounded,
+                    title: 'Bestenliste',
+                    subtitle: 'Rekorde und Top-Werte dieser Übung',
+                    accent: brandColor,
+                    onTap: onOpenLeaderboard,
+                  ),
+                  _WorkoutToolsActionTile(
+                    icon: Icons.history_rounded,
+                    title: 'Verlauf',
+                    subtitle: 'Letzte Trainings und Fortschritt',
+                    accent: brandColor,
+                    onTap: onOpenHistory,
+                  ),
+                  _WorkoutToolsActionTile(
+                    icon: Icons.military_tech_rounded,
+                    title: 'Level $level',
+                    subtitle: '$xp XP',
+                    accent: brandColor,
+                    onTap: null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _WorkoutToolsSection(
+                title: 'Kontext',
+                children: [
+                  _WorkoutToolsActionTile(
+                    icon: Icons.accessibility_new_rounded,
+                    title: 'Körpergewicht',
+                    subtitle: isBodyweightMode
+                        ? 'Modus aktuell aktiv'
+                        : 'Modus aktuell inaktiv',
+                    accent: brandColor,
+                    activeBadge: isBodyweightMode ? 'Aktiv' : null,
+                    onTap: onToggleBodyweight,
+                  ),
+                  _WorkoutToolsActionTile(
+                    icon: Icons.edit_note_rounded,
+                    title: 'Notiz',
+                    subtitle: hasNote
+                        ? 'Notiz vorhanden, zum Bearbeiten tippen'
+                        : 'Kurze Technik- oder Satznotiz hinterlegen',
+                    accent: brandColor,
+                    activeBadge: hasNote ? 'Vorhanden' : null,
+                    onTap: onOpenNote,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _WorkoutToolsSection(
+                title: 'Hilfe',
+                children: [
+                  _WorkoutToolsActionTile(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    title: 'Feedback',
+                    subtitle: 'Fehler melden oder Idee teilen',
+                    accent: brandColor,
+                    onTap: onFeedback,
+                  ),
+                ],
+              ),
+            ],
           ),
-          if (onFeedback != null)
-            _WorkoutActionGridButton(
-              icon: Icons.chat_bubble_outline_rounded,
-              label: 'Feedback',
-              color: brandColor,
-              onTap: onFeedback!,
-            ),
-          _WorkoutActionGridButton(
-            icon: Icons.edit_note_rounded,
-            label: 'Notiz',
-            color: brandColor,
-            isActive: prov.note.isNotEmpty,
-            onTap: onOpenNote ?? () {},
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _WorkoutActionGridButton extends StatelessWidget {
-  const _WorkoutActionGridButton({
+class _WorkoutToolsSection extends StatelessWidget {
+  const _WorkoutToolsSection({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 8),
+          child: Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.25,
+              color: Colors.white.withOpacity(0.56),
+            ),
+          ),
+        ),
+        ...children,
+      ],
+    );
+  }
+}
+
+class _WorkoutToolsActionTile extends StatelessWidget {
+  const _WorkoutToolsActionTile({
     required this.icon,
-    required this.label,
-    this.subtitle,
-    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.accent,
     required this.onTap,
-    this.isActive = false,
+    this.activeBadge,
   });
 
   final IconData icon;
-  final String label;
-  final String? subtitle;
-  final Color color;
-  final VoidCallback onTap;
-  final bool isActive;
+  final String title;
+  final String subtitle;
+  final Color accent;
+  final VoidCallback? onTap;
+  final String? activeBadge;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final surfaceColor = Colors.black.withOpacity(0.4);
+    final enabled = onTap != null;
+    final isActive = activeBadge != null;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: isActive ? color.withOpacity(0.2) : surfaceColor,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
               color: isActive
-                  ? color.withOpacity(0.6)
-                  : Colors.white.withOpacity(0.08),
-              width: 1,
-            ),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: color.withOpacity(0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isActive
-                  ? [
-                      color.withOpacity(0.3),
-                      color.withOpacity(0.1),
-                    ]
-                  : [
-                      Colors.white.withOpacity(0.05),
-                      Colors.white.withOpacity(0.02),
-                    ],
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isActive
-                      ? color
-                      : Colors.white.withOpacity(0.05),
-                  boxShadow: isActive
-                      ? [
-                          BoxShadow(
-                            color: color.withOpacity(0.6),
-                            blurRadius: 12,
-                            offset: const Offset(0, 0),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Icon(
-                  icon,
-                  size: 24,
-                  color: isActive
-                      ? Colors.white
-                      : Colors.white.withOpacity(0.8),
-                ),
+                  ? accent.withOpacity(0.14)
+                  : Colors.white.withOpacity(0.03),
+              border: Border.all(
+                color: isActive
+                    ? accent.withOpacity(0.45)
+                    : Colors.white.withOpacity(0.08),
+                width: 1,
               ),
-              const SizedBox(height: 12),
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: isActive
-                      ? Colors.white
-                      : Colors.white.withOpacity(0.7),
-                  fontWeight:
-                      isActive ? FontWeight.bold : FontWeight.w500,
-                  fontSize: 12,
-                  letterSpacing: 0.3,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (subtitle != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  subtitle!,
-                  style: theme.textTheme.labelSmall?.copyWith(
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
                     color: isActive
-                        ? Colors.white.withOpacity(0.9)
-                        : Colors.white.withOpacity(0.5),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
+                        ? accent.withOpacity(0.24)
+                        : Colors.white.withOpacity(0.08),
                   ),
-                  textAlign: TextAlign.center,
+                  child: Icon(
+                    icon,
+                    size: 18,
+                    color: enabled
+                        ? (isActive ? accent : Colors.white.withOpacity(0.86))
+                        : Colors.white.withOpacity(0.42),
+                  ),
                 ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: enabled
+                              ? Colors.white.withOpacity(0.92)
+                              : Colors.white.withOpacity(0.52),
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withOpacity(0.58),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (activeBadge != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      color: accent.withOpacity(0.22),
+                      border: Border.all(
+                        color: accent.withOpacity(0.45),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      activeBadge!,
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: accent,
+                      ),
+                    ),
+                  )
+                else
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: enabled
+                        ? Colors.white.withOpacity(0.45)
+                        : Colors.white.withOpacity(0.25),
+                  ),
               ],
-            ],
+            ),
           ),
         ),
       ),

@@ -31,20 +31,24 @@ class ReportScreenNew extends ConsumerStatefulWidget {
 }
 
 class _ReportScreenNewState extends ConsumerState<ReportScreenNew> {
+  late final ReportProvider _reportNotifier;
+  late final survey_riverpod.SurveyProvider _surveyNotifier;
+  late final feedback_riverpod.FeedbackProvider _feedbackNotifier;
+
   @override
   void initState() {
     super.initState();
+    _reportNotifier = ref.read(report_providers.reportProvider);
+    _surveyNotifier = ref.read(survey_riverpod.surveyProvider);
+    _feedbackNotifier = ref.read(feedback_riverpod.feedbackProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final reportNotifier = ref.read(report_providers.reportProvider);
-      if (reportNotifier.shouldLoadReport(widget.gymId)) {
-        await reportNotifier.loadReport(widget.gymId);
+      if (!mounted) return;
+      if (_reportNotifier.shouldLoadReport(widget.gymId)) {
+        await _reportNotifier.loadReport(widget.gymId);
+        if (!mounted) return;
       }
-      ref
-          .read(survey_riverpod.surveyProvider)
-          .listen(widget.gymId, subscriber: this);
-      await ref
-          .read(feedback_riverpod.feedbackProvider)
-          .loadFeedback(widget.gymId);
+      _surveyNotifier.listen(widget.gymId, subscriber: this);
+      await _feedbackNotifier.loadFeedback(widget.gymId);
     });
   }
 
@@ -55,20 +59,17 @@ class _ReportScreenNewState extends ConsumerState<ReportScreenNew> {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final reportNotifier = ref.read(report_providers.reportProvider);
-      await reportNotifier.loadReport(widget.gymId, force: true);
-      ref
-          .read(survey_riverpod.surveyProvider)
-          .listen(widget.gymId, subscriber: this);
-      await ref
-          .read(feedback_riverpod.feedbackProvider)
-          .loadFeedback(widget.gymId, force: true);
+      if (!mounted) return;
+      await _reportNotifier.loadReport(widget.gymId, force: true);
+      if (!mounted) return;
+      _surveyNotifier.listen(widget.gymId, subscriber: this);
+      await _feedbackNotifier.loadFeedback(widget.gymId, force: true);
     });
   }
 
   @override
   void dispose() {
-    ref.read(survey_riverpod.surveyProvider).cancel(subscriber: this);
+    _surveyNotifier.cancel(subscriber: this);
     super.dispose();
   }
 

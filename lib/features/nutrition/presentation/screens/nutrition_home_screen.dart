@@ -114,6 +114,13 @@ class _NutritionHomeScreenState extends ConsumerState<NutritionHomeScreen> {
                   Navigator.of(context).pushNamed(AppRouter.nutritionGoals),
             ),
             NutritionActionTile(
+              icon: Icons.monitor_weight_rounded,
+              title: loc.nutritionHomeWeightTitle,
+              subtitle: loc.nutritionHomeWeightSubtitle,
+              onTap: () =>
+                  Navigator.of(context).pushNamed(AppRouter.nutritionWeight),
+            ),
+            NutritionActionTile(
               icon: Icons.restaurant_menu_rounded,
               title: 'Gerichte',
               subtitle: 'Eigene Rezepte speichern und hinzufügen.',

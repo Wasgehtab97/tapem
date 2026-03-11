@@ -252,28 +252,27 @@ class _ExerciseBottomSheetState extends State<ExerciseBottomSheet> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final mediaQuery = MediaQuery.of(context);
     final brand = theme.extension<AppBrandTheme>();
     final brandColor = brand?.outline ?? theme.colorScheme.secondary;
     final canSave =
         _nameCtr.text.trim().isNotEmpty &&
         (widget.exercise == null || _hasChanges);
-    final height = MediaQuery.of(context).size.height;
-    final selectorHeight = (height * 0.28).clamp(220.0, 340.0);
+    final height = mediaQuery.size.height;
+    final visibleHeight = (height - mediaQuery.viewInsets.bottom).clamp(
+      300.0,
+      height,
+    );
+    final selectorHeight = (visibleHeight * 0.28).clamp(170.0, 340.0);
+    final maxDialogHeight = (height - 40).clamp(280.0, height);
 
     return WillPopScope(
       onWillPop: _confirmDiscard,
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 20,
-          ),
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxDialogHeight),
           child: BrandModalSurface(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
             child: SingleChildScrollView(

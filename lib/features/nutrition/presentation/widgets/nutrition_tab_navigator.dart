@@ -11,6 +11,7 @@ import 'package:tapem/features/nutrition/presentation/screens/nutrition_recipe_e
 import 'package:tapem/features/nutrition/presentation/screens/nutrition_recipe_list_screen.dart';
 import 'package:tapem/features/nutrition/presentation/screens/nutrition_scan_screen.dart';
 import 'package:tapem/features/nutrition/presentation/screens/nutrition_search_screen.dart';
+import 'package:tapem/features/nutrition/presentation/screens/nutrition_weight_screen.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_product.dart';
 import 'package:tapem/features/nutrition/domain/models/nutrition_recipe.dart';
 import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
@@ -76,6 +77,8 @@ class NutritionTabNavigator extends ConsumerWidget {
         return MaterialPageRoute(
           builder: (_) => const NutritionCalendarScreen(),
         );
+      case AppRouter.nutritionWeight:
+        return MaterialPageRoute(builder: (_) => const NutritionWeightScreen());
       case AppRouter.nutritionSearch:
         final args = settings.arguments as Map<String, dynamic>? ?? const {};
         return MaterialPageRoute(

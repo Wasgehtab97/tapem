@@ -358,7 +358,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       );
     }
 
-    if (auth.isGymOwner) {
+    if (auth.canManageGym) {
       tabs.add(
         _TabInfo(
           id: _HomeTabId.owner,
@@ -534,7 +534,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (!_didResolveRoleDefaultIndex &&
         widget.initialIndex == AppRouter.homeInitialIndexByRole) {
       _didResolveRoleDefaultIndex = true;
-      if (auth.isGymOwner) {
+      if (auth.canManageGym) {
         final ownerIndex = tabs.indexWhere((tab) => tab.id == _HomeTabId.owner);
         if (ownerIndex >= 0) {
           _currentIndex = ownerIndex;

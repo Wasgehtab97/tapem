@@ -1693,6 +1693,10 @@
   ,"@nutritionHomeCalendarTitle": {"description": "Card-Titel fuer Kalender"}
   ,"nutritionHomeCalendarSubtitle": "Tage unter/auf/ueber Ziel sehen."
   ,"@nutritionHomeCalendarSubtitle": {"description": "Card-Untertitel fuer Kalender"}
+  ,"nutritionHomeWeightTitle": "Gewicht"
+  ,"@nutritionHomeWeightTitle": {"description": "Card-Titel fuer Gewicht"}
+  ,"nutritionHomeWeightSubtitle": "Tagesgewicht eintragen und Verlauf sehen."
+  ,"@nutritionHomeWeightSubtitle": {"description": "Card-Untertitel fuer Gewicht"}
   ,"nutritionDayTitle": "Tagesübersicht"
   ,"@nutritionDayTitle": {"description": "Titel der Nutrition-Tagesansicht"}
   ,"nutritionTargetLabel": "Ziel"
@@ -1805,6 +1809,48 @@
   ,"@nutritionGoalsSaved": {"description": "Snackbar Text fuer gespeicherte Ziele"}
   ,"nutritionGoalsSaveError": "Ziele konnten nicht gespeichert werden."
   ,"@nutritionGoalsSaveError": {"description": "Snackbar Text fuer Fehler beim Speichern"}
+  ,"nutritionWeightTitle": "Gewicht"
+  ,"@nutritionWeightTitle": {"description": "Titel der Gewicht-Ansicht"}
+  ,"nutritionWeightHeroTitle": "Tagesgewicht"
+  ,"@nutritionWeightHeroTitle": {"description": "Titel im Hero-Bereich der Gewicht-Ansicht"}
+  ,"nutritionWeightHeroSubtitle": "Schneller Eintrag nach dem Wiegen"
+  ,"@nutritionWeightHeroSubtitle": {"description": "Untertitel im Hero-Bereich der Gewicht-Ansicht"}
+  ,"nutritionWeightTodayLabel": "Heute · {date}"
+  ,"@nutritionWeightTodayLabel": {"description": "Label mit aktuellem Datum in der Gewicht-Ansicht", "placeholders": {"date": {}}}
+  ,"nutritionWeightInputLabel": "Gewicht eingeben"
+  ,"@nutritionWeightInputLabel": {"description": "Label fuer das Gewichtseingabefeld"}
+  ,"nutritionWeightInputHint": "z. B. 82,4"
+  ,"@nutritionWeightInputHint": {"description": "Hint fuer das Gewichtseingabefeld"}
+  ,"nutritionWeightSaveCta": "Tagesgewicht speichern"
+  ,"@nutritionWeightSaveCta": {"description": "CTA zum Speichern des Tagesgewichts"}
+  ,"nutritionWeightRangeWeek": "Woche"
+  ,"@nutritionWeightRangeWeek": {"description": "Range-Label fuer Wochenansicht"}
+  ,"nutritionWeightRangeMonth": "Monat"
+  ,"@nutritionWeightRangeMonth": {"description": "Range-Label fuer Monatsansicht"}
+  ,"nutritionWeightRangeQuarter": "Quartal"
+  ,"@nutritionWeightRangeQuarter": {"description": "Range-Label fuer Quartalsansicht"}
+  ,"nutritionWeightRangeYear": "Jahr"
+  ,"@nutritionWeightRangeYear": {"description": "Range-Label fuer Jahresansicht"}
+  ,"nutritionWeightTrendTitle": "Durchschnittsverlauf"
+  ,"@nutritionWeightTrendTitle": {"description": "Titel des Verlauf-Charts fuer Gewicht"}
+  ,"nutritionWeightTrendSubtitle": "Automatisch aggregiert aus deinen Eintraegen"
+  ,"@nutritionWeightTrendSubtitle": {"description": "Untertitel des Verlauf-Charts fuer Gewicht"}
+  ,"nutritionWeightEmptyState": "Noch keine Daten. Trage oben dein erstes Gewicht ein."
+  ,"@nutritionWeightEmptyState": {"description": "Empty-State Text in der Gewicht-Ansicht"}
+  ,"nutritionWeightAuthRequired": "Anmeldung erforderlich, um Gewicht zu speichern."
+  ,"@nutritionWeightAuthRequired": {"description": "Hinweis wenn User nicht eingeloggt ist"}
+  ,"nutritionWeightLoadError": "Fehler beim Laden der Gewichtsdaten."
+  ,"@nutritionWeightLoadError": {"description": "Fehlertext bei Ladefehlern in der Gewicht-Ansicht"}
+  ,"nutritionWeightInvalidInput": "Bitte ein gueltiges Gewicht eingeben (z. B. 82,4)."
+  ,"@nutritionWeightInvalidInput": {"description": "Snackbar-Hinweis bei ungueltiger Gewichtseingabe"}
+  ,"nutritionWeightSaved": "Gewicht gespeichert: {kg} kg"
+  ,"@nutritionWeightSaved": {"description": "Snackbar bei erfolgreichem Speichern des Gewichts", "placeholders": {"kg": {}}}
+  ,"nutritionWeightSaveError": "Gewicht konnte nicht gespeichert werden."
+  ,"@nutritionWeightSaveError": {"description": "Snackbar bei fehlgeschlagenem Speichern des Gewichts"}
+  ,"nutritionWeightInputSemantics": "Eingabefeld fuer dein Tagesgewicht in Kilogramm"
+  ,"@nutritionWeightInputSemantics": {"description": "Semantics-Label fuer das Gewichtseingabefeld"}
+  ,"nutritionWeightChartSemantics": "Diagramm mit gewichteten Durchschnittswerten ueber den gewaehlten Zeitraum"
+  ,"@nutritionWeightChartSemantics": {"description": "Semantics-Label fuer das Gewichtsdiagramm"}
   ,"nutritionGoalsCaloriesLabel": "Kalorien"
   ,"@nutritionGoalsCaloriesLabel": {"description": "Label fuer Kalorienziel"}
   ,"nutritionGoalsProteinLabel": "Protein (g)"

@@ -1732,6 +1732,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nutritionHomeCalendarSubtitle => 'See days under/on/over target.';
 
   @override
+  String get nutritionHomeWeightTitle => 'Weight';
+
+  @override
+  String get nutritionHomeWeightSubtitle => 'Log your daily weight and view the trend.';
+
+  @override
   String get nutritionDayTitle => 'Daily overview';
 
   @override
@@ -1902,6 +1908,73 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nutritionGoalsSaveError => 'Could not save goals.';
+
+  @override
+  String get nutritionWeightTitle => 'Weight';
+
+  @override
+  String get nutritionWeightHeroTitle => 'Daily weight';
+
+  @override
+  String get nutritionWeightHeroSubtitle => 'Quick entry right after weighing';
+
+  @override
+  String nutritionWeightTodayLabel(Object date) {
+    return 'Today · $date';
+  }
+
+  @override
+  String get nutritionWeightInputLabel => 'Enter weight';
+
+  @override
+  String get nutritionWeightInputHint => 'e.g. 82.4';
+
+  @override
+  String get nutritionWeightSaveCta => 'Save daily weight';
+
+  @override
+  String get nutritionWeightRangeWeek => 'Week';
+
+  @override
+  String get nutritionWeightRangeMonth => 'Month';
+
+  @override
+  String get nutritionWeightRangeQuarter => 'Quarter';
+
+  @override
+  String get nutritionWeightRangeYear => 'Year';
+
+  @override
+  String get nutritionWeightTrendTitle => 'Average trend';
+
+  @override
+  String get nutritionWeightTrendSubtitle => 'Automatically aggregated from your entries';
+
+  @override
+  String get nutritionWeightEmptyState => 'No data yet. Enter your first weight above.';
+
+  @override
+  String get nutritionWeightAuthRequired => 'Sign-in required to save weight.';
+
+  @override
+  String get nutritionWeightLoadError => 'Failed to load weight data.';
+
+  @override
+  String get nutritionWeightInvalidInput => 'Please enter a valid weight (e.g. 82.4).';
+
+  @override
+  String nutritionWeightSaved(Object kg) {
+    return 'Weight saved: $kg kg';
+  }
+
+  @override
+  String get nutritionWeightSaveError => 'Could not save weight.';
+
+  @override
+  String get nutritionWeightInputSemantics => 'Input field for your daily body weight in kilograms';
+
+  @override
+  String get nutritionWeightChartSemantics => 'Chart showing average weight values over the selected period';
 
   @override
   String get nutritionGoalsCaloriesLabel => 'Calories';

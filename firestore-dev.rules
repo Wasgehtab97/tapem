@@ -272,6 +272,12 @@ service cloud.firestore {
         data.fat is int;
     }
 
+    function isNutritionWeightKg(value) {
+      return value is number &&
+        value >= 20 &&
+        value <= 400;
+    }
+
     // ─────────────────────────
     // Activity stream (server only)
     // ─────────────────────────
@@ -669,6 +675,38 @@ service cloud.firestore {
         allow delete: if isOwner(uid) && isYearKey(year);
       }
 
+      match /nutrition_weight_logs/{dateKey} {
+        allow read: if isOwner(uid) && isNutritionDateKey(dateKey);
+        allow create, update: if isOwner(uid) &&
+          isNutritionDateKey(dateKey) &&
+          request.resource.data.keys().hasOnly(['kg', 'source', 'updatedAt']) &&
+          isNutritionWeightKg(request.resource.data.kg) &&
+          (!('source' in request.resource.data) || request.resource.data.source is string) &&
+          (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
+        allow delete: if isOwner(uid) && isNutritionDateKey(dateKey);
+      }
+
+      match /nutrition_weight_year_summary/{year} {
+        allow read: if isOwner(uid) && isYearKey(year);
+        allow create, update: if isOwner(uid) &&
+          isYearKey(year) &&
+          request.resource.data.keys().hasOnly(['days']) &&
+          request.resource.data.days is map;
+        allow delete: if isOwner(uid) && isYearKey(year);
+      }
+
+      match /nutrition_weight_meta/{docId} {
+        allow read: if isOwner(uid) && docId == 'current';
+        allow create, update: if isOwner(uid) &&
+          docId == 'current' &&
+          request.resource.data.keys().hasOnly(['kg', 'dateKey', 'updatedAt']) &&
+          isNutritionWeightKg(request.resource.data.kg) &&
+          request.resource.data.dateKey is string &&
+          isNutritionDateKey(request.resource.data.dateKey) &&
+          (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
+        allow delete: if isOwner(uid) && docId == 'current';
+      }
+
       // Training plan stats per user (owner or active coach)
       match /training_plans/{planId}/meta/{docId} {
         allow read: if isOwner(uid) ||
@@ -778,6 +816,9 @@ service cloud.firestore {
             'nutrition_goals',
             'nutrition_logs',
             'nutrition_year_summary',
+            'nutrition_weight_logs',
+            'nutrition_weight_year_summary',
+            'nutrition_weight_meta',
             'training_plans',
             'trainingDayXP',
             'training_schedule',

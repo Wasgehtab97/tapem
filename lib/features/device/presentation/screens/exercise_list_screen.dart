@@ -202,6 +202,9 @@ class _ExerciseListScreenState
     final brandColor = brand?.outline ?? theme.colorScheme.secondary;
 
     final prov = ref.watch(exerciseProvider);
+    final muscleGroups = ref.watch(
+      muscleGroupProvider.select((provider) => provider.groups),
+    );
     final exercises = _filteredExercises(prov.exercises);
 
     Widget body;
@@ -257,6 +260,7 @@ class _ExerciseListScreenState
           final ex = exercises[i];
           return _ExerciseCard(
             exercise: ex,
+            muscleGroups: muscleGroups,
             onOpen: () async {
               final selection = WorkoutDeviceSelection(
                 gymId: widget.gymId,
@@ -410,6 +414,7 @@ class _ExerciseListScreenState
 
 class _ExerciseCard extends StatelessWidget {
   final Exercise exercise;
+  final List<MuscleGroup> muscleGroups;
   final VoidCallback onOpen;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -418,6 +423,7 @@ class _ExerciseCard extends StatelessWidget {
 
   const _ExerciseCard({
     required this.exercise,
+    required this.muscleGroups,
     required this.onOpen,
     required this.onEdit,
     required this.onDelete,
@@ -425,41 +431,50 @@ class _ExerciseCard extends StatelessWidget {
     required this.deleteLabel,
   });
 
-  String? _muscleSummary(BuildContext context) {
-    final groups = riverpod.ProviderScope.containerOf(
-      context,
-      listen: false,
-    ).read(muscleGroupProvider).groups;
+  String? _muscleSummary() {
+    final byId = <String, MuscleGroup>{
+      for (final group in muscleGroups) group.id: group,
+    };
     final ids = [
       ...exercise.primaryMuscleGroupIds,
       ...exercise.secondaryMuscleGroupIds,
     ];
-    if (ids.isEmpty) return null;
-
-    final seen = <String>{};
     final labels = <String>[];
-    for (final id in ids) {
-      if (!seen.add(id)) continue;
-      MuscleGroup? group;
-      for (final entry in groups) {
-        if (entry.id == id) {
-          group = entry;
+    final seenLabels = <String>{};
+
+    void addLabel(String value) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return;
+      final normalized = trimmed.toLowerCase();
+      if (seenLabels.add(normalized)) {
+        labels.add(trimmed);
+      }
+    }
+
+    for (final rawId in ids) {
+      final group = byId[rawId];
+      if (group != null) {
+        addLabel(displayNameForMuscleGroup(group.region, group));
+        continue;
+      }
+
+      for (final region in MuscleRegion.values) {
+        if (region.name == rawId) {
+          addLabel(displayNameForMuscleGroup(region, null));
           break;
         }
       }
-      MuscleRegion? region = group?.region;
-      if (region == null) {
-        for (final candidate in MuscleRegion.values) {
-          if (candidate.name == id) {
-            region = candidate;
-            break;
-          }
-        }
-      }
-      labels.add(
-        region != null ? displayNameForMuscleGroup(region, group) : id,
-      );
     }
+
+    // Legacy fallback: ältere Datensätze können die Gruppen nur indirekt
+    // über group.exerciseIds referenzieren.
+    if (labels.isEmpty) {
+      for (final group in muscleGroups) {
+        if (!group.exerciseIds.contains(exercise.id)) continue;
+        addLabel(displayNameForMuscleGroup(group.region, group));
+      }
+    }
+
     if (labels.isEmpty) return null;
     return labels.join(' · ');
   }
@@ -475,7 +490,7 @@ class _ExerciseCard extends StatelessWidget {
       onTap: onOpen,
       leading: const Icon(Icons.fitness_center_rounded, size: 20),
       title: exercise.name,
-      subtitle: _muscleSummary(context),
+      subtitle: _muscleSummary(),
       accentColor: brandColor,
       trailingLeading: PopupMenuButton<_ExerciseAction>(
         tooltip: editLabel,
