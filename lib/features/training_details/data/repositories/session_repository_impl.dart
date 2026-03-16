@@ -67,7 +67,7 @@ class SessionRepositoryImpl implements SessionRepository {
       _indexSession(session, sortBucket: false);
     }
     for (final bucket in _sessionsByUserDay.values) {
-      bucket.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      _sortBucketByDayOrder(bucket);
     }
     _indexesHydrated = true;
   }
@@ -99,7 +99,7 @@ class SessionRepositoryImpl implements SessionRepository {
     bucket.removeWhere((item) => item.sessionId == session.sessionId);
     bucket.add(session);
     if (sortBucket) {
-      bucket.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      _sortBucketByDayOrder(bucket);
     }
     _sessionIdToUserDayKey[session.sessionId] = userDayKey;
 
@@ -117,6 +117,10 @@ class SessionRepositoryImpl implements SessionRepository {
 
   String _userDayKey({required String userId, required String dayKey}) =>
       '$userId::$dayKey';
+
+  void _sortBucketByDayOrder(List<HiveSession> bucket) {
+    bucket.sort(compareSessionsForDayOrder);
+  }
 
   String _deviceExerciseKey({
     required String gymId,
@@ -535,5 +539,43 @@ class SessionRepositoryImpl implements SessionRepository {
     } catch (e) {
       debugPrint('[SessionRepository] Error deleting remote session: $e');
     }
+  }
+}
+
+@visibleForTesting
+int compareSessionsForDayOrder(HiveSession a, HiveSession b) {
+  final startComparison = _effectiveStartTime(
+    a,
+  ).compareTo(_effectiveStartTime(b));
+  if (startComparison != 0) {
+    return startComparison;
+  }
+
+  final endComparison = _effectiveEndTime(a).compareTo(_effectiveEndTime(b));
+  if (endComparison != 0) {
+    return endComparison;
+  }
+
+  final updatedAtComparison = _safeUpdatedAt(a).compareTo(_safeUpdatedAt(b));
+  if (updatedAtComparison != 0) {
+    return updatedAtComparison;
+  }
+
+  return a.sessionId.compareTo(b.sessionId);
+}
+
+DateTime _effectiveStartTime(HiveSession session) {
+  return session.startTime ?? session.timestamp;
+}
+
+DateTime _effectiveEndTime(HiveSession session) {
+  return session.endTime ?? session.timestamp;
+}
+
+DateTime _safeUpdatedAt(HiveSession session) {
+  try {
+    return session.updatedAt;
+  } on Error {
+    return _effectiveEndTime(session);
   }
 }

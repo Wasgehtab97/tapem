@@ -4,14 +4,16 @@ import 'package:uuid/uuid.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
 import 'package:tapem/features/training_plan/domain/models/training_plan_exercise.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan_schedule.dart';
 import 'package:tapem/features/training_plan/application/draft_training_plan.dart';
 import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
 import 'package:tapem/features/coaching/data/sources/firestore_coaching_audit_source.dart';
 import 'package:tapem/features/coaching/application/coaching_providers.dart';
 
-final planBuilderProvider = StateNotifierProvider<PlanBuilderNotifier, DraftTrainingPlan>((ref) {
-  return PlanBuilderNotifier(ref);
-});
+final planBuilderProvider =
+    StateNotifierProvider<PlanBuilderNotifier, DraftTrainingPlan>((ref) {
+      return PlanBuilderNotifier(ref);
+    });
 
 class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
   final Ref _ref;
@@ -31,6 +33,8 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
       coachId: coachId,
       coachingRelationId: coachingRelationId,
       colorIndex: 0,
+      schedule: const TrainingPlanSchedule.disabled(),
+      defaultSetCount: null,
     );
   }
 
@@ -44,6 +48,8 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
       coachId: plan.coachId,
       coachingRelationId: plan.coachingRelationId,
       colorIndex: plan.colorIndex,
+      schedule: plan.schedule ?? const TrainingPlanSchedule.disabled(),
+      defaultSetCount: plan.defaultSetCount,
     );
   }
 
@@ -56,6 +62,50 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
     state = state.copyWith(colorIndex: index, isDirty: true);
   }
 
+  void setScheduleEnabled(bool enabled) {
+    final updated = state.schedule.copyWith(enabled: enabled);
+    if (updated == state.schedule) return;
+    state = state.copyWith(schedule: updated, isDirty: true);
+  }
+
+  void setScheduleMode(TrainingPlanScheduleMode mode) {
+    final requiresAnchor = mode == TrainingPlanScheduleMode.everyXDays;
+    final updated = state.schedule.copyWith(
+      mode: mode,
+      anchorDate: requiresAnchor && state.schedule.anchorDate == null
+          ? DateTime.now()
+          : state.schedule.anchorDate,
+    );
+    if (updated == state.schedule) return;
+    state = state.copyWith(schedule: updated, isDirty: true);
+  }
+
+  void toggleScheduleWeekday(int weekday) {
+    if (weekday < 1 || weekday > 7) return;
+    final current = List<int>.from(state.schedule.weekdays);
+    if (current.contains(weekday)) {
+      if (current.length == 1) return;
+      current.remove(weekday);
+    } else {
+      current.add(weekday);
+    }
+    final updated = state.schedule.copyWith(weekdays: current);
+    if (updated == state.schedule) return;
+    state = state.copyWith(schedule: updated, isDirty: true);
+  }
+
+  void setScheduleIntervalDays(int intervalDays) {
+    final updated = state.schedule.copyWith(intervalDays: intervalDays);
+    if (updated == state.schedule) return;
+    state = state.copyWith(schedule: updated, isDirty: true);
+  }
+
+  void setScheduleAnchorDate(DateTime date) {
+    final updated = state.schedule.copyWith(anchorDate: date);
+    if (updated == state.schedule) return;
+    state = state.copyWith(schedule: updated, isDirty: true);
+  }
+
   void addExercise({
     required String deviceId,
     required String exerciseId,
@@ -63,13 +113,15 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
   }) {
     final currentExercises = List<TrainingPlanExercise>.from(state.exercises);
     final newIndex = currentExercises.length;
-    
-    currentExercises.add(TrainingPlanExercise(
-      deviceId: deviceId,
-      exerciseId: exerciseId,
-      name: name,
-      orderIndex: newIndex,
-    ));
+
+    currentExercises.add(
+      TrainingPlanExercise(
+        deviceId: deviceId,
+        exerciseId: exerciseId,
+        name: name,
+        orderIndex: newIndex,
+      ),
+    );
 
     state = state.copyWith(exercises: currentExercises, isDirty: true);
   }
@@ -117,16 +169,13 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
       name: name,
     );
 
-    state = state.copyWith(
-      exercises: currentExercises,
-      isDirty: true,
-    );
+    state = state.copyWith(exercises: currentExercises, isDirty: true);
   }
 
   void removeExercise(int index) {
     final currentExercises = List<TrainingPlanExercise>.from(state.exercises);
     currentExercises.removeAt(index);
-    
+
     // Re-index
     final reIndexed = currentExercises.asMap().entries.map((e) {
       return e.value.copyWith(orderIndex: e.key);
@@ -151,27 +200,22 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
     state = state.copyWith(exercises: reIndexed, isDirty: true);
   }
 
-  Future<void> deleteCurrentPlan({
-    String? planId,
-    String? ownerUserId,
-  }) async {
+  Future<void> deleteCurrentPlan({String? planId, String? ownerUserId}) async {
     final authState = _ref.read(authViewStateProvider);
     final effectivePlanId = planId ?? state.originalId;
     if (effectivePlanId == null || effectivePlanId.isEmpty) {
       throw Exception('Plan-ID fehlt');
     }
 
-    final effectiveOwnerId = ownerUserId ?? state.targetUserId ?? authState.userId;
+    final effectiveOwnerId =
+        ownerUserId ?? state.targetUserId ?? authState.userId;
     final currentUserId = authState.userId;
     if (effectiveOwnerId == null || effectiveOwnerId.isEmpty) {
       throw Exception('Nutzer-ID fehlt');
     }
 
     final repo = _ref.read(trainingPlanRepositoryProvider);
-    await repo.deletePlan(
-      userId: effectiveOwnerId,
-      planId: effectivePlanId,
-    );
+    await repo.deletePlan(userId: effectiveOwnerId, planId: effectivePlanId);
 
     if (effectiveOwnerId == currentUserId) {
       _ref.invalidate(trainingPlansProvider);
@@ -211,26 +255,27 @@ class PlanBuilderNotifier extends StateNotifier<DraftTrainingPlan> {
       clientId: state.targetUserId,
       coachingRelationId: state.coachingRelationId,
       exercises: state.exercises,
-      createdAt: state.originalId == null ? now : now, // Should keep original createdAt if editing? ideally yes but for now simpler
+      createdAt: state.originalId == null
+          ? now
+          : now, // Should keep original createdAt if editing? ideally yes but for now simpler
       updatedAt: now,
       colorIndex: state.colorIndex,
+      schedule: state.schedule,
+      defaultSetCount: state.defaultSetCount,
     );
-    
-    // If editing, we might want to preserve createdAt. 
+
+    // If editing, we might want to preserve createdAt.
     // Logic: fetch old plan if existing, or just trust UI logic?
     // Optimization: Just save. Firestore merge will handle fields? No, I am overwriting fields.
     // Ideally I should fetch the old plan to get createdAt, or pass it in editExisting.
     // For now, I will treat it as a "save" operation.
-    
+
     final repo = _ref.read(trainingPlanRepositoryProvider);
     await repo.savePlan(userId: userId, plan: plan);
 
     // Nach dem Speichern die Draft-ID aktualisieren, damit
     // Plan-Stats und "Training starten" immer eine gültige planId haben.
-    state = state.copyWith(
-      originalId: planId,
-      isDirty: false,
-    );
+    state = state.copyWith(originalId: planId, isDirty: false);
 
     // Listen/Stats neu laden – sowohl für den aktuellen User als
     // auch für Coach-Views auf Client-Pläne.

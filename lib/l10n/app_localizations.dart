@@ -203,6 +203,12 @@ abstract class AppLocalizations {
   /// **'Demo mode is read-only. Sign in to start workouts.'**
   String get gymDemoRestrictedMessage;
 
+  /// Shown when a workout action is attempted without an active play-started session
+  ///
+  /// In en, this message translates to:
+  /// **'Please start a workout first using the Play button.'**
+  String get workoutStartViaPlayRequired;
+
   /// Button to change the selected gym
   ///
   /// In en, this message translates to:
@@ -3190,6 +3196,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not delete the session.'**
   String get trainingDetailsDeleteSessionError;
+
+  /// Tooltip for the action on the training details page to create a plan from this day.
+  ///
+  /// In en, this message translates to:
+  /// **'Create plan from this workout'**
+  String get trainingDetailsCreatePlanTooltip;
+
+  /// Title for the dialog that creates a training plan from a workout day.
+  ///
+  /// In en, this message translates to:
+  /// **'Create training plan'**
+  String get trainingDetailsCreatePlanDialogTitle;
+
+  /// Dialog description for creating a plan from a training day.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name for the new plan.'**
+  String get trainingDetailsCreatePlanDialogMessage;
+
+  /// Placeholder for the training plan name field in training details.
+  ///
+  /// In en, this message translates to:
+  /// **'Name (e.g. Pull Freestyle)'**
+  String get trainingDetailsCreatePlanDialogHint;
+
+  /// Confirmation label for creating a plan from training details.
+  ///
+  /// In en, this message translates to:
+  /// **'Create plan'**
+  String get trainingDetailsCreatePlanDialogConfirm;
+
+  /// Success message shown after creating a plan from training details.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan \"{name}\" was created.'**
+  String trainingDetailsCreatePlanSuccess(Object name);
+
+  /// Error message shown when the provided plan name is invalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid name (max 60 characters).'**
+  String get trainingDetailsCreatePlanErrorInvalidName;
+
+  /// Error message shown when no exercises can be extracted from sessions.
+  ///
+  /// In en, this message translates to:
+  /// **'No valid exercises could be imported from this day.'**
+  String get trainingDetailsCreatePlanErrorNoExercises;
+
+  /// Error message shown when creating a plan is not allowed in the current context.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan creation is not available here.'**
+  String get trainingDetailsCreatePlanErrorNotAllowed;
+
+  /// Generic error message for plan creation from training details.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan could not be created.'**
+  String get trainingDetailsCreatePlanErrorGeneric;
 
   /// Tooltip and accessibility label for changing the profile avatar
   ///

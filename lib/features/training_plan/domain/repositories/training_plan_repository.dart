@@ -3,19 +3,13 @@ import 'package:tapem/features/training_plan/domain/models/training_plan_stats.d
 
 abstract class TrainingPlanRepository {
   Future<List<TrainingPlan>> getPlans({
-    required String gymId, 
+    required String gymId,
     required String userId,
   });
 
-  Future<void> savePlan({
-    required String userId,
-    required TrainingPlan plan,
-  });
+  Future<void> savePlan({required String userId, required TrainingPlan plan});
 
-  Future<void> deletePlan({
-    required String userId,
-    required String planId,
-  });
+  Future<void> deletePlan({required String userId, required String planId});
 
   Future<TrainingPlanStats> getStats({
     required String userId,
@@ -25,5 +19,16 @@ abstract class TrainingPlanRepository {
   Future<void> incrementCompletion({
     required String userId,
     required String planId,
+  });
+
+  Future<void> updateDefaultSetCount({
+    required String userId,
+    required String planId,
+    required int defaultSetCount,
+  });
+
+  Future<void> reorderPlans({
+    required String userId,
+    required List<String> orderedPlanIds,
   });
 }

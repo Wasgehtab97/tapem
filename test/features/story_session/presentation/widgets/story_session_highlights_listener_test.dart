@@ -31,7 +31,22 @@ class _MockStorySessionService extends Mock implements StorySessionService {}
 class _MockSessionRepository extends Mock implements SessionRepository {}
 
 class _FakeGetSessionsForDate extends GetSessionsForDate {
-  _FakeGetSessionsForDate() : super(_MockSessionRepository());
+  _FakeGetSessionsForDate({
+    Future<List<Session>> Function({
+      required String userId,
+      required DateTime date,
+      required bool fromCacheOnly,
+    })?
+    loader,
+  }) : _loader = loader,
+       super(_MockSessionRepository());
+
+  final Future<List<Session>> Function({
+    required String userId,
+    required DateTime date,
+    required bool fromCacheOnly,
+  })?
+  _loader;
 
   @override
   Future<List<Session>> execute({
@@ -39,7 +54,11 @@ class _FakeGetSessionsForDate extends GetSessionsForDate {
     required DateTime date,
     bool fromCacheOnly = false,
   }) async {
-    return const <Session>[];
+    final loader = _loader;
+    if (loader != null) {
+      return loader(userId: userId, date: date, fromCacheOnly: fromCacheOnly);
+    }
+    return <Session>[_session()];
   }
 }
 
@@ -71,6 +90,24 @@ StorySessionSummary _summary() {
       durationMs: 45 * 60 * 1000,
     ),
     dailyXp: const StoryDailyXp.empty(),
+  );
+}
+
+Session _session() {
+  return Session(
+    sessionId: 'session-1',
+    gymId: 'gym-1',
+    userId: 'user-1',
+    deviceId: 'device-1',
+    deviceName: 'Device 1',
+    exerciseId: 'exercise-1',
+    exerciseName: 'Exercise 1',
+    timestamp: DateTime(2026, 2, 13, 19, 0),
+    note: '',
+    sets: <SessionSet>[SessionSet(weight: 60, reps: 8, setNumber: 1)],
+    startTime: DateTime(2026, 2, 13, 19, 0),
+    endTime: DateTime(2026, 2, 13, 19, 45),
+    durationMs: 45 * 60 * 1000,
   );
 }
 
@@ -343,6 +380,114 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(summaryCalls, greaterThanOrEqualTo(2));
+      verify(() => durationService.acknowledgeCompletion(any())).called(1);
+    },
+  );
+
+  testWidgets(
+    'defers empty-session popup and replays once sessions become available',
+    (tester) async {
+      final durationService = _MockWorkoutSessionDurationService();
+      final coordinator = _MockWorkoutSessionCoordinator();
+      final storyService = _MockStorySessionService();
+      final streamCtrl =
+          StreamController<WorkoutSessionCompletionEvent>.broadcast();
+      addTearDown(streamCtrl.close);
+
+      final event = _completionEvent();
+      final summary = _summary();
+      var pendingCalls = 0;
+      var sessionReads = 0;
+      var summaryCalls = 0;
+
+      when(
+        () => durationService.completionStream,
+      ).thenAnswer((_) => streamCtrl.stream);
+      when(
+        () =>
+            durationService.getPendingCompletions(userId: any(named: 'userId')),
+      ).thenAnswer((_) async {
+        pendingCalls += 1;
+        if (pendingCalls == 1) {
+          return const <WorkoutSessionCompletionEvent>[];
+        }
+        return <WorkoutSessionCompletionEvent>[event];
+      });
+      when(
+        () => durationService.acknowledgeCompletion(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => storyService.getSummary(
+          gymId: any(named: 'gymId'),
+          userId: any(named: 'userId'),
+          date: any(named: 'date'),
+          sessions: any(named: 'sessions'),
+          fallbackDurationMs: any(named: 'fallbackDurationMs'),
+        ),
+      ).thenAnswer((_) async {
+        summaryCalls += 1;
+        return summary;
+      });
+
+      final navigatorKey = GlobalKey<NavigatorState>();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authViewStateProvider.overrideWith((ref) => _authState()),
+            workoutSessionDurationServiceProvider.overrideWith(
+              (ref) => durationService,
+            ),
+            workoutSessionCoordinatorProvider.overrideWith(
+              (ref) => coordinator,
+            ),
+            storySessionServiceProvider.overrideWithValue(storyService),
+            storyHighlightsGetSessionsForDateProvider.overrideWith((ref) {
+              return _FakeGetSessionsForDate(
+                loader:
+                    ({
+                      required String userId,
+                      required DateTime date,
+                      required bool fromCacheOnly,
+                    }) async {
+                      sessionReads += 1;
+                      if (sessionReads <= 3) {
+                        return const <Session>[];
+                      }
+                      return <Session>[_session()];
+                    },
+              );
+            }),
+          ],
+          child: MaterialApp(
+            navigatorKey: navigatorKey,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: StorySessionHighlightsListener(
+              navigatorKey: navigatorKey,
+              child: const Scaffold(body: SizedBox.shrink()),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      streamCtrl.add(event);
+
+      // First run sees empty cache and must not display a 0/0/0 summary.
+      await tester.pump(const Duration(milliseconds: 800));
+      expect(find.byType(StorySessionDialog), findsNothing);
+      expect(summaryCalls, 0);
+      verifyNever(() => durationService.acknowledgeCompletion(any()));
+
+      // Replay after retry delay should load sessions and show dialog.
+      await tester.pump(const Duration(milliseconds: 2400));
+      expect(find.byType(StorySessionDialog), findsOneWidget);
+      expect(summaryCalls, 1);
+
+      navigatorKey.currentState?.pop();
+      await tester.pumpAndSettle();
+
       verify(() => durationService.acknowledgeCompletion(any())).called(1);
     },
   );

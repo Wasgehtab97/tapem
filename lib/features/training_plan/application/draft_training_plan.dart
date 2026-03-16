@@ -1,17 +1,21 @@
 import 'package:equatable/equatable.dart';
 import 'package:tapem/features/training_plan/domain/models/training_plan_exercise.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan_schedule.dart';
 
 class DraftTrainingPlan extends Equatable {
   final String? originalId;
   final String name;
   final List<TrainingPlanExercise> exercises;
   final bool isDirty;
-   /// Wenn gesetzt, wird der Plan für diesen Nutzer gespeichert (z.B. Client),
-   /// ansonsten für den aktuell eingeloggten User.
+
+  /// Wenn gesetzt, wird der Plan für diesen Nutzer gespeichert (z.B. Client),
+  /// ansonsten für den aktuell eingeloggten User.
   final String? targetUserId;
   final String? coachId;
   final String? coachingRelationId;
   final int colorIndex;
+  final TrainingPlanSchedule schedule;
+  final int? defaultSetCount;
 
   const DraftTrainingPlan({
     this.originalId,
@@ -22,6 +26,8 @@ class DraftTrainingPlan extends Equatable {
     this.coachId,
     this.coachingRelationId,
     this.colorIndex = 0,
+    this.schedule = const TrainingPlanSchedule.disabled(),
+    this.defaultSetCount,
   });
 
   DraftTrainingPlan copyWith({
@@ -33,6 +39,8 @@ class DraftTrainingPlan extends Equatable {
     String? coachId,
     String? coachingRelationId,
     int? colorIndex,
+    TrainingPlanSchedule? schedule,
+    int? defaultSetCount,
   }) {
     return DraftTrainingPlan(
       originalId: originalId ?? this.originalId,
@@ -43,10 +51,22 @@ class DraftTrainingPlan extends Equatable {
       coachId: coachId ?? this.coachId,
       coachingRelationId: coachingRelationId ?? this.coachingRelationId,
       colorIndex: colorIndex ?? this.colorIndex,
+      schedule: schedule ?? this.schedule,
+      defaultSetCount: defaultSetCount ?? this.defaultSetCount,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [originalId, name, exercises, isDirty, targetUserId, coachId, coachingRelationId, colorIndex];
+  List<Object?> get props => [
+    originalId,
+    name,
+    exercises,
+    isDirty,
+    targetUserId,
+    coachId,
+    coachingRelationId,
+    colorIndex,
+    schedule,
+    defaultSetCount,
+  ];
 }

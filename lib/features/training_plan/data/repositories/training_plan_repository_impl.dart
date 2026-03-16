@@ -17,18 +17,12 @@ class TrainingPlanRepositoryImpl implements TrainingPlanRepository {
   }
 
   @override
-  Future<void> savePlan({
-    required String userId,
-    required TrainingPlan plan,
-  }) {
+  Future<void> savePlan({required String userId, required TrainingPlan plan}) {
     return _source.savePlan(userId: userId, plan: plan);
   }
 
   @override
-  Future<void> deletePlan({
-    required String userId,
-    required String planId,
-  }) {
+  Future<void> deletePlan({required String userId, required String planId}) {
     return _source.deletePlan(userId: userId, planId: planId);
   }
 
@@ -46,5 +40,26 @@ class TrainingPlanRepositoryImpl implements TrainingPlanRepository {
     required String planId,
   }) {
     return _source.incrementCompletion(userId: userId, planId: planId);
+  }
+
+  @override
+  Future<void> updateDefaultSetCount({
+    required String userId,
+    required String planId,
+    required int defaultSetCount,
+  }) {
+    return _source.updateDefaultSetCount(
+      userId: userId,
+      planId: planId,
+      defaultSetCount: defaultSetCount,
+    );
+  }
+
+  @override
+  Future<void> reorderPlans({
+    required String userId,
+    required List<String> orderedPlanIds,
+  }) {
+    return _source.reorderPlans(userId: userId, orderedPlanIds: orderedPlanIds);
   }
 }

@@ -24,7 +24,6 @@ import 'package:tapem/features/nfc/widgets/nfc_scan_button.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/widgets/brand_gradient_text.dart';
 import 'package:tapem/core/services/workout_session_coordinator.dart';
-import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/device/presentation/screens/workout_day_screen.dart';
@@ -153,30 +152,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final deviceId = devices.isNotEmpty ? devices.first.uid : '';
     final loc = AppLocalizations.of(context)!;
     final auth = ref.watch(authControllerProvider);
-    final coordinatorRunning = ref.watch(
-      workoutSessionCoordinatorProvider.select((c) => c.isRunning),
+    final isTrainingRunning = ref.watch(
+      workoutSessionCoordinatorProvider.select((c) => c.isActiveWorkout),
     );
-    final durationRunning = ref.watch(
-      workoutSessionDurationServiceProvider.select((s) => s.isRunning),
-    );
-    final isTrainingRunning = coordinatorRunning && durationRunning;
     final WorkoutDayController workoutController = ref.read(
       workoutDayControllerProvider,
     );
-
-    WorkoutDaySession? activeWorkoutSession;
-    if (auth.userId != null) {
-      final activeGymId = auth.gymCode ?? gymId;
-      if (activeGymId.isNotEmpty) {
-        final sessions = workoutController.sessionsFor(
-          userId: auth.userId!,
-          gymId: activeGymId,
-        );
-        if (sessions.isNotEmpty) {
-          activeWorkoutSession = sessions.last;
-        }
-      }
-    }
 
     final tabs = <_TabInfo>[
       _TabInfo(
@@ -294,11 +275,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
     ];
 
-    // Workout-Tab anzeigen, sobald der globale Workout-Timer läuft.
-    // Wenn bereits Sessions existieren, wird die zuletzt aktive Session
-    // geöffnet. Andernfalls wird ein "leerer" Workout-Tag mit einem
-    // Fallback-Gerät gestartet (sofern vorhanden).
-    if (isTrainingRunning || activeWorkoutSession != null) {
+    // Workout-Tab ausschließlich während eines aktiv gestarteten Trainings
+    // anzeigen (Play-Flow als einzige Eintrittsstelle).
+    if (isTrainingRunning) {
+      WorkoutDaySession? activeWorkoutSession;
+      if (auth.userId != null) {
+        final activeGymId = auth.gymCode ?? gymId;
+        if (activeGymId.isNotEmpty) {
+          final sessions = workoutController.sessionsFor(
+            userId: auth.userId!,
+            gymId: activeGymId,
+          );
+          if (sessions.isNotEmpty) {
+            activeWorkoutSession = sessions.last;
+          }
+        }
+      }
       // Wenn eine aktive Session existiert, diese im Workout-Tab öffnen.
       // Ansonsten eine komplett leere Workout-Seite anzeigen, bis der Nutzer
       // über Gym/NFC eine Übung auswählt.

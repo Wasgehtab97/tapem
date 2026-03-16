@@ -44,14 +44,14 @@ Jeder neue Update-Block muss folgende Sektionen enthalten:
 ## Repo-Abgrenzung (kritisch)
 Bei Arbeit in `tapem` gilt strikt:
 - Git-Operationen (`fetch`, `pull`, `commit`, `push`) nur im `tapem`-Repository.
-- Pull/Push ausschliesslich auf Branch `antigravity_dev` (z. B. `git pull origin antigravity_dev`, `git push origin antigravity_dev`).
+- Pull/Push ausschliesslich auf Branch `main` (z. B. `git pull origin main`, `git push origin main`).
 - Keine Dateien aus `picture_deals` uebernehmen.
 - Keine gemeinsamen Commits ueber beide Projekte.
 - `whatsnext`-Eintraege muessen sich ausschliesslich auf `tapem` beziehen.
 
 ## Chat-Shortcut: `make start`
 Wenn im Chat `make start` steht, ist damit ein **Codex-Workflow** gemeint (kein notwendiger Terminal-Make-Target):
-- Aktuellen Stand von GitHub fuer Branch `antigravity_dev` im `tapem`-Repo holen.
+- Aktuellen Stand von GitHub fuer Branch `main` im `tapem`-Repo holen.
 - Neue/geaenderte `whatsnext`-Eintraege seit dem letzten Stand kurz zusammenfassen.
 - Naechste sinnvolle Schritte als klare, priorisierte Stichpunkte ausgeben.
 - Eventuelle Risiken/Blocker sofort benennen.
@@ -64,7 +64,7 @@ Erwartetes Ergebnis im Chat:
 Wenn im Chat `make finish` steht, ist damit ein **Codex-Workflow** gemeint (kein notwendiger Terminal-Make-Target):
 - Tagesdatei in `whatsnext/` erstellen oder mit `## Update HH:MM:SS` fortschreiben.
 - Relevante Aenderungen im `tapem`-Repo committen.
-- Commit ausschliesslich auf `origin/antigravity_dev` pushen.
+- Commit ausschliesslich auf `origin/main` pushen.
 - Kompakte Discord-Zusammenfassung direkt im Chat ausgeben.
 
 Erwartetes Ergebnis im Chat:

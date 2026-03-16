@@ -18,6 +18,13 @@ import 'package:tapem/l10n/app_localizations.dart';
 
 enum WorkoutFinishStatus { cancelled, completed, failed }
 
+typedef PlanDefaultSetCountWriter =
+    Future<void> Function({
+      required String userId,
+      required String planId,
+      required int defaultSetCount,
+    });
+
 class WorkoutFinishResult {
   const WorkoutFinishResult({
     required this.status,
@@ -37,6 +44,74 @@ class WorkoutFinishResult {
 class WorkoutFinishFlow {
   const WorkoutFinishFlow._();
   static const Duration _endDayTimeout = Duration(seconds: 15);
+  static PlanDefaultSetCountWriter _planDefaultSetCountWriter =
+      ({
+        required String userId,
+        required String planId,
+        required int defaultSetCount,
+      }) => FirestoreTrainingPlanSource().updateDefaultSetCount(
+        userId: userId,
+        planId: planId,
+        defaultSetCount: defaultSetCount,
+      );
+
+  @visibleForTesting
+  static void debugSetPlanDefaultSetCountWriter(
+    PlanDefaultSetCountWriter? writer,
+  ) {
+    _planDefaultSetCountWriter =
+        writer ??
+        ({
+          required String userId,
+          required String planId,
+          required int defaultSetCount,
+        }) => FirestoreTrainingPlanSource().updateDefaultSetCount(
+          userId: userId,
+          planId: planId,
+          defaultSetCount: defaultSetCount,
+        );
+  }
+
+  @visibleForTesting
+  static int? resolvePlanDefaultSetCountFromSessions(
+    List<WorkoutDaySession> sessions,
+  ) {
+    final totals = <int>[];
+    for (final session in sessions) {
+      final counts = session.provider.getSetCounts();
+      final total = counts.done + counts.filledNotDone;
+      if (total > 0) {
+        totals.add(total);
+      }
+    }
+    return resolvePlanDefaultSetCountFromTotals(totals);
+  }
+
+  @visibleForTesting
+  static int? resolvePlanDefaultSetCountFromTotals(Iterable<int> totals) {
+    final frequency = <int, int>{};
+    for (final value in totals) {
+      if (value < 1) continue;
+      frequency[value] = (frequency[value] ?? 0) + 1;
+    }
+    if (frequency.isEmpty) {
+      return null;
+    }
+
+    var bestSetCount = -1;
+    var bestFrequency = -1;
+    for (final entry in frequency.entries) {
+      if (entry.value > bestFrequency) {
+        bestFrequency = entry.value;
+        bestSetCount = entry.key;
+        continue;
+      }
+      if (entry.value == bestFrequency && entry.key > bestSetCount) {
+        bestSetCount = entry.key;
+      }
+    }
+    return bestSetCount > 0 ? bestSetCount : null;
+  }
 
   static Future<WorkoutFinishResult> saveAndFinish({
     required BuildContext context,
@@ -133,6 +208,10 @@ class WorkoutFinishFlow {
       }
     }
 
+    final resolvedPlanDefaultSetCount = resolvePlanDefaultSetCountFromSessions(
+      sessions,
+    );
+
     final sessionGymId = sessions.isNotEmpty ? sessions.first.gymId : null;
     final activeGymId = sessionGymId ?? auth.gymCode ?? fallbackGymId;
 
@@ -194,6 +273,32 @@ class WorkoutFinishFlow {
           if (container != null) {
             container.refresh(trainingPlanStatsProvider(resolvedPlanId));
           }
+        } catch (error, stackTrace) {
+          debugPrint(
+            '❌ Failed to increment training plan stats for planId=$resolvedPlanId gym=$activeGymId: $error',
+          );
+          debugPrint('$stackTrace');
+        }
+
+        if (resolvedPlanDefaultSetCount != null) {
+          try {
+            await _planDefaultSetCountWriter(
+              userId: userId,
+              planId: resolvedPlanId,
+              defaultSetCount: resolvedPlanDefaultSetCount,
+            );
+            if (container != null) {
+              container.invalidate(trainingPlansProvider);
+            }
+          } catch (error, stackTrace) {
+            debugPrint(
+              '❌ Failed to update defaultSetCount=$resolvedPlanDefaultSetCount for planId=$resolvedPlanId gym=$activeGymId: $error',
+            );
+            debugPrint('$stackTrace');
+          }
+        }
+
+        try {
           final resolvedAnchorStart = sessionAnchorStartTime;
           final dayKey =
               (sessionAnchorDayKey != null &&
@@ -227,7 +332,7 @@ class WorkoutFinishFlow {
           }
         } catch (error, stackTrace) {
           debugPrint(
-            '❌ Failed to update training plan meta for planId=$resolvedPlanId gym=$activeGymId: $error',
+            '❌ Failed to update training plan session_meta for planId=$resolvedPlanId gym=$activeGymId: $error',
           );
           debugPrint('$stackTrace');
         }

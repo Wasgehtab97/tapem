@@ -415,7 +415,6 @@ class OverlayNumericKeypad extends StatelessWidget {
     final aspect = cellW / cellH;
 
     final enforcedCellW = math.max(theme.minKeySide, cellW);
-    final enforcedCellH = math.max(theme.minKeySide, cellH);
     final railW = enforcedCellW;
 
     final barHeight = contentH + safeBottom;
@@ -524,7 +523,7 @@ class OverlayNumericKeypad extends StatelessWidget {
                                 ),
                                 child: _ActionRailCompact(
                                   gridCellWidth: enforcedCellW,
-                                  gridCellHeight: enforcedCellH,
+                                  gridCellHeight: cellH,
                                   totalGridRows: 4,
                                   gap: gap,
                                   theme: theme,
@@ -547,7 +546,16 @@ class OverlayNumericKeypad extends StatelessWidget {
                                       _navigateNext(context, controller),
                                   onNavigateBack: () =>
                                       _navigatePrevious(context, controller),
-                                  onAddSet: () => _addSet(context),
+                                  onAdjustMinus: () => _adjustFocusedValue(
+                                    context,
+                                    controller,
+                                    delta: -1,
+                                  ),
+                                  onAdjustPlus: () => _adjustFocusedValue(
+                                    context,
+                                    controller,
+                                    delta: 1,
+                                  ),
                                   onDuplicate: () => _duplicateFromPrevious(
                                     context,
                                     controller,
@@ -790,20 +798,115 @@ class OverlayNumericKeypad extends StatelessWidget {
     _haptic(context);
   }
 
-  static void _addSet(BuildContext context) {
+  @visibleForTesting
+  static String computeAdjustedFocusedValue({
+    required DeviceSetFieldFocus field,
+    required String currentText,
+    required int delta,
+    required String decimalChar,
+  }) {
+    final normalized = _normalizeNumberInput(currentText);
+    final isRepsField =
+        field == DeviceSetFieldFocus.reps ||
+        field == DeviceSetFieldFocus.dropReps;
+
+    if (isRepsField) {
+      final asInt = int.tryParse(normalized);
+      final parsedAsDouble = asInt == null ? double.tryParse(normalized) : null;
+      final base = asInt ?? parsedAsDouble?.round() ?? 0;
+      final adjusted = math.max(0, base + delta);
+      return '$adjusted';
+    }
+
+    final base = double.tryParse(normalized) ?? 0.0;
+    final adjusted = math.max(0.0, base + delta);
+    return _formatAdjustedWeight(adjusted, decimalChar: decimalChar);
+  }
+
+  static String _normalizeNumberInput(String value) {
+    return value.trim().replaceAll(' ', '').replaceAll(',', '.');
+  }
+
+  static String _formatAdjustedWeight(
+    double value, {
+    required String decimalChar,
+  }) {
+    String out;
+    final rounded = value.roundToDouble();
+    if ((value - rounded).abs() < 1e-9) {
+      out = rounded.toInt().toString();
+    } else {
+      out = value.toStringAsFixed(3);
+      out = out.replaceFirst(RegExp(r'0+$'), '');
+      out = out.replaceFirst(RegExp(r'\.$'), '');
+    }
+    if (decimalChar == ',') {
+      out = out.replaceAll('.', ',');
+    }
+    return out;
+  }
+
+  static void _adjustFocusedValue(
+    BuildContext context,
+    OverlayNumericKeypadController controller, {
+    required int delta,
+  }) {
     final prov = _activeProvider(context);
     if (prov == null) {
       _haptic(context);
       return;
     }
+    final focusedIndex = prov.focusedIndex;
+    final focusedField = prov.focusedField;
+    final targetController = controller.target;
+    if (focusedIndex == null ||
+        focusedField == null ||
+        targetController == null) {
+      _haptic(context);
+      return;
+    }
+    if (focusedIndex < 0 || focusedIndex >= prov.sets.length) {
+      _haptic(context);
+      return;
+    }
 
-    elogUi('OVERLAY_ADD_SET', {
+    final before = targetController.text;
+    final adjusted = computeAdjustedFocusedValue(
+      field: focusedField,
+      currentText: before,
+      delta: delta,
+      decimalChar: _decimalChar(context),
+    );
+
+    targetController.value = TextEditingValue(
+      text: adjusted,
+      selection: TextSelection.collapsed(offset: adjusted.length),
+    );
+
+    final dropIndex = prov.focusedDropIndex ?? 0;
+    switch (focusedField) {
+      case DeviceSetFieldFocus.weight:
+        prov.updateSet(focusedIndex, weight: adjusted);
+        break;
+      case DeviceSetFieldFocus.reps:
+        prov.updateSet(focusedIndex, reps: adjusted);
+        break;
+      case DeviceSetFieldFocus.dropWeight:
+        prov.updateDrop(focusedIndex, dropIndex, weight: adjusted);
+        break;
+      case DeviceSetFieldFocus.dropReps:
+        prov.updateDrop(focusedIndex, dropIndex, reps: adjusted);
+        break;
+    }
+
+    elogUi(delta > 0 ? 'OVERLAY_ADJUST_PLUS' : 'OVERLAY_ADJUST_MINUS', {
       'deviceId': prov.device?.uid,
-      'focusedIndex': prov.focusedIndex,
-      'focusedField': prov.focusedField?.name,
+      'focusedIndex': focusedIndex,
+      'focusedField': focusedField.name,
+      'focusedDropIndex': dropIndex,
+      'before': before,
+      'after': adjusted,
     });
-
-    prov.addSet();
 
     _haptic(context);
   }
@@ -1198,8 +1301,7 @@ class _KeySpec {
   });
 }
 
-/// Action rail (right side). No "done" checkmark anymore.
-/// The "hide keyboard" button is rendered WIDE and occupies the full row.
+/// Action rail (right side).
 class _ActionRailCompact extends StatelessWidget {
   final double gridCellWidth;
   final double gridCellHeight;
@@ -1210,7 +1312,8 @@ class _ActionRailCompact extends StatelessWidget {
   final VoidCallback onHide;
   final VoidCallback onNavigate;
   final VoidCallback onNavigateBack;
-  final VoidCallback onAddSet;
+  final VoidCallback onAdjustMinus;
+  final VoidCallback onAdjustPlus;
   final VoidCallback onDuplicate;
   final VoidCallback? onConfirm;
 
@@ -1224,7 +1327,8 @@ class _ActionRailCompact extends StatelessWidget {
     required this.onHide,
     required this.onNavigate,
     required this.onNavigateBack,
-    required this.onAddSet,
+    required this.onAdjustMinus,
+    required this.onAdjustPlus,
     required this.onDuplicate,
     required this.onConfirm,
   });
@@ -1251,12 +1355,12 @@ class _ActionRailCompact extends StatelessWidget {
         _RailAction(
           Icons.remove_rounded,
           loc.numericKeypadSemanticsDecrease,
-          controller.onRailMinus ?? onNavigateBack,
+          controller.onRailMinus ?? onAdjustMinus,
         ),
         _RailAction(
           Icons.add_rounded,
           loc.numericKeypadSemanticsIncrease,
-          controller.onRailPlus ?? onNavigate,
+          controller.onRailPlus ?? onAdjustPlus,
         ),
         _RailAction(
           Icons.check_circle_outline,
@@ -1275,12 +1379,12 @@ class _ActionRailCompact extends StatelessWidget {
         _RailAction(
           Icons.remove_rounded,
           loc.numericKeypadSemanticsDecrease,
-          controller.onRailMinus ?? onNavigateBack,
+          controller.onRailMinus ?? onAdjustMinus,
         ),
         _RailAction(
           Icons.add_rounded,
           loc.numericKeypadSemanticsIncrease,
-          controller.onRailPlus ?? onNavigate,
+          controller.onRailPlus ?? onAdjustPlus,
         ),
         _RailAction(
           Icons.check_circle_outline,
@@ -1328,7 +1432,8 @@ class _ActionRailCompact extends StatelessWidget {
         ),
       ];
     } else {
-      // Actions without "done". Last action is WIDE hide-keyboard.
+      // Default mode uses a fixed 3x2 matrix:
+      // row1 back/next, row2 minus/plus, row3 copy/hide.
       actions = <_RailAction>[
         _RailAction(
           Icons.arrow_back_rounded,
@@ -1340,7 +1445,16 @@ class _ActionRailCompact extends StatelessWidget {
           loc.numericKeypadSemanticsNext,
           onNavigate,
         ),
-        _RailAction(Icons.add_rounded, loc.addSetButton, onAddSet),
+        _RailAction(
+          Icons.remove_rounded,
+          loc.numericKeypadSemanticsDecrease,
+          onAdjustMinus,
+        ),
+        _RailAction(
+          Icons.add_rounded,
+          loc.numericKeypadSemanticsIncrease,
+          onAdjustPlus,
+        ),
         _RailAction(
           Icons.copy_all_rounded,
           loc.numericKeypadSemanticsDuplicate,
@@ -1350,7 +1464,6 @@ class _ActionRailCompact extends StatelessWidget {
           Icons.keyboard_hide_rounded,
           loc.numericKeypadSemanticsHideKeyboard,
           onHide,
-          wide: true,
         ),
       ];
     }
@@ -1362,7 +1475,7 @@ class _ActionRailCompact extends StatelessWidget {
 
     final sideV = (availableH - totalRowGaps * gap) / rowsNeeded;
     final sideH = (gridCellWidth - gap) / 2;
-    final side = math.max(28.0, math.min(sideV, sideH)).floorToDouble();
+    final side = math.max(1.0, math.min(sideV, sideH) - 2.0).floorToDouble();
 
     Widget squareBtn(_RailAction a) => _RailBtnSquare(
       side: side,

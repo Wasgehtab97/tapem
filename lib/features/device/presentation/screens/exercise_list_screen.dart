@@ -12,6 +12,7 @@ import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/core/widgets/premium_action_tile.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
+import 'package:tapem/features/device/presentation/widgets/exercise_extras_browse_launcher.dart';
 import 'package:tapem/features/device/presentation/widgets/exercise_bottom_sheet.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
@@ -21,6 +22,7 @@ import 'package:tapem/features/device/presentation/controllers/workout_day_contr
 import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/features/device/providers/workout_entry_orchestrator_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
+import 'package:tapem/features/device/presentation/workout_start_guard.dart';
 
 class ExerciseListScreen extends riverpod.ConsumerStatefulWidget {
   final String gymId;
@@ -66,6 +68,51 @@ class _ExerciseListScreenState
     super.dispose();
   }
 
+  Future<void> _handleSelection(WorkoutDeviceSelection selection) async {
+    final onSelect = widget.onSelect;
+    if (onSelect != null) {
+      onSelect(selection);
+      return;
+    }
+
+    final container = riverpod.ProviderScope.containerOf(context);
+    final coordinator = container.read(workoutSessionCoordinatorProvider);
+    if (isWorkoutEditFlowActive(coordinator)) {
+      final auth = container.read(authControllerProvider);
+      final userId = auth.userId;
+      if (userId != null) {
+        try {
+          final orchestrator = container.read(workoutEntryOrchestratorProvider);
+          final controller = container.read(workoutDayControllerProvider);
+          await orchestrator.addOrFocusFromExternalSource(
+            controller: controller,
+            coordinator: coordinator,
+            gymId: selection.gymId,
+            deviceId: selection.deviceId,
+            exerciseId: selection.exerciseId,
+            exerciseName: selection.exerciseName,
+            userId: userId,
+          );
+        } catch (_) {
+          // Fallback
+        }
+      }
+      if (!mounted) return;
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(AppRouter.home, (route) => false, arguments: 2);
+      return;
+    }
+
+    await showExerciseExtrasBrowseSheet(
+      context: context,
+      gymId: selection.gymId,
+      deviceId: selection.deviceId,
+      exerciseId: selection.exerciseId,
+      exerciseName: selection.exerciseName,
+    );
+  }
+
   Future<void> _openAdd([Exercise? ex]) async {
     final result = await showDialog<Exercise>(
       context: context,
@@ -83,51 +130,7 @@ class _ExerciseListScreenState
         exerciseId: result.id,
         exerciseName: result.name,
       );
-      final onSelect = widget.onSelect;
-      if (onSelect != null) {
-        onSelect(selection);
-      } else {
-        final container = riverpod.ProviderScope.containerOf(context);
-        final coordinator = container.read(workoutSessionCoordinatorProvider);
-        if (coordinator.isRunning) {
-          final auth = container.read(authControllerProvider);
-          final userId = auth.userId;
-          if (userId != null) {
-            try {
-              final orchestrator = container.read(
-                workoutEntryOrchestratorProvider,
-              );
-              final controller = container.read(workoutDayControllerProvider);
-              await orchestrator.addOrFocusFromExternalSource(
-                controller: controller,
-                coordinator: coordinator,
-                gymId: widget.gymId,
-                deviceId: widget.deviceId,
-                exerciseId: result.id,
-                exerciseName: result.name,
-                userId: userId,
-              );
-            } catch (_) {
-              // Fallback
-            }
-          }
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            AppRouter.home,
-            (route) => false,
-            arguments: 2,
-          );
-        } else {
-          Navigator.of(context).pushNamed(
-            AppRouter.workoutDay,
-            arguments: {
-              'gymId': widget.gymId,
-              'deviceId': widget.deviceId,
-              'exerciseId': result.id,
-              'entryRequestedAtMs': DateTime.now().millisecondsSinceEpoch,
-            },
-          );
-        }
-      }
+      await _handleSelection(selection);
     }
   }
 
@@ -268,56 +271,7 @@ class _ExerciseListScreenState
                 exerciseId: ex.id,
                 exerciseName: ex.name,
               );
-              final onSelect = widget.onSelect;
-              if (onSelect != null) {
-                onSelect(selection);
-              } else {
-                final container = riverpod.ProviderScope.containerOf(context);
-                final coordinator = container.read(
-                  workoutSessionCoordinatorProvider,
-                );
-                if (coordinator.isRunning) {
-                  final auth = container.read(authControllerProvider);
-                  final userId = auth.userId;
-                  if (userId != null) {
-                    try {
-                      final orchestrator = container.read(
-                        workoutEntryOrchestratorProvider,
-                      );
-                      final controller = container.read(
-                        workoutDayControllerProvider,
-                      );
-                      await orchestrator.addOrFocusFromExternalSource(
-                        controller: controller,
-                        coordinator: coordinator,
-                        gymId: widget.gymId,
-                        deviceId: widget.deviceId,
-                        exerciseId: ex.id,
-                        exerciseName: ex.name,
-                        userId: userId,
-                      );
-                    } catch (_) {
-                      // Fallback
-                    }
-                  }
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    AppRouter.home,
-                    (route) => false,
-                    arguments: 2,
-                  );
-                } else {
-                  Navigator.of(context).pushNamed(
-                    AppRouter.workoutDay,
-                    arguments: {
-                      'gymId': widget.gymId,
-                      'deviceId': widget.deviceId,
-                      'exerciseId': ex.id,
-                      'entryRequestedAtMs':
-                          DateTime.now().millisecondsSinceEpoch,
-                    },
-                  );
-                }
-              }
+              await _handleSelection(selection);
             },
             onEdit: () => _openAdd(ex),
             onDelete: () => _deleteExercise(ex),

@@ -50,7 +50,22 @@ class _FakeGetSessionsForDate extends GetSessionsForDate {
     required DateTime date,
     bool fromCacheOnly = false,
   }) async {
-    return const <Session>[];
+    return <Session>[
+      Session(
+        sessionId: 'session-1',
+        gymId: 'gym-1',
+        userId: userId,
+        deviceId: 'device-1',
+        deviceName: 'Bench Press',
+        isMulti: false,
+        timestamp: DateTime(2026, 2, 13, 19, 30),
+        note: '',
+        sets: <SessionSet>[SessionSet(weight: 80, reps: 8, setNumber: 1)],
+        startTime: DateTime(2026, 2, 13, 19, 0),
+        endTime: DateTime(2026, 2, 13, 19, 30),
+        durationMs: 30 * 60 * 1000,
+      ),
+    ];
   }
 }
 
@@ -385,11 +400,10 @@ void main() {
     await expectHighlightsDialog(tester);
   });
 
-  testWidgets('gym-start -> erster satz startet timer -> save -> highlights', (
+  testWidgets('gym-start intent does not start timer without play', (
     tester,
   ) async {
     await pumpHarness(tester);
-    final context = tester.element(find.byType(Scaffold));
     final orchestrator = WorkoutEntryOrchestrator();
 
     final result = await orchestrator.addOrFocusFromExternalSource(
@@ -407,53 +421,14 @@ void main() {
     expect(timerRunning, isFalse);
 
     await coordinator.onFirstSetCompleted(uid: 'user-1', gymId: 'gym-1');
-    expect(coordinator.isRunning, isTrue);
-    expect(timerRunning, isTrue);
-
-    WorkoutManualStopFlow.debugSetSaveAndFinishInvoker(({
-      required context,
-      required navigatorKey,
-      required controller,
-      required auth,
-      required settings,
-      required sessions,
-      required fallbackGymId,
-      required navigateToHomeProfileOnSuccess,
-      container,
-      planId,
-      planName,
-      sessionAnchorDayKey,
-      sessionAnchorStartTime,
-    }) async {
-      completionStream.add(completionEvent);
-      return const WorkoutFinishResult(
-        status: WorkoutFinishStatus.completed,
-        saveResult: SaveAllSessionsResult(
-          attempted: 1,
-          saved: 1,
-          failedSessions: <String, String?>{},
-          savedSessionKeys: <String>['session-key'],
-        ),
-      );
-    });
-
-    final status = await WorkoutManualStopFlow.saveFromWorkoutDay(
-      context: context,
-      auth: auth,
-      controller: controller,
-      settings: settings,
-      sessionCoordinator: coordinator,
-    );
-    expect(status, WorkoutManualStopStatus.saved);
     expect(coordinator.isRunning, isFalse);
-    await expectHighlightsDialog(tester);
+    expect(timerRunning, isFalse);
   });
 
-  testWidgets('nfc-start -> erster satz startet timer -> save -> highlights', (
+  testWidgets('nfc-start intent does not start timer without play', (
     tester,
   ) async {
     await pumpHarness(tester);
-    final context = tester.element(find.byType(Scaffold));
     final orchestrator = WorkoutEntryOrchestrator();
 
     final result = await orchestrator.addOrFocusFromExternalSource(
@@ -471,46 +446,8 @@ void main() {
     expect(timerRunning, isFalse);
 
     await coordinator.onFirstSetCompleted(uid: 'user-1', gymId: 'gym-1');
-    expect(coordinator.isRunning, isTrue);
-    expect(timerRunning, isTrue);
-
-    WorkoutManualStopFlow.debugSetSaveAndFinishInvoker(({
-      required context,
-      required navigatorKey,
-      required controller,
-      required auth,
-      required settings,
-      required sessions,
-      required fallbackGymId,
-      required navigateToHomeProfileOnSuccess,
-      container,
-      planId,
-      planName,
-      sessionAnchorDayKey,
-      sessionAnchorStartTime,
-    }) async {
-      completionStream.add(completionEvent);
-      return const WorkoutFinishResult(
-        status: WorkoutFinishStatus.completed,
-        saveResult: SaveAllSessionsResult(
-          attempted: 1,
-          saved: 1,
-          failedSessions: <String, String?>{},
-          savedSessionKeys: <String>['session-key'],
-        ),
-      );
-    });
-
-    final status = await WorkoutManualStopFlow.saveFromWorkoutDay(
-      context: context,
-      auth: auth,
-      controller: controller,
-      settings: settings,
-      sessionCoordinator: coordinator,
-    );
-    expect(status, WorkoutManualStopStatus.saved);
     expect(coordinator.isRunning, isFalse);
-    await expectHighlightsDialog(tester);
+    expect(timerRunning, isFalse);
   });
 
   testWidgets(

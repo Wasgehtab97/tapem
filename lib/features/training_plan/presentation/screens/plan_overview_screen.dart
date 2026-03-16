@@ -9,14 +9,23 @@ import 'package:tapem/core/widgets/app_loading_indicator.dart';
 import 'package:tapem/core/widgets/brand_modal.dart';
 import 'package:tapem/core/widgets/brand_primary_button.dart';
 import 'package:tapem/core/widgets/premium_action_tile.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
 import 'package:tapem/features/training_plan/presentation/widgets/plan_color_palette.dart';
 import 'package:tapem/features/training_plan/application/plan_builder_provider.dart';
 import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
 
-class PlanOverviewScreen extends ConsumerWidget {
+class PlanOverviewScreen extends ConsumerStatefulWidget {
   const PlanOverviewScreen({super.key, this.onExitToProfile});
 
   final VoidCallback? onExitToProfile;
+
+  @override
+  ConsumerState<PlanOverviewScreen> createState() => _PlanOverviewScreenState();
+}
+
+class _PlanOverviewScreenState extends ConsumerState<PlanOverviewScreen> {
+  List<String>? _localPlanOrderIds;
+  bool _isPersistingOrder = false;
 
   void _handleBackPressed(BuildContext context) {
     final navigator = Navigator.of(context);
@@ -24,12 +33,12 @@ class PlanOverviewScreen extends ConsumerWidget {
       navigator.pop();
       return;
     }
-    onExitToProfile?.call();
+    widget.onExitToProfile?.call();
   }
 
   Widget? _buildLeadingBackButton(BuildContext context) {
     final canPop = Navigator.of(context).canPop();
-    if (!canPop && onExitToProfile == null) {
+    if (!canPop && widget.onExitToProfile == null) {
       return null;
     }
     return IconButton(
@@ -38,8 +47,98 @@ class PlanOverviewScreen extends ConsumerWidget {
     );
   }
 
+  List<TrainingPlan> _resolveDisplayPlans(List<TrainingPlan> remotePlans) {
+    final localOrderIds = _localPlanOrderIds;
+    if (localOrderIds == null) {
+      return remotePlans;
+    }
+    if (localOrderIds.length != remotePlans.length) {
+      return remotePlans;
+    }
+
+    final plansById = <String, TrainingPlan>{
+      for (final plan in remotePlans) plan.id: plan,
+    };
+    if (localOrderIds.any((id) => !plansById.containsKey(id))) {
+      return remotePlans;
+    }
+
+    return <TrainingPlan>[for (final id in localOrderIds) plansById[id]!];
+  }
+
+  Future<void> _persistPlanOrder({
+    required String userId,
+    required List<String> reorderedIds,
+    required List<String> previousIds,
+  }) async {
+    if (_isPersistingOrder) return;
+    setState(() => _isPersistingOrder = true);
+    try {
+      await ref
+          .read(trainingPlanRepositoryProvider)
+          .reorderPlans(userId: userId, orderedPlanIds: reorderedIds);
+      if (!mounted) return;
+      ref.invalidate(trainingPlansProvider);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _localPlanOrderIds = previousIds;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Reihenfolge konnte nicht gespeichert werden: $error'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isPersistingOrder = false);
+      }
+    }
+  }
+
+  Future<void> _handlePlanReorder({
+    required int oldIndex,
+    required int newIndex,
+    required List<TrainingPlan> displayPlans,
+    required String userId,
+  }) async {
+    if (_isPersistingOrder) {
+      return;
+    }
+    if (oldIndex < 0 || oldIndex >= displayPlans.length) {
+      return;
+    }
+    var targetIndex = newIndex;
+    if (oldIndex < targetIndex) {
+      targetIndex -= 1;
+    }
+    if (targetIndex < 0 || targetIndex >= displayPlans.length) {
+      targetIndex = targetIndex.clamp(0, displayPlans.length - 1);
+    }
+    if (oldIndex == targetIndex) {
+      return;
+    }
+
+    final reordered = List<TrainingPlan>.from(displayPlans);
+    final moved = reordered.removeAt(oldIndex);
+    reordered.insert(targetIndex, moved);
+
+    final previousIds = displayPlans.map((plan) => plan.id).toList();
+    final reorderedIds = reordered.map((plan) => plan.id).toList();
+
+    setState(() {
+      _localPlanOrderIds = reorderedIds;
+    });
+
+    await _persistPlanOrder(
+      userId: userId,
+      reorderedIds: reorderedIds,
+      previousIds: previousIds,
+    );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.secondary;
@@ -129,7 +228,7 @@ class PlanOverviewScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 18),
                         FilledButton.icon(
-                          onPressed: () => _createNewPlan(context, ref),
+                          onPressed: () => _createNewPlan(context),
                           icon: const Icon(Icons.add),
                           label: const Text('Ersten Plan erstellen'),
                           style: FilledButton.styleFrom(
@@ -163,30 +262,67 @@ class PlanOverviewScreen extends ConsumerWidget {
               ),
             );
           }
-          return ListView.builder(
-            itemCount: plans.length,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
-            itemBuilder: (context, index) {
-              final plan = plans[index];
-              final isCoachPlan =
-                  plan.coachId != null && plan.coachId != authState.userId;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: _PlanCard(
-                  name: plan.name,
-                  exerciseCount: plan.exercises.length,
-                  isCoachPlan: isCoachPlan,
-                  colorIndex: plan.colorIndex,
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRouter.trainingPlanDetail,
-                      arguments: plan,
+          final userId = authState.userId;
+          final displayPlans = _resolveDisplayPlans(plans);
+          return Stack(
+            children: [
+              ReorderableListView.builder(
+                itemCount: displayPlans.length,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+                buildDefaultDragHandles: false,
+                onReorder: (oldIndex, newIndex) async {
+                  if (userId == null || userId.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Reihenfolge kann aktuell nicht geändert werden.',
+                        ),
+                      ),
                     );
-                  },
+                    return;
+                  }
+                  await _handlePlanReorder(
+                    oldIndex: oldIndex,
+                    newIndex: newIndex,
+                    displayPlans: displayPlans,
+                    userId: userId,
+                  );
+                },
+                itemBuilder: (context, index) {
+                  final plan = displayPlans[index];
+                  final isCoachPlan =
+                      plan.coachId != null && plan.coachId != authState.userId;
+                  return ReorderableDelayedDragStartListener(
+                    key: ValueKey(plan.id),
+                    index: index,
+                    enabled: !_isPersistingOrder,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: _PlanCard(
+                        name: plan.name,
+                        exerciseCount: plan.exercises.length,
+                        isCoachPlan: isCoachPlan,
+                        colorIndex: plan.colorIndex,
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRouter.trainingPlanDetail,
+                            arguments: plan,
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+              if (_isPersistingOrder)
+                const Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  child: LinearProgressIndicator(minHeight: 2),
                 ),
-              );
-            },
+            ],
           );
         },
         loading: () => const AppLoadingIndicator(),
@@ -196,14 +332,14 @@ class PlanOverviewScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _createNewPlan(context, ref),
+        onPressed: () => _createNewPlan(context),
         backgroundColor: brandColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
-  Future<void> _createNewPlan(BuildContext context, WidgetRef ref) async {
+  Future<void> _createNewPlan(BuildContext context) async {
     final name = await showDialog<String>(
       context: context,
       barrierColor: Colors.black54,

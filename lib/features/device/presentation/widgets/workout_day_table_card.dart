@@ -13,6 +13,7 @@ import 'package:tapem/features/device/presentation/controllers/workout_day_contr
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/models/session_set_vm.dart';
 import 'package:tapem/features/device/presentation/widgets/machine_leaderboard_sheet.dart';
+import 'package:tapem/features/device/presentation/widgets/workout_exercise_extras_sheet.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
@@ -393,7 +394,9 @@ class _WorkoutDayTableCardState
     final index = _repsCtrls.indexOf(controller);
     if (index == -1) return;
     if (index >= _provider.sets.length) return;
-    _provider.updateSet(index, reps: controller.text);
+    final set = _provider.sets[index];
+    final isBw = set['isBodyweight'] == true;
+    _provider.updateSet(index, reps: controller.text, isBodyweight: isBw);
   }
 
   void _handleDropWeightChanged(TextEditingController controller) {
@@ -426,6 +429,10 @@ class _WorkoutDayTableCardState
     );
     final auth = container.read(authControllerProvider);
     final settings = container.read(settingsProvider);
+    final dayController = container.read(workoutDayControllerProvider);
+    final initialSetCountOverride = dayController.initialSetCountForKey(
+      widget.session.key,
+    );
 
     await settings.load(auth.userId!);
 
@@ -434,6 +441,7 @@ class _WorkoutDayTableCardState
       deviceId: widget.session.deviceId,
       exerciseId: widget.session.exerciseId,
       userId: widget.session.userId,
+      initialSetCountOverride: initialSetCountOverride,
     );
 
     if (!mounted) return;
@@ -835,7 +843,7 @@ class _WorkoutDayTableCardState
           closeAndRun(_WorkoutToolType.note, () => _openNote(prov));
         }
 
-        return _WorkoutToolsSheet(
+        return WorkoutExerciseExtrasSheet(
           brandColor: brandColor,
           isBodyweightMode: prov.isBodyweightMode,
           level: prov.level,
@@ -908,8 +916,6 @@ class _WorkoutDayTableCardState
 
     final title = _resolveExerciseTitle(prov, loc);
     final deviceDescription = prov.device?.description;
-    final activeToolSignals =
-        (prov.isBodyweightMode ? 1 : 0) + (prov.note.trim().isNotEmpty ? 1 : 0);
     final compactToolsTrigger = MediaQuery.sizeOf(context).width <= 390;
 
     final snapshot = prov.sessionSnapshots.isNotEmpty
@@ -1050,16 +1056,14 @@ class _WorkoutDayTableCardState
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            title,
-                            style: GoogleFonts.inter(
+                          child: _ExerciseTitleWithOverflowBubble(
+                            title: title,
+                            textStyle: GoogleFonts.inter(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                               letterSpacing: 0.05,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -1081,8 +1085,6 @@ class _WorkoutDayTableCardState
               ),
               const SizedBox(width: 8),
               _WorkoutToolsTriggerButton(
-                isHighlighted: activeToolSignals > 0,
-                activeCount: activeToolSignals,
                 compact: compactToolsTrigger,
                 onTap: () => _openToolsSheet(prov: prov, title: title),
               ),
@@ -1336,6 +1338,7 @@ class _WorkoutDayTableCardState
                   child: _WorkoutTableRow(
                     index: i,
                     set: sets[i],
+                    isBodyweightMode: sets[i]['isBodyweight'] == true,
                     previous: i < lastSets.length ? lastSets[i] : null,
                     isWeightFocused:
                         prov.focusedField == DeviceSetFieldFocus.weight &&
@@ -1375,6 +1378,112 @@ class _WorkoutDayTableCardState
   }
 }
 
+class _ExerciseTitleWithOverflowBubble extends StatefulWidget {
+  const _ExerciseTitleWithOverflowBubble({
+    required this.title,
+    required this.textStyle,
+  });
+
+  final String title;
+  final TextStyle textStyle;
+
+  @override
+  State<_ExerciseTitleWithOverflowBubble> createState() =>
+      _ExerciseTitleWithOverflowBubbleState();
+}
+
+class _ExerciseTitleWithOverflowBubbleState
+    extends State<_ExerciseTitleWithOverflowBubble> {
+  bool _doesOverflow({
+    required BuildContext context,
+    required double maxWidth,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: widget.title, style: widget.textStyle),
+      textDirection: Directionality.of(context),
+      maxLines: 1,
+      ellipsis: '…',
+    )..layout(maxWidth: maxWidth);
+    return painter.didExceedMaxLines;
+  }
+
+  String _wrapHintText(String value) {
+    // Add zero-width break opportunities for long custom tokens.
+    return value
+        .replaceAll('/', '/\u200B')
+        .replaceAll('-', '-\u200B')
+        .replaceAll('_', '_\u200B')
+        .replaceAll('(', '(\u200B');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final isOverflowing = _doesOverflow(
+          context: context,
+          maxWidth: maxWidth,
+        );
+        final theme = Theme.of(context);
+        final brandTheme = theme.extension<AppBrandTheme>();
+        final accent = brandTheme?.outline ?? theme.colorScheme.primary;
+        final titleText = Text(
+          widget.title,
+          style: widget.textStyle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+
+        if (!isOverflowing) {
+          return titleText;
+        }
+
+        final bubbleWidth = (MediaQuery.sizeOf(context).width - 28)
+            .clamp(220.0, 520.0)
+            .toDouble();
+
+        return Tooltip(
+          triggerMode: TooltipTriggerMode.tap,
+          waitDuration: Duration.zero,
+          showDuration: const Duration(seconds: 4),
+          preferBelow: false,
+          verticalOffset: 10,
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+          constraints: BoxConstraints(maxWidth: bubbleWidth),
+          textStyle: widget.textStyle.copyWith(
+            fontSize: (widget.textStyle.fontSize ?? 17) - 1,
+            fontWeight: FontWeight.w600,
+            color: Colors.white.withOpacity(0.96),
+            height: 1.2,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF101726), Color(0xFF070B14)],
+            ),
+            border: Border.all(color: accent.withOpacity(0.72), width: 0.9),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          message: _wrapHintText(widget.title),
+          child: titleText,
+        );
+      },
+    );
+  }
+}
+
 class _TableInputCell extends StatefulWidget {
   const _TableInputCell({
     required this.controller,
@@ -1383,6 +1492,7 @@ class _TableInputCell extends StatefulWidget {
     required this.placeholder,
     required this.textStyle,
     required this.onTap,
+    this.leadingIcon,
   });
 
   final TextEditingController controller;
@@ -1391,6 +1501,7 @@ class _TableInputCell extends StatefulWidget {
   final String placeholder;
   final TextStyle textStyle;
   final VoidCallback onTap;
+  final IconData? leadingIcon;
 
   @override
   State<_TableInputCell> createState() => _TableInputCellState();
@@ -1450,11 +1561,16 @@ class _TableInputCellState extends State<_TableInputCell> {
     final display = controller.text.trim().isEmpty
         ? widget.placeholder
         : controller.text.trim();
+    final hasLeadingIcon = widget.leadingIcon != null;
     final brandColor =
         theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.primary;
     final fillColor = widget.isFocused
         ? brandColor.withOpacity(0.08)
         : Colors.white.withOpacity(0.02);
+    final textColor = widget.textStyle.color ?? Colors.white.withOpacity(0.92);
+    final iconColor = textColor.withOpacity(
+      controller.text.trim().isEmpty ? 0.78 : 0.64,
+    );
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -1462,7 +1578,7 @@ class _TableInputCellState extends State<_TableInputCell> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: EdgeInsets.only(left: hasLeadingIcon ? 6 : 8, right: 8),
         decoration: BoxDecoration(
           color: fillColor,
           borderRadius: BorderRadius.circular(10),
@@ -1470,6 +1586,10 @@ class _TableInputCellState extends State<_TableInputCell> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            if (hasLeadingIcon) ...[
+              Icon(widget.leadingIcon, size: 16, color: iconColor),
+              const SizedBox(width: 5),
+            ],
             if (display.isNotEmpty)
               Flexible(
                 child: Text(
@@ -1501,6 +1621,7 @@ class _WorkoutTableRow extends StatelessWidget {
   const _WorkoutTableRow({
     required this.index,
     required this.set,
+    required this.isBodyweightMode,
     required this.previous,
     required this.isWeightFocused,
     required this.isRepsFocused,
@@ -1520,6 +1641,7 @@ class _WorkoutTableRow extends StatelessWidget {
 
   final int index;
   final Map<String, dynamic> set;
+  final bool isBodyweightMode;
   final SessionSetVM? previous;
   final bool isWeightFocused;
   final bool isRepsFocused;
@@ -1607,6 +1729,9 @@ class _WorkoutTableRow extends StatelessWidget {
                   placeholder: '',
                   textStyle: textStyle,
                   onTap: onTapWeight,
+                  leadingIcon: isBodyweightMode
+                      ? Icons.accessibility_new_rounded
+                      : null,
                 ),
               ),
               Expanded(
@@ -1838,23 +1963,13 @@ class _WorkoutRoundButtonState extends State<_WorkoutRoundButton> {
 }
 
 class _WorkoutToolsTriggerButton extends StatelessWidget {
-  const _WorkoutToolsTriggerButton({
-    required this.onTap,
-    this.isHighlighted = false,
-    this.activeCount = 0,
-    this.compact = false,
-  });
+  const _WorkoutToolsTriggerButton({required this.onTap, this.compact = false});
 
   final VoidCallback onTap;
-  final bool isHighlighted;
-  final int activeCount;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.primary;
     final iconSize = compact ? 13.0 : 14.0;
     final horizontalPadding = compact ? 7.0 : 8.0;
     final verticalPadding = compact ? 4.0 : 5.0;
@@ -1877,13 +1992,9 @@ class _WorkoutToolsTriggerButton extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                color: isHighlighted
-                    ? brandColor.withOpacity(0.18)
-                    : Colors.white.withOpacity(0.04),
+                color: Colors.white.withOpacity(0.04),
                 border: Border.all(
-                  color: isHighlighted
-                      ? brandColor.withOpacity(0.5)
-                      : Colors.white.withOpacity(0.1),
+                  color: Colors.white.withOpacity(0.1),
                   width: 0.9,
                 ),
               ),
@@ -1893,9 +2004,7 @@ class _WorkoutToolsTriggerButton extends StatelessWidget {
                   Icon(
                     Icons.tune_rounded,
                     size: iconSize,
-                    color: isHighlighted
-                        ? brandColor
-                        : Colors.white.withOpacity(0.75),
+                    color: Colors.white.withOpacity(0.75),
                   ),
                   SizedBox(width: spacing),
                   Text(
@@ -1904,9 +2013,7 @@ class _WorkoutToolsTriggerButton extends StatelessWidget {
                       fontSize: fontSize,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.2,
-                      color: isHighlighted
-                          ? brandColor
-                          : Colors.white.withOpacity(0.78),
+                      color: Colors.white.withOpacity(0.78),
                     ),
                   ),
                 ],
@@ -1914,357 +2021,7 @@ class _WorkoutToolsTriggerButton extends StatelessWidget {
             ),
           ),
         ),
-        if (activeCount > 0)
-          Positioned(
-            top: -5,
-            right: -6,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                color: brandColor,
-                boxShadow: [
-                  BoxShadow(
-                    color: brandColor.withOpacity(0.8),
-                    blurRadius: 7,
-                    spreadRadius: 0.4,
-                  ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                activeCount > 9 ? '9+' : '$activeCount',
-                style: GoogleFonts.inter(
-                  fontSize: 8,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
       ],
-    );
-  }
-}
-
-class _WorkoutToolsSheet extends StatelessWidget {
-  const _WorkoutToolsSheet({
-    required this.brandColor,
-    required this.isBodyweightMode,
-    required this.level,
-    required this.xp,
-    required this.hasNote,
-    required this.onOpenLeaderboard,
-    required this.onOpenHistory,
-    required this.onToggleBodyweight,
-    required this.onFeedback,
-    required this.onOpenNote,
-  });
-
-  final Color brandColor;
-  final bool isBodyweightMode;
-  final int level;
-  final int xp;
-  final bool hasNote;
-  final VoidCallback? onOpenLeaderboard;
-  final VoidCallback? onOpenHistory;
-  final VoidCallback onToggleBodyweight;
-  final VoidCallback onFeedback;
-  final VoidCallback onOpenNote;
-
-  @override
-  Widget build(BuildContext context) {
-    final isNarrow = MediaQuery.sizeOf(context).width <= 390;
-    return SafeArea(
-      top: false,
-      child: Container(
-        margin: EdgeInsets.fromLTRB(10, 0, 10, isNarrow ? 10 : 12),
-        padding: EdgeInsets.fromLTRB(
-          isNarrow ? 13 : 16,
-          12,
-          isNarrow ? 13 : 16,
-          isNarrow ? 16 : 18,
-        ),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0A0D15),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: Colors.white.withOpacity(0.24),
-                  ),
-                ),
-              ),
-              Text(
-                'Übungs-Extras',
-                style: GoogleFonts.inter(
-                  fontSize: isNarrow ? 16 : 17,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Alles rund um diese Übung an einem Ort.',
-                style: GoogleFonts.inter(
-                  fontSize: isNarrow ? 11.5 : 12,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white.withOpacity(0.62),
-                ),
-              ),
-              const SizedBox(height: 14),
-              _WorkoutToolsSection(
-                title: 'Leistung',
-                children: [
-                  _WorkoutToolsActionTile(
-                    icon: Icons.emoji_events_rounded,
-                    title: 'Bestenliste',
-                    subtitle: 'Rekorde und Top-Werte dieser Übung',
-                    accent: brandColor,
-                    onTap: onOpenLeaderboard,
-                  ),
-                  _WorkoutToolsActionTile(
-                    icon: Icons.history_rounded,
-                    title: 'Verlauf',
-                    subtitle: 'Letzte Trainings und Fortschritt',
-                    accent: brandColor,
-                    onTap: onOpenHistory,
-                  ),
-                  _WorkoutToolsActionTile(
-                    icon: Icons.military_tech_rounded,
-                    title: 'Level $level',
-                    subtitle: '$xp XP',
-                    accent: brandColor,
-                    onTap: null,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              _WorkoutToolsSection(
-                title: 'Kontext',
-                children: [
-                  _WorkoutToolsActionTile(
-                    icon: Icons.accessibility_new_rounded,
-                    title: 'Körpergewicht',
-                    subtitle: isBodyweightMode
-                        ? 'Modus aktuell aktiv'
-                        : 'Modus aktuell inaktiv',
-                    accent: brandColor,
-                    activeBadge: isBodyweightMode ? 'Aktiv' : null,
-                    onTap: onToggleBodyweight,
-                  ),
-                  _WorkoutToolsActionTile(
-                    icon: Icons.edit_note_rounded,
-                    title: 'Notiz',
-                    subtitle: hasNote
-                        ? 'Notiz vorhanden, zum Bearbeiten tippen'
-                        : 'Kurze Technik- oder Satznotiz hinterlegen',
-                    accent: brandColor,
-                    activeBadge: hasNote ? 'Vorhanden' : null,
-                    onTap: onOpenNote,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              _WorkoutToolsSection(
-                title: 'Hilfe',
-                children: [
-                  _WorkoutToolsActionTile(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    title: 'Feedback',
-                    subtitle: 'Fehler melden oder Idee teilen',
-                    accent: brandColor,
-                    onTap: onFeedback,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WorkoutToolsSection extends StatelessWidget {
-  const _WorkoutToolsSection({required this.title, required this.children});
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 2, bottom: 8),
-          child: Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.25,
-              color: Colors.white.withOpacity(0.56),
-            ),
-          ),
-        ),
-        ...children,
-      ],
-    );
-  }
-}
-
-class _WorkoutToolsActionTile extends StatelessWidget {
-  const _WorkoutToolsActionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.accent,
-    required this.onTap,
-    this.activeBadge,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color accent;
-  final VoidCallback? onTap;
-  final String? activeBadge;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
-    final isActive = activeBadge != null;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: isActive
-                  ? accent.withOpacity(0.14)
-                  : Colors.white.withOpacity(0.03),
-              border: Border.all(
-                color: isActive
-                    ? accent.withOpacity(0.45)
-                    : Colors.white.withOpacity(0.08),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isActive
-                        ? accent.withOpacity(0.24)
-                        : Colors.white.withOpacity(0.08),
-                  ),
-                  child: Icon(
-                    icon,
-                    size: 18,
-                    color: enabled
-                        ? (isActive ? accent : Colors.white.withOpacity(0.86))
-                        : Colors.white.withOpacity(0.42),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: enabled
-                              ? Colors.white.withOpacity(0.92)
-                              : Colors.white.withOpacity(0.52),
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white.withOpacity(0.58),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (activeBadge != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
-                      color: accent.withOpacity(0.22),
-                      border: Border.all(
-                        color: accent.withOpacity(0.45),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Text(
-                      activeBadge!,
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: accent,
-                      ),
-                    ),
-                  )
-                else
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: 18,
-                    color: enabled
-                        ? Colors.white.withOpacity(0.45)
-                        : Colors.white.withOpacity(0.25),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -11,7 +11,9 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
+import 'package:tapem/features/device/presentation/widgets/exercise_extras_browse_launcher.dart';
 import 'package:tapem/features/device/providers/workout_entry_orchestrator_provider.dart';
+import 'package:tapem/features/device/presentation/workout_start_guard.dart';
 import 'package:tapem/services/membership_service.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/core/services/workout_session_coordinator.dart';
@@ -133,6 +135,8 @@ class NfcScanButton extends ConsumerWidget {
               final resolvedDeviceId = deviceId ?? dev.uid;
               final resolvedExerciseId = exerciseId ?? dev.uid;
               final selectionHandler = onSelection;
+              final coordinator = ref.read(workoutSessionCoordinatorProvider);
+              final isWorkoutActive = isWorkoutEditFlowActive(coordinator);
 
               if (dev.isMulti) {
                 if (selectionHandler != null) {
@@ -166,7 +170,22 @@ class NfcScanButton extends ConsumerWidget {
                 // If a screen-level handler is present (e.g. WorkoutDay),
                 // delegate selection handling to avoid duplicate add/focus logic.
                 if (selectionHandler != null) {
+                  if (!isWorkoutActive) {
+                    showWorkoutStartViaPlayRequiredSnackbar(context);
+                    return;
+                  }
                   await selectionHandler(selection);
+                  return;
+                }
+
+                if (!isWorkoutActive) {
+                  await showExerciseExtrasBrowseSheet(
+                    context: context,
+                    gymId: gymId,
+                    deviceId: resolvedDeviceId,
+                    exerciseId: resolvedExerciseId,
+                    exerciseName: dev.name,
+                  );
                   return;
                 }
 
@@ -175,9 +194,6 @@ class NfcScanButton extends ConsumerWidget {
                     workoutEntryOrchestratorProvider,
                   );
                   final controller = ref.read(workoutDayControllerProvider);
-                  final coordinator = ref.read(
-                    workoutSessionCoordinatorProvider,
-                  );
                   final result = await orchestrator
                       .addOrFocusFromExternalSource(
                         controller: controller,

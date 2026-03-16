@@ -69,6 +69,7 @@ class WorkoutSessionCoordinator extends ChangeNotifier
   String? _finalizeToken;
 
   bool get isRunning => _isRunning;
+  bool get isActiveWorkout => _isRunning && _durationService.isRunning;
   bool get isDisposed => _isDisposed;
   DateTime? get anchorStartAt => _fromMs(_anchorStartEpochMs);
   String? get anchorDayKey => _anchorDayKey;
@@ -294,26 +295,12 @@ class WorkoutSessionCoordinator extends ChangeNotifier
     if (_isDisposed) return;
     final completedAtMs = completedAt.millisecondsSinceEpoch;
     if (!_isRunning) {
-      // A finalized session can only be restarted via an explicit new start
-      // intent (profile play or Gym/NFC add). This blocks late async set
-      // callbacks from reviving a completed training.
-      if (_finalizedEpochMs != null || _finalizeReason != null) {
-        return;
-      }
-      _isRunning = true;
-      _anchorStartEpochMs = completedAtMs;
-      _anchorDayKey = logicDayKey(completedAt);
       _workoutFlowLog(
-        'session_start source=first_set uid=$uid gym=$gymId start=${completedAt.toIso8601String()}',
+        'set_completed_ignored reason=no_active_workout uid=$uid gym=$gymId at=$completedAtMs',
       );
-      _finalizedEpochMs = null;
-      _finalizeReason = null;
-      _finalizeToken = null;
-      if (!_durationService.isRunning) {
-        await _durationService.start(uid: uid, gymId: gymId);
-        if (_isDisposed) return;
-      }
-    } else if (_finalizedEpochMs != null || _finalizeReason != null) {
+      return;
+    }
+    if (_finalizedEpochMs != null || _finalizeReason != null) {
       // Defensive cleanup: a running session must not carry finalized metadata.
       _finalizedEpochMs = null;
       _finalizeReason = null;

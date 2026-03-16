@@ -7,6 +7,7 @@ import 'package:tapem/core/services/workout_session_coordinator.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
+import 'package:tapem/features/device/presentation/workout_start_guard.dart';
 import 'package:tapem/features/device/providers/exercise_provider.dart';
 import 'package:tapem/features/device/providers/workout_entry_orchestrator_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
@@ -47,6 +48,14 @@ class _DeviceScreenState extends riverpod.ConsumerState<DeviceScreen> {
     if (userId == null) return;
     final controller = ref.read(workoutDayControllerProvider);
     final coordinator = ref.read(workoutSessionCoordinatorProvider);
+    if (!isWorkoutEditFlowActive(coordinator)) {
+      if (mounted) {
+        showWorkoutStartViaPlayRequiredSnackbar(context);
+        setState(() => _isInitializing = false);
+        Navigator.of(context).maybePop();
+      }
+      return;
+    }
     final orchestrator = ref.read(workoutEntryOrchestratorProvider);
     final result = await orchestrator.addOrFocusFromExternalSource(
       controller: controller,
@@ -99,23 +108,17 @@ class _DeviceScreenState extends riverpod.ConsumerState<DeviceScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isInitializing) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final controller = ref.watch(workoutDayControllerProvider);
     final key = _sessionKey;
     if (key == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     final session = controller.sessionForKey(key);
     if (session == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return AnimatedBuilder(
@@ -154,7 +157,8 @@ class _DeviceScreenState extends riverpod.ConsumerState<DeviceScreen> {
     final exercises = (device?.isMulti ?? false)
         ? ref.watch(exerciseProvider).exercises
         : null;
-    final resolvedTitle = _resolveExerciseTitle(
+    final resolvedTitle =
+        _resolveExerciseTitle(
           provider,
           exercises: exercises,
           exerciseId: session.exerciseId,
@@ -163,14 +167,11 @@ class _DeviceScreenState extends riverpod.ConsumerState<DeviceScreen> {
     final subtitle = device?.isMulti == true && resolvedTitle != device?.name
         ? device?.name
         : null;
-    final titleStyle = theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-        ) ??
-        const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        );
-    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+    final titleStyle =
+        theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600) ??
+        const TextStyle(fontSize: 16, fontWeight: FontWeight.w600);
+    final subtitleStyle =
+        theme.textTheme.bodySmall?.copyWith(
           color: theme.textTheme.bodySmall?.color?.withOpacity(0.72),
         ) ??
         TextStyle(
@@ -189,7 +190,12 @@ class _DeviceScreenState extends riverpod.ConsumerState<DeviceScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(resolvedTitle, style: titleStyle, maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            resolvedTitle,
+            style: titleStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           if (subtitle != null)
             Text(
               subtitle,
@@ -251,7 +257,9 @@ class _DeviceScreenState extends riverpod.ConsumerState<DeviceScreen> {
     if (availableExercises == null) {
       return device.name;
     }
-    final match = availableExercises.where((exercise) => exercise.id == exerciseId);
+    final match = availableExercises.where(
+      (exercise) => exercise.id == exerciseId,
+    );
     if (match.isNotEmpty) {
       return match.first.name;
     }

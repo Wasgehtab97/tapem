@@ -10,6 +10,7 @@ import 'package:tapem/features/device/domain/usecases/get_device_by_nfc_code.dar
 import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/features/device/providers/workout_entry_orchestrator_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
+import 'package:tapem/features/device/presentation/workout_start_guard.dart';
 import 'package:tapem/core/services/workout_session_coordinator.dart';
 import 'package:tapem/features/nfc/domain/usecases/read_nfc_code.dart';
 import 'package:tapem/features/nfc/providers/nfc_providers.dart';
@@ -49,6 +50,14 @@ class _GlobalNfcListenerState extends ConsumerState<GlobalNfcListener> {
 
         final dev = await _getDevice.execute(gymId, code);
         if (dev == null) return;
+        final coordinator = ref.read(workoutSessionCoordinatorProvider);
+        if (!isWorkoutEditFlowActive(coordinator)) {
+          final context = navigatorKey.currentContext;
+          if (context != null) {
+            showWorkoutStartViaPlayRequiredSnackbar(context);
+          }
+          return;
+        }
 
         // Physisches Feedback bei Erfolg
         HapticFeedback.mediumImpact();
@@ -63,7 +72,6 @@ class _GlobalNfcListenerState extends ConsumerState<GlobalNfcListener> {
           // Einzelsitzung hinzufügen/fokussieren.
           final orchestrator = ref.read(workoutEntryOrchestratorProvider);
           final controller = ref.read(workoutDayControllerProvider);
-          final coordinator = ref.read(workoutSessionCoordinatorProvider);
           final result = await orchestrator.addOrFocusFromExternalSource(
             controller: controller,
             coordinator: coordinator,

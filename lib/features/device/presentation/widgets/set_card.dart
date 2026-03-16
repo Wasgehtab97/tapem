@@ -83,7 +83,8 @@ class SetCardTheme {
       doneOff: Colors.white.withOpacity(0.1),
       menuBg: Colors.black.withOpacity(0.8),
       menuFg: Colors.white,
-      cardFill: Colors.transparent, // We use the container background or transparent
+      cardFill:
+          Colors.transparent, // We use the container background or transparent
       inputFill: inputFill,
       inputFillDisabled: Colors.black.withOpacity(0.1),
       inputStroke: Colors.transparent,
@@ -183,11 +184,7 @@ class SetCardState extends State<SetCard> {
 
   // 🔒 Silent-update Mechanik
   bool _muteCtrls = false;
-  void _setTextSilently(
-    TextEditingController c,
-    String text,
-    String field,
-  ) {
+  void _setTextSilently(TextEditingController c, String text, String field) {
     UiMutationGuard.run(
       screen: 'DeviceScreen',
       widget: 'SetCard',
@@ -209,9 +206,10 @@ class SetCardState extends State<SetCard> {
   void _focusSession() {
     final key = widget.sessionKey;
     if (key != null) {
-      riverpod.ProviderScope.containerOf(context, listen: false)
-          .read(workoutDayControllerProvider)
-          .focusSession(key);
+      riverpod.ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(workoutDayControllerProvider).focusSession(key);
     }
   }
 
@@ -244,16 +242,12 @@ class SetCardState extends State<SetCard> {
     final index = _dropWeightCtrls.indexOf(controller);
     if (index == -1) return;
     _slog(widget.index, 'dropWeight[$index] → "${controller.text}"');
-    final controllerProv =
-        riverpod.ProviderScope.containerOf(context, listen: false)
-            .read(workoutDayControllerProvider);
-    final device =
-        controllerProv.sessionForKey(widget.sessionKey!)?.provider;
-    device?.updateDrop(
-      widget.index,
-      index,
-      weight: controller.text,
-    );
+    final controllerProv = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(workoutDayControllerProvider);
+    final device = controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+    device?.updateDrop(widget.index, index, weight: controller.text);
   }
 
   void _handleDropRepsChanged(TextEditingController controller) {
@@ -261,16 +255,12 @@ class SetCardState extends State<SetCard> {
     final index = _dropRepsCtrls.indexOf(controller);
     if (index == -1) return;
     _slog(widget.index, 'dropReps[$index] → "${controller.text}"');
-    final controllerProv =
-        riverpod.ProviderScope.containerOf(context, listen: false)
-            .read(workoutDayControllerProvider);
-    final device =
-        controllerProv.sessionForKey(widget.sessionKey!)?.provider;
-    device?.updateDrop(
-      widget.index,
-      index,
-      reps: controller.text,
-    );
+    final controllerProv = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(workoutDayControllerProvider);
+    final device = controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+    device?.updateDrop(widget.index, index, reps: controller.text);
   }
 
   void _addDropController() {
@@ -353,11 +343,11 @@ class SetCardState extends State<SetCard> {
 
   void _handleAddDrop() {
     _focusSession();
-    final controllerProv =
-        riverpod.ProviderScope.containerOf(context, listen: false)
-            .read(workoutDayControllerProvider);
-    final device =
-        controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+    final controllerProv = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(workoutDayControllerProvider);
+    final device = controllerProv.sessionForKey(widget.sessionKey!)?.provider;
     final newIndex = device?.addDropToSet(widget.index) ?? 0;
     HapticFeedback.lightImpact();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -388,12 +378,15 @@ class SetCardState extends State<SetCard> {
       _weightCtrl.addListener(() {
         if (_muteCtrls) return;
         _slog(widget.index, 'weight → "${_weightCtrl.text}"');
-        final controllerProv =
-            riverpod.ProviderScope.containerOf(context, listen: false)
-                .read(workoutDayControllerProvider);
-        final device =
-            controllerProv.sessionForKey(widget.sessionKey!)?.provider;
-        final isBw = device?.isBodyweightMode ?? false;
+        final controllerProv = riverpod.ProviderScope.containerOf(
+          context,
+          listen: false,
+        ).read(workoutDayControllerProvider);
+        final device = controllerProv
+            .sessionForKey(widget.sessionKey!)
+            ?.provider;
+        final setIsBw = widget.set['isBodyweight'] == true;
+        final isBw = setIsBw || (device?.isBodyweightMode ?? false);
         device?.updateSet(
           widget.index,
           weight: _weightCtrl.text,
@@ -403,14 +396,19 @@ class SetCardState extends State<SetCard> {
       _repsCtrl.addListener(() {
         if (_muteCtrls) return;
         _slog(widget.index, 'reps → "${_repsCtrl.text}"');
-        final controllerProv =
-            riverpod.ProviderScope.containerOf(context, listen: false)
-                .read(workoutDayControllerProvider);
-        final device =
-            controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+        final controllerProv = riverpod.ProviderScope.containerOf(
+          context,
+          listen: false,
+        ).read(workoutDayControllerProvider);
+        final device = controllerProv
+            .sessionForKey(widget.sessionKey!)
+            ?.provider;
+        final setIsBw = widget.set['isBodyweight'] == true;
+        final isBw = setIsBw || (device?.isBodyweightMode ?? false);
         device?.updateSet(
           widget.index,
           reps: _repsCtrl.text,
+          isBodyweight: isBw,
         );
       });
     }
@@ -456,14 +454,15 @@ class SetCardState extends State<SetCard> {
       widget.index,
       'open keypad field=$field allowDecimal=$allowDecimal text="${controller.text}"',
     );
-    final controllerProv =
-        riverpod.ProviderScope.containerOf(context, listen: false)
-            .read(workoutDayControllerProvider);
-    final prov =
-        controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+    final controllerProv = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(workoutDayControllerProvider);
+    final prov = controllerProv.sessionForKey(widget.sessionKey!)?.provider;
     if (notifyFocus) {
       _focusSession();
-      _lastFocusRequestId = prov?.requestFocus(
+      _lastFocusRequestId =
+          prov?.requestFocus(
             index: widget.index,
             field: field,
             dropIndex: dropIndex,
@@ -472,12 +471,11 @@ class SetCardState extends State<SetCard> {
     } else {
       _lastFocusRequestId = prov?.focusRequestId ?? _lastFocusRequestId;
     }
-    final keypad = riverpod.ProviderScope.containerOf(context, listen: false)
-        .read(overlayNumericKeypadControllerProvider);
-    keypad.openFor(
-      controller,
-      allowDecimal: allowDecimal,
-    );
+    final keypad = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(overlayNumericKeypadControllerProvider);
+    keypad.openFor(controller, allowDecimal: allowDecimal);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final targetContext = targetKey?.currentContext ?? focusNode.context;
@@ -489,7 +487,9 @@ class SetCardState extends State<SetCard> {
         curve: Curves.easeOutCubic,
       );
     });
-    controller.selection = TextSelection.collapsed(offset: controller.text.length);
+    controller.selection = TextSelection.collapsed(
+      offset: controller.text.length,
+    );
     if (focusNode.canRequestFocus) {
       focusNode.requestFocus();
     }
@@ -525,12 +525,10 @@ class SetCardState extends State<SetCard> {
 
   @override
   Widget build(BuildContext context) {
-    final dayController =
-        riverpod.ProviderScope.containerOf(context).read(
-      workoutDayControllerProvider,
-    );
-    final prov =
-        dayController.sessionForKey(widget.sessionKey!)?.provider;
+    final dayController = riverpod.ProviderScope.containerOf(
+      context,
+    ).read(workoutDayControllerProvider);
+    final prov = dayController.sessionForKey(widget.sessionKey!)?.provider;
     if (prov == null) {
       return const SizedBox.shrink();
     }
@@ -547,11 +545,12 @@ class SetCardState extends State<SetCard> {
     final weight = (widget.set['weight'] ?? '').toString().trim();
     final reps = (widget.set['reps'] ?? '').toString().trim();
     final isBw = widget.set['isBodyweight'] == true;
-    final filled = (isBw
+    final filled =
+        (isBw
             ? (weight.isEmpty ||
-                double.tryParse(weight.replaceAll(',', '.')) != null)
+                  double.tryParse(weight.replaceAll(',', '.')) != null)
             : (weight.isNotEmpty &&
-                double.tryParse(weight.replaceAll(',', '.')) != null)) &&
+                  double.tryParse(weight.replaceAll(',', '.')) != null)) &&
         reps.isNotEmpty &&
         int.tryParse(reps) != null;
 
@@ -619,20 +618,19 @@ class SetCardState extends State<SetCard> {
     VoidCallback? toggleExtras;
     if (!widget.readOnly) {
       toggleExtras = () {
-        _slog(
-          widget.index,
-          'tap: more options → ${!_showExtras}',
-        );
+        _slog(widget.index, 'tap: more options → ${!_showExtras}');
         HapticFeedback.lightImpact();
         final next = !_showExtras;
         setState(() => _showExtras = next);
         if (next && _dropWeightCtrls.isEmpty) {
           _focusSession();
-          final controllerProv =
-              riverpod.ProviderScope.containerOf(context, listen: false)
-                  .read(workoutDayControllerProvider);
-          final device =
-              controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+          final controllerProv = riverpod.ProviderScope.containerOf(
+            context,
+            listen: false,
+          ).read(workoutDayControllerProvider);
+          final device = controllerProv
+              .sessionForKey(widget.sessionKey!)
+              ?.provider;
           device?.ensureDropSlot(widget.index);
         }
       };
@@ -641,16 +639,15 @@ class SetCardState extends State<SetCard> {
     VoidCallback? toggleDone;
     if (!widget.readOnly && filled) {
       toggleDone = () {
-        _slog(
-          widget.index,
-          'tap: toggle done via provider',
-        );
+        _slog(widget.index, 'tap: toggle done via provider');
         _focusSession();
-        final controllerProv =
-            riverpod.ProviderScope.containerOf(context, listen: false)
-                .read(workoutDayControllerProvider);
-        final device =
-            controllerProv.sessionForKey(widget.sessionKey!)?.provider;
+        final controllerProv = riverpod.ProviderScope.containerOf(
+          context,
+          listen: false,
+        ).read(workoutDayControllerProvider);
+        final device = controllerProv
+            .sessionForKey(widget.sessionKey!)
+            ?.provider;
         final ok = device?.toggleSetDone(widget.index) ?? false;
         elogUi('SET_DONE_TAP', {
           'index': widget.index,
@@ -660,9 +657,10 @@ class SetCardState extends State<SetCard> {
         HapticFeedback.lightImpact();
         if (ok) {
           prov.clearFocus();
-          riverpod.ProviderScope.containerOf(context, listen: false)
-              .read(overlayNumericKeypadControllerProvider)
-              .close();
+          riverpod.ProviderScope.containerOf(
+            context,
+            listen: false,
+          ).read(overlayNumericKeypadControllerProvider).close();
         }
       };
     }
@@ -680,23 +678,23 @@ class SetCardState extends State<SetCard> {
           onTapWeight: widget.readOnly
               ? null
               : () => _openKeypad(
-                    _dropWeightCtrls[i],
-                    _dropWeightFocuses[i],
-                    allowDecimal: true,
-                    field: DeviceSetFieldFocus.dropWeight,
-                    dropIndex: i,
-                    targetKey: _dropWeightKeys[i],
-                  ),
+                  _dropWeightCtrls[i],
+                  _dropWeightFocuses[i],
+                  allowDecimal: true,
+                  field: DeviceSetFieldFocus.dropWeight,
+                  dropIndex: i,
+                  targetKey: _dropWeightKeys[i],
+                ),
           onTapReps: widget.readOnly
               ? null
               : () => _openKeypad(
-                    _dropRepsCtrls[i],
-                    _dropRepsFocuses[i],
-                    allowDecimal: true,
-                    field: DeviceSetFieldFocus.dropReps,
-                    dropIndex: i,
-                    targetKey: _dropRepsKeys[i],
-                  ),
+                  _dropRepsCtrls[i],
+                  _dropRepsFocuses[i],
+                  allowDecimal: true,
+                  field: DeviceSetFieldFocus.dropReps,
+                  dropIndex: i,
+                  targetKey: _dropRepsKeys[i],
+                ),
           validator: (_) => _validateDrop(i),
           showAddButton: canMutateDrops && i == _dropWeightCtrls.length - 1,
           onAdd: canMutateDrops ? _handleAddDrop : null,
@@ -739,39 +737,37 @@ class SetCardState extends State<SetCard> {
       repsFieldKey: _repsFieldKey,
       onToggleExtras: toggleExtras,
       onToggleDone: toggleDone,
-      onTapWeight:
-          widget.readOnly
-              ? null
-              : () => _openKeypad(
-                    _weightCtrl,
-                    _weightFocus,
-                    allowDecimal: true,
-                    field: DeviceSetFieldFocus.weight,
-                    targetKey: _weightFieldKey,
-                  ),
+      onTapWeight: widget.readOnly
+          ? null
+          : () => _openKeypad(
+              _weightCtrl,
+              _weightFocus,
+              allowDecimal: true,
+              field: DeviceSetFieldFocus.weight,
+              targetKey: _weightFieldKey,
+            ),
       onTapReps: widget.readOnly
           ? null
           : () => _openKeypad(
-                _repsCtrl,
-                _repsFocus,
-                allowDecimal: true,
-                field: DeviceSetFieldFocus.reps,
-                targetKey: _repsFieldKey,
-              ),
+              _repsCtrl,
+              _repsFocus,
+              allowDecimal: true,
+              field: DeviceSetFieldFocus.reps,
+              targetKey: _repsFieldKey,
+            ),
       dropRows: dropRows,
       padding: contentPadding,
     );
 
-    final backgroundRadius = rowRadius ??
+    final backgroundRadius =
+        rowRadius ??
         (displayMode == SetCardDisplayMode.standalone
             ? BorderRadius.circular(26)
             : BorderRadius.circular(18));
     content = ClipRRect(
       borderRadius: backgroundRadius,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: tokens.cardFill,
-        ),
+        decoration: BoxDecoration(color: tokens.cardFill),
         child: content,
       ),
     );
@@ -779,10 +775,7 @@ class SetCardState extends State<SetCard> {
     return Semantics(
       label: 'Set ${widget.index + 1}',
       child: displayMode == SetCardDisplayMode.standalone
-          ? BrandOutline(
-              padding: tokens.padding,
-              child: content,
-            )
+          ? BrandOutline(padding: tokens.padding, child: content)
           : content,
     );
   }
@@ -869,24 +862,11 @@ class SetRowContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               SizedBox(width: leadingWidth),
-              if (previousSet != null)
-                const Spacer(flex: 2),
+              if (previousSet != null) const Spacer(flex: 2),
               if (previousSet != null) SizedBox(width: dense ? 4 : 6),
-              Flexible(
-                flex: 3,
-                child: Text(
-                  'kg',
-                  style: headerStyle,
-                ),
-              ),
+              Flexible(flex: 3, child: Text('kg', style: headerStyle)),
               SizedBox(width: dense ? 4 : 6),
-              Flexible(
-                flex: 3,
-                child: Text(
-                  repsLabel,
-                  style: headerStyle,
-                ),
-              ),
+              Flexible(flex: 3, child: Text(repsLabel, style: headerStyle)),
             ],
           ),
         ),
@@ -897,11 +877,7 @@ class SetRowContent extends StatelessWidget {
       Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _IndexBadge(
-            tokens: tokens,
-            index: index,
-            dense: dense,
-          ),
+          _IndexBadge(tokens: tokens, index: index, dense: dense),
           SizedBox(width: dense ? 6 : 8),
           // Previous set compact display – immer sichtbar, bei fehlenden
           // Werten zeigt das Feld einfach "-".
@@ -935,7 +911,11 @@ class SetRowContent extends StatelessWidget {
                   return null;
                 },
                 showLabel: false,
-                placeholder: weightLabel,
+                placeholder: isBodyweightMode ? '' : weightLabel,
+                leadingIcon: isBodyweightMode
+                    ? Icons.accessibility_new_rounded
+                    : null,
+                leadingSemanticsLabel: isBodyweightMode ? loc.bodyweight : null,
               ),
             ),
           ),
@@ -989,7 +969,6 @@ class SetRowContent extends StatelessWidget {
       ),
     );
 
-
     // Previous set summary is now shown inline in the row above
     // if (previousSet != null) {
     //   children.add(
@@ -1009,82 +988,82 @@ class SetRowContent extends StatelessWidget {
       children.add(SizedBox(height: dense ? 6 : 9));
       for (var i = 0; i < dropRows.length; i++) {
         final drop = dropRows[i];
-          final hasAddButton = !readOnly && drop.showAddButton;
-          final buttonSize = dense ? 38.0 : 42.0;
+        final hasAddButton = !readOnly && drop.showAddButton;
+        final buttonSize = dense ? 38.0 : 42.0;
 
-          children.add(
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: leadingWidth,
-                  child: Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: Padding(
-                      padding: EdgeInsetsDirectional.only(
-                        end: dropBadgeToFieldGap,
-                      ),
-                      child: _DropBadge(tokens: tokens, dense: dense),
+        children.add(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: leadingWidth,
+                child: Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: Padding(
+                    padding: EdgeInsetsDirectional.only(
+                      end: dropBadgeToFieldGap,
                     ),
+                    child: _DropBadge(tokens: tokens, dense: dense),
                   ),
                 ),
-                SizedBox(width: dense ? 6 : 8),
-                if (previousSet != null) ...[
-                  const Spacer(flex: 2),
-                  SizedBox(width: dense ? 4 : 6),
-                ],
-                Flexible(
-                  flex: 3,
-                  child: KeyedSubtree(
-                    key: drop.weightKey,
-                    child: _InputPill(
-                      controller: drop.weightController,
-                      focusNode: drop.weightFocus,
-                      label: loc.dropKgFieldLabel,
-                      readOnly: readOnly || done,
-                      tokens: tokens,
-                      dense: true,
-                      onTap: drop.onTapWeight,
-                      validator: drop.validator,
-                    ),
-                  ),
-                ),
+              ),
+              SizedBox(width: dense ? 6 : 8),
+              if (previousSet != null) ...[
+                const Spacer(flex: 2),
                 SizedBox(width: dense ? 4 : 6),
-                Flexible(
-                  flex: 3,
-                  child: KeyedSubtree(
-                    key: drop.repsKey,
-                    child: _InputPill(
-                      controller: drop.repsController,
-                      focusNode: drop.repsFocus,
-                      label: loc.dropRepsFieldLabel,
-                      readOnly: readOnly || done,
-                      tokens: tokens,
-                      dense: true,
-                      onTap: drop.onTapReps,
-                      validator: drop.validator,
-                    ),
+              ],
+              Flexible(
+                flex: 3,
+                child: KeyedSubtree(
+                  key: drop.weightKey,
+                  child: _InputPill(
+                    controller: drop.weightController,
+                    focusNode: drop.weightFocus,
+                    label: loc.dropKgFieldLabel,
+                    readOnly: readOnly || done,
+                    tokens: tokens,
+                    dense: true,
+                    onTap: drop.onTapWeight,
+                    validator: drop.validator,
                   ),
                 ),
-                SizedBox(width: dense ? 5 : 7),
-                if (hasAddButton)
-                  _RoundButton(
+              ),
+              SizedBox(width: dense ? 4 : 6),
+              Flexible(
+                flex: 3,
+                child: KeyedSubtree(
+                  key: drop.repsKey,
+                  child: _InputPill(
+                    controller: drop.repsController,
+                    focusNode: drop.repsFocus,
+                    label: loc.dropRepsFieldLabel,
+                    readOnly: readOnly || done,
                     tokens: tokens,
-                    icon: Icons.add,
-                    filled: false,
-                    semantics: loc.addSetButton,
                     dense: true,
-                    onTap: drop.onAdd,
-                    iconColor: primaryColor,
-                    disabledIconColor: primaryColor.withOpacity(0.4),
-                  )
-                else
-                  SizedBox(width: buttonSize),
-                SizedBox(width: dense ? 5 : 7),
+                    onTap: drop.onTapReps,
+                    validator: drop.validator,
+                  ),
+                ),
+              ),
+              SizedBox(width: dense ? 5 : 7),
+              if (hasAddButton)
+                _RoundButton(
+                  tokens: tokens,
+                  icon: Icons.add,
+                  filled: false,
+                  semantics: loc.addSetButton,
+                  dense: true,
+                  onTap: drop.onAdd,
+                  iconColor: primaryColor,
+                  disabledIconColor: primaryColor.withOpacity(0.4),
+                )
+              else
                 SizedBox(width: buttonSize),
-              ],
-            ),
-          );
+              SizedBox(width: dense ? 5 : 7),
+              SizedBox(width: buttonSize),
+            ],
+          ),
+        );
         if (i != dropRows.length - 1) {
           children.add(SizedBox(height: dense ? 8 : 12));
         }
@@ -1100,13 +1079,9 @@ class SetRowContent extends StatelessWidget {
       ),
     );
 
-    return SizedBox(
-      width: double.infinity,
-      child: body,
-    );
+    return SizedBox(width: double.infinity, child: body);
   }
 }
-
 
 class _DropRowConfig {
   final TextEditingController weightController;
@@ -1135,9 +1110,6 @@ class _DropRowConfig {
     this.onAdd,
   });
 }
-
-
-
 
 class _IndexBadge extends StatelessWidget {
   final SetCardTheme tokens;
@@ -1186,10 +1158,7 @@ class _IndexBadge extends StatelessWidget {
 class _DropBadge extends StatelessWidget {
   final SetCardTheme tokens;
   final bool dense;
-  const _DropBadge({
-    required this.tokens,
-    this.dense = false,
-  });
+  const _DropBadge({required this.tokens, this.dense = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1231,6 +1200,8 @@ class _InputPill extends StatefulWidget {
   final bool dense;
   final bool showLabel;
   final String? placeholder;
+  final IconData? leadingIcon;
+  final String? leadingSemanticsLabel;
 
   const _InputPill({
     required this.controller,
@@ -1243,6 +1214,8 @@ class _InputPill extends StatefulWidget {
     this.dense = false,
     this.showLabel = true,
     this.placeholder,
+    this.leadingIcon,
+    this.leadingSemanticsLabel,
   });
 
   @override
@@ -1334,6 +1307,11 @@ class _InputPillState extends State<_InputPill> {
     final double horizontalPadding = dense ? 6 : 8;
     final double verticalPadding = dense ? 6 : 8;
     final double minHeight = dense ? 32 : 36;
+    final hasLeadingIcon = widget.leadingIcon != null;
+    final leadingInset = hasLeadingIcon ? (dense ? 18.0 : 20.0) : 0.0;
+    final leadingIconColor = tokens.chipFg.withOpacity(
+      _text.isEmpty ? 0.78 : 0.64,
+    );
 
     // Container + TextFormField so, dass das Editable den kompletten
     // sichtbaren „Pill“-Bereich einnimmt. Damit stimmt die Tap‑Fläche
@@ -1346,44 +1324,59 @@ class _InputPillState extends State<_InputPill> {
           horizontal: horizontalPadding,
           vertical: verticalPadding,
         ),
-        constraints: BoxConstraints(
-          minHeight: minHeight,
-        ),
-        decoration: BoxDecoration(
-          color: baseFill,
-          borderRadius: radius,
-        ),
+        constraints: BoxConstraints(minHeight: minHeight),
+        decoration: BoxDecoration(color: baseFill, borderRadius: radius),
         alignment: Alignment.center,
         child: IgnorePointer(
           // Pointer‑Events werden vom GestureDetector behandelt,
           // das Textfeld dient nur zur Darstellung + Cursor.
-          child: TextFormField(
-            controller: widget.controller,
-            focusNode: widget.focusNode,
-            enabled: !widget.readOnly,
-            readOnly: true,
-            showCursor: !widget.readOnly,
-            keyboardType: TextInputType.none,
-            validator: widget.validator,
-            style: textStyle,
-            cursorColor: Colors.white,
-            cursorOpacityAnimates: true,
-            cursorWidth: 2.0,
-            cursorRadius: const Radius.circular(20),
-            enableInteractiveSelection: false,
-            textAlignVertical: TextAlignVertical.center,
-            textAlign: TextAlign.center,
-            decoration: InputDecoration(
-              filled: false,
-              fillColor: Colors.transparent,
-              isCollapsed: true,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-              hintText: widget.placeholder ?? widget.label,
-              hintStyle: placeholderStyle,
-            ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              if (hasLeadingIcon)
+                PositionedDirectional(
+                  start: 0,
+                  child: Semantics(
+                    label: widget.leadingSemanticsLabel,
+                    child: Icon(
+                      widget.leadingIcon,
+                      size: dense ? 14 : 16,
+                      color: leadingIconColor,
+                    ),
+                  ),
+                ),
+              Padding(
+                padding: EdgeInsetsDirectional.only(start: leadingInset),
+                child: TextFormField(
+                  controller: widget.controller,
+                  focusNode: widget.focusNode,
+                  enabled: !widget.readOnly,
+                  readOnly: true,
+                  showCursor: !widget.readOnly,
+                  keyboardType: TextInputType.none,
+                  validator: widget.validator,
+                  style: textStyle,
+                  cursorColor: Colors.white,
+                  cursorOpacityAnimates: true,
+                  cursorWidth: 2.0,
+                  cursorRadius: const Radius.circular(20),
+                  enableInteractiveSelection: false,
+                  textAlignVertical: TextAlignVertical.center,
+                  textAlign: hasLeadingIcon ? TextAlign.left : TextAlign.center,
+                  decoration: InputDecoration(
+                    filled: false,
+                    fillColor: Colors.transparent,
+                    isCollapsed: true,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                    hintText: widget.placeholder ?? widget.label,
+                    hintStyle: placeholderStyle,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1410,8 +1403,6 @@ class _InputPillState extends State<_InputPill> {
     return pill;
   }
 }
-
-
 
 class _RoundButton extends StatefulWidget {
   final SetCardTheme tokens;
@@ -1456,11 +1447,16 @@ class _RoundButtonState extends State<_RoundButton> {
     // Colors
     final bgColor = isFilled
         ? brandColor
-        : (isEnabled ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.05));
-    
+        : (isEnabled
+              ? Colors.white.withOpacity(0.1)
+              : Colors.white.withOpacity(0.05));
+
     final iconColor = isFilled
-        ? Colors.white // Always white text on filled brand color
-        : (isEnabled ? (widget.iconColor ?? Colors.white) : Colors.white.withOpacity(0.3));
+        ? Colors
+              .white // Always white text on filled brand color
+        : (isEnabled
+              ? (widget.iconColor ?? Colors.white)
+              : Colors.white.withOpacity(0.3));
 
     return Semantics(
       label: widget.semantics,
@@ -1491,11 +1487,7 @@ class _RoundButtonState extends State<_RoundButton> {
                     ]
                   : [],
             ),
-            child: Icon(
-              widget.icon,
-              color: iconColor,
-              size: size * 0.5,
-            ),
+            child: Icon(widget.icon, color: iconColor, size: size * 0.5),
           ),
         ),
       ),

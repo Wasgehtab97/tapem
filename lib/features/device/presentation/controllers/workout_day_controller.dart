@@ -198,12 +198,30 @@ class WorkoutDayController extends ChangeNotifier
   bool _isSavingAll = false;
   static const int _maxParallelSaveWorkers = 3;
   static const Duration _perSessionSaveTimeout = Duration(seconds: 8);
+  static const int _defaultInitialSetCount = 3;
 
   // Optional Plan-Kontext für den aktuellen Trainingstag eines Users.
   String? _activePlanId;
   String? _activePlanName;
   String? _activePlanGymId;
   String? _activePlanDayKey;
+  int? _activePlanInitialSetCount;
+
+  int _sanitizeInitialSetCount(int? value) {
+    if (value == null || value < 1) {
+      return _defaultInitialSetCount;
+    }
+    return value;
+  }
+
+  int? _resolvePlanInitialSetCountForGym(String gymId) {
+    if (_activePlanId == null || _activePlanGymId != gymId) {
+      return null;
+    }
+    final value = _activePlanInitialSetCount;
+    if (value == null) return null;
+    return _sanitizeInitialSetCount(value);
+  }
 
   void setActiveUser(String? userId) {
     if (_activeUserId == userId) {
@@ -282,6 +300,7 @@ class WorkoutDayController extends ChangeNotifier
     required String userId,
     String? exerciseName,
     bool autoFinalizeEnabled = false,
+    int? initialSetCountOverride,
   }) {
     final key = contextKey(
       gymId: gymId,
@@ -304,6 +323,9 @@ class WorkoutDayController extends ChangeNotifier
       }
       return existing.snapshot;
     }
+    final resolvedInitialSetCountOverride = (initialSetCountOverride != null)
+        ? _sanitizeInitialSetCount(initialSetCountOverride)
+        : _resolvePlanInitialSetCountForGym(gymId);
     final provider = DeviceProvider(
       firestore: _firestore,
       deviceRepository: _deviceRepository,
@@ -325,6 +347,7 @@ class WorkoutDayController extends ChangeNotifier
       exerciseName: exerciseName,
       userId: userId,
       provider: provider,
+      initialSetCountOverride: resolvedInitialSetCountOverride,
     );
     _attachServicesToProvider(provider);
     entry.attachListener(_onEntryChanged);
@@ -378,6 +401,7 @@ class WorkoutDayController extends ChangeNotifier
         deviceId: deviceId,
         exerciseId: exerciseId,
         userId: userId,
+        initialSetCountOverride: initialSetCountForKey(session.key),
       );
     }
   }
@@ -436,6 +460,10 @@ class WorkoutDayController extends ChangeNotifier
     return _sessions[key]?.provider;
   }
 
+  int? initialSetCountForKey(String key) {
+    return _sessions[key]?.initialSetCountOverride;
+  }
+
   WorkoutDaySession? get focusedSession {
     final key = _focusedSessionKey;
     if (key == null) return null;
@@ -485,6 +513,7 @@ class WorkoutDayController extends ChangeNotifier
     required String exerciseName,
     required String userId,
     bool autoFinalizeEnabled = false,
+    int? initialSetCountOverride,
   }) {
     final oldEntry = _sessions[oldKey];
     if (oldEntry == null) return null;
@@ -523,6 +552,9 @@ class WorkoutDayController extends ChangeNotifier
 
     var entry = _sessions[newKey];
     if (entry == null) {
+      final resolvedInitialSetCountOverride = (initialSetCountOverride != null)
+          ? _sanitizeInitialSetCount(initialSetCountOverride)
+          : _resolvePlanInitialSetCountForGym(gymId);
       final provider = DeviceProvider(
         firestore: _firestore,
         deviceRepository: _deviceRepository,
@@ -544,6 +576,7 @@ class WorkoutDayController extends ChangeNotifier
         exerciseName: exerciseName,
         userId: userId,
         provider: provider,
+        initialSetCountOverride: resolvedInitialSetCountOverride,
       );
       _attachServicesToProvider(provider);
       entry.attachListener(_onEntryChanged);
@@ -936,6 +969,7 @@ class WorkoutDayController extends ChangeNotifier
     _activePlanName = null;
     _activePlanGymId = null;
     _activePlanDayKey = null;
+    _activePlanInitialSetCount = null;
   }
 
   void setPlanContext({
@@ -944,12 +978,16 @@ class WorkoutDayController extends ChangeNotifier
     String? planName,
     DateTime? date,
     String? dayKey,
+    int? initialSetCount,
   }) {
     final resolvedDayKey = _resolvePlanDayKey(date: date, dayKey: dayKey);
     _activePlanId = planId;
     _activePlanName = planName;
     _activePlanGymId = gymId;
     _activePlanDayKey = resolvedDayKey;
+    // Exercise-level set count is learned from the user's last completed
+    // session for that exercise. Plan-level defaults are intentionally ignored.
+    _activePlanInitialSetCount = null;
   }
 
   /// Liefert den aktuellen Plan-Kontext für [gymId] und [date], falls vorhanden.
@@ -965,6 +1003,22 @@ class WorkoutDayController extends ChangeNotifier
       return null;
     }
     return (_activePlanId!, _activePlanName);
+  }
+
+  int? getPlanInitialSetCount({
+    required String gymId,
+    DateTime? date,
+    String? dayKey,
+  }) {
+    final resolvedDayKey = _resolvePlanDayKey(date: date, dayKey: dayKey);
+    if (_activePlanId == null ||
+        _activePlanGymId != gymId ||
+        _activePlanDayKey != resolvedDayKey) {
+      return null;
+    }
+    final value = _activePlanInitialSetCount;
+    if (value == null) return null;
+    return _sanitizeInitialSetCount(value);
   }
 
   /// Bricht ein aktives Training für [userId]/[gymId] ab:
@@ -1054,6 +1108,7 @@ class _SessionEntry {
     required this.exerciseName,
     required this.userId,
     required this.provider,
+    required this.initialSetCountOverride,
   }) : snapshot = WorkoutDaySession(
          key: key,
          gymId: gymId,
@@ -1076,6 +1131,7 @@ class _SessionEntry {
   String? exerciseName;
   final String userId;
   final DeviceProvider provider;
+  final int? initialSetCountOverride;
   WorkoutDaySession snapshot;
   VoidCallback? _listener;
 

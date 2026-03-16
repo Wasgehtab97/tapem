@@ -11,13 +11,15 @@ import 'package:tapem/features/training_plan/application/draft_training_plan.dar
 import 'package:tapem/features/training_plan/application/plan_builder_provider.dart';
 import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
 import 'package:tapem/features/training_plan/domain/models/training_plan_exercise.dart';
+import 'package:tapem/features/training_plan/domain/models/training_plan_schedule.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
 import 'package:tapem/features/device/providers/device_riverpod.dart';
 import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
 import 'package:tapem/features/training_plan/domain/models/training_plan_stats.dart';
 import 'package:tapem/features/training_plan/presentation/widgets/plan_color_palette.dart';
 import 'package:tapem/core/services/workout_session_duration_service.dart';
-import 'package:tapem/core/services/workout_session_duration_service.dart' show workoutSessionDurationServiceProvider;
+import 'package:tapem/core/services/workout_session_duration_service.dart'
+    show workoutSessionDurationServiceProvider;
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/core/widgets/brand_gradient_icon.dart';
@@ -35,6 +37,15 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
   Map<String, String> _resolvedNames = {};
   bool _hydratingNames = false;
   bool _isDeleting = false;
+  static const Map<int, String> _weekdayLabels = <int, String>{
+    1: 'Mo',
+    2: 'Di',
+    3: 'Mi',
+    4: 'Do',
+    5: 'Fr',
+    6: 'Sa',
+    7: 'So',
+  };
 
   @override
   void initState() {
@@ -60,8 +71,9 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
   ) {
     final device = deviceMap[item.deviceId];
     final isMulti = device?.isMulti ?? false;
-    final exerciseName =
-        item.name?.isNotEmpty == true ? item.name : _resolvedNames[_exerciseKey(item)];
+    final exerciseName = item.name?.isNotEmpty == true
+        ? item.name
+        : _resolvedNames[_exerciseKey(item)];
     Navigator.pushNamed(
       context,
       AppRouter.history,
@@ -89,8 +101,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
       MaterialPageRoute(
         builder: (ctx) => GymScreen(
           selectionMode: true,
-          onSelect: (selection) =>
-              Navigator.of(ctx).pop(selection),
+          onSelect: (selection) => Navigator.of(ctx).pop(selection),
         ),
       ),
     );
@@ -116,7 +127,8 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
         : stats.completions.toDouble();
     final theme = Theme.of(context);
     final brandColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
 
     showModalBottomSheet<void>(
       context: context,
@@ -202,19 +214,13 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                       ex.name?.isNotEmpty == true
                           ? ex.name!
                           : _resolvedNames[_exerciseKey(ex)] ??
-                              deviceMap[ex.deviceId]?.name ??
-                              ex.deviceId,
+                                deviceMap[ex.deviceId]?.name ??
+                                ex.deviceId,
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
-                    subtitle: Text(
-                      deviceMap[ex.deviceId]?.name ?? ex.deviceId,
-                    ),
+                    subtitle: Text(deviceMap[ex.deviceId]?.name ?? ex.deviceId),
                     trailing: Icon(Icons.arrow_forward, color: brandColor),
-                  onTap: () => _openHistory(
-                    ex,
-                    deviceMap,
-                    ownerUserId,
-                  ),
+                    onTap: () => _openHistory(ex, deviceMap, ownerUserId),
                   ),
                 ),
             ],
@@ -226,6 +232,21 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+  }
+
+  Future<void> _pickScheduleAnchorDate(
+    BuildContext context,
+    DateTime initialDate,
+  ) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2020, 1, 1),
+      lastDate: DateTime(2100, 12, 31),
+      helpText: 'Startdatum wählen',
+    );
+    if (picked == null) return;
+    ref.read(planBuilderProvider.notifier).setScheduleAnchorDate(picked);
   }
 
   Future<Map<String, String>> _ensureExerciseNames(
@@ -252,7 +273,9 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
         names[key] = device.name;
         continue;
       }
-      pendingByDevice.putIfAbsent(ex.deviceId, () => <String>{}).add(ex.exerciseId);
+      pendingByDevice
+          .putIfAbsent(ex.deviceId, () => <String>{})
+          .add(ex.exerciseId);
     }
 
     if (pendingByDevice.isEmpty) {
@@ -272,11 +295,13 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     try {
       for (final entry in pendingByDevice.entries) {
         try {
-          final exercises =
-              await getExercises.execute(gymId, entry.key, userId);
+          final exercises = await getExercises.execute(
+            gymId,
+            entry.key,
+            userId,
+          );
           for (final exerciseId in entry.value) {
-            final match =
-                exercises.firstWhereOrNull((e) => e.id == exerciseId);
+            final match = exercises.firstWhereOrNull((e) => e.id == exerciseId);
             if (match != null) {
               names[_exerciseKeyFromIds(entry.key, exerciseId)] = match.name;
             }
@@ -309,9 +334,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Trainingsplan löschen'),
-        content: Text(
-          'Möchtest du den Plan "$planName" wirklich löschen?',
-        ),
+        content: Text('Möchtest du den Plan "$planName" wirklich löschen?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -335,17 +358,16 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
 
     setState(() => _isDeleting = true);
     try {
-      await ref.read(planBuilderProvider.notifier).deleteCurrentPlan(
-            planId: planId,
-            ownerUserId: ownerUserId,
-          );
+      await ref
+          .read(planBuilderProvider.notifier)
+          .deleteCurrentPlan(planId: planId, ownerUserId: ownerUserId);
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Löschen fehlgeschlagen: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Löschen fehlgeschlagen: $e')));
     } finally {
       if (mounted) {
         setState(() => _isDeleting = false);
@@ -363,7 +385,8 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     final planId = widget.plan?.id ?? draft.originalId;
 
     final authState = ref.watch(authViewStateProvider);
-    final ownerUserId = widget.plan?.clientId ?? draft.targetUserId ?? authState.userId;
+    final ownerUserId =
+        widget.plan?.clientId ?? draft.targetUserId ?? authState.userId;
 
     final statsAsync = (planId != null && ownerUserId != null)
         ? ref.watch(
@@ -372,20 +395,21 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
             ),
           )
         : null;
-    final statsCount =
-        statsAsync?.maybeWhen(data: (s) => s.completions, orElse: () => null);
+    final statsCount = statsAsync?.maybeWhen(
+      data: (s) => s.completions,
+      orElse: () => null,
+    );
 
     final auth = ref.watch(authViewStateProvider);
     final currentGymId = auth.gymCode ?? '';
 
     // Helper map for device names
-    final deviceMap = {
-      for (final d in gymState.devices) d.uid: d,
-    };
+    final deviceMap = {for (final d in gymState.devices) d.uid: d};
 
     final needsHydration = draft.exercises.any((ex) {
       final key = _exerciseKey(ex);
-      final hasName = (ex.name?.isNotEmpty ?? false) || _resolvedNames.containsKey(key);
+      final hasName =
+          (ex.name?.isNotEmpty ?? false) || _resolvedNames.containsKey(key);
       final device = deviceMap[ex.deviceId];
       return !hasName && (device?.isMulti ?? false);
     });
@@ -397,8 +421,10 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     }
 
     final paletteColors = PlanColorPalette.colors(theme);
-    final selectedColor =
-        PlanColorPalette.colorForIndex(draft.colorIndex, theme);
+    final selectedColor = PlanColorPalette.colorForIndex(
+      draft.colorIndex,
+      theme,
+    );
     final titleStyle = theme.textTheme.titleMedium?.copyWith(
       fontWeight: FontWeight.w700,
       color: Colors.white,
@@ -413,27 +439,33 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
         elevation: 0,
         title: GestureDetector(
           onTap: () async {
-             // Edit Name Dialog
-             final controller = TextEditingController(text: draft.name);
-             final newName = await showDialog<String>(
-               context: context, 
-               builder: (ctx) => AlertDialog(
-                 title: const Text('Name ändern'),
-                 content: TextField(
-                   controller: controller,
-                   decoration: const InputDecoration(filled: true),
-                   textCapitalization: TextCapitalization.sentences,
-                   autofocus: true,
-                 ),
-                 actions: [
-                   TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen')),
-                   FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('Speichern')),
-                 ],
-               ),
-             );
-             if (newName != null && newName.isNotEmpty) {
-               ref.read(planBuilderProvider.notifier).updateName(newName);
-             }
+            // Edit Name Dialog
+            final controller = TextEditingController(text: draft.name);
+            final newName = await showDialog<String>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Name ändern'),
+                content: TextField(
+                  controller: controller,
+                  decoration: const InputDecoration(filled: true),
+                  textCapitalization: TextCapitalization.sentences,
+                  autofocus: true,
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Abbrechen'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+                    child: const Text('Speichern'),
+                  ),
+                ],
+              ),
+            );
+            if (newName != null && newName.isNotEmpty) {
+              ref.read(planBuilderProvider.notifier).updateName(newName);
+            }
           },
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -457,13 +489,17 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
               onPressed: () async {
                 if (draft.name.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Bitte gib dem Plan einen Namen')),
+                    const SnackBar(
+                      content: Text('Bitte gib dem Plan einen Namen'),
+                    ),
                   );
                   return;
                 }
                 if (draft.exercises.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Füge mindestens eine Übung hinzu')),
+                    const SnackBar(
+                      content: Text('Füge mindestens eine Übung hinzu'),
+                    ),
                   );
                   return;
                 }
@@ -477,9 +513,9 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                   // If logic was "Create -> Picker -> Save -> Overview", we are done.
                   // But here we are in "Detail". The user might want to start.
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Fehler: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Fehler: $e')));
                 }
               },
             ),
@@ -496,17 +532,19 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
               onPressed: _isDeleting
                   ? null
                   : () => _confirmAndDeletePlan(
-                        planId: planId,
-                        ownerUserId: ownerUserId,
-                        planName: draft.name.isEmpty ? 'Trainingsplan' : draft.name,
-                      ),
+                      planId: planId,
+                      ownerUserId: ownerUserId,
+                      planName: draft.name.isEmpty
+                          ? 'Trainingsplan'
+                          : draft.name,
+                    ),
             ),
           IconButton(
-             icon: const Icon(Icons.add),
-             tooltip: 'Übung hinzufügen',
-             onPressed: () {
-               Navigator.pushNamed(context, AppRouter.trainingPlanPicker);
-             },
+            icon: const Icon(Icons.add),
+            tooltip: 'Übung hinzufügen',
+            onPressed: () {
+              Navigator.pushNamed(context, AppRouter.trainingPlanPicker);
+            },
           ),
         ],
       ),
@@ -579,7 +617,9 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            draft.name.isEmpty ? 'Neuer Trainingsplan' : draft.name,
+                            draft.name.isEmpty
+                                ? 'Neuer Trainingsplan'
+                                : draft.name,
                             style: titleStyle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -628,8 +668,9 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                                   boxShadow: i == draft.colorIndex
                                       ? [
                                           BoxShadow(
-                                            color: paletteColors[i]
-                                                .withOpacity(0.6),
+                                            color: paletteColors[i].withOpacity(
+                                              0.6,
+                                            ),
                                             blurRadius: 10,
                                             offset: const Offset(0, 4),
                                           ),
@@ -640,6 +681,176 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                             ),
                           ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.1),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Zeitplanung',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
+                              ),
+                              const Spacer(),
+                              Switch.adaptive(
+                                value: draft.schedule.enabled,
+                                onChanged: (value) {
+                                  ref
+                                      .read(planBuilderProvider.notifier)
+                                      .setScheduleEnabled(value);
+                                },
+                              ),
+                            ],
+                          ),
+                          Text(
+                            draft.schedule.enabled
+                                ? 'Plan wird automatisch nach Rhythmus vorgeschlagen'
+                                : 'Deaktiviert (manuelle Auswahl)',
+                            style: subtitleStyle,
+                          ),
+                          if (draft.schedule.enabled) ...[
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                ChoiceChip(
+                                  selected:
+                                      draft.schedule.mode ==
+                                      TrainingPlanScheduleMode.weekly,
+                                  label: const Text('Wochentage'),
+                                  onSelected: (_) {
+                                    ref
+                                        .read(planBuilderProvider.notifier)
+                                        .setScheduleMode(
+                                          TrainingPlanScheduleMode.weekly,
+                                        );
+                                  },
+                                ),
+                                ChoiceChip(
+                                  selected:
+                                      draft.schedule.mode ==
+                                      TrainingPlanScheduleMode.everyXDays,
+                                  label: const Text('Alle X Tage'),
+                                  onSelected: (_) {
+                                    ref
+                                        .read(planBuilderProvider.notifier)
+                                        .setScheduleMode(
+                                          TrainingPlanScheduleMode.everyXDays,
+                                        );
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            if (draft.schedule.mode ==
+                                TrainingPlanScheduleMode.weekly)
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  for (final entry in _weekdayLabels.entries)
+                                    FilterChip(
+                                      selected: draft.schedule.weekdays
+                                          .contains(entry.key),
+                                      label: Text(entry.value),
+                                      onSelected: (_) {
+                                        ref
+                                            .read(planBuilderProvider.notifier)
+                                            .toggleScheduleWeekday(entry.key);
+                                      },
+                                    ),
+                                ],
+                              )
+                            else
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Intervall',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: Colors.white.withOpacity(
+                                                0.82,
+                                              ),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        onPressed: () {
+                                          ref
+                                              .read(
+                                                planBuilderProvider.notifier,
+                                              )
+                                              .setScheduleIntervalDays(
+                                                draft.schedule.intervalDays - 1,
+                                              );
+                                        },
+                                        icon: const Icon(
+                                          Icons.remove_circle_outline,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${draft.schedule.intervalDays} Tage',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: Colors.white.withOpacity(
+                                                0.9,
+                                              ),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                      IconButton(
+                                        onPressed: () {
+                                          ref
+                                              .read(
+                                                planBuilderProvider.notifier,
+                                              )
+                                              .setScheduleIntervalDays(
+                                                draft.schedule.intervalDays + 1,
+                                              );
+                                        },
+                                        icon: const Icon(
+                                          Icons.add_circle_outline,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  OutlinedButton.icon(
+                                    onPressed: () => _pickScheduleAnchorDate(
+                                      context,
+                                      draft.schedule.anchorDate ??
+                                          DateTime.now(),
+                                    ),
+                                    icon: const Icon(Icons.event_available),
+                                    label: Text(
+                                      'Start: ${_formatDate(draft.schedule.anchorDate ?? DateTime.now())}',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -670,7 +881,8 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                           final item = draft.exercises[index];
                           final device = deviceMap[item.deviceId];
                           final deviceName =
-                              device?.name ?? 'Unbekanntes Gerät (${item.deviceId})';
+                              device?.name ??
+                              'Unbekanntes Gerät (${item.deviceId})';
                           final nameKey = _exerciseKey(item);
                           final exerciseName = item.name?.isNotEmpty == true
                               ? item.name
@@ -686,8 +898,10 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                               alignment: Alignment.centerRight,
                               color: Colors.red,
                               padding: const EdgeInsets.only(right: 16),
-                              child:
-                                  const Icon(Icons.delete, color: Colors.white),
+                              child: const Icon(
+                                Icons.delete,
+                                color: Colors.white,
+                              ),
                             ),
                             onDismissed: (_) {
                               ref
@@ -708,8 +922,9 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                               ),
                               child: ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor:
-                                      selectedColor.withOpacity(0.2),
+                                  backgroundColor: selectedColor.withOpacity(
+                                    0.2,
+                                  ),
                                   child: Text(
                                     '${index + 1}',
                                     style: TextStyle(
@@ -725,32 +940,28 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                                     color: Colors.white,
                                   ),
                                 ),
-                                subtitle: (exerciseName != null &&
+                                subtitle:
+                                    (exerciseName != null &&
                                         exerciseName != deviceName)
                                     ? Text(deviceName)
                                     : null,
                                 trailing: IconButton(
-                                  icon: const Icon(
-                                    Icons.swap_horiz_rounded,
-                                  ),
+                                  icon: const Icon(Icons.swap_horiz_rounded),
                                   tooltip: 'Übung austauschen',
                                   onPressed: () async {
                                     final selection =
                                         await _openExerciseSwapPicker(
-                                      context: context,
-                                      initialDeviceId: item.deviceId,
-                                      gymId: currentGymId,
-                                    );
+                                          context: context,
+                                          initialDeviceId: item.deviceId,
+                                          gymId: currentGymId,
+                                        );
                                     if (selection == null) return;
                                     ref
-                                        .read(
-                                          planBuilderProvider.notifier,
-                                        )
+                                        .read(planBuilderProvider.notifier)
                                         .replaceExercise(
                                           index: index,
                                           deviceId: selection.deviceId,
-                                          exerciseId:
-                                              selection.exerciseId,
+                                          exerciseId: selection.exerciseId,
                                           name: selection.exerciseName,
                                         );
                                   },
@@ -758,40 +969,38 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                                 onTap: () async {
                                   final action =
                                       await showModalBottomSheet<String>(
-                                    context: context,
-                                    builder: (sheetCtx) => SafeArea(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          ListTile(
-                                            leading: const Icon(
-                                              Icons.swap_horiz_rounded,
-                                            ),
-                                            title: const Text(
-                                              'Übung austauschen',
-                                            ),
-                                            onTap: () => Navigator.pop(
-                                              sheetCtx,
-                                              'swap',
-                                            ),
+                                        context: context,
+                                        builder: (sheetCtx) => SafeArea(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              ListTile(
+                                                leading: const Icon(
+                                                  Icons.swap_horiz_rounded,
+                                                ),
+                                                title: const Text(
+                                                  'Übung austauschen',
+                                                ),
+                                                onTap: () => Navigator.pop(
+                                                  sheetCtx,
+                                                  'swap',
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                            ],
                                           ),
-                                          const SizedBox(height: 4),
-                                        ],
-                                      ),
-                                    ),
-                                  );
+                                        ),
+                                      );
                                   if (action != 'swap') return;
                                   final selection =
                                       await _openExerciseSwapPicker(
-                                    context: context,
-                                    initialDeviceId: item.deviceId,
-                                    gymId: currentGymId,
-                                  );
+                                        context: context,
+                                        initialDeviceId: item.deviceId,
+                                        gymId: currentGymId,
+                                      );
                                   if (selection == null) return;
                                   ref
-                                      .read(
-                                        planBuilderProvider.notifier,
-                                      )
+                                      .read(planBuilderProvider.notifier)
                                       .replaceExercise(
                                         index: index,
                                         deviceId: selection.deviceId,
@@ -965,7 +1174,8 @@ class _StatCard extends StatelessWidget {
           children: [
             Text(
               value,
-              style: theme.textTheme.headlineMedium?.copyWith(
+              style:
+                  theme.textTheme.headlineMedium?.copyWith(
                     color: color,
                     fontWeight: FontWeight.w900,
                   ) ??
@@ -1012,7 +1222,8 @@ class _StatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
     return Card(
       child: ListTile(
         leading: CircleAvatar(

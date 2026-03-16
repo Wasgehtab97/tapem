@@ -32,6 +32,7 @@ import 'package:tapem/features/rank/domain/services/level_service.dart';
 import 'package:tapem/features/xp/presentation/widgets/daily_xp_card.dart';
 import 'package:tapem/features/profile/presentation/widgets/profile_coaching_button.dart';
 import 'package:tapem/features/profile/presentation/widgets/profile_hub_button.dart';
+import 'package:tapem/features/profile/application/training_start_plan_resolution_resolver.dart';
 import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
 import 'package:tapem/features/training_plan/domain/models/training_plan.dart';
 import 'package:tapem/features/training_plan/presentation/widgets/plan_selection_sheet.dart';
@@ -225,6 +226,29 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
             final planRepo = ref.read(trainingPlanRepositoryProvider);
             final plans = await planRepo.getPlans(gymId: gymId, userId: uid);
             if (!mounted) return;
+            final singlePlan = plans.length == 1 ? plans.first : null;
+            final shouldAutoAssignSinglePlan =
+                singlePlan != null && assignedPlanId != singlePlan.id;
+            if (shouldAutoAssignSinglePlan) {
+              debugPrint(
+                '📋 [TrainingPlan] auto_assign_single_plan date=$dateKey planId=${singlePlan.id}',
+              );
+              final scheduleRepo = ref.read(trainingScheduleRepositoryProvider);
+              await scheduleRepo.setAssignment(
+                userId: uid,
+                dateKey: dateKey,
+                planId: singlePlan.id,
+              );
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Plan "${singlePlan.name}" für diesen Tag geplant.',
+                  ),
+                ),
+              );
+              return;
+            }
             showModalBottomSheet<void>(
               context: context,
               builder: (_) => PlanSelectionSheet(
@@ -328,31 +352,67 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
         '${now.month.toString().padLeft(2, '0')}-'
         '${now.day.toString().padLeft(2, '0')}';
 
+    List<TrainingPlan>? cachedAvailablePlans;
+    Future<List<TrainingPlan>> loadAvailablePlans() async {
+      if (cachedAvailablePlans != null) {
+        return cachedAvailablePlans!;
+      }
+      final planRepo = ref.read(trainingPlanRepositoryProvider);
+      try {
+        final loaded = await planRepo
+            .getPlans(gymId: gymId, userId: uid)
+            .timeout(
+              const Duration(seconds: 2),
+              onTimeout: () => <TrainingPlan>[],
+            );
+        if (loaded.isNotEmpty) {
+          cachedAvailablePlans = loaded;
+        }
+        return loaded;
+      } catch (_) {
+        return <TrainingPlan>[];
+      }
+    }
+
     final scheduleRepo = ref.read(trainingScheduleRepositoryProvider);
     String? planId;
     String? planName;
     TrainingPlan? selectedPlan;
+    List<TrainingPlan>? forcedPlanCandidates;
     try {
       final assignment = await scheduleRepo
           .getAssignment(userId: uid, dateKey: dateKey)
           .timeout(startupLookupTimeout, onTimeout: () => null);
-      if (assignment != null) {
-        final planRepo = ref.read(trainingPlanRepositoryProvider);
-        final plans = await planRepo
-            .getPlans(gymId: gymId, userId: uid)
-            .timeout(startupLookupTimeout, onTimeout: () => <TrainingPlan>[]);
-        for (final p in plans) {
-          if (p.id == assignment.planId) {
-            selectedPlan = p;
-            planId = p.id;
-            planName = p.name;
-            break;
-          }
+      final plans = await loadAvailablePlans();
+      final resolution = TrainingStartPlanResolutionResolver.resolve(
+        availablePlans: plans,
+        date: now,
+        assignmentPlanId: assignment?.planId,
+      );
+      selectedPlan = resolution.plannedPlan;
+      if (selectedPlan != null) {
+        planId = selectedPlan.id;
+        planName = selectedPlan.name;
+        if (resolution.reason ==
+            TrainingStartPlanResolutionReason.manualAssignment) {
+          debugPrint(
+            '📋 [TrainingPlan] manual_assignment_resolved date=$dateKey planId=$planId',
+          );
+        } else {
+          debugPrint(
+            '📋 [TrainingPlan] schedule_default_resolved date=$dateKey planId=$planId',
+          );
         }
+      } else if (resolution.hasMultipleCandidates) {
+        forcedPlanCandidates = resolution.candidatePlans;
+        debugPrint(
+          '📋 [TrainingPlan] schedule_multiple_candidates date=$dateKey count=${forcedPlanCandidates.length}',
+        );
       }
     } catch (_) {
       planId = null;
       planName = null;
+      forcedPlanCandidates = null;
     }
 
     Future<void> startFreestyle() async {
@@ -389,6 +449,18 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
 
     Future<void> startPlan(TrainingPlan plan) async {
       final controller = workoutController;
+      final effectivePlanId = plan.id;
+      if (effectivePlanId.isEmpty) {
+        // Fallback: ohne gültige Plan-ID einfach Freestyle starten.
+        await startFreestyle();
+        return;
+      }
+      controller.setPlanContext(
+        gymId: gymId,
+        planId: effectivePlanId,
+        planName: plan.name,
+        date: now,
+      );
 
       if (plan.exercises.isNotEmpty) {
         for (final item in plan.exercises) {
@@ -401,13 +473,6 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
             userId: uid,
           );
         }
-      }
-
-      final effectivePlanId = plan.id;
-      if (effectivePlanId.isEmpty) {
-        // Fallback: ohne gültige Plan-ID einfach Freestyle starten.
-        await startFreestyle();
-        return;
       }
 
       // Plan-Zuweisung für HEUTE aktualisieren, damit der Trainingstage-
@@ -424,14 +489,6 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       } catch (_) {
         // Offline darf den Plan-Start nicht blockieren.
       }
-
-      controller.setPlanContext(
-        gymId: gymId,
-        planId: effectivePlanId,
-        planName: plan.name,
-        date: now,
-      );
-
       final coordinator = ref.read(workoutSessionCoordinatorProvider);
       await coordinator.startFromProfilePlay(uid: uid, gymId: gymId);
       if (!mounted) return;
@@ -462,32 +519,34 @@ class _ProfileScreenState extends riverpod.ConsumerState<ProfileScreen> {
       await startPlan(selectedPlan);
     }
 
-    Future<List<TrainingPlan>> loadAvailablePlans() async {
-      final planRepo = ref.read(trainingPlanRepositoryProvider);
-      try {
-        return await planRepo
-            .getPlans(gymId: gymId, userId: uid)
-            .timeout(
-              const Duration(seconds: 2),
-              onTimeout: () => <TrainingPlan>[],
-            );
-      } catch (_) {
-        return <TrainingPlan>[];
-      }
-    }
-
     // Start-Dialog je nach Situation:
     // - mit geplantem Plan: "Plan (heute)", "Anderer Plan", "Freestyle"
     // - ohne geplanten Plan: "Plan auswählen", "Freestyle"
     final hasPlannedPlan =
         planId != null && planName != null && selectedPlan != null;
+    Future<List<TrainingPlan>> loadPlansForDialog() async {
+      final forced = forcedPlanCandidates;
+      if (forced != null && forced.isNotEmpty) {
+        return forced;
+      }
+      return loadAvailablePlans();
+    }
+
+    List<TrainingPlan> availablePlans = const <TrainingPlan>[];
+    if (!hasPlannedPlan) {
+      availablePlans = await loadPlansForDialog();
+    }
+    debugPrint(
+      '📋 [TrainingPlan] dialog_required hasPlannedPlan=$hasPlannedPlan availablePlans=${availablePlans.length}',
+    );
+
     final result = await showDialog<_TrainingStartDialogResult>(
       context: context,
       barrierColor: Colors.black54,
       builder: (ctx) => _TrainingStartDialog(
         planName: planName ?? '',
         hasPlannedPlan: hasPlannedPlan,
-        loadPlans: loadAvailablePlans,
+        loadPlans: loadPlansForDialog,
       ),
     );
 
@@ -1335,15 +1394,44 @@ class _TrainingStartDialogState extends State<_TrainingStartDialog> {
   List<TrainingPlan>? _plans;
   String? _plansError;
 
-  Future<void> _openPlanPicker() async {
-    setState(() => _mode = _TrainingStartDialogMode.planPicker);
-    if (_plans != null || _isLoadingPlans) {
-      return;
+  TrainingPlan? _singlePlanFrom(List<TrainingPlan>? plans) {
+    if (plans == null || plans.length != 1) {
+      return null;
     }
-    await _loadPlans();
+    return plans.first;
   }
 
-  Future<void> _loadPlans() async {
+  void _completeWithSelectedPlan(TrainingPlan plan) {
+    if (!mounted) return;
+    Navigator.pop(context, _TrainingStartDialogResult.selectedPlan(plan));
+  }
+
+  Future<void> _openPlanPicker() async {
+    if (_isLoadingPlans) {
+      return;
+    }
+
+    final cachedSingle = _singlePlanFrom(_plans);
+    if (cachedSingle != null) {
+      _completeWithSelectedPlan(cachedSingle);
+      return;
+    }
+
+    if (_plans != null || _plansError != null) {
+      if (_mode != _TrainingStartDialogMode.planPicker) {
+        setState(() => _mode = _TrainingStartDialogMode.planPicker);
+      }
+      return;
+    }
+
+    await _loadPlans(autoSelectSinglePlan: true);
+    if (!mounted) return;
+    if (_mode != _TrainingStartDialogMode.planPicker) {
+      setState(() => _mode = _TrainingStartDialogMode.planPicker);
+    }
+  }
+
+  Future<void> _loadPlans({bool autoSelectSinglePlan = false}) async {
     setState(() {
       _isLoadingPlans = true;
       _plansError = null;
@@ -1351,6 +1439,11 @@ class _TrainingStartDialogState extends State<_TrainingStartDialog> {
     try {
       final loaded = await widget.loadPlans();
       if (!mounted) return;
+      final singlePlan = _singlePlanFrom(loaded);
+      if (autoSelectSinglePlan && singlePlan != null) {
+        _completeWithSelectedPlan(singlePlan);
+        return;
+      }
       setState(() => _plans = loaded);
     } catch (_) {
       if (!mounted) return;

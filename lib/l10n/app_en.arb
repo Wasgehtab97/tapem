@@ -79,6 +79,10 @@
   "@gymDemoRestrictedMessage": {
     "description": "Shown when a demo user tries to start a workout"
   },
+  "workoutStartViaPlayRequired": "Please start a workout first using the Play button.",
+  "@workoutStartViaPlayRequired": {
+    "description": "Shown when a workout action is attempted without an active play-started session"
+  },
   "gymChangeSelection": "Change gym",
   "@gymChangeSelection": {
     "description": "Button to change the selected gym"
@@ -1681,6 +1685,26 @@
   ,"@trainingDetailsDeleteSessionSuccess": {"description": "Snackbar text shown after a session was deleted."}
   ,"trainingDetailsDeleteSessionError": "Could not delete the session."
   ,"@trainingDetailsDeleteSessionError": {"description": "Snackbar text shown when deleting a session failed."}
+  ,"trainingDetailsCreatePlanTooltip": "Create plan from this workout"
+  ,"@trainingDetailsCreatePlanTooltip": {"description": "Tooltip for the action on the training details page to create a plan from this day."}
+  ,"trainingDetailsCreatePlanDialogTitle": "Create training plan"
+  ,"@trainingDetailsCreatePlanDialogTitle": {"description": "Title for the dialog that creates a training plan from a workout day."}
+  ,"trainingDetailsCreatePlanDialogMessage": "Enter a name for the new plan."
+  ,"@trainingDetailsCreatePlanDialogMessage": {"description": "Dialog description for creating a plan from a training day."}
+  ,"trainingDetailsCreatePlanDialogHint": "Name (e.g. Pull Freestyle)"
+  ,"@trainingDetailsCreatePlanDialogHint": {"description": "Placeholder for the training plan name field in training details."}
+  ,"trainingDetailsCreatePlanDialogConfirm": "Create plan"
+  ,"@trainingDetailsCreatePlanDialogConfirm": {"description": "Confirmation label for creating a plan from training details."}
+  ,"trainingDetailsCreatePlanSuccess": "Plan \"{name}\" was created."
+  ,"@trainingDetailsCreatePlanSuccess": {"description": "Success message shown after creating a plan from training details.", "placeholders": {"name": {}}}
+  ,"trainingDetailsCreatePlanErrorInvalidName": "Please enter a valid name (max 60 characters)."
+  ,"@trainingDetailsCreatePlanErrorInvalidName": {"description": "Error message shown when the provided plan name is invalid."}
+  ,"trainingDetailsCreatePlanErrorNoExercises": "No valid exercises could be imported from this day."
+  ,"@trainingDetailsCreatePlanErrorNoExercises": {"description": "Error message shown when no exercises can be extracted from sessions."}
+  ,"trainingDetailsCreatePlanErrorNotAllowed": "Plan creation is not available here."
+  ,"@trainingDetailsCreatePlanErrorNotAllowed": {"description": "Error message shown when creating a plan is not allowed in the current context."}
+  ,"trainingDetailsCreatePlanErrorGeneric": "Plan could not be created."
+  ,"@trainingDetailsCreatePlanErrorGeneric": {"description": "Generic error message for plan creation from training details."}
   ,"profileChangeAvatar": "Change profile picture"
   ,"@profileChangeAvatar": {"description": "Tooltip and accessibility label for changing the profile avatar"}
   ,"homeTabAdmin": "Admin"

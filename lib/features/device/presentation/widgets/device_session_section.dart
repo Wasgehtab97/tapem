@@ -33,8 +33,6 @@ import 'package:tapem/ui/numeric_keypad/overlay_numeric_keypad.dart';
 import 'package:tapem/features/feedback/presentation/widgets/feedback_button.dart'
     show showFeedbackDialog;
 
-
-
 class DeviceSessionSection extends StatelessWidget {
   const DeviceSessionSection({
     super.key,
@@ -108,18 +106,22 @@ class _DeviceSessionSectionBody extends riverpod.ConsumerStatefulWidget {
   final VoidCallback? onCloseRequested;
 
   @override
-  riverpod.ConsumerState<_DeviceSessionSectionBody> createState() => _DeviceSessionSectionBodyState();
+  riverpod.ConsumerState<_DeviceSessionSectionBody> createState() =>
+      _DeviceSessionSectionBodyState();
 }
 
-class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessionSectionBody> {
+class _DeviceSessionSectionBodyState
+    extends riverpod.ConsumerState<_DeviceSessionSectionBody> {
   final _formKey = GlobalKey<FormState>();
   final List<GlobalKey<SetCardState>> _setKeys = [];
   OverlayNumericKeypadController? _keypadController;
   bool _didLoad = false;
   OverlayNumericKeypadController get _overlayKeypad =>
       _keypadController ??
-      riverpod.ProviderScope.containerOf(context, listen: false)
-          .read(overlayNumericKeypadControllerProvider);
+      riverpod.ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(overlayNumericKeypadControllerProvider);
 
   @override
   void initState() {
@@ -130,9 +132,10 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _keypadController ??=
-        riverpod.ProviderScope.containerOf(context, listen: false)
-            .read(overlayNumericKeypadControllerProvider);
+    _keypadController ??= riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(overlayNumericKeypadControllerProvider);
     _ensureSessionLoaded();
   }
 
@@ -144,15 +147,25 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
   Future<void> _ensureSessionLoaded() async {
     if (_didLoad) return;
     _didLoad = true;
-    final container = riverpod.ProviderScope.containerOf(context, listen: false);
+    final container = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
     final auth = container.read(authControllerProvider);
     final settings = container.read(settingsProvider);
+    int? initialSetCountOverride;
+    final sessionKey = widget.sessionKey;
+    if (sessionKey != null && sessionKey.isNotEmpty) {
+      final dayController = container.read(workoutDayControllerProvider);
+      initialSetCountOverride = dayController.initialSetCountForKey(sessionKey);
+    }
     await settings.load(auth.userId!);
     await widget.provider.loadDevice(
       gymId: widget.gymId,
       deviceId: widget.deviceId,
       exerciseId: widget.exerciseId,
       userId: widget.userId,
+      initialSetCountOverride: initialSetCountOverride,
     );
 
     if (mounted) {
@@ -194,9 +207,10 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
   void _focusSession() {
     final key = widget.sessionKey;
     if (key != null) {
-      riverpod.ProviderScope.containerOf(context, listen: false)
-          .read(workoutDayControllerProvider)
-          .focusSession(key);
+      riverpod.ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(workoutDayControllerProvider).focusSession(key);
     }
   }
 
@@ -223,8 +237,10 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     final deviceProv = prov;
     String? exerciseName = widget.exerciseName;
     if (exerciseName == null && (deviceProv.device?.isMulti ?? false)) {
-      final exProv = riverpod.ProviderScope.containerOf(context, listen: false)
-          .read(exerciseProvider);
+      final exProv = riverpod.ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(exerciseProvider);
       exerciseName = exProv.exercises
           .firstWhere(
             (e) => e.id == widget.exerciseId,
@@ -239,7 +255,8 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
         'deviceName': deviceProv.device?.name ?? widget.deviceId,
         'deviceDescription': deviceProv.device?.description,
         'isMulti': deviceProv.device?.isMulti ?? false,
-        if (deviceProv.device?.isMulti ?? false) 'exerciseId': widget.exerciseId,
+        if (deviceProv.device?.isMulti ?? false)
+          'exerciseId': widget.exerciseId,
         if (deviceProv.device?.isMulti ?? false) 'exerciseName': exerciseName,
       },
     );
@@ -349,9 +366,10 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     }
     final availableExercises =
         exercises ??
-        riverpod.ProviderScope.containerOf(context, listen: false)
-            .read(exerciseProvider)
-            .exercises;
+        riverpod.ProviderScope.containerOf(
+          context,
+          listen: false,
+        ).read(exerciseProvider).exercises;
     final match = availableExercises.where((e) => e.id == widget.exerciseId);
     if (match.isNotEmpty) {
       return match.first.name;
@@ -359,20 +377,15 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     return device.name;
   }
 
-
-
-
-  Widget _buildEditablePage(
-    DeviceProvider prov,
-    AppLocalizations loc,
-  ) {
+  Widget _buildEditablePage(DeviceProvider prov, AppLocalizations loc) {
     final theme = Theme.of(context);
     final outlineColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
     final exercises = prov.device?.isMulti ?? false
-        ? riverpod.ProviderScope.containerOf(context)
-            .read(exerciseProvider)
-            .exercises
+        ? riverpod.ProviderScope.containerOf(
+            context,
+          ).read(exerciseProvider).exercises
         : null;
     final exerciseTitle = _resolveExerciseTitle(
       context,
@@ -386,8 +399,9 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     if (_setKeys.length > prov.sets.length) {
       _setKeys.removeRange(prov.sets.length, _setKeys.length);
     }
-    final snapshot =
-        prov.sessionSnapshots.isNotEmpty ? prov.sessionSnapshots.first : null;
+    final snapshot = prov.sessionSnapshots.isNotEmpty
+        ? prov.sessionSnapshots.first
+        : null;
     late final List<SessionSetVM> lastSets;
     DateTime? lastDate;
     late final String? lastNote;
@@ -433,21 +447,14 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
       if (prov.sets.isEmpty) const SizedBox(height: 8),
       Align(
         alignment: Alignment.center,
-        child: _AddSetButton(
-          label: loc.addSetButton,
-          onPressed: _addSet,
-        ),
+        child: _AddSetButton(label: loc.addSetButton, onPressed: _addSet),
       ),
       if ((FF.showLastSessionOnDevicePage ||
               FF.runtimeShowLastSessionOnDevicePage) &&
           lastDate != null &&
           lastSets.isNotEmpty) ...[
         const SizedBox(height: 12),
-        LastSessionCard(
-          date: lastDate,
-          sets: lastSets,
-          note: lastNote,
-        ),
+        LastSessionCard(date: lastDate, sets: lastSets, note: lastNote),
       ],
     ];
 
@@ -486,16 +493,15 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
               setsPage: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  ...setsContent,
-                  ...saveButton,
-                ],
+                children: [...setsContent, ...saveButton],
               ),
               actionsPage: _StylishActionsGrid(
                 onOpenLeaderboard: prov.device == null
                     ? null
                     : () => _openLeaderboard(prov, resolvedTitle),
-                onOpenHistory: prov.device == null ? null : () => _openHistory(prov),
+                onOpenHistory: prov.device == null
+                    ? null
+                    : () => _openHistory(prov),
                 onToggleBodyweight: () => _toggleBodyweight(prov),
                 onFeedback: () => _handleFeedback(),
                 onOpenNote: () => _openNote(prov),
@@ -512,12 +518,12 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     );
   }
 
-  Future<void> _saveSession(
-    DeviceProvider prov,
-    AppLocalizations loc,
-  ) async {
+  Future<void> _saveSession(DeviceProvider prov, AppLocalizations loc) async {
     _focusSession();
-    final container = riverpod.ProviderScope.containerOf(context, listen: false);
+    final container = riverpod.ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
     final auth = container.read(authControllerProvider);
     final base = {
       'uid': auth.userId!,
@@ -529,11 +535,9 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     };
     elogUi('CLICK_SAVE', base);
     if (!_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(loc.pleaseCheckInputs),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(loc.pleaseCheckInputs)));
       return;
     }
     final counts = prov.getSetCounts();
@@ -563,19 +567,17 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
       );
       if (confirm != true) return;
       final added = prov.completeAllFilledNotDone();
-      elogUi('CONFIRM_ALL_SETS', {
-        'completedCount': added,
-      });
+      elogUi('CONFIRM_ALL_SETS', {'completedCount': added});
       if (prov.completedCount == 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(loc.noCompletedSets)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(loc.noCompletedSets)));
         return;
       }
     } else if (totalFilled == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.noCompletedSets)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(loc.noCompletedSets)));
       return;
     }
     elogUi('SAVE_STARTED', base);
@@ -587,7 +589,6 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
       userName: auth.userName,
       gender: settingsProv.gender,
       bodyWeightKg: settingsProv.bodyWeightKg,
-
     );
     final sessionId = prov.lastSessionId;
     if (!ok) {
@@ -597,8 +598,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
         'reason': prov.error ?? 'unknown',
       });
       final msg = prov.error ?? 'Speichern fehlgeschlagen.';
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(msg)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       elogUi('SAVE_DONE', {
         ...base,
         if (sessionId != null) 'sessionId': sessionId,
@@ -617,9 +617,9 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     final message = prov.device?.isMulti == true
         ? loc.multiDeviceSessionSaved
         : loc.sessionSaved;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
     _closeKeyboard();
     widget.onSessionSaved?.call();
   }
@@ -628,7 +628,8 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final outlineColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
     if (prov.isLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 96),
@@ -643,16 +644,11 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
           children: [
             Icon(Icons.error_outline, size: 48, color: outlineColor),
             const SizedBox(height: 12),
-            Text(
-              prov.error ?? loc.deviceNotFound,
-              textAlign: TextAlign.center,
-            ),
+            Text(prov.error ?? loc.deviceNotFound, textAlign: TextAlign.center),
           ],
         ),
       );
     }
-
-
 
     return _buildEditablePage(prov, loc);
   }
@@ -673,13 +669,14 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
     final brandTheme = theme.extension<AppBrandTheme>();
     final brandColor = brandTheme?.outline ?? theme.colorScheme.primary;
     final exercises = prov.device?.isMulti ?? false
-        ? riverpod.ProviderScope.containerOf(context, listen: false)
-            .read(exerciseProvider)
-            .exercises
+        ? riverpod.ProviderScope.containerOf(
+            context,
+            listen: false,
+          ).read(exerciseProvider).exercises
         : null;
     final resolvedTitle =
         _resolveExerciseTitle(context, prov, exercises: exercises) ??
-            loc.newSessionTitle;
+        loc.newSessionTitle;
     final deviceDescription = prov.device?.description;
 
     final showClose = widget.onCloseRequested != null;
@@ -695,10 +692,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  brandColor,
-                  brandColor.withOpacity(0.7),
-                ],
+                colors: [brandColor, brandColor.withOpacity(0.7)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -765,11 +759,12 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
                     : null,
                 borderRadius: BorderRadius.circular(50),
                 child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      Icons.close,
-                      color: Colors.white.withOpacity(0.6),
-                    )),
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.close,
+                    color: Colors.white.withOpacity(0.6),
+                  ),
+                ),
               ),
             ),
         ],
@@ -807,10 +802,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
           end: Alignment.bottomRight,
           colors: [
             theme.canvasColor.withOpacity(0.9), // Darker base
-            Color.alphaBlend(
-              brandColor.withOpacity(0.05),
-              theme.canvasColor,
-            ),
+            Color.alphaBlend(brandColor.withOpacity(0.05), theme.canvasColor),
           ],
         ),
         boxShadow: [
@@ -842,7 +834,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
               ),
             ),
             wrappedContent,
-             const SizedBox(height: 12), // Bottom padding
+            const SizedBox(height: 12), // Bottom padding
           ],
         ),
       ),
@@ -851,10 +843,7 @@ class _DeviceSessionSectionBodyState extends riverpod.ConsumerState<_DeviceSessi
 }
 
 class _AddSetButton extends StatelessWidget {
-  const _AddSetButton({
-    required this.onPressed,
-    required this.label,
-  });
+  const _AddSetButton({required this.onPressed, required this.label});
 
   final VoidCallback onPressed;
   final String label;
@@ -863,8 +852,10 @@ class _AddSetButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accentColor =
-        theme.extension<AppBrandTheme>()?.outline ?? theme.colorScheme.secondary;
-    final baseTextStyle = theme.textTheme.titleMedium ??
+        theme.extension<AppBrandTheme>()?.outline ??
+        theme.colorScheme.secondary;
+    final baseTextStyle =
+        theme.textTheme.titleMedium ??
         const TextStyle(
           fontSize: AppFontSizes.title,
           fontWeight: FontWeight.w600,
@@ -914,8 +905,8 @@ class _GroupedSetList extends StatelessWidget {
   Widget build(BuildContext context) {
     final brand = Theme.of(context).extension<AppBrandTheme>();
     final loc = AppLocalizations.of(context)!;
-    final isBodyweightMode = sets.isNotEmpty &&
-        (sets.first['isBodyweight'] == true);
+    final isBodyweightMode =
+        sets.isNotEmpty && (sets.first['isBodyweight'] == true);
     var tokens = SetCardTheme.of(context);
     const dense = true;
     if (dense) {
@@ -923,7 +914,8 @@ class _GroupedSetList extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       );
     }
-    final outlineRadius = (brand?.outlineRadius as BorderRadius?) ??
+    final outlineRadius =
+        (brand?.outlineRadius as BorderRadius?) ??
         BorderRadius.circular(AppRadius.card);
     final outlineWidth = brand?.outlineWidth ?? 2;
     final innerRadius = outlineRadius - BorderRadius.circular(outlineWidth);
@@ -933,7 +925,9 @@ class _GroupedSetList extends StatelessWidget {
       if (rawDrops is List) {
         for (final drop in rawDrops) {
           if (drop is Map) {
-            final weight = (drop['weight'] ?? drop['kg'] ?? '').toString().trim();
+            final weight = (drop['weight'] ?? drop['kg'] ?? '')
+                .toString()
+                .trim();
             final reps = (drop['reps'] ?? drop['wdh'] ?? '').toString().trim();
             if (weight.isNotEmpty && reps.isNotEmpty) {
               return true;
@@ -995,10 +989,7 @@ class _GroupedSetList extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         color: Colors.red.withOpacity(0.15),
-        child: const Icon(
-          Icons.delete,
-          semanticLabel: 'Löschen',
-        ),
+        child: const Icon(Icons.delete, semanticLabel: 'Löschen'),
       ),
       onDismissed: (_) {
         final removedSource = index < sets.length ? sets[index] : set;
@@ -1016,9 +1007,12 @@ class _GroupedSetList extends StatelessWidget {
         groupedRadius: BorderRadius.only(
           topLeft: index == 0 ? innerRadius.topLeft : Radius.zero,
           topRight: index == 0 ? innerRadius.topRight : Radius.zero,
-          bottomLeft: index == sets.length - 1 ? innerRadius.bottomLeft : Radius.zero,
-          bottomRight:
-              index == sets.length - 1 ? innerRadius.bottomRight : Radius.zero,
+          bottomLeft: index == sets.length - 1
+              ? innerRadius.bottomLeft
+              : Radius.zero,
+          bottomRight: index == sets.length - 1
+              ? innerRadius.bottomRight
+              : Radius.zero,
         ),
       ),
     );
@@ -1066,13 +1060,7 @@ class _SetListFieldHeader extends StatelessWidget {
           SizedBox(width: leadingWidth),
           // Nur "Vorher" in der Kopfzeile – Spaltenlabels für kg/Wdh.
           // entfallen, da die Felder eigene Platzhalter haben.
-          Flexible(
-            flex: 2,
-            child: Text(
-              'Vorher',
-              style: headerStyle,
-            ),
-          ),
+          Flexible(flex: 2, child: Text('Vorher', style: headerStyle)),
           const Spacer(flex: 3),
           const Spacer(flex: 3),
         ],
@@ -1092,7 +1080,8 @@ class _SwipeableSessionContent extends StatefulWidget {
   final Widget actionsPage;
 
   @override
-  State<_SwipeableSessionContent> createState() => _SwipeableSessionContentState();
+  State<_SwipeableSessionContent> createState() =>
+      _SwipeableSessionContentState();
 }
 
 class _SwipeableSessionContentState extends State<_SwipeableSessionContent> {
@@ -1108,9 +1097,10 @@ class _SwipeableSessionContentState extends State<_SwipeableSessionContent> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final brandColor = theme.extension<AppBrandTheme>()?.outline ?? 
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ??
         theme.colorScheme.secondary;
-    
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1120,15 +1110,9 @@ class _SwipeableSessionContentState extends State<_SwipeableSessionContent> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _PageIndicator(
-                isActive: _currentPage == 0,
-                color: brandColor,
-              ),
+              _PageIndicator(isActive: _currentPage == 0, color: brandColor),
               const SizedBox(width: 8),
-              _PageIndicator(
-                isActive: _currentPage == 1,
-                color: brandColor,
-              ),
+              _PageIndicator(isActive: _currentPage == 1, color: brandColor),
             ],
           ),
         ),
@@ -1163,10 +1147,7 @@ class _SwipeableSessionContentState extends State<_SwipeableSessionContent> {
 
 /// Simple circular page indicator
 class _PageIndicator extends StatelessWidget {
-  const _PageIndicator({
-    required this.isActive,
-    required this.color,
-  });
+  const _PageIndicator({required this.isActive, required this.color});
 
   final bool isActive;
   final Color color;
@@ -1214,7 +1195,8 @@ class _StylishActionsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final brandColor = theme.extension<AppBrandTheme>()?.outline ??
+    final brandColor =
+        theme.extension<AppBrandTheme>()?.outline ??
         theme.colorScheme.secondary;
 
     return Padding(
@@ -1301,7 +1283,7 @@ class _ActionGridButton extends StatelessWidget {
     final theme = Theme.of(context);
     // Dark surface color for premium look
     final surfaceColor = Colors.black.withOpacity(0.4);
-    
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1321,20 +1303,17 @@ class _ActionGridButton extends StatelessWidget {
                     ),
                   ]
                 : [
-                     BoxShadow(
+                    BoxShadow(
                       color: Colors.black.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
-                ],
+                  ],
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: isActive
-                  ? [
-                      color.withOpacity(0.3),
-                      color.withOpacity(0.1),
-                    ]
+                  ? [color.withOpacity(0.3), color.withOpacity(0.1)]
                   : [
                       Colors.white.withOpacity(0.05),
                       Colors.white.withOpacity(0.02),
@@ -1349,9 +1328,7 @@ class _ActionGridButton extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isActive 
-                    ? color 
-                    : Colors.white.withOpacity(0.05),
+                  color: isActive ? color : Colors.white.withOpacity(0.05),
                   boxShadow: isActive
                       ? [
                           BoxShadow(
@@ -1365,14 +1342,18 @@ class _ActionGridButton extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: 24,
-                  color: isActive ? Colors.white : Colors.white.withOpacity(0.8),
+                  color: isActive
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.8),
                 ),
               ),
               const SizedBox(height: 12),
               Text(
                 label,
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: isActive ? Colors.white : Colors.white.withOpacity(0.7),
+                  color: isActive
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.7),
                   fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                   fontSize: 12,
                   letterSpacing: 0.3,
@@ -1386,8 +1367,8 @@ class _ActionGridButton extends StatelessWidget {
                 Text(
                   subtitle!,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: isActive 
-                        ? Colors.white.withOpacity(0.9) 
+                    color: isActive
+                        ? Colors.white.withOpacity(0.9)
                         : Colors.white.withOpacity(0.5),
                     fontSize: 10,
                     fontWeight: FontWeight.w500,

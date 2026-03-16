@@ -12,9 +12,11 @@ import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/features/device/domain/models/device.dart';
 import 'package:tapem/features/device/domain/models/exercise.dart';
 import 'package:tapem/features/device/presentation/screens/exercise_list_screen.dart';
+import 'package:tapem/features/device/presentation/widgets/exercise_extras_browse_launcher.dart';
 import 'package:tapem/features/device/providers/device_exercise_preview_provider.dart';
 import 'package:tapem/features/device/providers/workout_entry_orchestrator_provider.dart';
 import 'package:tapem/features/device/providers/workout_day_controller_provider.dart';
+import 'package:tapem/features/device/presentation/workout_start_guard.dart';
 import 'package:tapem/features/muscle_group/domain/models/muscle_group.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 import 'package:tapem/ui/common/alphabet_scrollbar.dart';
@@ -155,7 +157,7 @@ class _GymScreenState extends ConsumerState<GymScreen>
     }
 
     final coordinator = ref.read(workoutSessionCoordinatorProvider);
-    if (coordinator.isRunning) {
+    if (isWorkoutEditFlowActive(coordinator)) {
       final auth = ref.read(authControllerProvider);
       final userId = auth.userId;
       if (userId != null) {
@@ -179,14 +181,12 @@ class _GymScreenState extends ConsumerState<GymScreen>
       return;
     }
 
-    nav.pushNamed(
-      AppRouter.workoutDay,
-      arguments: {
-        'gymId': gymId,
-        'deviceId': deviceId,
-        'exerciseId': exerciseId,
-        'entryRequestedAtMs': DateTime.now().millisecondsSinceEpoch,
-      },
+    await showExerciseExtrasBrowseSheet(
+      context: context,
+      gymId: gymId,
+      deviceId: deviceId,
+      exerciseId: exerciseId,
+      exerciseName: exerciseName,
     );
   }
 

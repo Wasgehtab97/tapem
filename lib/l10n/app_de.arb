@@ -79,6 +79,10 @@
   "@gymDemoRestrictedMessage": {
     "description": "Hinweis, wenn Demo-User eine Aktion starten wollen"
   },
+  "workoutStartViaPlayRequired": "Bitte starte zuerst ein Training über den Play-Button.",
+  "@workoutStartViaPlayRequired": {
+    "description": "Hinweis, wenn eine Workout-Aktion ohne aktiven Play-Start ausgeführt wird"
+  },
   "gymChangeSelection": "Gym wechseln",
   "@gymChangeSelection": {
     "description": "Button zum Wechseln des Gyms"
@@ -1667,6 +1671,26 @@
   ,"@trainingDetailsDeleteSessionSuccess": {"description": "Snackbar-Text nach erfolgreichem Löschen einer Session."}
   ,"trainingDetailsDeleteSessionError": "Session konnte nicht gelöscht werden."
   ,"@trainingDetailsDeleteSessionError": {"description": "Snackbar-Text, wenn das Löschen einer Session fehlgeschlagen ist."}
+  ,"trainingDetailsCreatePlanTooltip": "Plan aus diesem Training erstellen"
+  ,"@trainingDetailsCreatePlanTooltip": {"description": "Tooltip der Aktion auf der Training-Details-Seite, um einen Plan aus dem Tag zu erstellen."}
+  ,"trainingDetailsCreatePlanDialogTitle": "Trainingsplan erstellen"
+  ,"@trainingDetailsCreatePlanDialogTitle": {"description": "Titel des Dialogs zur Erstellung eines Trainingsplans aus einem Trainingstag."}
+  ,"trainingDetailsCreatePlanDialogMessage": "Gib einen Namen für den neuen Plan ein."
+  ,"@trainingDetailsCreatePlanDialogMessage": {"description": "Beschreibungstext im Dialog zur Plan-Erstellung aus einem Tag."}
+  ,"trainingDetailsCreatePlanDialogHint": "Name (z. B. Pull Freestyle)"
+  ,"@trainingDetailsCreatePlanDialogHint": {"description": "Placeholder im Namensfeld für Plan-Erstellung aus Training-Details."}
+  ,"trainingDetailsCreatePlanDialogConfirm": "Plan erstellen"
+  ,"@trainingDetailsCreatePlanDialogConfirm": {"description": "Bestätigungstext für das Erstellen eines Plans aus Training-Details."}
+  ,"trainingDetailsCreatePlanSuccess": "Plan \"{name}\" wurde erstellt."
+  ,"@trainingDetailsCreatePlanSuccess": {"description": "Erfolgsmeldung nach Plan-Erstellung aus Training-Details.", "placeholders": {"name": {}}}
+  ,"trainingDetailsCreatePlanErrorInvalidName": "Bitte gib einen gültigen Namen ein (max. 60 Zeichen)."
+  ,"@trainingDetailsCreatePlanErrorInvalidName": {"description": "Fehlermeldung bei ungültigem Plan-Namen."}
+  ,"trainingDetailsCreatePlanErrorNoExercises": "Für diesen Tag konnten keine gültigen Übungen übernommen werden."
+  ,"@trainingDetailsCreatePlanErrorNoExercises": {"description": "Fehlermeldung, wenn aus den Tages-Sessions keine Plan-Übungen extrahiert werden konnten."}
+  ,"trainingDetailsCreatePlanErrorNotAllowed": "Plan-Erstellung ist hier nicht verfügbar."
+  ,"@trainingDetailsCreatePlanErrorNotAllowed": {"description": "Fehlermeldung, wenn die Aktion im aktuellen Kontext nicht erlaubt ist."}
+  ,"trainingDetailsCreatePlanErrorGeneric": "Plan konnte nicht erstellt werden."
+  ,"@trainingDetailsCreatePlanErrorGeneric": {"description": "Generische Fehlermeldung für die Plan-Erstellung aus Training-Details."}
   ,"profileChangeAvatar": "Profilbild ändern"
   ,"@profileChangeAvatar": {"description": "Tooltip und Accessibility-Label zum Ändern des Profilbilds"}
   ,"homeTabAdmin": "Admin"

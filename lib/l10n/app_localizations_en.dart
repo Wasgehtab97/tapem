@@ -67,6 +67,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gymDemoRestrictedMessage => 'Demo mode is read-only. Sign in to start workouts.';
 
   @override
+  String get workoutStartViaPlayRequired => 'Please start a workout first using the Play button.';
+
+  @override
   String get gymChangeSelection => 'Change gym';
 
   @override
@@ -1691,6 +1694,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trainingDetailsDeleteSessionError => 'Could not delete the session.';
+
+  @override
+  String get trainingDetailsCreatePlanTooltip => 'Create plan from this workout';
+
+  @override
+  String get trainingDetailsCreatePlanDialogTitle => 'Create training plan';
+
+  @override
+  String get trainingDetailsCreatePlanDialogMessage => 'Enter a name for the new plan.';
+
+  @override
+  String get trainingDetailsCreatePlanDialogHint => 'Name (e.g. Pull Freestyle)';
+
+  @override
+  String get trainingDetailsCreatePlanDialogConfirm => 'Create plan';
+
+  @override
+  String trainingDetailsCreatePlanSuccess(Object name) {
+    return 'Plan \"$name\" was created.';
+  }
+
+  @override
+  String get trainingDetailsCreatePlanErrorInvalidName => 'Please enter a valid name (max 60 characters).';
+
+  @override
+  String get trainingDetailsCreatePlanErrorNoExercises => 'No valid exercises could be imported from this day.';
+
+  @override
+  String get trainingDetailsCreatePlanErrorNotAllowed => 'Plan creation is not available here.';
+
+  @override
+  String get trainingDetailsCreatePlanErrorGeneric => 'Plan could not be created.';
 
   @override
   String get profileChangeAvatar => 'Change profile picture';

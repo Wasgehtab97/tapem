@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapem/core/navigation/workout_flow_navigation.dart';
 import 'package:tapem/core/providers/auth_providers.dart';
 import 'package:tapem/core/services/workout_session_coordinator.dart';
-import 'package:tapem/core/services/workout_session_duration_service.dart';
 import 'package:tapem/core/theme/app_brand_theme.dart';
 import 'package:tapem/core/providers/settings_provider.dart';
 import 'package:tapem/core/widgets/offline_banner.dart';
@@ -16,6 +15,7 @@ import 'package:tapem/app_router.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
 import 'package:tapem/features/device/presentation/models/workout_device_selection.dart';
 import 'package:tapem/features/device/presentation/workout_manual_stop_flow.dart';
+import 'package:tapem/features/device/presentation/workout_start_guard.dart';
 import 'package:tapem/features/device/presentation/widgets/device_session_section.dart';
 import 'package:tapem/features/gym/presentation/screens/gym_screen.dart';
 import 'package:tapem/bootstrap/navigation.dart';
@@ -29,8 +29,6 @@ import 'package:tapem/features/device/providers/workout_day_controller_provider.
 import 'package:tapem/features/device/providers/workout_entry_orchestrator_provider.dart';
 
 class WorkoutDayScreen extends riverpod.ConsumerStatefulWidget {
-  static const staleEntryMaxAge = Duration(seconds: 15);
-
   const WorkoutDayScreen({
     super.key,
     required this.gymId,
@@ -38,6 +36,7 @@ class WorkoutDayScreen extends riverpod.ConsumerStatefulWidget {
     required this.exerciseId,
     this.planId,
     this.planName,
+    this.planInitialSetCount,
     this.entryRequestedAtMs,
     this.sessionBuilder,
     this.closeSessionOnDispose = false,
@@ -49,6 +48,7 @@ class WorkoutDayScreen extends riverpod.ConsumerStatefulWidget {
   final String exerciseId;
   final String? planId;
   final String? planName;
+  final int? planInitialSetCount;
   final int? entryRequestedAtMs;
   final Widget Function(
     BuildContext context,
@@ -65,7 +65,7 @@ class WorkoutDayScreen extends riverpod.ConsumerStatefulWidget {
 }
 
 class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
-  static const double _headerRestTimerWidth = 80;
+  static const double _headerRestTimerWidth = 96;
   static const double _headerTimerGap = 6;
   final ScrollController _scrollController = ScrollController();
   String? _sessionKey;
@@ -73,6 +73,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
   bool _ownsSession = false;
   String? _planId;
   String? _planName;
+  int? _planInitialSetCount;
   int? _globalRestSeconds;
   String? _loadedRestTimerUserId;
   final GlobalKey<SessionRestTimerState> _globalRestTimerKey =
@@ -206,8 +207,9 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
     super.initState();
     _planId = widget.planId;
     _planName = widget.planName;
+    _planInitialSetCount = widget.planInitialSetCount;
     debugPrint(
-      '🏋️ WorkoutDayScreen init gymId=${widget.gymId} deviceId=${widget.deviceId} exerciseId=${widget.exerciseId} planId=$_planId planName=$_planName',
+      '🏋️ WorkoutDayScreen init gymId=${widget.gymId} deviceId=${widget.deviceId} exerciseId=${widget.exerciseId} planId=$_planId planName=$_planName planInitialSetCount=$_planInitialSetCount',
     );
     WidgetsBinding.instance.addPostFrameCallback((_) => _ensureSession());
   }
@@ -216,7 +218,6 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
     final auth = ref.read(authControllerProvider);
     final controller = ref.read(workoutDayControllerProvider);
     final coordinator = ref.read(workoutSessionCoordinatorProvider);
-    final durationService = ref.read(workoutSessionDurationServiceProvider);
     final userId = auth.userId;
     if (userId == null || userId.isEmpty) {
       if (mounted) {
@@ -233,22 +234,21 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
       exerciseId: widget.exerciseId,
       userId: userId,
     );
-    final existingSession = controller.sessionForKey(contextKey);
-    final hasRunningTraining =
-        coordinator.isRunning && durationService.isRunning;
-    final hasFinalizeMarker =
-        coordinator.finalizedAt != null || coordinator.finalizeReason != null;
-    final isFreshEntry = _isFreshEntryRequest();
-    if (!hasRunningTraining &&
-        existingSession == null &&
-        hasFinalizeMarker &&
-        !isFreshEntry) {
-      debugPrint(
-        '🏁 [WorkoutFlow] stale_workout_route_blocked gym=${widget.gymId} device=${widget.deviceId} exercise=${widget.exerciseId}',
+    final hasRunningTraining = isWorkoutEditFlowActive(coordinator);
+    if (!hasRunningTraining) {
+      final closedStaleSessions = controller.closeAllSessionsFor(
+        userId: userId,
+        gymId: widget.gymId,
       );
+      debugPrint(
+        '🏁 [WorkoutFlow] workout_route_blocked_without_active_play_start gym=${widget.gymId} device=${widget.deviceId} exercise=${widget.exerciseId} closedStale=$closedStaleSessions',
+      );
+      if (mounted) {
+        showWorkoutStartViaPlayRequiredSnackbar(context);
+      }
       await navigateToHomeProfile(
         navigatorKey: navigatorKey,
-        source: 'stale_workout_route',
+        source: 'workout_route_requires_play_start',
       );
       if (mounted) {
         setState(() {
@@ -281,7 +281,7 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
       _planId ??= existingPlan.$1;
       _planName ??= existingPlan.$2;
       debugPrint(
-        '📎 WorkoutDayScreen adopted existing plan context planId=$_planId planName=$_planName',
+        '📎 WorkoutDayScreen adopted existing plan context planId=$_planId planName=$_planName planInitialSetCount=$_planInitialSetCount',
       );
     }
     final alreadyExists = controller.sessionForKey(contextKey) != null;
@@ -306,17 +306,6 @@ class _WorkoutDayScreenState extends riverpod.ConsumerState<WorkoutDayScreen> {
       });
       _scrollToLatest();
     }
-  }
-
-  bool _isFreshEntryRequest() {
-    final requestedAtMs = widget.entryRequestedAtMs;
-    if (requestedAtMs == null || requestedAtMs <= 0) {
-      return false;
-    }
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-    final ageMs = nowMs - requestedAtMs;
-    return ageMs >= 0 &&
-        ageMs <= WorkoutDayScreen.staleEntryMaxAge.inMilliseconds;
   }
 
   @override

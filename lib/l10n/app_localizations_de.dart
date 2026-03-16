@@ -67,6 +67,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get gymDemoRestrictedMessage => 'Demo-Modus ist nur zum Anschauen. Bitte anmelden, um zu trainieren.';
 
   @override
+  String get workoutStartViaPlayRequired => 'Bitte starte zuerst ein Training über den Play-Button.';
+
+  @override
   String get gymChangeSelection => 'Gym wechseln';
 
   @override
@@ -1691,6 +1694,38 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get trainingDetailsDeleteSessionError => 'Session konnte nicht gelöscht werden.';
+
+  @override
+  String get trainingDetailsCreatePlanTooltip => 'Plan aus diesem Training erstellen';
+
+  @override
+  String get trainingDetailsCreatePlanDialogTitle => 'Trainingsplan erstellen';
+
+  @override
+  String get trainingDetailsCreatePlanDialogMessage => 'Gib einen Namen für den neuen Plan ein.';
+
+  @override
+  String get trainingDetailsCreatePlanDialogHint => 'Name (z. B. Pull Freestyle)';
+
+  @override
+  String get trainingDetailsCreatePlanDialogConfirm => 'Plan erstellen';
+
+  @override
+  String trainingDetailsCreatePlanSuccess(Object name) {
+    return 'Plan \"$name\" wurde erstellt.';
+  }
+
+  @override
+  String get trainingDetailsCreatePlanErrorInvalidName => 'Bitte gib einen gültigen Namen ein (max. 60 Zeichen).';
+
+  @override
+  String get trainingDetailsCreatePlanErrorNoExercises => 'Für diesen Tag konnten keine gültigen Übungen übernommen werden.';
+
+  @override
+  String get trainingDetailsCreatePlanErrorNotAllowed => 'Plan-Erstellung ist hier nicht verfügbar.';
+
+  @override
+  String get trainingDetailsCreatePlanErrorGeneric => 'Plan konnte nicht erstellt werden.';
 
   @override
   String get profileChangeAvatar => 'Profilbild ändern';

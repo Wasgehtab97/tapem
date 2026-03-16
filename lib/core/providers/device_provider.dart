@@ -159,6 +159,8 @@ class DeviceProvider extends ChangeNotifier {
   static const int _defaultInitialSetCount = 3;
   static const bool _enableVerboseMutationLogs = false;
   static const Duration _remoteSideEffectTimeout = Duration(seconds: 2);
+  @visibleForTesting
+  static const String prefilledFromPreviousKey = 'prefilledFromPrevious';
   final GetDevicesForGym _getDevicesForGym;
   final FirebaseFirestore _firestore;
   final LogFn _log;
@@ -209,6 +211,7 @@ class DeviceProvider extends ChangeNotifier {
   String? _pendingContextKey;
   Future<void>? _inFlightLoad;
   Future<void> _pendingSetCompletionDispatch = Future<void>.value();
+  int _initialSetCount = _defaultInitialSetCount;
 
   // Snapshots (Historie zum Blättern)
   final List<DeviceSessionSnapshot> _sessionSnapshots = [];
@@ -225,15 +228,17 @@ class DeviceProvider extends ChangeNotifier {
       'dropReps': '',
       'done': false,
       'isBodyweight': isBodyweight ?? _isBodyweightMode,
+      prefilledFromPreviousKey: false,
       'completedAtMs': null,
       'id': _uuid.v4(),
     });
   }
 
   List<Map<String, dynamic>> _buildInitialEmptySets({bool? isBodyweight}) {
+    final resolvedInitialSetCount = math.max(1, _initialSetCount);
     final resolvedIsBodyweight = isBodyweight ?? _isBodyweightMode;
     return List.generate(
-      _defaultInitialSetCount,
+      resolvedInitialSetCount,
       (index) => _createEmptySet(
         number: index + 1,
         isBodyweight: resolvedIsBodyweight,
@@ -348,6 +353,156 @@ class DeviceProvider extends ChangeNotifier {
   bool get isBodyweightMode => _isBodyweightMode;
   bool get isBw => _isBodyweightMode;
 
+  static bool _isSetDone(Map<String, dynamic> set) =>
+      set['done'] == true || set['done'] == 'true';
+
+  static bool _isBodyweightValue(dynamic raw) {
+    if (raw is bool) {
+      return raw;
+    }
+    if (raw is String) {
+      return raw.trim().toLowerCase() == 'true';
+    }
+    return false;
+  }
+
+  static int? _parseReps(dynamic raw) {
+    final normalized = (raw ?? '').toString().trim();
+    if (normalized.isEmpty) return null;
+    return int.tryParse(normalized);
+  }
+
+  static double? _parseWeight(dynamic raw) {
+    final normalized = (raw ?? '').toString().replaceAll(',', '.').trim();
+    if (normalized.isEmpty) return null;
+    return double.tryParse(normalized);
+  }
+
+  static String _formatWeight(double value) {
+    if (!value.isFinite) return '';
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    var text = value.toStringAsFixed(2);
+    text = text.replaceFirst(RegExp(r'0+$'), '');
+    text = text.replaceFirst(RegExp(r'\.$'), '');
+    return text;
+  }
+
+  @visibleForTesting
+  static bool isPrefilledUntouchedSet(Map<String, dynamic> set) {
+    if (_isSetDone(set)) {
+      return false;
+    }
+    return set[prefilledFromPreviousKey] == true;
+  }
+
+  @visibleForTesting
+  static bool shouldCountAsFilledNotDone(Map<String, dynamic> set) {
+    final weightRaw = (set['weight'] ?? '').toString().trim();
+    final repsRaw = (set['reps'] ?? '').toString().trim();
+    final reps = int.tryParse(repsRaw);
+    if (reps == null || reps <= 0) {
+      return false;
+    }
+    final isBodyweight = _isBodyweightValue(set['isBodyweight']);
+    final weight = _parseWeight(weightRaw);
+    final hasValidWeight = isBodyweight
+        ? (weightRaw.isEmpty || weight != null)
+        : (weight != null && weight > 0);
+    if (!hasValidWeight) {
+      return false;
+    }
+    if (_isSetDone(set)) {
+      return false;
+    }
+    return !isPrefilledUntouchedSet(set);
+  }
+
+  @visibleForTesting
+  static Map<String, dynamic>? buildPrefilledSetFromPrevious({
+    required Map<String, dynamic> currentSet,
+    required Map<String, dynamic> previousSet,
+  }) {
+    if (_isSetDone(currentSet)) {
+      return null;
+    }
+
+    final hasCurrentWeight = (currentSet['weight'] ?? '')
+        .toString()
+        .trim()
+        .isNotEmpty;
+    final hasCurrentReps = (currentSet['reps'] ?? '')
+        .toString()
+        .trim()
+        .isNotEmpty;
+    final hasCurrentDropValues = _dropsFromSet(currentSet).any(_dropHasValue);
+    if (hasCurrentWeight || hasCurrentReps || hasCurrentDropValues) {
+      return null;
+    }
+
+    final reps = _parseReps(previousSet['reps']);
+    if (reps == null || reps <= 0) {
+      return null;
+    }
+
+    final isBodyweight = _isBodyweightValue(previousSet['isBodyweight']);
+    final previousWeight = _parseWeight(previousSet['weight']);
+    if (!isBodyweight && (previousWeight == null || previousWeight <= 0)) {
+      return null;
+    }
+
+    final weightText = isBodyweight
+        ? ((previousWeight != null && previousWeight > 0)
+              ? _formatWeight(previousWeight)
+              : '')
+        : _formatWeight(previousWeight!);
+
+    final prefilled = Map<String, dynamic>.from(currentSet);
+    prefilled['weight'] = weightText;
+    prefilled['reps'] = reps.toString();
+    prefilled['isBodyweight'] = isBodyweight;
+    prefilled['done'] = false;
+    prefilled.remove('completedAtMs');
+    prefilled[prefilledFromPreviousKey] = true;
+    return _withNormalizedDrops(prefilled);
+  }
+
+  bool _isPendingFilledSet(Map<String, dynamic> set) {
+    return DeviceProvider.shouldCountAsFilledNotDone(set);
+  }
+
+  void _markSetAsUserTouched(Map<String, dynamic> set) {
+    set[prefilledFromPreviousKey] = false;
+  }
+
+  bool _applyLastSessionPrefillIfNeeded() {
+    if (_lastSessionSets.isEmpty || _sets.isEmpty) {
+      return false;
+    }
+    var changed = false;
+    final limit = math.min(_sets.length, _lastSessionSets.length);
+    for (var i = 0; i < limit; i++) {
+      final current = Map<String, dynamic>.from(_sets[i]);
+      final previous = _lastSessionSets[i];
+      final prefilled = DeviceProvider.buildPrefilledSetFromPrevious(
+        currentSet: current,
+        previousSet: previous,
+      );
+      if (prefilled == null || mapEquals(current, prefilled)) {
+        continue;
+      }
+      _sets[i] = prefilled;
+      changed = true;
+    }
+    if (changed) {
+      _log(
+        '🧩 [Provider] prefilled sets from previous session ${_setsBrief(_sets)}',
+      );
+    }
+    return changed;
+  }
+
   List<DeviceSessionSnapshot> get sessionSnapshots =>
       List.unmodifiable(_sessionSnapshots);
   bool get hasMoreSnapshots => _snapshotsHasMore;
@@ -450,6 +605,7 @@ class DeviceProvider extends ChangeNotifier {
     required String exerciseId,
     required String userId,
     bool forceRefresh = false,
+    int? initialSetCountOverride,
   }) {
     final contextKey = _buildContextKey(
       gymId: gymId,
@@ -469,6 +625,7 @@ class DeviceProvider extends ChangeNotifier {
       deviceId: deviceId,
       exerciseId: exerciseId,
       userId: userId,
+      initialSetCountOverride: initialSetCountOverride,
     );
     _pendingContextKey = contextKey;
     _inFlightLoad = future.whenComplete(() {
@@ -492,6 +649,7 @@ class DeviceProvider extends ChangeNotifier {
     required String deviceId,
     required String exerciseId,
     required String userId,
+    int? initialSetCountOverride,
   }) async {
     _setLoading(true);
     _error = null;
@@ -559,6 +717,11 @@ class DeviceProvider extends ChangeNotifier {
 
       _xp = 0;
       _level = 1;
+      // App-wide rule:
+      // - first execution of an exercise starts with 3 sets
+      // - afterwards, the last completed session count for this exercise
+      //   defines the next initial set count (resolved below).
+      _initialSetCount = _defaultInitialSetCount;
 
       _sets = _buildInitialEmptySets(isBodyweight: false);
       _lastSessionSets = [];
@@ -598,10 +761,18 @@ class DeviceProvider extends ChangeNotifier {
       });
 
       await lastSessionFuture;
+      final initialSetCountSynced = _syncInitialSetCountFromLastSession();
+      if (initialSetCountSynced) {
+        _sets = _buildInitialEmptySets(isBodyweight: false);
+      }
 
       // Fire-and-forget non-critical data to prevent blocking UI
       unawaited(Future.wait([snapshotsFuture, userNoteFuture, userXpFuture]));
       final draftChanged = await _restoreDraft();
+      final prefillChanged = draftChanged
+          ? false
+          : _applyLastSessionPrefillIfNeeded();
+      final bodyweightModeSynced = _syncBodyweightModeFromSets();
       if (_persistEmptyDrafts && _draftCreatedAt == null) {
         await _saveDraftNow();
       }
@@ -611,7 +782,13 @@ class DeviceProvider extends ChangeNotifier {
         exerciseId: exerciseId,
         userId: userId,
       );
-      if (draftChanged || lastSessionChanged || noteChanged || xpChanged) {
+      if (draftChanged ||
+          initialSetCountSynced ||
+          prefillChanged ||
+          lastSessionChanged ||
+          noteChanged ||
+          xpChanged ||
+          bodyweightModeSynced) {
         notifyListeners();
       }
       _log(
@@ -637,6 +814,7 @@ class DeviceProvider extends ChangeNotifier {
   void insertSetAt(int index, Map<String, dynamic> set) {
     final s = Map<String, dynamic>.from(set);
     s.putIfAbsent('isBodyweight', () => _isBodyweightMode);
+    s.putIfAbsent(prefilledFromPreviousKey, () => false);
     s.putIfAbsent('id', () => _uuid.v4());
     _sets.insert(index, _withNormalizedDrops(s));
     for (var i = 0; i < _sets.length; i++) {
@@ -682,6 +860,7 @@ class DeviceProvider extends ChangeNotifier {
 
     after['number'] = '${index + 1}';
     after['done'] = (after['done'] == true || after['done'] == 'true');
+    _markSetAsUserTouched(after);
 
     if (mapEquals(before, after)) {
       // No-op → kein notify
@@ -700,6 +879,7 @@ class DeviceProvider extends ChangeNotifier {
     final after = Map<String, dynamic>.from(before);
     _applyDropsToSet(after, drops);
     after['number'] = '${index + 1}';
+    _markSetAsUserTouched(after);
 
     if (mapEquals(before, after)) {
       return drops.length - 1;
@@ -721,6 +901,7 @@ class DeviceProvider extends ChangeNotifier {
     final after = Map<String, dynamic>.from(before);
     _applyDropsToSet(after, drops);
     after['number'] = '${setIndex + 1}';
+    _markSetAsUserTouched(after);
 
     if (mapEquals(before, after)) {
       return;
@@ -753,6 +934,7 @@ class DeviceProvider extends ChangeNotifier {
     final after = Map<String, dynamic>.from(before);
     _applyDropsToSet(after, drops);
     after['number'] = '${setIndex + 1}';
+    _markSetAsUserTouched(after);
 
     if (mapEquals(before, after)) {
       return;
@@ -790,7 +972,7 @@ class DeviceProvider extends ChangeNotifier {
   bool _isFilled(Map<String, dynamic> s) {
     final w = (s['weight'] ?? '').toString().trim();
     final r = (s['reps'] ?? '').toString().trim();
-    final isBw = s['isBodyweight'] == true;
+    final isBw = _isBodyweightValue(s['isBodyweight']);
     final weightValid = isBw
         ? (w.isEmpty || double.tryParse(w.replaceAll(',', '.')) != null)
         : (w.isNotEmpty && double.tryParse(w.replaceAll(',', '.')) != null);
@@ -831,16 +1013,17 @@ class DeviceProvider extends ChangeNotifier {
 
   bool toggleSetDone(int index) {
     final s = _sets[index];
-    if (!_isFilled(s)) {
+    final isCurrentlyDone = s['done'] == true || s['done'] == 'true';
+    if (!isCurrentlyDone && !_isFilled(s)) {
       _log('⚠️ [Provider] toggleSetDone($index) blocked: invalid');
       return false;
     }
 
     _error = null;
     final before = Map<String, dynamic>.from(s);
-    final current = (s['done'] == true || s['done'] == 'true');
-    final toggledToDone = !current;
+    final toggledToDone = !isCurrentlyDone;
     s['done'] = toggledToDone;
+    _markSetAsUserTouched(s);
     if (toggledToDone) {
       s['completedAtMs'] = DateTime.now().millisecondsSinceEpoch;
     } else {
@@ -874,6 +1057,7 @@ class DeviceProvider extends ChangeNotifier {
     final after = Map<String, dynamic>.from(s);
     after['done'] = true;
     after['completedAtMs'] = DateTime.now().millisecondsSinceEpoch;
+    _markSetAsUserTouched(after);
     _sets[index] = after;
     _log('☑️ [Provider] markSetDone($index)');
     notifyListeners();
@@ -891,6 +1075,7 @@ class DeviceProvider extends ChangeNotifier {
     final after = Map<String, dynamic>.from(s);
     after['done'] = false;
     after.remove('completedAtMs');
+    _markSetAsUserTouched(after);
     _sets[index] = after;
     _log('⬜️ [Provider] markSetNotDone($index)');
     notifyListeners();
@@ -917,8 +1102,7 @@ class DeviceProvider extends ChangeNotifier {
   int? nextFilledNotDoneIndex() {
     for (var i = 0; i < _sets.length; i++) {
       final s = _sets[i];
-      if (s['done'] == true || s['done'] == 'true') continue;
-      if (_isFilled(s)) return i;
+      if (_isPendingFilledSet(s)) return i;
     }
     return null;
   }
@@ -929,6 +1113,7 @@ class DeviceProvider extends ChangeNotifier {
     final s = Map<String, dynamic>.from(_sets[idx]);
     s['done'] = true;
     s['completedAtMs'] = DateTime.now().millisecondsSinceEpoch;
+    _markSetAsUserTouched(s);
     _sets[idx] = s;
     _log('☑️ [Provider] completeNextFilledSet($idx)');
     notifyListeners();
@@ -942,11 +1127,11 @@ class DeviceProvider extends ChangeNotifier {
     final baseMs = DateTime.now().millisecondsSinceEpoch;
     for (var i = 0; i < _sets.length; i++) {
       final s = _sets[i];
-      if (s['done'] == true || s['done'] == 'true') continue;
-      if (!_isFilled(s)) continue;
+      if (!_isPendingFilledSet(s)) continue;
       final after = Map<String, dynamic>.from(s);
       after['done'] = true;
       after['completedAtMs'] = baseMs + count;
+      _markSetAsUserTouched(after);
       _sets[i] = after;
       count++;
     }
@@ -968,10 +1153,10 @@ class DeviceProvider extends ChangeNotifier {
     var emptyOrIncomplete = 0;
     for (final s in _sets) {
       final filled = _isFilled(s);
-      final d = s['done'] == true || s['done'] == 'true';
+      final d = _isSetDone(s);
       if (d && filled) {
         done++;
-      } else if (filled) {
+      } else if (_isPendingFilledSet(s)) {
         filledNotDone++;
       } else {
         emptyOrIncomplete++;
@@ -997,6 +1182,9 @@ class DeviceProvider extends ChangeNotifier {
   bool _isDraftEmpty() {
     if (_note.trim().isNotEmpty) return false;
     for (final s in _sets) {
+      if (DeviceProvider.isPrefilledUntouchedSet(s)) {
+        continue;
+      }
       final w = (s['weight'] ?? '').toString().trim();
       final r = (s['reps'] ?? '').toString().trim();
       final d = s['done'] == true || s['done'] == 'true';
@@ -1209,6 +1397,7 @@ class DeviceProvider extends ChangeNotifier {
           'dropReps': draft.sets[i].dropReps ?? '',
           'done': draft.sets[i].done,
           'isBodyweight': draft.sets[i].isBodyweight,
+          prefilledFromPreviousKey: false,
           'id': _uuid.v4(),
           'drops': [
             for (final drop in draft.sets[i].drops)
@@ -1224,6 +1413,7 @@ class DeviceProvider extends ChangeNotifier {
       _note = newNote;
       _sets = newSets;
     }
+    final bodyweightModeSynced = _syncBodyweightModeFromSets();
     _lastActivityMs = draft.updatedAt;
     _scheduleAutoFinalize();
     if (_autoFinalizeEnabled &&
@@ -1231,7 +1421,7 @@ class DeviceProvider extends ChangeNotifier {
         _hasCompletedSets()) {
       unawaited(_handleAutoFinalizeTimer());
     }
-    return changed;
+    return changed || bodyweightModeSynced;
   }
 
   bool _listEquals(List<Map<String, dynamic>> a, List<Map<String, dynamic>> b) {
@@ -2302,9 +2492,57 @@ class DeviceProvider extends ChangeNotifier {
   }
 
   void toggleBodyweightMode() {
-    _isBodyweightMode = !_isBodyweightMode;
+    final nextMode = !_isBodyweightMode;
+    _isBodyweightMode = nextMode;
+    for (var i = 0; i < _sets.length; i++) {
+      final current = Map<String, dynamic>.from(_sets[i]);
+      current['isBodyweight'] = nextMode;
+      if (!nextMode) {
+        final weightRaw = (current['weight'] ?? '').toString().trim();
+        final repsRaw = (current['reps'] ?? '').toString().trim();
+        final hasValidWeight =
+            weightRaw.isNotEmpty &&
+            double.tryParse(weightRaw.replaceAll(',', '.')) != null;
+        final hasValidReps =
+            repsRaw.isNotEmpty && int.tryParse(repsRaw) != null;
+        final isDone = current['done'] == true || current['done'] == 'true';
+        if (isDone && !(hasValidWeight && hasValidReps)) {
+          current['done'] = false;
+          current.remove('completedAtMs');
+        }
+      }
+      _sets[i] = _withNormalizedDrops(current);
+    }
     _log('🏋️ [Provider] bodyweightMode=$_isBodyweightMode');
     notifyListeners();
+    _onSessionMutated();
+  }
+
+  bool _syncBodyweightModeFromSets() {
+    if (_sets.isEmpty) {
+      return false;
+    }
+    final nextMode = _sets.any(
+      (set) => _isBodyweightValue(set['isBodyweight']),
+    );
+    if (nextMode == _isBodyweightMode) {
+      return false;
+    }
+    _isBodyweightMode = nextMode;
+    _log('🏋️ [Provider] bodyweightMode_synced=$_isBodyweightMode');
+    return true;
+  }
+
+  bool _syncInitialSetCountFromLastSession() {
+    final nextCount = _lastSessionSets.isNotEmpty
+        ? math.max(1, _lastSessionSets.length)
+        : _defaultInitialSetCount;
+    if (nextCount == _initialSetCount) {
+      return false;
+    }
+    _initialSetCount = nextCount;
+    _log('🧩 [Provider] initialSetCount_synced=$_initialSetCount');
+    return true;
   }
 
   /// Verwirft den aktuellen Draft und verhindert, dass beim Dispose

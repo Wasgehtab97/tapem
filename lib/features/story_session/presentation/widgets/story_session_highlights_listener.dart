@@ -17,7 +17,8 @@ import 'package:tapem/features/story_session/domain/models/story_session_summary
 
 const _navigationSettleDelay = Duration(milliseconds: 350);
 const _summaryBuildTimeout = Duration(seconds: 3);
-const _sessionLoadTimeout = Duration(seconds: 2);
+const _sessionSyncTimeout = Duration(seconds: 6);
+const _cacheRetryDelay = Duration(milliseconds: 250);
 const _replayRetryDelay = Duration(seconds: 2);
 
 void _workoutHighlightsLog(String message) {
@@ -134,14 +135,13 @@ class _StorySessionHighlightsListenerState
 
       final storyService = ref.read(storySessionServiceProvider);
 
-      List<Session> sessions = const [];
-      try {
-        sessions = await ref
-            .read(storyHighlightsGetSessionsForDateProvider)
-            .execute(userId: event.userId, date: event.start)
-            .timeout(_sessionLoadTimeout, onTimeout: () => const <Session>[]);
-      } catch (error, stackTrace) {
-        _workoutHighlightsError('load_sessions_failed', error, stackTrace);
+      final sessions = await _loadSessionsForSummary(event);
+      if (sessions.isEmpty) {
+        _workoutHighlightsLog(
+          'summary_deferred_sessions_empty key=$completionKey day=${event.dayKey}',
+        );
+        _scheduleReplayRetry(reason: 'sessions_empty');
+        return;
       }
 
       if (!mounted) return;
@@ -177,6 +177,13 @@ class _StorySessionHighlightsListenerState
         if (mounted && summary == null) {
           _scheduleReplayRetry(reason: 'summary_null');
         }
+        return;
+      }
+      if (_looksLikePlaceholderSummary(summary) && event.durationMs > 0) {
+        _workoutHighlightsLog(
+          'summary_deferred_placeholder key=$completionKey day=${event.dayKey}',
+        );
+        _scheduleReplayRetry(reason: 'summary_placeholder');
         return;
       }
 
@@ -339,6 +346,77 @@ class _StorySessionHighlightsListenerState
     } catch (_) {
       return false;
     }
+  }
+
+  Future<List<Session>> _loadSessionsForSummary(
+    WorkoutSessionCompletionEvent event,
+  ) async {
+    final getSessions = ref.read(storyHighlightsGetSessionsForDateProvider);
+    final date = event.start;
+    try {
+      final cached = await getSessions.execute(
+        userId: event.userId,
+        date: date,
+        fromCacheOnly: true,
+      );
+      if (cached.isNotEmpty) {
+        _workoutHighlightsLog(
+          'sessions_loaded source=cache count=${cached.length} day=${event.dayKey}',
+        );
+        return cached;
+      }
+    } catch (error, stackTrace) {
+      _workoutHighlightsError('load_sessions_cache_failed', error, stackTrace);
+    }
+
+    await Future<void>.delayed(_cacheRetryDelay);
+    if (!mounted) return const <Session>[];
+
+    try {
+      final cachedRetry = await getSessions.execute(
+        userId: event.userId,
+        date: date,
+        fromCacheOnly: true,
+      );
+      if (cachedRetry.isNotEmpty) {
+        _workoutHighlightsLog(
+          'sessions_loaded source=cache_retry count=${cachedRetry.length} day=${event.dayKey}',
+        );
+        return cachedRetry;
+      }
+    } catch (error, stackTrace) {
+      _workoutHighlightsError(
+        'load_sessions_cache_retry_failed',
+        error,
+        stackTrace,
+      );
+    }
+
+    try {
+      final synced = await getSessions
+          .execute(userId: event.userId, date: date)
+          .timeout(_sessionSyncTimeout, onTimeout: () => const <Session>[]);
+      if (synced.isNotEmpty) {
+        _workoutHighlightsLog(
+          'sessions_loaded source=sync count=${synced.length} day=${event.dayKey}',
+        );
+      }
+      return synced;
+    } catch (error, stackTrace) {
+      _workoutHighlightsError('load_sessions_sync_failed', error, stackTrace);
+      return const <Session>[];
+    }
+  }
+
+  bool _looksLikePlaceholderSummary(StorySessionSummary summary) {
+    final stats = summary.stats;
+    final hasStats =
+        stats.exerciseCount > 0 || stats.setCount > 0 || stats.durationMs > 0;
+    final hasHighlights =
+        summary.achievements.isNotEmpty ||
+        summary.challengeHighlights.isNotEmpty;
+    final hasXp = summary.dailyXp.xp != 0 || summary.totalXp != 0;
+    return !hasStats && !hasHighlights && !hasXp;
   }
 
   void _showDeferredOfflineHint() {

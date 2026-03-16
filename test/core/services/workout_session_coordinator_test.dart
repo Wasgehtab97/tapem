@@ -79,7 +79,7 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  test('first set completion starts running session with anchor day', () async {
+  test('set completion is ignored before profile play start', () async {
     final durationService = _FakeDurationService();
     final coordinator = WorkoutSessionCoordinator(
       durationService: durationService,
@@ -93,18 +93,12 @@ void main() {
       completedAt: completedAt,
     );
 
-    expect(coordinator.isRunning, isTrue);
-    expect(coordinator.anchorDayKey, '2026-02-12');
-    expect(
-      coordinator.anchorStartAt?.millisecondsSinceEpoch,
-      completedAt.millisecondsSinceEpoch,
-    );
-    expect(
-      coordinator.lastSetCompletedAt?.millisecondsSinceEpoch,
-      completedAt.millisecondsSinceEpoch,
-    );
-    expect(durationService.startCalls, 1);
-    expect(durationService.registerSetCalls, 1);
+    expect(coordinator.isRunning, isFalse);
+    expect(coordinator.anchorDayKey, isNull);
+    expect(coordinator.anchorStartAt, isNull);
+    expect(coordinator.lastSetCompletedAt, isNull);
+    expect(durationService.startCalls, 0);
+    expect(durationService.registerSetCalls, 0);
 
     coordinator.dispose();
     durationService.dispose();
@@ -117,6 +111,7 @@ void main() {
       inactivityDelay: const Duration(milliseconds: 120),
     );
     final completedAt = DateTime.now();
+    final startedAt = completedAt.subtract(const Duration(minutes: 3));
     DateTime? handledAt;
 
     coordinator.setAutoFinalizeHandler((lastSetCompletedAt) async {
@@ -126,6 +121,11 @@ void main() {
       );
     });
 
+    await coordinator.startFromProfilePlay(
+      uid: 'user-1',
+      gymId: 'gym-1',
+      startedAt: startedAt,
+    );
     await coordinator.onSetCompleted(
       uid: 'user-1',
       gymId: 'gym-1',
@@ -168,6 +168,7 @@ void main() {
         throw StateError('boom');
       });
 
+      await coordinator.startFromProfilePlay(uid: 'user-1', gymId: 'gym-1');
       await coordinator.onSetCompleted(uid: 'user-1', gymId: 'gym-1');
       await Future<void>.delayed(const Duration(milliseconds: 260));
 
@@ -465,7 +466,7 @@ void main() {
   );
 
   test(
-    'new set completion after explicit add-intent starts a fresh session',
+    'new set completion after explicit add-intent still requires play start',
     () async {
       final durationService = _FakeDurationService();
       final coordinator = WorkoutSessionCoordinator(
@@ -493,15 +494,11 @@ void main() {
         completedAt: newSetAt,
       );
 
-      expect(coordinator.isRunning, isTrue);
-      expect(
-        coordinator.anchorStartAt?.millisecondsSinceEpoch,
-        newSetAt.millisecondsSinceEpoch,
-      );
+      expect(coordinator.isRunning, isFalse);
       expect(coordinator.finalizedAt, isNull);
       expect(coordinator.finalizeReason, isNull);
-      expect(durationService.startCalls, 2);
-      expect(durationService.registerSetCalls, 1);
+      expect(durationService.startCalls, 1);
+      expect(durationService.registerSetCalls, 0);
 
       coordinator.dispose();
       durationService.dispose();

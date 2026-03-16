@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tapem/app_router.dart';
 
 import 'package:tapem/core/providers/database_provider.dart';
 import 'package:tapem/core/providers/training_details_provider.dart';
@@ -12,11 +13,13 @@ import 'package:tapem/core/theme/design_tokens.dart';
 import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/story_session/presentation/widgets/story_session_dialog.dart';
 import 'package:tapem/features/story_session/story_session_service.dart';
+import 'package:tapem/features/training_plan/application/create_training_plan_from_day_usecase.dart';
+import 'package:tapem/features/training_plan/application/training_plan_provider.dart';
 import '../widgets/day_sessions_overview.dart';
 import 'package:tapem/core/utils/duration_format.dart';
 import 'package:tapem/l10n/app_localizations.dart';
 
-class TrainingDetailsScreen extends ConsumerWidget {
+class TrainingDetailsScreen extends ConsumerStatefulWidget {
   final DateTime date;
   final String userId;
   final String? gymId;
@@ -29,13 +32,21 @@ class TrainingDetailsScreen extends ConsumerWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TrainingDetailsScreen> createState() =>
+      _TrainingDetailsScreenState();
+}
+
+class _TrainingDetailsScreenState extends ConsumerState<TrainingDetailsScreen> {
+  bool _isCreatingPlanFromDay = false;
+
+  @override
+  Widget build(BuildContext context) {
     final authView = ref.watch(authViewStateProvider);
-    final fallbackGymId = gymId ?? authView.gymCode;
+    final fallbackGymId = widget.gymId ?? authView.gymCode;
 
     final request = TrainingDetailsRequest(
-      userId: userId,
-      date: date,
+      userId: widget.userId,
+      date: widget.date,
       gymId: fallbackGymId,
     );
     final prov = ref.watch(trainingDetailsStateProvider(request));
@@ -51,7 +62,7 @@ class TrainingDetailsScreen extends ConsumerWidget {
     // Error state
     if (prov.error != null) {
       return Scaffold(
-        appBar: _AppBar(titleDate: date),
+        appBar: _AppBar(titleDate: widget.date),
         body: Center(child: Text('Fehler: ${prov.error}')),
       );
     }
@@ -60,20 +71,27 @@ class TrainingDetailsScreen extends ConsumerWidget {
     final sessions = prov.sessions;
     final duration = prov.dayDurationMs;
     final loc = AppLocalizations.of(context)!;
+    final currentUserId = authView.userId;
+    final resolvedGymId = prov.gymId ?? fallbackGymId;
+    final canCreatePlanFromDay =
+        sessions.isNotEmpty &&
+        resolvedGymId != null &&
+        resolvedGymId.isNotEmpty &&
+        currentUserId != null &&
+        currentUserId == widget.userId;
 
     Future<void> openStory() async {
       final storyService = ref.read(storySessionServiceProvider);
       final navigator = Navigator.of(context);
       final messenger = ScaffoldMessenger.of(context);
-      final resolvedGymId = prov.gymId ?? fallbackGymId;
       if (resolvedGymId == null) {
         debugPrint('⚠️ storySession: missing gymId for summary');
         return;
       }
       final summary = await storyService.getSummary(
         gymId: resolvedGymId,
-        userId: userId,
-        date: date,
+        userId: widget.userId,
+        date: widget.date,
         sessions: sessions,
         fallbackDurationMs: duration,
       );
@@ -90,13 +108,112 @@ class TrainingDetailsScreen extends ConsumerWidget {
       );
     }
 
+    Future<void> createPlanFromDay() async {
+      if (!canCreatePlanFromDay) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.trainingDetailsCreatePlanErrorNotAllowed)),
+        );
+        return;
+      }
+      if (_isCreatingPlanFromDay) {
+        return;
+      }
+      final effectiveGymId = resolvedGymId;
+      final effectiveUserId = currentUserId;
+      final planName = await showDialog<String>(
+        context: context,
+        barrierColor: Colors.black54,
+        builder: (_) => const CreatePlanFromDayDialog(),
+      );
+      if (planName == null || planName.trim().isEmpty) {
+        return;
+      }
+      if (!context.mounted) return;
+      setState(() => _isCreatingPlanFromDay = true);
+      debugPrint(
+        '📋 [TrainingPlan] create_from_day_started day=${widget.date.toIso8601String()} sessions=${sessions.length}',
+      );
+
+      var isProgressDialogOpen = true;
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      ).then((_) {
+        isProgressDialogOpen = false;
+      });
+
+      void closeProgressDialog() {
+        if (!isProgressDialogOpen || !context.mounted) return;
+        isProgressDialogOpen = false;
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      try {
+        final result = await ref
+            .read(createTrainingPlanFromDayUseCaseProvider)
+            .execute(
+              userId: effectiveUserId,
+              gymId: effectiveGymId,
+              planName: planName,
+              sessions: sessions,
+            );
+        ref.invalidate(trainingPlansProvider);
+        closeProgressDialog();
+        if (!context.mounted) return;
+        debugPrint(
+          '📋 [TrainingPlan] create_from_day_succeeded planId=${result.plan.id} exercises=${result.plan.exercises.length} duplicatesRemoved=${result.duplicatesRemoved} invalidSessionsSkipped=${result.invalidSessionsSkipped}',
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              loc.trainingDetailsCreatePlanSuccess(result.plan.name),
+            ),
+          ),
+        );
+        Navigator.of(
+          context,
+        ).pushNamed(AppRouter.trainingPlanDetail, arguments: result.plan);
+      } on CreateTrainingPlanFromDayException catch (error) {
+        closeProgressDialog();
+        if (!context.mounted) return;
+        debugPrint(
+          '❌ [TrainingPlan] create_from_day_failed code=${error.code} message=${error.message}',
+        );
+        final message = switch (error.code) {
+          CreateTrainingPlanFromDayErrorCode.invalidPlanName =>
+            loc.trainingDetailsCreatePlanErrorInvalidName,
+          CreateTrainingPlanFromDayErrorCode.missingUserContext ||
+          CreateTrainingPlanFromDayErrorCode.missingGymContext =>
+            loc.trainingDetailsCreatePlanErrorNotAllowed,
+          CreateTrainingPlanFromDayErrorCode.noExercisesFound =>
+            loc.trainingDetailsCreatePlanErrorNoExercises,
+        };
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      } catch (_) {
+        closeProgressDialog();
+        if (!context.mounted) return;
+        debugPrint('❌ [TrainingPlan] create_from_day_failed code=unknown');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.trainingDetailsCreatePlanErrorGeneric)),
+        );
+      } finally {
+        if (mounted) {
+          setState(() => _isCreatingPlanFromDay = false);
+        }
+      }
+    }
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: _AppBar(
-        titleDate: date,
+        titleDate: widget.date,
         durationMs: duration,
-        onStoryPressed:
-            sessions.isEmpty || (prov.gymId ?? fallbackGymId) == null
+        onCreatePlanPressed: canCreatePlanFromDay ? createPlanFromDay : null,
+        isCreatingPlan: _isCreatingPlanFromDay,
+        onStoryPressed: sessions.isEmpty || resolvedGymId == null
             ? null
             : openStory,
       ),
@@ -197,8 +314,16 @@ class TrainingDetailsScreen extends ConsumerWidget {
 class _AppBar extends StatelessWidget implements PreferredSizeWidget {
   final DateTime? titleDate;
   final int? durationMs;
+  final VoidCallback? onCreatePlanPressed;
+  final bool isCreatingPlan;
   final VoidCallback? onStoryPressed;
-  const _AppBar({this.titleDate, this.durationMs, this.onStoryPressed});
+  const _AppBar({
+    this.titleDate,
+    this.durationMs,
+    this.onCreatePlanPressed,
+    this.isCreatingPlan = false,
+    this.onStoryPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -231,6 +356,20 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       title: titleWidget,
       actions: [
+        if (onCreatePlanPressed != null)
+          IconButton(
+            icon: isCreatingPlan
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.playlist_add_rounded),
+            onPressed: isCreatingPlan ? null : onCreatePlanPressed,
+            tooltip: AppLocalizations.of(
+              context,
+            )!.trainingDetailsCreatePlanTooltip,
+          ),
         if (onStoryPressed != null)
           IconButton(
             icon: const Icon(Icons.auto_stories_outlined),
@@ -243,6 +382,71 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class CreatePlanFromDayDialog extends StatefulWidget {
+  const CreatePlanFromDayDialog({super.key});
+
+  @override
+  State<CreatePlanFromDayDialog> createState() =>
+      _CreatePlanFromDayDialogState();
+}
+
+class _CreatePlanFromDayDialogState extends State<CreatePlanFromDayDialog> {
+  final TextEditingController _nameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final name = _nameController.text.trim();
+    final canCreate = name.isNotEmpty && name.length <= 60;
+    return AlertDialog(
+      title: Text(loc.trainingDetailsCreatePlanDialogTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(loc.trainingDetailsCreatePlanDialogMessage),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _nameController,
+            autofocus: true,
+            onChanged: (_) => setState(() {}),
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              hintText: loc.trainingDetailsCreatePlanDialogHint,
+              helperText: '${name.length}/60',
+            ),
+            onSubmitted: (_) {
+              final normalized = _nameController.text.trim();
+              if (normalized.isEmpty || normalized.length > 60) return;
+              Navigator.of(context).pop(normalized);
+            },
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(loc.commonCancel),
+        ),
+        FilledButton(
+          onPressed: canCreate
+              ? () => Navigator.of(context).pop(_nameController.text.trim())
+              : null,
+          child: Text(loc.trainingDetailsCreatePlanDialogConfirm),
+        ),
+      ],
+    );
+  }
 }
 
 class _PlanTag extends StatelessWidget {

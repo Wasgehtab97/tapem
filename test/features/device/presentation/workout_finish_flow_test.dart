@@ -89,6 +89,55 @@ void main() {
 
   tearDown(() {
     TrainingDoneOverlay.clear();
+    WorkoutFinishFlow.debugSetPlanDefaultSetCountWriter(null);
+  });
+
+  test(
+    'resolvePlanDefaultSetCountFromTotals returns mode and higher tie-break',
+    () {
+      expect(
+        WorkoutFinishFlow.resolvePlanDefaultSetCountFromTotals(<int>[
+          5,
+          3,
+          5,
+          3,
+        ]),
+        5,
+      );
+      expect(
+        WorkoutFinishFlow.resolvePlanDefaultSetCountFromTotals(<int>[4, 4, 2]),
+        4,
+      );
+      expect(
+        WorkoutFinishFlow.resolvePlanDefaultSetCountFromTotals(<int>[0, -1]),
+        isNull,
+      );
+    },
+  );
+
+  test('resolvePlanDefaultSetCountFromSessions uses done + filledNotDone', () {
+    final providerA = _MockDeviceProvider();
+    final providerB = _MockDeviceProvider();
+    final providerC = _MockDeviceProvider();
+    when(
+      () => providerA.getSetCounts(),
+    ).thenReturn((done: 3, filledNotDone: 2, emptyOrIncomplete: 0));
+    when(
+      () => providerB.getSetCounts(),
+    ).thenReturn((done: 4, filledNotDone: 1, emptyOrIncomplete: 0));
+    when(
+      () => providerC.getSetCounts(),
+    ).thenReturn((done: 0, filledNotDone: 0, emptyOrIncomplete: 3));
+
+    final resolved = WorkoutFinishFlow.resolvePlanDefaultSetCountFromSessions(
+      <WorkoutDaySession>[
+        _session(providerA),
+        _session(providerB),
+        _session(providerC),
+      ],
+    );
+
+    expect(resolved, 5);
   });
 
   testWidgets(
@@ -131,6 +180,57 @@ void main() {
       expect(result.status, WorkoutFinishStatus.completed);
       expect(find.text('home'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'saveAndFinish writes plan defaultSetCount when plan context exists',
+    (tester) async {
+      String? capturedUserId;
+      String? capturedPlanId;
+      int? capturedDefaultSetCount;
+      WorkoutFinishFlow.debugSetPlanDefaultSetCountWriter(({
+        required String userId,
+        required String planId,
+        required int defaultSetCount,
+      }) async {
+        capturedUserId = userId;
+        capturedPlanId = planId;
+        capturedDefaultSetCount = defaultSetCount;
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigatorKey,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routes: {'/': (_) => const Scaffold(body: Text('root'))},
+        ),
+      );
+
+      final context = tester.element(find.text('root'));
+      final resultFuture = WorkoutFinishFlow.saveAndFinish(
+        context: context,
+        navigatorKey: navigatorKey,
+        controller: controller,
+        auth: auth,
+        settings: settings,
+        sessions: <WorkoutDaySession>[_session(deviceProvider)],
+        fallbackGymId: 'gym-1',
+        navigateToHomeProfileOnSuccess: false,
+        planId: 'plan-1',
+      );
+
+      await tester.pump();
+      await tester.tap(find.text('Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final result = await resultFuture.timeout(const Duration(seconds: 1));
+      expect(result.status, WorkoutFinishStatus.completed);
+      expect(capturedUserId, 'user-1');
+      expect(capturedPlanId, 'plan-1');
+      expect(capturedDefaultSetCount, 1);
     },
   );
 }

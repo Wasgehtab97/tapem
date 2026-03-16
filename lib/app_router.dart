@@ -248,13 +248,17 @@ class AppRouter {
         final exerciseId = args['exerciseId']?.toString() ?? '';
         final planId = args['planId']?.toString();
         final planName = args['planName']?.toString();
+        final planInitialSetCountRaw = args['planInitialSetCount'];
+        final planInitialSetCount = planInitialSetCountRaw is int
+            ? planInitialSetCountRaw
+            : int.tryParse(planInitialSetCountRaw?.toString() ?? '');
         final entryRequestedAtRaw = args['entryRequestedAtMs'];
         final entryRequestedAtMs = entryRequestedAtRaw is int
             ? entryRequestedAtRaw
             : int.tryParse(entryRequestedAtRaw?.toString() ?? '');
 
         debugPrint(
-          '🔀 [Router] workoutDay args gymId=$gymId deviceId=$deviceId exerciseId=$exerciseId planId=$planId planName=$planName entryRequestedAtMs=$entryRequestedAtMs',
+          '🔀 [Router] workoutDay args gymId=$gymId deviceId=$deviceId exerciseId=$exerciseId planId=$planId planName=$planName planInitialSetCount=$planInitialSetCount entryRequestedAtMs=$entryRequestedAtMs',
         );
         return MaterialPageRoute(
           settings: RouteSettings(name: workoutDay, arguments: rawArgs),
@@ -264,6 +268,7 @@ class AppRouter {
             exerciseId: exerciseId,
             planId: planId,
             planName: planName,
+            planInitialSetCount: planInitialSetCount,
             entryRequestedAtMs: entryRequestedAtMs,
             sessionBuilder: buildWorkoutDayTableSessionCard,
           ),

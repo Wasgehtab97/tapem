@@ -10,6 +10,7 @@ import 'package:tapem/features/device/domain/models/workout_device_xp_state.dart
 import 'package:tapem/features/device/domain/repositories/workout_data_repository.dart';
 import 'package:tapem/features/device/domain/usecases/get_devices_for_gym.dart';
 import 'package:tapem/features/device/presentation/controllers/workout_day_controller.dart';
+import 'package:tapem/features/training_details/domain/models/session.dart';
 import 'package:tapem/features/training_details/domain/repositories/session_repository.dart';
 import 'package:tapem/services/membership_service.dart';
 
@@ -121,4 +122,124 @@ void main() {
     expect(session.provider.device?.name, 'Cached Leg Press');
     expect(session.provider.error, isNull);
   });
+
+  test(
+    'initial set count defaults to 3 even when plan context carries a value',
+    () async {
+      const cacheStore = DeviceCatalogCacheStore();
+      await cacheStore.writeDevices('gym-1', [
+        DeviceDto(
+          uid: 'device-1',
+          id: 1,
+          name: 'Cached Leg Press',
+          description: 'offline',
+          isMulti: false,
+        ),
+      ]);
+
+      final firestore = FakeFirebaseFirestore();
+      final deviceRepository = DeviceRepositoryImpl(
+        FirestoreDeviceSource(firestore: firestore, cacheStore: cacheStore),
+      );
+      final controller = WorkoutDayController(
+        firestore: firestore,
+        membership: membership,
+        sessionRepository: sessionRepository,
+        workoutDataRepository: workoutDataRepository,
+        getDevicesForGym: GetDevicesForGym(deviceRepository),
+      );
+
+      controller.setPlanContext(
+        gymId: 'gym-1',
+        planId: 'plan-1',
+        initialSetCount: 5,
+      );
+      final session = controller.addOrFocusSession(
+        gymId: 'gym-1',
+        deviceId: 'device-1',
+        exerciseId: 'exercise-1',
+        userId: 'user-1',
+      );
+
+      await session.provider.loadDevice(
+        gymId: 'gym-1',
+        deviceId: 'device-1',
+        exerciseId: 'exercise-1',
+        userId: 'user-1',
+        initialSetCountOverride: controller.initialSetCountForKey(session.key),
+        forceRefresh: true,
+      );
+
+      expect(session.provider.sets.length, 3);
+    },
+  );
+
+  test(
+    'last completed session set count seeds next initial set count',
+    () async {
+      const cacheStore = DeviceCatalogCacheStore();
+      await cacheStore.writeDevices('gym-1', [
+        DeviceDto(
+          uid: 'device-1',
+          id: 1,
+          name: 'Cached Leg Press',
+          description: 'offline',
+          isMulti: false,
+        ),
+      ]);
+
+      when(
+        () => workoutDataRepository.getLastSession(
+          gymId: any(named: 'gymId'),
+          userId: any(named: 'userId'),
+          deviceId: any(named: 'deviceId'),
+          exerciseId: any(named: 'exerciseId'),
+        ),
+      ).thenAnswer(
+        (_) async => Session(
+          sessionId: 'session-1',
+          gymId: 'gym-1',
+          userId: 'user-1',
+          deviceId: 'device-1',
+          deviceName: 'Cached Leg Press',
+          exerciseId: 'exercise-1',
+          timestamp: DateTime(2026, 3, 16, 10, 0),
+          note: '',
+          sets: <SessionSet>[
+            for (var i = 0; i < 5; i++)
+              SessionSet(weight: 50, reps: 8, setNumber: i + 1),
+          ],
+        ),
+      );
+
+      final firestore = FakeFirebaseFirestore();
+      final deviceRepository = DeviceRepositoryImpl(
+        FirestoreDeviceSource(firestore: firestore, cacheStore: cacheStore),
+      );
+      final controller = WorkoutDayController(
+        firestore: firestore,
+        membership: membership,
+        sessionRepository: sessionRepository,
+        workoutDataRepository: workoutDataRepository,
+        getDevicesForGym: GetDevicesForGym(deviceRepository),
+      );
+
+      final session = controller.addOrFocusSession(
+        gymId: 'gym-1',
+        deviceId: 'device-1',
+        exerciseId: 'exercise-1',
+        userId: 'user-1',
+      );
+
+      await session.provider.loadDevice(
+        gymId: 'gym-1',
+        deviceId: 'device-1',
+        exerciseId: 'exercise-1',
+        userId: 'user-1',
+        forceRefresh: true,
+      );
+
+      expect(session.provider.sets.length, 5);
+    },
+  );
 }
